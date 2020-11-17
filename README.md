@@ -21,4 +21,4 @@ This library is the upgraded version of ESP32 Mail Client library to support ESP
 - Full debug for SMTP and IMAP.
 
 # Status
-This repository is currently in update progress, if you're interessted, please stay tune.
+This repository is currently in update progress, if you're interested, please stay tune.
