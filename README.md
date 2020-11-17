@@ -15,6 +15,6 @@ This library is the upgraded version of ESP32 Mail Client library to support ESP
 - Support UTF8 (international headers), UTF-7 (encoded) and quoted printable (encoded) data decoding for both header and body in Email reading.
 - Support ISO-8859-1 (latin1)  and ISO-8859-11 (Thai) decoding for body contents in Email reading.
 - Able to add inline image (embedded attachment) for Email sending.
-- Support plain or base64 attachments for for Email sending.
+- Support plain or base64 attachments for Email sending.
 - Progress report for searching and fetching Email, upload and download attachment operations during Email sending.
 - Full debug for SMTP and IMAP.
