@@ -1,9 +1,10 @@
 # ESP-Mail-Client
+
 The complete and secured Mail Client for ESP32 and ESP8266, sending and reading the E-mail through the SMTP and IMAP servers.
 
 This library is the upgraded version of ESP32 Mail Client library to support ESP8266.
 
-# ESP-Mail-Client
+# Features
 
 - Support ESP32 and ESP8266.
 - Customizable configurations using the structured data type.
@@ -18,3 +19,6 @@ This library is the upgraded version of ESP32 Mail Client library to support ESP
 - Support plain or base64 attachments for Email sending.
 - Progress report for searching and fetching Email, upload and download attachment operations during Email sending.
 - Full debug for SMTP and IMAP.
+
+# Status
+This repository is currently in update progress, if you're interessted, please stay tune.
