@@ -29,12 +29,12 @@
 #define WIFI_SSID "################"
 #define WIFI_PASSWORD "################"
 
-/* The smtp host name e.g. smtp.gmail.com for GMail or outlook.office365.com for Outlook */
+/* The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook */
 #define SMTP_HOST "################"
 
 /** The smtp port e.g. 
  * 25  or esp_mail_smtp_port_25
- * 465 or esp_mail_smtp_port_465 (Outlook does not support this port)
+ * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
 */
 #define SMTP_PORT esp_mail_smtp_port_587
@@ -313,9 +313,6 @@ void setup()
   att.file.storage_type = esp_mail_file_storage_type_sd;
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
-  /* Need to be clear as it previousely set to base64 */
-  att.descr.content_encoding = "";
-
   /* Add attachment to the message */
   message.addAttachment(att);
 
@@ -342,7 +339,6 @@ void setup()
   att.file.path = "/bin2.dat";
   att.file.storage_type = esp_mail_file_storage_type_flash;
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-  att.descr.content_encoding = "";
   message.addAttachment(att);
 
   /* Connect to server with the session config */

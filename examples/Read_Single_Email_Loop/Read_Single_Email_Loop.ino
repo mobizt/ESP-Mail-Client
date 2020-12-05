@@ -220,9 +220,9 @@ void loop()
         config.fetch.uid = uid.c_str();
 
         /** Read or search the Email and keep the TCP session to open
-         * The third parameter is for close the session.
+         * The second parameter is for close the session.
         */
-        MailClient.readMail(&imap, &config, false);
+        MailClient.readMail(&imap, false);
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();

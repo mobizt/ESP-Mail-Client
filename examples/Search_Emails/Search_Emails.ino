@@ -216,7 +216,7 @@ void setup()
         config.fetch.uid = "";
 
         /* Search the Email and close the session */
-        MailClient.readMail(&imap, &config);
+        MailClient.readMail(&imap);
     }
 
     /* Close the seeion in case the session is still open */

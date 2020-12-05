@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.0
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.1
  * 
- * December 4, 2020
+ * December 5, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading).
@@ -767,18 +767,17 @@ struct esp_mail_auth_capability_t
   bool digest_md5 = false;
   bool login = false;
   bool start_tls = false;
-
-  /* for ESMTP */
-  bool esmtp = false;
 };
 
 struct esp_mail_smtp_capability_t
 {
+  bool esmtp = false;
   bool binaryMIME = false;
   bool _8bitMIME = false;
   bool chunking = false;
   bool utf8 = false;
   bool pipelining = false;
+  bool dsn = false;
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -1267,12 +1266,12 @@ static const char esp_mail_str_77[] PROGMEM = "> C: fetch message header";
 static const char esp_mail_str_78[] PROGMEM = "Attachments (";
 static const char esp_mail_str_79[] PROGMEM = ")";
 static const char esp_mail_str_80[] PROGMEM = "Downloading attachments...";
-static const char esp_mail_str_81[] PROGMEM = "> C: fetch body part header";
+static const char esp_mail_str_81[] PROGMEM = "> C: fetch body part header, ";
 static const char esp_mail_str_82[] PROGMEM = "rfc822";
 static const char esp_mail_str_83[] PROGMEM = "reading";
 static const char esp_mail_str_84[] PROGMEM = "Free Heap: ";
 static const char esp_mail_str_85[] PROGMEM = "Logging out...";
-static const char esp_mail_str_86[] PROGMEM = "> C: fetch body sub part header";
+static const char esp_mail_str_86[] PROGMEM = "> C: fetch body sub part header, ";
 static const char esp_mail_str_87[] PROGMEM = "Finished reading Email";
 static const char esp_mail_str_88[] PROGMEM = "> C: finished reading Email";
 static const char esp_mail_str_89[] PROGMEM = "SD card mount failed";
@@ -1506,10 +1505,11 @@ static const char esp_mail_smtp_response_5[] PROGMEM = "STARTTLS";
 static const char esp_mail_smtp_response_6[] PROGMEM = "8BITMIME";
 static const char esp_mail_smtp_response_7[] PROGMEM = "BINARYMIME";
 static const char esp_mail_smtp_response_8[] PROGMEM = "CHUNKING";
-static const char esp_mail_smtp_response_9[] PROGMEM = " SMTPUTF8";
+static const char esp_mail_smtp_response_9[] PROGMEM = "SMTPUTF8";
 static const char esp_mail_smtp_response_10[] PROGMEM = "PIPELINING";
 static const char esp_mail_smtp_response_11[] PROGMEM = " CRAM-MD5";
 static const char esp_mail_smtp_response_12[] PROGMEM = " DIGEST-MD5";
+static const char esp_mail_smtp_response_13[] PROGMEM = "DSN";
 
 static const char esp_mail_imap_response_1[] PROGMEM = "$ OK ";
 static const char esp_mail_imap_response_2[] PROGMEM = "$ NO ";
@@ -2110,7 +2110,6 @@ private:
   bool multipartMember(const std::string &part, const std::string &check);
   bool fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx);
   bool connected(IMAPSession *imap);
-  bool available(IMAPSession *imap);
   bool imapAuth(IMAPSession *imap);
   bool sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCase);
   bool handleSMTPError(SMTPSession *smtp, int err, bool ret = false);
@@ -2163,7 +2162,7 @@ private:
 #elif defined(ESP8266)
   int _readLine(ESP_Mail::ESP_Mail_WCS *stream, char *buf, int bufLen, bool crlf, int &count);
 #endif
-  int getMSGNUM(IMAPSession *imap, WiFiClient *stream, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
+  int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
   void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part);
@@ -2179,10 +2178,11 @@ private:
   void handleAuth(SMTPSession *smtp, char *buf);
   std::string getEncodedToken(SMTPSession *smtp);
   bool connected(SMTPSession *smtp);
-  bool available(SMTPSession *smtp);
   bool setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
   bool smtpAuth(SMTPSession *smtp);
+  int available(SMTPSession *smtp);
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status_code respCode, int errCode);
+  int available(IMAPSession *imap);
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
   void downloadReport(IMAPSession *imap, int progress);
   void fetchReport(IMAPSession *imap, int progress, bool html);
@@ -2352,6 +2352,7 @@ private:
   bool _headerSaved = false;
   bool _debug = false;
   int _debugLevel = 0;
+  bool _secure = false;
   imapStatusCallback _readCallback = NULL;
 
   std::vector<uint32_t> _msgNum = std::vector<uint32_t>();
@@ -2465,6 +2466,7 @@ private:
 
   bool _debug = false;
   int _debugLevel = 0;
+  bool _secure = false;
   smtpStatusCallback _sendCallback = NULL;
 
   SMTP_Status _cbData;

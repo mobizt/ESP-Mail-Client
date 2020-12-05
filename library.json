@@ -1,0 +1,16 @@
+{
+  "name": "ESP Mail Client",
+  "version": "1.0.1",
+  "keywords": "Email, ESP32, ESP8266, Arduino",
+  "description": "Mail Client Arduino Library for Espressif ESP32 and ESP8266 devices.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mobizt/ESP-Mail-Client.git"
+  },
+  "authors": [{
+    "name": "Mobizt",
+    "email": "suwatchai@outlook.com"
+  }],
+  "frameworks": "arduino",
+  "platforms": "esp32,esp8266"
+}

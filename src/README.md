@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.0.0) are showed below.
+The detail and usage of the available functions in the latest version (1.0.1) are showed below.
 
 
 ## Global functions
@@ -24,6 +24,7 @@ bool sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 
 
 
+
 #### Reading Email through IMAP server.
 
 param **`imap`** The pointer to IMAP sesssion object which holds the data and the TCP client.
@@ -35,6 +36,7 @@ return **`boolean`** The boolean value indicates the success of operation.
 ```C++
 bool readMail(IMAPSession *imap, bool closeSession = true);
 ```
+
 
 
 
@@ -58,6 +60,7 @@ bool setFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession
 
 
 
+
 #### Add the argument to the Flags for the specified message.
 
 param **`imap`** The pointer to IMAP session object which holds the data and the TCP client.
@@ -73,6 +76,8 @@ return **`boolean`** The boolean value indicates the success of operation.
 ```C++
 bool addFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
 ```
+
+
 
 
 
@@ -96,6 +101,8 @@ bool removeFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSess
 
 
 
+
+
 #### Initialize the SD card with the SPI port.
 
 param **`sck`** The SPI Clock pin (ESP32 only).
@@ -115,6 +122,8 @@ bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
 
 
 
+
+
 #### Initialize the SD card with the default SPI port.
 
 return **`boolean`** The boolean value which indicates the success of operation.
@@ -122,6 +131,10 @@ return **`boolean`** The boolean value which indicates the success of operation.
 ```C++
 bool sdBegin(void);
 ```
+
+
+
+
 
 
 ## IMAPSession class functions
@@ -155,6 +168,7 @@ return **`boolean`** The boolean value which indicates the success of operation.
 ```C++
 bool closeSession();
 ```
+
 
 
 
@@ -1438,6 +1452,407 @@ std::vector<IMAP_Attach_Item> attachments;
 ```C++
 std::vector<IMAP_MSG_Item> rfc822;
 ```
+
+
+
+
+
+
+## Search Criteria
+
+Search crieria is used for searching the mailbox for messages that match
+the given searching criteria.  
+
+Searching criteria consist of one or more search keys. When multiple keys are 
+specified, the result is the intersection (AND function) of all the messages 
+that match those keys.  
+
+Example:
+
+ **`DELETED FROM "SMITH" SINCE 1-Feb-1994`** refers 
+to all deleted messages from Smith that were placed in the mailbox since 
+February 1, 1994.  
+
+A search key can also be a parenthesized list of one or more search keys 
+(e.g., for use with the OR and NOT keys).
+
+**`SINCE 10-Feb-2019`**  will search all messages that received since 10 Feb 2019
+
+**`UID SEARCH ALL`**  will seach all message which will return the message UID 
+that can be use later for fetch one or more messages.
+
+ 
+The following keywords can be used for the search criteria.
+
+
+**ALL** - All messages in the mailbox; the default initial key for	ANDing.
+
+**ANSWERED** - Messages with the \Answered flag set.
+
+**BCC** - Messages that contain the specified string in the envelope structure's BCC field.
+
+**BEFORE** - Messages whose internal date (disregarding time and timezone) is earlier than the specified date.
+
+**BODY** - Messages that contain the specified string in the body of the message.
+
+**CC** - Messages that contain the specified string in the envelope structure's CC field.
+
+**DELETED** - Messages with the \Deleted flag set.
+
+**DRAFT** - Messages with the \Draft flag set.
+
+**FLAGGED** - Messages with the \Flagged flag set.
+
+**FROM** - Messages that contain the specified string in the envelope	structure's FROM field.
+
+**HEADER** - Messages that have a header with the specified field-name (as defined in [RFC-2822])
+
+and that contains the specified string	in the text of the header (what comes after the colon).
+
+If the string to search is zero-length, this matches all messages that have a header line with 
+
+the specified field-name regardless of	the contents.
+
+**KEYWORD** - Messages with the specified keyword flag set.
+
+**LARGER** - Messages with an (RFC-2822) size larger than the specified number of octets.
+
+**NEW** -  Messages that have the \Recent flag set but not the \Seen flag.
+
+This is functionally equivalent to **"(RECENT UNSEEN)"**.
+
+**NOT** - Messages that do not match the specified search key.
+
+**OLD** - Messages that do not have the \Recent flag set.  This is	functionally equivalent to
+
+**"NOT RECENT"** (as opposed to **"NOT NEW"**).
+
+**ON** - Messages whose internal date (disregarding time and timezone) is within the specified date.
+
+**OR** - Messages that match either search key.
+
+**RECENT** - Messages that have the \Recent flag set.
+
+**SEEN** - Messages that have the \Seen flag set.
+
+**SENTBEFORE** - Messages whose (RFC-2822) Date: header (disregarding time and	timezone) is earlier than the specified date.
+
+**SENTON** - Messages whose (RFC-2822) Date: header (disregarding time and timezone) is within the specified date.
+
+**SENTSINCE** - Messages whose (RFC-2822) Date: header (disregarding time and timezone) is within or later than the specified date.
+
+**SINCE** - Messages whose internal date (disregarding time and timezone) is within or later than the specified date.
+
+**SMALLER** - Messages with an (RFC-2822) size smaller than the specified number of octets.
+
+**SUBJECT** - Messages that contain the specified string in the envelope structure's SUBJECT field.
+
+**TEXT** - Messages that contain the specified string in the header or body of the message.
+
+**TO** - Messages that contain the specified string in the envelope structure's TO field.
+
+**UID** - Messages with unique identifiers corresponding to the specified unique identifier set.  
+
+Sequence set ranges are permitted.
+
+**UNANSWERED** - Messages that do not have the \Answered flag set.
+
+**UNDELETED** - Messages that do not have the \Deleted flag set.
+
+**UNDRAFT** - Messages that do not have the \Draft flag set.
+
+**UNFLAGGED** - Messages that do not have the \Flagged flag set.
+
+**UNKEYWORD** - Messages that do not have the specified keyword flag set.
+
+**UNSEEN** - Messages that do not have the \Seen flag set.
+
+
+
+
+
+
+
+
+
+## MailClient.Time functions
+
+
+The helper function to set and get the system time.
+
+
+
+
+
+#### Set the system time from the NTP server
+
+param **`gmtOffset`** The GMT time offset in hour.
+
+param **`daylightOffset`** The Daylight time offset in hour.
+
+return **`boolean`** The status indicates the success of operation.
+
+This requires internet connection
+
+```C++
+bool setClock(float gmtOffset, float daylightOffset);
+```
+
+
+
+
+
+
+#### Provide the Unix time
+
+return **`uint32_t`** The value of current Unix time.
+
+```C++
+uint32_t getUnixTime();
+```
+
+
+
+
+
+
+#### Provide the timestamp from the year, month, date, hour, minute, and second provided
+
+param **`year`** The year.
+
+param **`mon`** The months from 1 to 12.
+
+param **`date`** The dates.
+
+param **`hour`** The hours.
+
+param **`mins`** The minutes.
+
+param **`sec`** The seconds.
+
+return **`time_t`** The value of timestamp.
+
+```C++
+time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
+```
+
+
+
+
+
+
+#### Provide the current year.
+
+return **`int`** The value of current year.
+
+```C++
+int getYear();
+```
+
+
+
+
+
+
+#### Provide the current month.
+
+return **`int`** The value of current month.
+
+```C++
+int getMonth();
+```
+
+
+
+
+
+#### Provide the current date.
+
+return **`int`** The value of current date.
+
+```C++
+int getDay();
+```
+
+
+
+
+
+
+#### Provide the current day of week.
+
+return **`int`** The value of day of week.
+
+1 for sunday and 7 for saturday
+
+```C++
+int getDayOfWeek();
+```
+
+
+
+
+
+#### Provide the current day of week in String.
+
+return **`String`** The value of day of week.
+
+Returns sunday, monday, tuesday, wednesday, thurseday, friday and saturday.
+
+```C++
+String getDayOfWeekString();
+```
+
+
+
+
+
+
+#### Provide the current hour.
+
+return **`int`** The value of current hour (0 to 23).
+
+```C++
+int getHour();
+```
+
+
+
+
+
+
+#### Provide the current minute.
+
+return **`int`** The value of current minute (0 to 59).
+
+```C++
+int getMin();
+```
+
+
+
+
+
+
+#### Provide the current second.
+
+return **`int`** The value of current second (0 to 59).
+
+```C++
+int getSecond();
+```
+
+
+
+
+
+
+
+#### Provide the total days of current year.
+
+return **`int`** The value of total days of current year.
+
+```C++
+int getNumberOfDayThisYear();
+```
+
+
+
+
+
+
+#### Provide the total days of from January 1, 1970 to specific date.
+
+param **`year`** The years from 1970.
+
+param **`mon`** The months from 1 to 12.
+
+param **`date`** The dates.
+
+return **`int`** The value of total days.
+
+```C++
+int getTotalDays(int year, int month, int day);
+```
+
+
+
+
+
+#### Provide the day of week from specific date.
+
+param **`year`** The years.
+
+param **`month`** The months from 1 to 12.
+
+param **`day`** The dates.
+
+return **`int`** The value of day of week.
+
+1 for sunday and 7 for saturday
+
+```C++
+int dayofWeek(int year, int month, int day);
+```
+
+
+
+
+
+
+#### Provide the second of current hour.
+
+return **`int`** The value of current second.
+
+```C++
+int getCurrentSecond();
+```
+
+
+
+
+
+#### Provide the current timestamp.
+
+return **`uint64_t`** The value of current timestamp.
+
+```C++
+uint64_t getCurrentTimestamp();
+```
+
+
+
+
+
+
+#### Provide the date and time from second counted from January 1, 1970.
+
+param **`sec`** The seconds from January 1, 1970 00.00.
+
+return **`tm`** The tm structured data.
+
+The returned structured data tm has the members e.g.
+
+tm_year (from 1900), tm_mon (from 0 to 11), tm_mday, tm_hour, tm_min and tm_sec.
+
+```C++
+struct tm getTimeFromSec(int secCount);
+```
+
+
+
+
+
+
+#### Provide the current date time string that valid for Email
+
+return **`String`** The current date time string.
+
+```C++
+String getDateTimeString();
+```
+
+
 
 
 

@@ -170,24 +170,26 @@ uint64_t ESPTimeHelper::getCurrentTimestamp()
 {
     return now;
 }
-void ESPTimeHelper::getTimeFromSec(int secCount, int &yrs, int &months, int &days, int &hr, int &min, int &sec)
+struct tm ESPTimeHelper::getTimeFromSec(int seconds)
 {
-    int _yrs = secCount / (365 * 24 * 3600);
-    secCount = secCount - _yrs * (365 * 24 * 3600);
-    yrs = _yrs;
-    int _months = secCount / (30 * 24 * 3600);
-    secCount = secCount - _months * (30 * 24 * 3600);
-    months = _months;
-    int _days = secCount / (24 * 3600);
-    secCount = secCount - _days * (24 * 3600);
-    days = _days;
-    int _hr = secCount / 3600;
-    secCount = secCount - _hr * 3600;
-    hr = _hr;
-    int _min = secCount / 60;
-    secCount = secCount - _min * 60;
-    min = _min;
-    sec = secCount;
+    struct tm timeinfo;
+    int _yrs = seconds / (365 * 24 * 3600);
+    seconds = seconds - _yrs * (365 * 24 * 3600);
+    timeinfo.tm_year = _yrs - 1900;
+    int _months = seconds / (30 * 24 * 3600);
+    seconds = seconds - _months * (30 * 24 * 3600);
+    timeinfo.tm_mon = _months - 1;
+    int _days = seconds / (24 * 3600);
+    seconds = seconds - _days * (24 * 3600);
+    timeinfo.tm_mday = _days;
+    int _hr = seconds / 3600;
+    seconds = seconds - _hr * 3600;
+    timeinfo.tm_hour = _hr;
+    int _min = seconds / 60;
+    seconds = seconds - _min * 60;
+    timeinfo.tm_min = _min;
+    timeinfo.tm_sec = seconds;
+    return timeinfo;
 }
 
 char *ESPTimeHelper::intStr(int value)

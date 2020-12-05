@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.0
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.1
  * 
- * December 4, 2020
+ * December 5, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -35,7 +35,7 @@
 
 #include "ESP_Mail_Client.h"
 
-#ifdef ESP32
+#if defined(ESP32)
 extern "C"
 {
 #include <esp_err.h>
@@ -700,18 +700,21 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
     esp_mail_message_part_info_t *_cpart = &cHeader(imap)->part_headers[cHeader(imap)->message_data_count - 1];
     bool rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
 
-    if (imap->_debug)
-    {
-      if (imap->_multipart_levels.size() > 1)
-        debugInfoP(esp_mail_str_86);
-      else
-        debugInfoP(esp_mail_str_81);
-    }
-
     std::string cmd;
 
     if (!getMultipartFechCmd(imap, msgIdx, cmd))
       return true;
+
+    if (imap->_debug)
+    {
+      std::string s;
+      if (imap->_multipart_levels.size() > 1)
+        appendP(s, esp_mail_str_86, true);
+      else
+        appendP(s, esp_mail_str_81, true);
+      s += cHeader(imap)->partNumStr;
+      esp_mail_debug(s.c_str());
+    }
 
     if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return false;
@@ -778,12 +781,18 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
 
 bool ESP_Mail_Client::connected(IMAPSession *imap)
 {
-  return imap->httpClient.stream()->connected();
-}
-
-bool ESP_Mail_Client::available(IMAPSession *imap)
-{
-  return imap->httpClient.stream()->available();
+  if (!imap->_secure)
+  {
+    if (!imap->httpClient._stream())
+      return false;
+    return imap->httpClient._stream()->_ns_connected();
+  }
+  else
+  {
+    if (!imap->httpClient.stream())
+      return false;
+    return imap->httpClient.stream()->connected();
+  }
 }
 
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
@@ -806,6 +815,8 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   }
 
   imap->_totalRead = 0;
+  imap->_secure = true;
+  bool secureMode = true;
 
 #if defined(ESP32)
   if (imap->_debug)
@@ -821,7 +832,12 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 #endif
 
   if (imap->_sesson_cfg->server.port == esp_mail_imap_port_143)
-    imap->_sesson_cfg->secure.startTLS = true;
+  {
+    imap->_secure = false;
+    secureMode = false;
+  }
+  else
+    secureMode = !imap->_sesson_cfg->secure.startTLS;
 
   setSecure(imap->httpClient, imap->_sesson_cfg, imap->_caCert);
 
@@ -846,7 +862,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
   imap->httpClient.begin(imap->_sesson_cfg->server.host_name, imap->_sesson_cfg->server.port);
 
-  if (!imap->httpClient.connect(!imap->_sesson_cfg->secure.startTLS))
+  if (!imap->httpClient.connect(secureMode))
     return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 
   imap->_httpConnected = true;
@@ -900,8 +916,11 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
       //do ssl handshaking
       if (!imap->httpClient._stream()->_ns_connect_ssl())
         return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+
+      //set the secure mode
       imap->_sesson_cfg->secure.startTLS = false;
       ssl = true;
+      imap->_secure = true;
     }
   }
 
@@ -974,12 +993,10 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
     const char *usr = imap->_sesson_cfg->login.email;
     const char *psw = imap->_sesson_cfg->login.password;
-    int len = 2 * strlen(usr) + strlen(psw) + 2;
+    int len = strlen(usr) + strlen(psw) + 2;
     uint8_t *tmp = new uint8_t[len];
     memset(tmp, 0, len);
-    int p = 0;
-    memcpy(tmp + p, usr, strlen(usr));
-    p += strlen(usr) + 1;
+    int p = 1;
     memcpy(tmp + p, usr, strlen(usr));
     p += strlen(usr) + 1;
     memcpy(tmp + p, psw, strlen(psw));
@@ -1083,13 +1100,19 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    len = imap->httpClient.stream()->println(tmp);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_println(tmp);
+    else
+      len = imap->httpClient.stream()->println(tmp);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-    len = imap->httpClient.stream()->print(tmp);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_print(tmp);
+    else
+      len = imap->httpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -1123,13 +1146,19 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newli
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(data);
-    len = imap->httpClient.stream()->println(data);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_println(data);
+    else
+      len = imap->httpClient.stream()->println(data);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(data, false);
-    len = imap->httpClient.stream()->print(data);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_print(data);
+    else
+      len = imap->httpClient.stream()->print(data);
   }
 
   if (len != strlen(data) && len != strlen(data) + 2)
@@ -1161,13 +1190,19 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    len = imap->httpClient.stream()->println(tmp);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_println(tmp);
+    else
+      len = imap->httpClient.stream()->println(tmp);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-    len = imap->httpClient.stream()->print(tmp);
+    if (!imap->_secure)
+      len = imap->httpClient._ns_print(tmp);
+    else
+      len = imap->httpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -1346,6 +1381,8 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
     return false;
 
   bool ssl = false;
+  smtp->_secure = true;
+  bool secureMode = true;
 
   std::string s;
 
@@ -1356,8 +1393,18 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   smtp->httpClient.txBufDivider = 8;  // medium tx buffer for faster attachment/inline data transfer
 #endif
 
-  if (smtp->_sesson_cfg->server.port == esp_mail_smtp_port_25 || smtp->_sesson_cfg->server.port == esp_mail_smtp_port_587)
-    smtp->_sesson_cfg->secure.startTLS = true;
+  if (smtp->_sesson_cfg->server.port == esp_mail_smtp_port_25)
+  {
+    smtp->_secure = false;
+    secureMode = false;
+  }
+  else
+  {
+    if (smtp->_sesson_cfg->server.port == esp_mail_smtp_port_587)
+      smtp->_sesson_cfg->secure.startTLS = true;
+
+    secureMode = !smtp->_sesson_cfg->secure.startTLS;
+  }
 
   setSecure(smtp->httpClient, smtp->_sesson_cfg, smtp->_caCert);
 
@@ -1386,7 +1433,7 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 
   smtp->httpClient.begin(smtp->_sesson_cfg->server.host_name, smtp->_sesson_cfg->server.port);
 
-  if (!smtp->httpClient.connect(!smtp->_sesson_cfg->secure.startTLS))
+  if (!smtp->httpClient.connect(secureMode))
     return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED);
 
   //server connected
@@ -1401,11 +1448,10 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
     smtpCBP(smtp, esp_mail_str_121);
   }
 
-  WiFiClient *stream = smtp->httpClient.stream();
 #if defined(ESP32)
-  stream->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC);
+  smtp->httpClient.stream()->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC);
 #elif defined(ESP8266)
-  stream->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000);
+  smtp->httpClient.stream()->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000);
 #endif
   smtp->httpClient.tcpTimeout = ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000;
 
@@ -1450,11 +1496,11 @@ init:
       return false;
     if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
       return false;
-    smtp->_auth_capability.esmtp = false;
+    smtp->_send_capability.esmtp = false;
     smtp->_auth_capability.login = true;
   }
   else
-    smtp->_auth_capability.esmtp = true;
+    smtp->_send_capability.esmtp = true;
 
   //start TLS when needed
   if ((smtp->_auth_capability.start_tls || smtp->_sesson_cfg->secure.startTLS) && !ssl)
@@ -1473,7 +1519,7 @@ init:
     }
 
     //expected status code 250 for complete the request
-    //some server returns 220 to retart the communication state
+    //some server returns 220 to restart to initial state
     smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls;
     smtpSendP(smtp, esp_mail_str_311, false);
     if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
@@ -1488,18 +1534,21 @@ init:
     //do ssl handshaking
     if (!smtp->httpClient._stream()->_ns_connect_ssl())
       return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
+
+    //set the secure mode
     smtp->_sesson_cfg->secure.startTLS = false;
     ssl = true;
+    smtp->_secure = true;
 
-    //some server needs client to send greeting again.
+    //return to initial state if the response status is 220.
     if (smtp->_smtpStatus == esp_mail_smtp_status_code_220)
       goto init;
   }
 
   //rfc4954
-  if (smtp->_auth_capability.esmtp)
+  if (smtp->_send_capability.esmtp)
   {
-    if (!smtp->_auth_capability.login && !smtp->_auth_capability.plain && !smtp->_auth_capability.xoauth2 && !smtp->_auth_capability.cram_md5 && !smtp->_auth_capability.digest_md5)
+    if (!smtp->_auth_capability.login && !smtp->_auth_capability.plain && !smtp->_auth_capability.xoauth2 /* && !smtp->_auth_capability.cram_md5 && !smtp->_auth_capability.digest_md5 */)
       return handleSMTPError(smtp, SMTP_STATUS_NO_SUPPORTED_AUTH);
   }
 
@@ -1561,12 +1610,10 @@ init:
     //rfc4616
     const char *usr = smtp->_sesson_cfg->login.email;
     const char *psw = smtp->_sesson_cfg->login.password;
-    int len = 2 * strlen(usr) + strlen(psw) + 2;
+    int len = strlen(usr) + strlen(psw) + 2;
     uint8_t *tmp = new uint8_t[len];
     memset(tmp, 0, len);
-    int p = 0;
-    memcpy(tmp + p, usr, strlen(usr));
-    p += strlen(usr) + 1;
+    int p = 1;
     memcpy(tmp + p, usr, strlen(usr));
     p += strlen(usr) + 1;
     memcpy(tmp + p, psw, strlen(psw));
@@ -1589,7 +1636,6 @@ init:
   }
   else if (login_auth)
   {
-
     if (smtp->_debug)
       debugInfoP(esp_mail_str_240);
 
@@ -1648,12 +1694,18 @@ void ESP_Mail_Client::mimeFromFile(const char *name, std::string &mime)
 
 bool ESP_Mail_Client::connected(SMTPSession *smtp)
 {
-  return smtp->httpClient.stream()->connected();
-}
-
-bool ESP_Mail_Client::available(SMTPSession *smtp)
-{
-  return smtp->httpClient.stream()->available();
+  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
+  {
+    if (!smtp->httpClient._stream())
+      return false;
+    return smtp->httpClient._stream()->_ns_connected();
+  }
+  else
+  {
+    if (!smtp->httpClient.stream())
+      return false;
+    return smtp->httpClient.stream()->connected();
+  }
 }
 
 bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result)
@@ -1903,30 +1955,34 @@ bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     buf += msg->_rcp[i].email;
     appendP(buf, esp_mail_str_15, false);
 
-    if (msg->response.notify != esp_mail_smtp_notify::esp_mail_smtp_notify_never) //rfc3461
+    //rfc3461, rfc3464
+    if (smtp->_send_capability.dsn)
     {
-      appendP(buf, esp_mail_str_262, false);
-      int opcnt = 0;
-      if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_success)
+      if (msg->response.notify != esp_mail_smtp_notify::esp_mail_smtp_notify_never)
       {
-        if (opcnt > 0)
-          appendP(buf, esp_mail_str_263, false);
-        appendP(buf, esp_mail_str_264, false);
-        opcnt++;
-      }
-      if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_failure)
-      {
-        if (opcnt > 0)
-          appendP(buf, esp_mail_str_263, false);
-        appendP(buf, esp_mail_str_265, false);
-        opcnt++;
-      }
-      if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_delay)
-      {
-        if (opcnt > 0)
-          appendP(buf, esp_mail_str_263, false);
-        appendP(buf, esp_mail_str_266, false);
-        opcnt++;
+        appendP(buf, esp_mail_str_262, false);
+        int opcnt = 0;
+        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_success)
+        {
+          if (opcnt > 0)
+            appendP(buf, esp_mail_str_263, false);
+          appendP(buf, esp_mail_str_264, false);
+          opcnt++;
+        }
+        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_failure)
+        {
+          if (opcnt > 0)
+            appendP(buf, esp_mail_str_263, false);
+          appendP(buf, esp_mail_str_265, false);
+          opcnt++;
+        }
+        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_delay)
+        {
+          if (opcnt > 0)
+            appendP(buf, esp_mail_str_263, false);
+          appendP(buf, esp_mail_str_266, false);
+          opcnt++;
+        }
       }
     }
 
@@ -2955,7 +3011,7 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_println(tmp);
     else
       len = smtp->httpClient.stream()->println(tmp);
@@ -2965,7 +3021,7 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
 
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_print(tmp);
     else
       len = smtp->httpClient.stream()->print(tmp);
@@ -3003,7 +3059,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(data);
 
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_println(data);
     else
       len = smtp->httpClient.stream()->println(data);
@@ -3013,7 +3069,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(data, false);
 
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_print(data);
     else
       len = smtp->httpClient.stream()->print(data);
@@ -3050,7 +3106,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
 
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_println(tmp);
     else
       len = smtp->httpClient.stream()->println(tmp);
@@ -3060,7 +3116,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
 
-    if (smtp->_sesson_cfg->secure.startTLS)
+    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
       len = smtp->httpClient._ns_print(tmp);
     else
       len = smtp->httpClient.stream()->print(tmp);
@@ -3091,7 +3147,12 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
     return 0;
   }
 
-  size_t len = smtp->httpClient.stream()->write(data, size);
+  size_t len = 0;
+
+  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
+    len = smtp->httpClient._stream()->write(data, size);
+  else
+    len = smtp->httpClient.stream()->write(data, size);
 
   if (len != size)
   {
@@ -3430,7 +3491,7 @@ void ESP_Mail_Client::splitTk(std::string &str, std::vector<std::string> &tk, co
  * This causes the text lines are wrapped instead of joined.
  * 
  * Some mail clients trim the space before the line break
- * which make the soft line break cannot be seen.
+ * which makes the soft line break cannot be seen.
 */
 void ESP_Mail_Client::formatFlowedText(std::string &content)
 {
@@ -3839,6 +3900,8 @@ int ESP_Mail_Client::readLine(WiFiClient *stream, char *buf, int bufLen, bool cr
   char c = 0;
   char _c = 0;
   int idx = 0;
+  if (!stream)
+    return idx;
   while (stream->available() && idx < bufLen)
   {
     ret = stream->read();
@@ -3862,6 +3925,8 @@ int ESP_Mail_Client::readLine(WiFiClient *stream, char *buf, int bufLen, bool cr
       }
       _c = c;
     }
+    if (!stream)
+      return idx;
   }
   return idx;
 }
@@ -3876,6 +3941,8 @@ int ESP_Mail_Client::_readLine(ESP_Mail::ESP_Mail_WCS *stream, char *buf, int bu
   char c = 0;
   char _c = 0;
   int idx = 0;
+  if (!stream)
+    return idx;
   while (stream->_ns_available() && idx < bufLen)
   {
     ret = stream->_ns_read();
@@ -3899,20 +3966,26 @@ int ESP_Mail_Client::_readLine(ESP_Mail::ESP_Mail_WCS *stream, char *buf, int bu
       }
       _c = c;
     }
+    if (!stream)
+      return idx;
   }
   return idx;
 }
 
-int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, WiFiClient *stream, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
+int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
 {
   int ret = -1;
   char c = 0;
   int idx = 0;
   int num = 0;
-  while (stream->available() && idx < bufLen)
+  while (available(imap) > 0 && idx < bufLen)
   {
     delay(0);
-    ret = stream->read();
+    if (!imap->_secure)
+      ret = imap->httpClient._stream()->read();
+    else
+      ret = imap->httpClient.stream()->read();
+
     if (ret > -1)
     {
 
@@ -3971,8 +4044,12 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, WiFiClient *stream, char *buf,
             std::sort(imap->_msgNum.begin(), imap->_msgNum.end(), compFunc);
 
           endSearch = true;
-          int read = stream->available();
-          idx = stream->readBytes(buf + idx, read);
+          int read = available(imap);
+
+          if (!imap->_secure)
+            idx = imap->httpClient._stream()->readBytes(buf + idx, read);
+          else
+            idx = imap->httpClient.stream()->readBytes(buf + idx, read);
           return idx;
         }
       }
@@ -4555,6 +4632,25 @@ void ESP_Mail_Client::handleAuth(SMTPSession *smtp, char *buf)
     smtp->_send_capability.utf8 = true;
   else if (strposP(buf, esp_mail_smtp_response_10, 0) > -1)
     smtp->_send_capability.pipelining = true;
+  else if (strposP(buf, esp_mail_smtp_response_13, 0) > -1)
+    smtp->_send_capability.dsn = true;
+}
+
+int ESP_Mail_Client::available(SMTPSession *smtp)
+{
+  int sz = 0;
+  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
+  {
+    if (smtp->httpClient._stream())
+      sz = smtp->httpClient._stream()->_ns_available();
+  }
+  else
+  {
+    if (smtp->httpClient.stream())
+      sz = smtp->httpClient.stream()->available();
+  }
+
+  return sz;
 }
 
 bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status_code respCode, int errCode)
@@ -4575,20 +4671,18 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
   uint8_t minResLen = 5;
   struct esp_mail_smtp_response_status_t status;
 
-  if (smtp->_sesson_cfg->secure.startTLS)
-    chunkBufSize = smtp->httpClient._stream()->_ns_available();
-  else
-    chunkBufSize = smtp->httpClient.stream()->available();
+  chunkBufSize = available(smtp);
 
   while (smtp->_httpConnected && chunkBufSize <= 0)
   {
     if (!reconnect(smtp, dataTime))
       return false;
-
-    if (smtp->_sesson_cfg->secure.startTLS)
-      chunkBufSize = smtp->httpClient._stream()->_ns_available();
-    else
-      chunkBufSize = smtp->httpClient.stream()->available();
+    if (!connected(smtp))
+    {
+      errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+      return false;
+    }
+    chunkBufSize = available(smtp);
     delay(0);
   }
 
@@ -4603,10 +4697,13 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
       if (!reconnect(smtp, dataTime))
         return false;
 
-      if (smtp->_sesson_cfg->secure.startTLS)
-        chunkBufSize = smtp->httpClient._stream()->_ns_available();
-      else
-        chunkBufSize = smtp->httpClient.stream()->available();
+      if (!connected(smtp))
+      {
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+        return false;
+      }
+
+      chunkBufSize = available(smtp);
 
       if (chunkBufSize <= 0)
         break;
@@ -4616,7 +4713,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
         chunkBufSize = 512;
         response = newS(chunkBufSize + 1);
 
-        if (smtp->_sesson_cfg->secure.startTLS)
+        if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
           readLen = _readLine(smtp->httpClient._stream(), response, chunkBufSize, false, count);
         else
           readLen = readLine(smtp->httpClient.stream(), response, chunkBufSize, false, count);
@@ -4636,11 +4733,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
                 delay(0);
                 if (!reconnect(smtp, dataTime))
                   return false;
-
-                if (smtp->_sesson_cfg->secure.startTLS)
-                  chunkBufSize = smtp->httpClient._stream()->_ns_available();
-                else
-                  chunkBufSize = smtp->httpClient.stream()->available();
+                chunkBufSize = available(smtp);
               }
             }
             else
@@ -4750,7 +4843,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
       if (p2 > p1)
       {
         tmp = newS(p2 + 1);
-        memcpy(tmp, &buf[p1], p2 - p1 - 1);
+        memcpy(tmp, &buf[p1], p2 - p1);
         status.text = tmp;
         delS(tmp);
       }
@@ -4766,7 +4859,12 @@ void ESP_Mail_Client::closeTCP(SMTPSession *smtp)
     if (smtp->httpClient.stream())
     {
       if (connected(smtp))
-        smtp->httpClient.stream()->stop();
+      {
+        if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
+          smtp->httpClient._stream()->stop();
+        else
+          smtp->httpClient.stream()->stop();
+      }
     }
     _lastReconnectMillis = millis();
   }
@@ -4781,7 +4879,12 @@ void ESP_Mail_Client::closeTCP(IMAPSession *imap)
     if (imap->httpClient.stream())
     {
       if (connected(imap))
-        imap->httpClient.stream()->stop();
+      {
+        if (!imap->_secure)
+          imap->httpClient._stream()->stop();
+        else
+          imap->httpClient.stream()->stop();
+      }
     }
     _lastReconnectMillis = millis();
   }
@@ -5019,6 +5122,22 @@ char *ESP_Mail_Client::intStr(int value)
   return buf;
 }
 
+int ESP_Mail_Client::available(IMAPSession *imap)
+{
+  int sz = 0;
+  if (!imap->_secure)
+  {
+    if (imap->httpClient._stream())
+      sz = imap->httpClient._stream()->_ns_available();
+  }
+  else
+  {
+    if (imap->httpClient.stream())
+      sz = imap->httpClient.stream()->available();
+  }
+  return sz;
+}
+
 bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession)
 {
 
@@ -5027,10 +5146,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
   esp_mail_imap_response_status imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
   char *response = nullptr;
-  WiFiClient *stream = imap->httpClient.stream();
   int readLen = 0;
   long dataTime = millis();
-  int chunkBufSize = stream->available();
+  int chunkBufSize = available(imap);
   int chunkIdx = 0;
   std::string s;
   bool completedResponse = false;
@@ -5058,7 +5176,12 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
   {
     if (!reconnect(imap, dataTime))
       return false;
-    chunkBufSize = stream->available();
+    if (!connected(imap))
+    {
+      errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+      return false;
+    }
+    chunkBufSize = available(imap);
     delay(0);
   }
 
@@ -5094,17 +5217,22 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     while (!completedResponse)
     {
       delay(0);
-      if (!reconnect(imap, dataTime))
+      if (!reconnect(imap, dataTime) || !connected(imap))
       {
         if (imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_search)
         {
           delS(skey);
           delS(spc);
         }
+
+        if (!connected(imap))
+        {
+          errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+          return false;
+        }
         return false;
       }
-
-      chunkBufSize = stream->available();
+      chunkBufSize = available(imap);
 
       if (chunkBufSize > 0)
       {
@@ -5112,11 +5240,16 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         if (imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_search)
         {
-          readLen = getMSGNUM(imap, stream, response, chunkBufSize, chunkIdx, endSearch, scnt, skey, spc);
+          readLen = getMSGNUM(imap, response, chunkBufSize, chunkIdx, endSearch, scnt, skey, spc);
           imap->_mbif._availableItems = imap->_msgNum.size();
         }
         else
-          readLen = readLine(stream, response, chunkBufSize, crLF, octetCount);
+        {
+          if (!imap->_secure)
+            readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, crLF, octetCount);
+          else
+            readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, crLF, octetCount);
+        }
 
         if (readLen)
         {
@@ -5141,7 +5274,10 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             //some IMAP servers advertise CAPABILITY in their responses
             //try to read the next available response
             memset(response, 0, chunkBufSize);
-            readLen = readLine(stream, response, chunkBufSize, true, octetCount);
+            if (!imap->_secure)
+              readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
+            else
+              readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
             if (readLen)
             {
               completedResponse = false;

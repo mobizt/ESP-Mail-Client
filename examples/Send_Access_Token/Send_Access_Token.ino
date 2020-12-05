@@ -26,12 +26,12 @@
 #define WIFI_SSID "################"
 #define WIFI_PASSWORD "################"
 
-/* The smtp host name e.g. smtp.gmail.com for GMail or outlook.office365.com for Outlook */
+/* The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook */
 #define SMTP_HOST "################"
 
 /** The smtp port e.g. 
  * 25  or esp_mail_smtp_port_25
- * 465 or esp_mail_smtp_port_465 (Outlook does not support this port)
+ * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
 */
 #define SMTP_PORT 25
