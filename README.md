@@ -119,7 +119,7 @@ att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
 
 // Add attachment to the message
-message.addInlineImage(att);
+message.addAttachment(att);
 
 // Connect to server with the session config
 smtp.connect(&session);
