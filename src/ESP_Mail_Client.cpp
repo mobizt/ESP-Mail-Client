@@ -1092,6 +1092,12 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
     return 0;
   }
 
+  if (!connected(imap))
+  {
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    return 0;
+  }
+
   if (!imap->_httpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
@@ -1139,6 +1145,12 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newli
     return 0;
   }
 
+  if (!connected(imap))
+  {
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    return 0;
+  }
+
   if (!imap->_httpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
@@ -1179,6 +1191,12 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
   if (!reconnect(imap))
   {
     closeTCP(imap);
+    return 0;
+  }
+
+  if (!connected(imap))
+  {
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
     return 0;
   }
 
@@ -3003,6 +3021,12 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
     return 0;
   }
 
+  if (!connected(smtp))
+  {
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    return 0;
+  }
+
   if (!smtp->_httpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
@@ -3048,6 +3072,12 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
   if (!reconnect(smtp))
   {
     closeTCP(smtp);
+    return 0;
+  }
+
+  if (!connected(smtp))
+  {
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
     return 0;
   }
 
@@ -3097,6 +3127,12 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
     return 0;
   }
 
+  if (!connected(smtp))
+  {
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    return 0;
+  }
+
   if (!smtp->_httpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
@@ -3143,6 +3179,12 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
   if (!reconnect(smtp))
   {
     closeTCP(smtp);
+    return 0;
+  }
+
+  if (!connected(smtp))
+  {
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
     return 0;
   }
 
