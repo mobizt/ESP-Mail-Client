@@ -351,7 +351,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
       {
         //singlepart
         if (imap->_debug)
-          debugInfoP(esp_mail_str_81);
+         {
+           std::string s;
+           appendP(s, esp_mail_str_81, true);
+           s += '1';
+           esp_mail_debug(s.c_str());
+         }
 
         cHeader(imap)->partNumStr.clear();
         if (!sendIMAPCommand(imap, i, 1))
