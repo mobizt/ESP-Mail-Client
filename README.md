@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.1
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.2
 
 The complete and secure Mail Client for ESP32 and ESP8266 devices for sending and reading the Email through the SMTP and IMAP servers.
 
@@ -21,7 +21,7 @@ Copyright (c) 2020 K. Suwatchai (Mobizt).
 * Support mailbox selection for Email reading and searching.
 * Support the content encodings e.g. quoted-printable and base64.
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
-* Support many types of embedded content e.g. inline images, attachments, parallel media attachments and RFC822 message.
+* Support many types of embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
 * Support SPIFFS and SD card for file storages.
 * Support Ethernet (ESP32).
@@ -64,7 +64,7 @@ The following examples showed the minimum usage which many options are not confi
 The examples in the examples folder provide the full options usages.
 
 
-### Sending the Email
+### Send the Email
 
 
 ```C++
@@ -93,14 +93,33 @@ SMTP_Message message;
 message.sender.name = "My Mail";
 message.sender.email = "sender or your Email address";
 message.subject = "Test sending Email";
-message.addRecipient("Recipient 1 name", "your recipient 1 Email address");
-message.addRecipient("Recipient 2 name", "your recipient 2 Email address");
+message.addRecipient("name1", "email1");
+message.addRecipient("name2", "email2");
 
-message.addCc("your another recipient Email address to get the carbon copy of this messsage");
-message.addBcc("your another recipient Email address to get the blind carbon copy of this messsage");
+message.addCc("email3");
+message.addBcc("email4");
 
 // Set the message content
 message.text.content = "This is simple plain text message";
+
+//Base64 data of image
+const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
+
+// Define the attachment data
+SMTP_Attachment att;
+
+// Set the attatchment info
+att.descr.filename = "green.png";
+att.descr.mime = "image/png";
+att.blob.data = (uint8_t *)greenImg;
+att.blob.size = strlen(greenImg);
+// Set the transfer encoding to base64
+att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+// We set the content encoding to match the above greenImage data
+att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+
+// Add attachment to the message
+message.addInlineImage(att);
 
 // Connect to server with the session config
 smtp.connect(&session);
@@ -113,7 +132,7 @@ if (!MailClient.sendMail(&smtp, &message))
 ```
 
 
-### Reading the Email
+### Read the Email
 
 
 ```C++

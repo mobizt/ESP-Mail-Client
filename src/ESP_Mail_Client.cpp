@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.1
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.2
  * 
- * December 5, 2020
+ * December 6, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -94,6 +94,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   imap->checkUID();
   imap->checkPath();
 
+  if (!imap->_httpConnected)
+    imap->_mailboxOpened = false;
+
   std::string buf;
   std::string command;
   std::string _uid;
@@ -144,6 +147,15 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   imap->_msgNum.clear();
   imap->_uidSearch = false;
   imap->_mbif._searchCount = 0;
+
+  if (imap->_currentFolder.length() == 0)
+    return handleIMAPError(imap, IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED, false);
+
+  if (!imap->_mailboxOpened)
+  {
+    if (!imap->openFolder(imap->_currentFolder.c_str(), imap->_readOnlyMode))
+      return handleIMAPError(imap, IMAP_STATUS_OPEN_MAILBOX_FAILED, false);
+  }
 
   if (imap->_headerOnly)
   {
@@ -351,12 +363,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
       {
         //singlepart
         if (imap->_debug)
-         {
-           std::string s;
-           appendP(s, esp_mail_str_81, true);
-           s += '1';
-           esp_mail_debug(s.c_str());
-         }
+        {
+          std::string s;
+          appendP(s, esp_mail_str_81, true);
+          s += '1';
+          esp_mail_debug(s.c_str());
+        }
 
         cHeader(imap)->partNumStr.clear();
         if (!sendIMAPCommand(imap, i, 1))
@@ -930,6 +942,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   }
 
   imap->clearMessageData();
+  imap->_mailboxOpened = false;
 
   bool creds = strlen(imap->_sesson_cfg->login.email) > 0 && strlen(imap->_sesson_cfg->login.password) > 0;
   bool xoauth_auth = strlen(imap->_sesson_cfg->login.accessToken) > 0 && imap->_auth_capability.xoauth2;
@@ -942,7 +955,6 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     return handleIMAPError(imap, IMAP_STATUS_NO_SUPPORTED_AUTH, false);
 
   //rfc4959
-
   if (supported_auth)
   {
     if (imap->_readCallback)
@@ -954,7 +966,6 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
   if (xoauth_auth)
   {
-
     if (!imap->_auth_capability.xoauth2)
       return handleIMAPError(imap, IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
 
@@ -1260,7 +1271,10 @@ bool ESP_Mail_Client::_setFlag(IMAPSession *imap, int msgUID, const char *flag, 
     return false;
 
   if (!imap->_httpConnected)
+  {
+    imap->_mailboxOpened = false;
     return false;
+  }
 
   if (imap->_currentFolder.length() == 0)
   {
@@ -1277,8 +1291,7 @@ bool ESP_Mail_Client::_setFlag(IMAPSession *imap, int msgUID, const char *flag, 
   }
   else
   {
-
-    if (imap->_readOnlyMode)
+    if (imap->_readOnlyMode || !imap->_mailboxOpened)
     {
       if (!imap->selectFolder(imap->_currentFolder.c_str(), false))
         return false;
@@ -2536,7 +2549,7 @@ bool ESP_Mail_Client::sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
       if (smtp->_sendCallback && _pg < 100)
         uploadReport(att->descr.filename, 100);
 
-      return writeLen == att->blob.size;
+      return writeLen >= att->blob.size;
     }
   }
   return false;
@@ -4822,6 +4835,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
               //base64 response
               size_t olen;
               char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
+              decoded[olen] = 0;
               s += decoded;
               delS(decoded);
             }
@@ -7295,6 +7309,9 @@ String IMAPSession::errorReason()
   case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
     MailClient.appendP(ret, esp_mail_str_186, true);
     break;
+  case IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED:
+    MailClient.appendP(ret, esp_mail_str_153, true);
+    break;
 
   default:
     break;
@@ -7576,6 +7593,7 @@ bool IMAPSession::closeMailbox()
     return false;
 
   _currentFolder.clear();
+  _mailboxOpened = false;
 
   return true;
 }
@@ -7594,6 +7612,7 @@ bool IMAPSession::openMailbox(const char *folder, esp_mail_imap_auth_mode mode, 
         return false;
     }
   }
+
   _currentFolder = folder;
   std::string s;
   if (_readCallback)
@@ -7633,6 +7652,8 @@ bool IMAPSession::openMailbox(const char *folder, esp_mail_imap_auth_mode mode, 
     _readOnlyMode = true;
   else if (mode == esp_mail_imap_mode_select)
     _readOnlyMode = false;
+
+  _mailboxOpened = true;
 
   return true;
 }
@@ -7719,7 +7740,6 @@ void ESP_Mail_Client::setClock(float offset)
 
 void IMAPSession::empty()
 {
-  std::string().swap(_currentFolder);
   std::string().swap(_nextUID);
   clearMessageData();
 }
