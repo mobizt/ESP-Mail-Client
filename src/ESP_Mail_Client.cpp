@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.2
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.3
  * 
- * December 6, 2020
+ * December 8, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -7199,7 +7199,7 @@ bool IMAPSession::closeSession()
    * The client disposed without memory released after the server close 
    * the connection due to LOGOUT command, which caused the memory leaks.
   */
-  if (!MailClient.imapLogout(*this))
+  if (!MailClient.imapLogout(this))
     return false;
 #endif
   return MailClient.handleIMAPError(this, 0, true);
@@ -7907,9 +7907,9 @@ bool SMTPSession::closeSession()
    * The client disposed without memory released after the server close 
    * the connection due to QUIT command, which caused the memory leaks.
   */
-  MailClient.smtpSendP(*this, esp_mail_str_7, true);
+  MailClient.smtpSendP(this, esp_mail_str_7, true);
   _smtp_cmd = esp_mail_smtp_cmd_logout;
-  ret = MailClient.handleSMTPResponse(*this, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
+  ret = MailClient.handleSMTPResponse(this, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
 #endif
 
   if (ret)

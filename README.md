@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.2
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.3
 
 The complete and secure Mail Client for ESP32 and ESP8266 devices for sending and reading the Email through the SMTP and IMAP servers.
 
