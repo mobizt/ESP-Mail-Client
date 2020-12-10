@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.3
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.5
  * 
- * December 8, 2020
+ * December 10, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -5555,21 +5555,25 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         part.partNumStr = cHeader(imap)->partNumStr;
         part.partNumFetchStr = cHeader(imap)->partNumStr;
-        esp_mail_message_part_info_t *_part = &cHeader(imap)->part_headers[cHeader(imap)->part_headers.size() - 1];
-        bool rfc822_body_subtype = _part->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
-
-        if (rfc822_body_subtype)
+        if (cHeader(imap)->part_headers.size()> 0)
         {
-          if (!_part->rfc822_part)
+
+          esp_mail_message_part_info_t *_part = &cHeader(imap)->part_headers[cHeader(imap)->part_headers.size() - 1];
+          bool rfc822_body_subtype = _part->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
+
+          if (rfc822_body_subtype)
           {
-            //additional rfc822 message header, store it to the rfc822 part header
-            _part->rfc822_part = true;
-            _part->rfc822_header = part.rfc822_header;
-            imap->_rfc822_part_count++;
-            _part->rfc822_msg_Idx = imap->_rfc822_part_count;
+            if (!_part->rfc822_part)
+            {
+              //additional rfc822 message header, store it to the rfc822 part header
+              _part->rfc822_part = true;
+              _part->rfc822_header = part.rfc822_header;
+              imap->_rfc822_part_count++;
+              _part->rfc822_msg_Idx = imap->_rfc822_part_count;
+            }
           }
         }
-
+        
         cHeader(imap)->part_headers.push_back(part);
         cHeader(imap)->message_data_count = cHeader(imap)->part_headers.size();
 
