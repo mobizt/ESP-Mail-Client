@@ -10,7 +10,7 @@ The library was test and work well with ESP32s and ESP8266s based modules.
 
 This library was developed to replace the obsoleted ESP32 Mail Client library which provides more options, features and reliabilities improvement and also conforms to the RFC standards.
 
-![ESP32 Mail](/media/images/esp-mail-client.png)
+![ESP32 Mail](/media/images/esp-mail-client.svg)
 
 Copyright (c) 2020 K. Suwatchai (Mobizt).
 
