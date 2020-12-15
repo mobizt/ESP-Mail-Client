@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.5
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.6
  * 
- * December 10, 2020
+ * December 15, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -4835,9 +4835,13 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
               //base64 response
               size_t olen;
               char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
-              decoded[olen] = 0;
-              s += decoded;
-              delS(decoded);
+              if (decoded && olen > 0)
+              {
+                olen += s.length();
+                s += decoded;
+                s[olen] = 0;
+                delete[] decoded;
+              }
             }
             esp_mail_debug(s.c_str());
             r.clear();
@@ -5555,7 +5559,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         part.partNumStr = cHeader(imap)->partNumStr;
         part.partNumFetchStr = cHeader(imap)->partNumStr;
-        if (cHeader(imap)->part_headers.size()> 0)
+        if (cHeader(imap)->part_headers.size() > 0)
         {
 
           esp_mail_message_part_info_t *_part = &cHeader(imap)->part_headers[cHeader(imap)->part_headers.size() - 1];
@@ -5573,7 +5577,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             }
           }
         }
-        
+
         cHeader(imap)->part_headers.push_back(part);
         cHeader(imap)->message_data_count = cHeader(imap)->part_headers.size();
 
@@ -6802,7 +6806,7 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   return out;
 exit:
   delete[] dtable;
-  return NULL;
+  return nullptr;
 }
 
 std::string ESP_Mail_Client::encodeBase64Str(const unsigned char *src, size_t len)
