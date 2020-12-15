@@ -94,7 +94,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   imap->checkUID();
   imap->checkPath();
 
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
     imap->_mailboxOpened = false;
 
   std::string buf;
@@ -121,7 +121,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   }
 
   //new session
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
   {
     //authenticate new
     if (!imapAuth(imap))
@@ -882,7 +882,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   if (!imap->httpClient.connect(secureMode))
     return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 
-  imap->_httpConnected = true;
+  imap->_tcpConnected = true;
   WiFiClient *stream = imap->httpClient.stream();
 #if defined(ESP32)
   stream->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC);
@@ -1109,7 +1109,7 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
     return 0;
   }
 
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -1162,7 +1162,7 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newli
     return 0;
   }
 
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -1211,7 +1211,7 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
     return 0;
   }
 
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -1270,7 +1270,7 @@ bool ESP_Mail_Client::_setFlag(IMAPSession *imap, int msgUID, const char *flag, 
   if (!reconnect(imap))
     return false;
 
-  if (!imap->_httpConnected)
+  if (!imap->_tcpConnected)
   {
     imap->_mailboxOpened = false;
     return false;
@@ -1473,7 +1473,7 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
     return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED);
 
   //server connected
-  smtp->_httpConnected = true;
+  smtp->_tcpConnected = true;
 
   if (smtp->_debug)
     debugInfoP(esp_mail_str_238);
@@ -1860,7 +1860,7 @@ bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   smtp->_chunkCount = 0;
 
   //new session
-  if (!smtp->_httpConnected)
+  if (!smtp->_tcpConnected)
   {
     if (!smtpAuth(smtp))
     {
@@ -3040,7 +3040,7 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
     return 0;
   }
 
-  if (!smtp->_httpConnected)
+  if (!smtp->_tcpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -3094,7 +3094,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
     return 0;
   }
 
-  if (!smtp->_httpConnected)
+  if (!smtp->_tcpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -3146,7 +3146,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
     return 0;
   }
 
-  if (!smtp->_httpConnected)
+  if (!smtp->_tcpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -3201,7 +3201,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
     return 0;
   }
 
-  if (!smtp->_httpConnected)
+  if (!smtp->_tcpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
     return 0;
@@ -3228,7 +3228,7 @@ bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
   if (err < 0)
     errorStatusCB(smtp, err);
 
-  if (smtp->_httpConnected)
+  if (smtp->_tcpConnected)
     closeTCP(smtp);
 
   return ret;
@@ -4733,7 +4733,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
 
   chunkBufSize = available(smtp);
 
-  while (smtp->_httpConnected && chunkBufSize <= 0)
+  while (smtp->_tcpConnected && chunkBufSize <= 0)
   {
     if (!reconnect(smtp, dataTime))
       return false;
@@ -4915,7 +4915,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
 void ESP_Mail_Client::closeTCP(SMTPSession *smtp)
 {
 
-  if (smtp->_httpConnected)
+  if (smtp->_tcpConnected)
   {
     if (smtp->httpClient.stream())
     {
@@ -4929,13 +4929,13 @@ void ESP_Mail_Client::closeTCP(SMTPSession *smtp)
     }
     _lastReconnectMillis = millis();
   }
-  smtp->_httpConnected = false;
+  smtp->_tcpConnected = false;
 }
 
 void ESP_Mail_Client::closeTCP(IMAPSession *imap)
 {
 
-  if (imap->_httpConnected)
+  if (imap->_tcpConnected)
   {
     if (imap->httpClient.stream())
     {
@@ -4949,7 +4949,7 @@ void ESP_Mail_Client::closeTCP(IMAPSession *imap)
     }
     _lastReconnectMillis = millis();
   }
-  imap->_httpConnected = false;
+  imap->_tcpConnected = false;
 }
 
 #if defined(ESP32)
@@ -5018,12 +5018,12 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 
   if (!status)
   {
-    if (smtp->_httpConnected)
+    if (smtp->_tcpConnected)
       closeTCP(smtp);
 
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
 
-    if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->_httpConnected)
+    if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->_tcpConnected)
     {
 #if defined(ESP32)
       esp_wifi_connect();
@@ -5072,7 +5072,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
   if (!status)
   {
 
-    if (imap->_httpConnected)
+    if (imap->_tcpConnected)
       closeTCP(imap);
 
     errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
@@ -5085,7 +5085,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
         cHeader(imap)->error_msg = imap->errorReason().c_str();
     }
 
-    if (millis() - _lastReconnectMillis > _reconnectTimeout && !imap->_httpConnected)
+    if (millis() - _lastReconnectMillis > _reconnectTimeout && !imap->_tcpConnected)
     {
 #if defined(ESP32)
       esp_wifi_connect();
@@ -5233,7 +5233,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
   char *tmp = nullptr;
   bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && strcmpP(cPart(imap)->content_transfer_encoding.c_str(), 0, esp_mail_str_31);
 
-  while (imap->_httpConnected && chunkBufSize <= 0)
+  while (imap->_tcpConnected && chunkBufSize <= 0)
   {
     if (!reconnect(imap, dataTime))
       return false;
@@ -6718,7 +6718,7 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
     }
   }
 
-  if (imap->_httpConnected)
+  if (imap->_tcpConnected)
     closeTCP(imap);
 
   imap->_cbData.empty();
@@ -7195,7 +7195,7 @@ IMAPSession::~IMAPSession()
 
 bool IMAPSession::closeSession()
 {
-  if (!_httpConnected)
+  if (!_tcpConnected)
     return false;
 #if defined(ESP32)
   /** 
@@ -7212,7 +7212,7 @@ bool IMAPSession::closeSession()
 bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
 {
 
-  if (_httpConnected)
+  if (_tcpConnected)
     MailClient.closeTCP(this);
 
   _sesson_cfg = sesssion;
@@ -7325,7 +7325,7 @@ String IMAPSession::errorReason()
 
 bool IMAPSession::selectFolder(const char *folderName, bool readOnly)
 {
-  if (_httpConnected)
+  if (_tcpConnected)
   {
     if (!openFolder(folderName, readOnly))
       return false;
@@ -7339,7 +7339,7 @@ bool IMAPSession::selectFolder(const char *folderName, bool readOnly)
 
 bool IMAPSession::openFolder(const char *folderName, bool readOnly)
 {
-  if (!_httpConnected)
+  if (!_tcpConnected)
     return false;
   if (readOnly)
     return openMailbox(folderName, esp_mail_imap_auth_mode::esp_mail_imap_mode_examine, true);
@@ -7349,14 +7349,14 @@ bool IMAPSession::openFolder(const char *folderName, bool readOnly)
 
 bool IMAPSession::getFolders(FoldersCollection &folders)
 {
-  if (!_httpConnected)
+  if (!_tcpConnected)
     return false;
   return getMailboxes(folders);
 }
 
 bool IMAPSession::closeFolder(const char *folderName)
 {
-  if (!_httpConnected)
+  if (!_tcpConnected)
     return false;
   return closeMailbox();
 }
@@ -7775,7 +7775,7 @@ SMTPSession::~SMTPSession()
 
 bool SMTPSession::connect(ESP_Mail_Session *config)
 {
-  if (_httpConnected)
+  if (_tcpConnected)
     MailClient.closeTCP(this);
 
   _sesson_cfg = config;
@@ -7888,7 +7888,7 @@ String SMTPSession::errorReason()
 
 bool SMTPSession::closeSession()
 {
-  if (!_httpConnected)
+  if (!_tcpConnected)
     return false;
 
   if (_sendCallback)

@@ -2326,7 +2326,7 @@ private:
   bool getMailboxes(FoldersCollection &flders);
   bool getCapability();
 
-  bool _httpConnected = false;
+  bool _tcpConnected = false;
   int _imapStatus = 0;
   std::string _errMsg = "";
   int _cMsgIdx = 0;
@@ -2454,7 +2454,7 @@ public:
   friend class ESP_Mail_Client;
 
 private:
-  bool _httpConnected = false;
+  bool _tcpConnected = false;
   int _smtpStatus = 0;
   int _sentSuccessCount = 0;
   int _sentFailedCount = 0;
