@@ -157,9 +157,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   if (imap->_currentFolder.length() == 0)
     return handleIMAPError(imap, IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED, false);
 
-  if (!imap->_mailboxOpened || (imap->_config->fetch.set_seen && !imap->_headerOnly))
+  if (!imap->_mailboxOpened || (imap->_config->fetch.set_seen && !imap->_headerOnly && imap->_readOnlyMode))
   {
-    if (!imap->openFolder(imap->_currentFolder.c_str(), imap->_readOnlyMode || imap->_config->fetch.set_seen))
+    if (!imap->openFolder(imap->_currentFolder.c_str(), imap->_readOnlyMode && !imap->_config->fetch.set_seen))
       return handleIMAPError(imap, IMAP_STATUS_OPEN_MAILBOX_FAILED, false);
   }
 
