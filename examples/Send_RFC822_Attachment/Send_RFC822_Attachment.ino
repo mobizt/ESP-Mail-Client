@@ -31,7 +31,11 @@
 #define WIFI_SSID "################"
 #define WIFI_PASSWORD "################"
 
-/* The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook */
+/** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com
+ * For yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ * and use the app password as password with your yahoo mail account to login
+*/
 #define SMTP_HOST "################"
 
 /** The smtp port e.g. 

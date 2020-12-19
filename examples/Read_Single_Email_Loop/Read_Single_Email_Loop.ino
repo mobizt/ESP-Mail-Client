@@ -219,6 +219,9 @@ void loop()
         /* Message UID to fetch or read */
         config.fetch.uid = uid.c_str();
 
+        /* Set seen flag */
+        //config.fetch.set_seen = true;
+
         /** Read or search the Email and keep the TCP session to open
          * The second parameter is for close the session.
         */

@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.7
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.8
  * 
- * December 19, 2020
+ * December 20, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -56,6 +56,12 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCa
   cmd += tmp;
   delS(tmp);
   appendP(cmd, esp_mail_str_147, false);
+  if (!imap->_config->fetch.set_seen)
+  {
+    appendP(cmd, esp_mail_str_152, false);
+    appendP(cmd, esp_mail_str_214, false);
+  }
+  appendP(cmd, esp_mail_str_218, false);
 
   switch (cmdCase)
   {
@@ -151,9 +157,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   if (imap->_currentFolder.length() == 0)
     return handleIMAPError(imap, IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED, false);
 
-  if (!imap->_mailboxOpened)
+  if (!imap->_mailboxOpened || (imap->_config->fetch.set_seen && !imap->_headerOnly))
   {
-    if (!imap->openFolder(imap->_currentFolder.c_str(), imap->_readOnlyMode))
+    if (!imap->openFolder(imap->_currentFolder.c_str(), imap->_readOnlyMode || imap->_config->fetch.set_seen))
       return handleIMAPError(imap, IMAP_STATUS_OPEN_MAILBOX_FAILED, false);
   }
 
@@ -329,6 +335,13 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     delS(tmp);
 
     appendP(cmd, esp_mail_str_147, false);
+    if (!imap->_config->fetch.set_seen)
+    {
+      appendP(cmd, esp_mail_str_152, false);
+      appendP(cmd, esp_mail_str_214, false);
+    }
+    appendP(cmd, esp_mail_str_218, false);
+
     appendP(cmd, esp_mail_str_144, false);
     appendP(cmd, esp_mail_str_156, false);
     if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -660,6 +673,12 @@ bool ESP_Mail_Client::getMultipartFechCmd(IMAPSession *imap, int msgIdx, std::st
   delS(tmp);
 
   appendP(partText, esp_mail_str_147, false);
+  if (!imap->_config->fetch.set_seen)
+  {
+    appendP(partText, esp_mail_str_152, false);
+    appendP(partText, esp_mail_str_214, false);
+  }
+  appendP(partText, esp_mail_str_218, false);
 
   for (size_t i = 0; i < imap->_multipart_levels.size(); i++)
   {
@@ -863,8 +882,12 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
   if (imap->_debug)
   {
-    debugInfoP(esp_mail_str_225);
     std::string s;
+    appendP(s, esp_mail_str_314, true);
+    s += ESP_MAIL_VERSION;
+    esp_mail_debug(s.c_str());
+
+    debugInfoP(esp_mail_str_225);
     appendP(s, esp_mail_str_261, true);
     appendP(s, esp_mail_str_211, false);
     s += imap->_sesson_cfg->server.host_name;
@@ -1078,7 +1101,7 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 
 void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error)
 {
-  imap->_imapStatus = error;
+  imap->_imapStatus.statusCode = error;
   std::string s;
   if (imap->_readCallback)
   {
@@ -1440,6 +1463,11 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
       smtp->_sesson_cfg->secure.startTLS = true;
 
     secureMode = !smtp->_sesson_cfg->secure.startTLS;
+
+    //to prevent to send the connection upgrade command when some server promotes
+    //the starttls capability even the current connection was already secured.
+    if (smtp->_sesson_cfg->server.port == esp_mail_smtp_port_465)
+      ssl = true;
   }
 
   setSecure(smtp->httpClient, smtp->_sesson_cfg, smtp->_caCert);
@@ -1450,6 +1478,10 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 
   if (smtp->_debug)
   {
+    appendP(s, esp_mail_str_314, true);
+    s += ESP_MAIL_VERSION;
+    esp_mail_debug(s.c_str());
+
     debugInfoP(esp_mail_str_236);
     appendP(s, esp_mail_str_261, true);
     appendP(s, esp_mail_str_211, false);
@@ -1577,7 +1609,7 @@ init:
     smtp->_secure = true;
 
     //return to initial state if the response status is 220.
-    if (smtp->_smtpStatus == esp_mail_smtp_status_code_220)
+    if (smtp->_smtpStatus.respCode == esp_mail_smtp_status_code_220)
       goto init;
   }
 
@@ -1661,7 +1693,7 @@ init:
     s += encodeBase64Str(tmp, p);
     delete[] tmp;
 
-    if (smtpSend(smtp, s.c_str(), true) == 0)
+    if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return false;
 
     smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth_plain;
@@ -1688,7 +1720,7 @@ init:
       esp_mail_debug(s.c_str());
     }
 
-    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email, strlen(smtp->_sesson_cfg->login.email)).c_str(), true) == 0)
+    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email, strlen(smtp->_sesson_cfg->login.email)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return false;
 
     smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_user;
@@ -1703,7 +1735,7 @@ init:
       esp_mail_debug(s.c_str());
     }
 
-    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password, strlen(smtp->_sesson_cfg->login.password)).c_str(), true) == 0)
+    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password, strlen(smtp->_sesson_cfg->login.password)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return false;
 
     smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_psw;
@@ -1850,7 +1882,9 @@ bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
 bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession)
 {
 
-  smtp->_smtpStatus = 0;
+  smtp->_smtpStatus.statusCode = 0;
+  smtp->_smtpStatus.respCode = 0;
+  smtp->_smtpStatus.text.clear();
   bool rfc822MSG = false;
 
   if (!checkEmail(smtp, msg))
@@ -3008,7 +3042,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const std
 
 void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
 {
-  smtp->_smtpStatus = error;
+  smtp->_smtpStatus.statusCode = error;
   std::string s;
 
   if (smtp->_sendCallback)
@@ -4727,7 +4761,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
   int chunkIndex = 0;
   int count = 0;
   bool completedResponse = false;
-  smtp->_smtpStatus = 0;
+  smtp->_smtpStatus.statusCode = 0;
+  smtp->_smtpStatus.respCode = 0;
+  smtp->_smtpStatus.text.clear();
   uint8_t minResLen = 5;
   struct esp_mail_smtp_response_status_t status;
 
@@ -4816,19 +4852,19 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
           getResponseStatus(response, respCode, 0, status);
 
           //get the status code again for unexpected return code
-          if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.code == 0)
+          if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.respCode == 0)
             getResponseStatus(response, esp_mail_smtp_status_code_0, 0, status);
 
-          ret = respCode == status.code;
-          smtp->_smtpStatus = status.code;
+          ret = respCode == status.respCode;
+          smtp->_smtpStatus = status;
 
-          if (status.code > 0 && (status.code < 400 || status.code == respCode))
+          if (status.respCode > 0 && (status.respCode < 400 || status.respCode == respCode))
             ret = true;
 
           if (smtp->_debug && strlen(response) >= minResLen)
           {
             appendP(s, esp_mail_str_260, true);
-            if (smtp->_smtpStatus != esp_mail_smtp_status_code_334)
+            if (smtp->_smtpStatus.respCode != esp_mail_smtp_status_code_334)
               s += response;
             else
             {
@@ -4847,13 +4883,13 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
             r.clear();
           }
 
-          completedResponse = smtp->_smtpStatus > 0 && status.text.length() > minResLen;
+          completedResponse = smtp->_smtpStatus.respCode > 0 && status.text.length() > minResLen;
 
-          if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth && smtp->_smtpStatus == esp_mail_smtp_status_code_334)
+          if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth && smtp->_smtpStatus.respCode == esp_mail_smtp_status_code_334)
           {
             if (authFailed(response, readLen, chunkIndex, 4))
             {
-              smtp->_smtpStatus = -1;
+              smtp->_smtpStatus.statusCode = -1;
               ret = false;
             }
           }
@@ -4900,7 +4936,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
     {
       tmp = newS(p2 + 1);
       memcpy(tmp, &buf[p1], p2);
-      status.code = atoi(tmp);
+      status.respCode = atoi(tmp);
       delS(tmp);
 
       p1 = p2 + 1;
@@ -5439,9 +5475,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
   if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && header.header_data_len == 0) || imapResp == esp_mail_imap_response_status::esp_mail_imap_resp_no)
   {
     if (imapResp == esp_mail_imap_response_status::esp_mail_imap_resp_no)
-      imap->_imapStatus = IMAP_STATUS_IMAP_RESPONSE_FAILED;
+      imap->_imapStatus.statusCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
     else
-      imap->_imapStatus = IMAP_STATUS_NO_MESSAGE;
+      imap->_imapStatus.statusCode = IMAP_STATUS_NO_MESSAGE;
 
     if (imap->_readCallback)
     {
@@ -5767,18 +5803,19 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
 
 esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *imap, char *response)
 {
+  imap->_imapStatus.text.clear();
   if (strposP(response, esp_mail_imap_response_1, 0) > -1)
     return esp_mail_imap_response_status::esp_mail_imap_resp_ok;
   else if (strposP(response, esp_mail_imap_response_2, 0) > -1)
   {
-    imap->_errMsg = response;
-    imap->_errMsg = imap->_errMsg.substr(strlen_P(esp_mail_imap_response_2));
+    imap->_imapStatus.text = response;
+    imap->_imapStatus.text = imap->_imapStatus.text.substr(strlen_P(esp_mail_imap_response_2));
     return esp_mail_imap_response_status::esp_mail_imap_resp_no;
   }
   else if (strposP(response, esp_mail_imap_response_3, 0) > -1)
   {
-    imap->_errMsg = response;
-    imap->_errMsg = imap->_errMsg.substr(strlen_P(esp_mail_imap_response_3));
+    imap->_imapStatus.text = response;
+    imap->_imapStatus.text = imap->_imapStatus.text.substr(strlen_P(esp_mail_imap_response_3));
     return esp_mail_imap_response_status::esp_mail_imap_resp_bad;
   }
   return esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
@@ -7261,31 +7298,19 @@ String IMAPSession::errorReason()
 {
   std::string ret;
 
-  switch (_imapStatus)
+  if (_imapStatus.text.length() > 0)
+    return _imapStatus.text.c_str();
+
+  switch (_imapStatus.statusCode)
   {
   case IMAP_STATUS_SERVER_CONNECT_FAILED:
     MailClient.appendP(ret, esp_mail_str_38, true);
-    break;
-  case IMAP_STATUS_IMAP_RESPONSE_FAILED:
-    ret = _errMsg;
-    break;
-  case IMAP_STATUS_LOGIN_FAILED:
-    ret = _errMsg;
-    break;
-  case IMAP_STATUS_BAD_COMMAND:
-    ret = _errMsg;
-    break;
-  case IMAP_STATUS_PARSE_FLAG_FAILED:
-    ret = _errMsg;
     break;
   case MAIL_CLIENT_ERROR_CONNECTION_LOST:
     MailClient.appendP(ret, esp_mail_str_221, true);
     break;
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:
     MailClient.appendP(ret, esp_mail_str_258, true);
-    break;
-  case IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED:
-    ret = _errMsg;
     break;
   case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
     MailClient.appendP(ret, esp_mail_str_305, true);
@@ -7710,6 +7735,140 @@ bool IMAPSession::getCapability()
   return true;
 }
 
+bool IMAPSession::createFolder(const char *folderName)
+{
+  if (_debug)
+  {
+    MailClient.imapCB(this, "", false);
+    MailClient.debugInfoP(esp_mail_str_320);
+  }
+
+  std::string cmd;
+  MailClient.appendP(cmd, esp_mail_str_322, true);
+  cmd += folderName;
+
+  if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    return false;
+
+  _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_create;
+  if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+    return false;
+
+  return true;
+}
+
+bool IMAPSession::deleteFolder(const char *folderName)
+{
+  if (_debug)
+  {
+    MailClient.imapCB(this, "", false);
+    MailClient.debugInfoP(esp_mail_str_321);
+  }
+
+  std::string cmd;
+  MailClient.appendP(cmd, esp_mail_str_323, true);
+  cmd += folderName;
+
+  if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    return false;
+
+  _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_delete;
+  if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+    return false;
+
+  return true;
+}
+
+bool IMAPSession::deleteMessages(MessageList *toDelete, bool expunge)
+{
+  if (toDelete->_list.size() > 0)
+  {
+
+    if (!selectFolder(_currentFolder.c_str(), false))
+      return false;
+
+    if (_debug)
+    {
+      MailClient.imapCB(this, "", false);
+      MailClient.debugInfoP(esp_mail_str_316);
+    }
+
+    std::string cmd;
+    char *tmp = nullptr;
+    MailClient.appendP(cmd, esp_mail_str_249, true);
+    for (size_t i = 0; i < toDelete->_list.size(); i++)
+    {
+      if (i > 0)
+        MailClient.appendP(cmd, esp_mail_str_263, false);
+      tmp = MailClient.intStr(toDelete->_list[i]);
+      cmd += tmp;
+      MailClient.delS(tmp);
+    }
+    MailClient.appendP(cmd, esp_mail_str_315, false);
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+      return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_store;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+      return false;
+
+    if (expunge)
+    {
+      if (MailClient.imapSendP(this, esp_mail_str_317, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_expunge;
+      if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+    }
+  }
+
+  return true;
+}
+
+bool IMAPSession::copyMessages(MessageList *toCopy, const char* dest)
+{
+  if (toCopy->_list.size() > 0)
+  {
+
+    if (!selectFolder(_currentFolder.c_str(), false))
+      return false;
+
+    if (_debug)
+    {
+      MailClient.imapCB(this, "", false);
+      std::string s;
+      MailClient.appendP(s, esp_mail_str_318, true);
+      s += dest;
+      esp_mail_debug(s.c_str());
+    }
+
+    std::string cmd;
+    char *tmp = nullptr;
+    MailClient.appendP(cmd, esp_mail_str_319, true);
+    for (size_t i = 0; i < toCopy->_list.size(); i++)
+    {
+      if (i > 0)
+        MailClient.appendP(cmd, esp_mail_str_263, false);
+      tmp = MailClient.intStr(toCopy->_list[i]);
+      cmd += tmp;
+      MailClient.delS(tmp);
+    }
+    MailClient.appendP(cmd, esp_mail_str_131, false);
+    cmd += dest;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+      return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_store;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+      return false;
+  }
+
+  return true;
+}
+
 #if defined(ESP8266)
 void ESP_Mail_Client::setClock(float offset)
 {
@@ -7821,7 +7980,18 @@ void SMTPSession::debug(int level)
 String SMTPSession::errorReason()
 {
   std::string ret;
-  switch (_smtpStatus)
+  if (_smtpStatus.text.length() > 0)
+  {
+    MailClient.appendP(ret, esp_mail_str_312, true);
+    char *code = MailClient.intStr(_smtpStatus.respCode);
+    ret += code;
+    MailClient.delS(code);
+    MailClient.appendP(ret, esp_mail_str_313, false);
+    ret += _smtpStatus.text;
+    return ret.c_str();
+  }
+
+  switch (_smtpStatus.statusCode)
   {
   case SMTP_STATUS_SERVER_CONNECT_FAILED:
     MailClient.appendP(ret, esp_mail_str_38, true);

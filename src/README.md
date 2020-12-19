@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.0.7) are showed below.
+The detail and usage of the available functions in the latest version (1.0.8) are showed below.
 
 
 ## Global functions
@@ -252,6 +252,71 @@ return **`boolean`** The boolean value which indicates the success of operation.
 ```C++
 bool closeFolder(const char *folderName);
 ```
+
+
+
+
+
+
+#### Create folder. 
+
+param **`folderName`** The name of folder to create.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool createFolder(const char *folderName);
+```
+
+
+
+
+
+
+#### Delete folder. 
+
+param **`folderName`** The name of folder to delete..
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool deleteFolder(const char *folderName);
+```
+
+
+
+
+
+
+#### Copy the messages to the defined mailbox folder. 
+
+param **`toCopy`** The pointer to the MessageList class that contains the list of messages to copy.
+
+param **`dest`** The destination folder that the messages to copy to.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool copyMessages(MessageList *toCopy, const char *dest);
+```
+
+
+
+
+
+#### Delete the messages in the opened mailbox folder. 
+
+param **`toDelete`** The pointer to the MessageList class that contains the list of messages to delete.
+
+param **`expunge`** The boolean option to expunge all messages.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool deleteMessages(MessageList *toDelete, bool expunge = false);
+```
+
+
 
 
 

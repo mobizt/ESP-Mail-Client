@@ -122,6 +122,9 @@ void setup()
     /* Message UID to fetch or read e.g. 100 */
     config.fetch.uid = "100";
 
+    /* Set seen flag */
+    //config.fetch.set_seen = true;
+
     /* Search criteria */
     config.search.criteria = "";
 

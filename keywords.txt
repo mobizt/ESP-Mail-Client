@@ -21,6 +21,7 @@ SMTP_Attachment KEYWORD1
 SMTP_Result KEYWORD1
 IMAP_MSG_Item   KEYWORD1
 Content_Transfer_Encoding   KEYWORD1
+MessageList   KEYWORD1
 
 ###############################################
 # Methods and Functions (KEYWORD2)
@@ -92,6 +93,10 @@ getCurrentSecond    KEYWORD2
 getCurrentTimestamp KEYWORD2
 getTimeFromSec  KEYWORD2
 getDateTimeString   KEYWORD2
+copyMessages    KEYWORD2
+deleteMessages  KEYWORD2
+createFolder    KEYWORD2
+deleteFolder    KEYWORD2
 
 
 #######################################

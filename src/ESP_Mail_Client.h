@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.7
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.8
  * 
- * December 19, 2020
+ * December 20, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading).
@@ -32,6 +32,8 @@
 
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
+
+#define ESP_MAIL_VERSION "1.0.8"
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
@@ -271,7 +273,10 @@ enum esp_mail_imap_command
   esp_mail_imap_cmd_fetch_body_attachment,
   esp_mail_imap_cmd_fetch_body_inline,
   esp_mail_imap_cmd_logout,
-  esp_mail_imap_cmd_store
+  esp_mail_imap_cmd_store,
+  esp_mail_imap_cmd_expunge,
+  esp_mail_imap_cmd_create,
+  esp_mail_imap_cmd_delete
 };
 
 enum esp_mail_imap_mime_fetch_type
@@ -556,7 +561,14 @@ struct esp_mail_content_transfer_encoding_t
 
 struct esp_mail_smtp_response_status_t
 {
-  int code = 0;
+  int respCode = 0;
+  int statusCode = 0;
+  std::string text = "";
+};
+
+struct esp_mail_imap_response_status_t
+{
+  int statusCode = 0;
   std::string text = "";
 };
 
@@ -1029,6 +1041,9 @@ struct esp_mail_imap_fetch_config_t
 {
   /* The UID of message to fetch */
   const char *uid = "";
+
+  /* Set the message flag as seen */
+  bool set_seen = false;
 };
 
 struct esp_mail_imap_read_config_t
@@ -1333,7 +1348,7 @@ static const char esp_mail_str_143[] PROGMEM = "$ FETCH ";
 static const char esp_mail_str_144[] PROGMEM = "HEADER.FIELDS (SUBJECT FROM TO DATE CC Message-ID Accept-Language content-type Content-transfer-encoding Content-Language)";
 static const char esp_mail_str_145[] PROGMEM = "Keyword: ";
 static const char esp_mail_str_146[] PROGMEM = "$ LOGOUT";
-static const char esp_mail_str_147[] PROGMEM = " BODY.PEEK[";
+static const char esp_mail_str_147[] PROGMEM = " BODY";
 static const char esp_mail_str_148[] PROGMEM = ".MIME]";
 static const char esp_mail_str_149[] PROGMEM = "Bcc: ";
 static const char esp_mail_str_150[] PROGMEM = "Sender: ";
@@ -1497,6 +1512,18 @@ static const char esp_mail_str_308[] PROGMEM = "> C: reading plain TEXT message"
 static const char esp_mail_str_309[] PROGMEM = "> C: reading HTML message";
 static const char esp_mail_str_310[] PROGMEM = "> C: performing the SSL handshaking";
 static const char esp_mail_str_311[] PROGMEM = "STARTTLS\r\n";
+static const char esp_mail_str_312[] PROGMEM = "code: ";
+static const char esp_mail_str_313[] PROGMEM = ", text: ";
+static const char esp_mail_str_314[] PROGMEM = "> C: ESP Mail Client v";
+static const char esp_mail_str_315[] PROGMEM = " +FLAGS.SILENT (\\Deleted)";
+static const char esp_mail_str_316[] PROGMEM = "> C: delete message(s)";
+static const char esp_mail_str_317[] PROGMEM = "$ EXPUNGE";
+static const char esp_mail_str_318[] PROGMEM = "> C: copy message(s) to ";
+static const char esp_mail_str_319[] PROGMEM = "$ UID COPY ";
+static const char esp_mail_str_320[] PROGMEM = "> C: create folder";
+static const char esp_mail_str_321[] PROGMEM = "> C: delete folder";
+static const char esp_mail_str_322[] PROGMEM = "$ CREATE ";
+static const char esp_mail_str_323[] PROGMEM = "$ DELETE ";
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -1565,6 +1592,27 @@ compFunc(uint32_t i, uint32_t j)
   return (i > j);
 }
 
+class MessageList
+{
+public:
+  friend class IMAPSession;
+  MessageList(){};
+  ~MessageList() { clear(); };
+  void add(int uid)
+  {
+    if (uid > 0)
+      _list.push_back(uid);
+  }
+
+  void clear()
+  {
+    _list.clear();
+  }
+
+private:
+  std::vector<int> _list = std::vector<int>();
+};
+
 /* The class that provides the info of selected or opened mailbox folder */
 class SelectedFolderInfo
 {
@@ -1593,33 +1641,26 @@ public:
   String flag(size_t index)
   {
     if (index < _flags.size())
-      return _flags[index];
+      return _flags[index].c_str();
     return "";
   }
 
 private:
   void addFlag(const char *flag)
   {
-    char *f = new char[strlen(flag) + 1];
-    memset(f, 0, strlen(flag) + 1);
-    strcpy(f, flag);
-    _flags.push_back(f);
-    delete[] f;
+    _flags.push_back(flag);
   };
   void clear()
   {
     for (size_t i = 0; i < _flags.size(); i++)
-    {
-      if (*_flags[i] != 0)
-        delete[] _flags[i];
-    }
+      std::string().swap(_flags[i]);
     _flags.clear();
   }
   size_t _msgCount = 0;
   size_t _nextUID = 0;
   size_t _searchCount = 0;
   size_t _availableItems = 0;
-  std::vector<const char *> _flags = std::vector<const char *>();
+  std::vector<std::string> _flags = std::vector<std::string>();
 };
 
 /* The class that provides the list of FolderInfo e.g. name, attributes and delimiter */
@@ -2067,7 +2108,6 @@ private:
   RFC2047_Decoder RFC2047Decoder;
   File file;
 
-  int _imapStatus = 0;
   bool _sdOk = false;
   bool _flashOk = false;
   bool _sdConfigSet = false;
@@ -2214,7 +2254,7 @@ private:
   bool _setFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
   void createDirs(std::string dirs);
   bool sdTest();
-  };
+};
 
 class IMAPSession
 {
@@ -2279,6 +2319,36 @@ public:
   */
   bool closeFolder(const char *folderName);
 
+  /** Create folder. 
+   * 
+   * @param folderName The name of folder to create.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool createFolder(const char *folderName);
+
+  /** Delete folder. 
+   * 
+   * @param folderName The name of folder to delete.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool deleteFolder(const char *folderName);
+
+  /** Copy the messages to the defined mailbox folder. 
+   * 
+   * @param toCopy The pointer to the MessageListList class that contains the list of messages to copy.
+   * @param dest The destination folder that the messages to copy to.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool copyMessages(MessageList *toCopy, const char* dest);
+
+  /** Delete the messages in the opened mailbox folder. 
+   * 
+   * @param toDelete The pointer to the MessageListList class that contains the list of messages to delete.
+   * @param expunge The boolean option to expunge all messages.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool deleteMessages(MessageList *toDelete, bool expunge = false);
+
   /** Assign the callback function that returns the operating status when fetching or reading the Email.
    * 
    * @param imapCallback The function that accepts the imapStatusCallback as parameter.
@@ -2328,8 +2398,7 @@ private:
   bool getCapability();
 
   bool _tcpConnected = false;
-  int _imapStatus = 0;
-  std::string _errMsg = "";
+  esp_mail_imap_response_status_t _imapStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
   int _totalRead = 0;
@@ -2456,7 +2525,7 @@ public:
 
 private:
   bool _tcpConnected = false;
-  int _smtpStatus = 0;
+  esp_mail_smtp_response_status_t _smtpStatus;
   int _sentSuccessCount = 0;
   int _sentFailedCount = 0;
   bool _chunkedEnable = false;
