@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.8
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.9
  * 
- * December 20, 2020
+ * December 29, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -4168,7 +4168,7 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
   char *tmp = nullptr;
   if (chunkIdx == 0)
   {
-    if (strposP(buf, esp_mail_str_144, 0) != -1)
+    if (strposP(buf, esp_mail_str_324, 0) != -1 && buf[0] == '*')
       chunkIdx++;
 
     tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0);
@@ -4278,7 +4278,6 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
 
 void ESP_Mail_Client::setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state)
 {
-
   switch (state)
   {
   case esp_mail_imap_header_state::esp_mail_imap_state_from:
@@ -5414,7 +5413,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
               int _st = headerState;
               handleHeader(imap, response, readLen, chunkIdx, header, headerState, octetCount);
-              if (_st == headerState && octetCount <= header.header_data_len)
+              if (_st == headerState && headerState > 0 && octetCount <= header.header_data_len)
                 setHeader(imap, response, header, headerState);
             }
             else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_mime)
@@ -7827,7 +7826,7 @@ bool IMAPSession::deleteMessages(MessageList *toDelete, bool expunge)
   return true;
 }
 
-bool IMAPSession::copyMessages(MessageList *toCopy, const char* dest)
+bool IMAPSession::copyMessages(MessageList *toCopy, const char *dest)
 {
   if (toCopy->_list.size() > 0)
   {

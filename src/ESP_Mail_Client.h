@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.8
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.9
  * 
- * December 20, 2020
+ * December 29, 2020
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading).
@@ -1524,6 +1524,7 @@ static const char esp_mail_str_320[] PROGMEM = "> C: create folder";
 static const char esp_mail_str_321[] PROGMEM = "> C: delete folder";
 static const char esp_mail_str_322[] PROGMEM = "$ CREATE ";
 static const char esp_mail_str_323[] PROGMEM = "$ DELETE ";
+static const char esp_mail_str_324[] PROGMEM = "HEADER.FIELDS";
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -1538,10 +1539,11 @@ static const char esp_mail_smtp_response_10[] PROGMEM = "PIPELINING";
 static const char esp_mail_smtp_response_11[] PROGMEM = " CRAM-MD5";
 static const char esp_mail_smtp_response_12[] PROGMEM = " DIGEST-MD5";
 static const char esp_mail_smtp_response_13[] PROGMEM = "DSN";
-
+//Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "$ OK ";
 static const char esp_mail_imap_response_2[] PROGMEM = "$ NO ";
 static const char esp_mail_imap_response_3[] PROGMEM = "$ BAD ";
+//Untagged
 static const char esp_mail_imap_response_4[] PROGMEM = "* LIST ";
 static const char esp_mail_imap_response_5[] PROGMEM = "* FLAGS ";
 static const char esp_mail_imap_response_6[] PROGMEM = "* SEARCH ";

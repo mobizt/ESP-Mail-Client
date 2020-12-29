@@ -199,7 +199,7 @@ void setup()
     /** Set \Seen and \Answered to flags for message with UID 100
      * The seesion will keep open.
     */
-    if (MailClient.setFlag(imap, 100, "\\Seen \\Answered", false))
+    if (MailClient.setFlag(&imap, 100, "\\Seen \\Answered", false))
         Serial.println("Setting FLAG success");
     else
         Serial.println("Error, setting FLAG");
