@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.0.9) are showed below.
+The detail and usage of the available functions in the latest version (1.0.10) are showed below.
 
 
 ## Global functions

@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.9
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.10
  * 
- * December 29, 2020
+ * January 2, 2021
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -1824,11 +1824,11 @@ bool ESP_Mail_Client::sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeS
 void ESP_Mail_Client::getMIME(const char *ext, std::string &mime)
 {
   mime = "";
-  for (int i = 0; i < maxType; i++)
+  for (int i = 0; i < esp_mail_file_extension_maxType; i++)
   {
-    if (strcmp_P(ext, MIMEInfo[i].endsWith) == 0)
+    if (strcmp_P(ext, mimeinfo[i].endsWith) == 0)
     {
-      char *tmp = strP(MIMEInfo[i].mimeType);
+      char *tmp = strP(mimeinfo[i].mimeType);
       mime = tmp;
       delS(tmp);
       break;
