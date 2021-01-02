@@ -225,7 +225,7 @@ for (size_t i = 0; i < msgList.msgItems.size(); i++)
 
 The MIT License (MIT)
 
-Copyright (c) 2020 K. Suwatchai (Mobizt)
+Copyright (c) 2021 K. Suwatchai (Mobizt)
 
 
 Permission is hereby granted, free of charge, to any person returning a copy of
