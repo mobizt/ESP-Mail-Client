@@ -1,8 +1,8 @@
 /*
- *Customized ssl_client.h to support STARTTLS protocol, version 1.0.4
+ *Customized ssl_client.h to support STARTTLS protocol, version 1.0.5
  * 
  * The MIT License (MIT)
- * Copyright (c) 2019 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -69,7 +69,7 @@ static const char esp_ssl_client_str_26[] PROGMEM = "!E: fingerprint doesn't mat
 
 typedef void (*DebugMsgCallback)(const char *msg);
 
-typedef struct sslclient_context32
+typedef struct esp_mail_ssl_ctx32
 {
     int socket;
     mbedtls_ssl_context ssl_ctx;
@@ -85,20 +85,20 @@ typedef struct sslclient_context32
     DebugMsgCallback _debugCallback;
 
     unsigned long handshake_timeout;
-} sslclient_context32;
+} esp_mail_ssl_ctx32;
 
-void ssl_init(sslclient_context32 *ssl_client);
-int start_socket(sslclient_context32 *ssl_client, const char *host, uint32_t port, int timeout);
-int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey);
-void stop_ssl_socket(sslclient_context32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key);
-int data_to_read(sslclient_context32 *ssl_client);
-int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t len);
-int get_ssl_receive(sslclient_context32 *ssl_client, uint8_t *data, int length);
-bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, const char *domain_name);
-bool verify_ssl_dn(sslclient_context32 *ssl_client, const char *domain_name);
-int _ns_lwip_write(sslclient_context32 *ssl_client, const char *buf, int bufLen);
-int _ns_lwip_read(sslclient_context32 *ssl_client, char *buf, int bufLen);
-void ssl_client_debug_pgm_send_cb(sslclient_context32 *ssl_client, PGM_P info);
+void ssl_init(esp_mail_ssl_ctx32 *ssl_client);
+int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout);
+int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey);
+void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+int data_to_read(esp_mail_ssl_ctx32 *ssl_client);
+int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t len);
+int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length);
+bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name);
+bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name);
+int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen);
+int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen);
+void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info);
 
 #endif //ESP32
 

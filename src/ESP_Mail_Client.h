@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.10
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.11
  * 
- * January 2, 2021
+ * January 7, 2021
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading).
@@ -9,7 +9,7 @@
  * The library supports all Espressif's ESP32 and ESP8266 MCUs based modules.
  * 
  * The MIT License (MIT)
- * Copyright (c) 2020 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -1359,7 +1359,7 @@ static const char esp_mail_str_154[] PROGMEM = "Remove FLAG";
 static const char esp_mail_str_155[] PROGMEM = "Add FLAG";
 static const char esp_mail_str_156[] PROGMEM = "]";
 static const char esp_mail_str_157[] PROGMEM = "Set FLAG";
-static const char esp_mail_str_158[] PROGMEM = "the file does not exist or can't access";
+static const char esp_mail_str_158[] PROGMEM = "file does not exist or can't access";
 static const char esp_mail_str_159[] PROGMEM = "msg.html";
 static const char esp_mail_str_160[] PROGMEM = "upload ";
 static const char esp_mail_str_161[] PROGMEM = "/msg";

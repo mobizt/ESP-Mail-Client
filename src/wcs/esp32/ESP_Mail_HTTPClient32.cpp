@@ -1,11 +1,10 @@
 /*
  * Customized version of ESP32 HTTPClient Library. 
- * Allow custom header and payload with STARTTLS support
  * 
- * v 1.1.0
+ * v 1.1.1
  * 
  * The MIT License (MIT)
- * Copyright (c) 2019 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * HTTPClient Arduino library for ESP32
  *
@@ -39,7 +38,7 @@
 
 ESP_Mail_HTTPClient32::ESP_Mail_HTTPClient32()
 {
-    transportTraits = TransportTraitsPtr(new TLSTraits(nullptr));
+    transportTraits = ESP_Mail_TransportTraitsPtr(new ESP_Mail_TLSTraits(nullptr));
     _wcs = transportTraits->create();
 }
 
@@ -191,7 +190,7 @@ void ESP_Mail_HTTPClient32::setCACert(const char *caCert)
     if (caCert)
     {
         transportTraits.reset(nullptr);
-        transportTraits = TransportTraitsPtr(new TLSTraits(caCert));
+        transportTraits = ESP_Mail_TransportTraitsPtr(new ESP_Mail_TLSTraits(caCert));
         _certType = 1;
     }
     else
@@ -238,7 +237,7 @@ void ESP_Mail_HTTPClient32::setCertFile(const char *caCertFile, esp_mail_file_st
             f.close();
 
             transportTraits.reset(nullptr);
-            transportTraits = TransportTraitsPtr(new TLSTraits(_cacert.get()));
+            transportTraits = ESP_Mail_TransportTraitsPtr(new ESP_Mail_TLSTraits(_cacert.get()));
         }
     }
 }

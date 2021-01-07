@@ -1,8 +1,8 @@
 /*
- *Customized WiFiClientSecure.cpp version 1.0.2
+ *Customized WiFiClientSecure.cpp version 1.0.3
  * 
  * The MIT License (MIT)
- * Copyright (c) 2020 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -61,7 +61,7 @@ ESP_Mail_WCS32::ESP_Mail_WCS32()
 {
     _connected = false;
 
-    sslclient = new sslclient_context32;
+    sslclient = new esp_mail_ssl_ctx32;
     ssl_init(sslclient);
     sslclient->socket = -1;
     sslclient->handshake_timeout = 120000;
@@ -78,7 +78,7 @@ ESP_Mail_WCS32::ESP_Mail_WCS32(int sock)
     _connected = false;
     _timeout = 0;
 
-    sslclient = new sslclient_context32;
+    sslclient = new esp_mail_ssl_ctx32;
     ssl_init(sslclient);
     sslclient->socket = sock;
     sslclient->handshake_timeout = 120000;
@@ -99,7 +99,7 @@ ESP_Mail_WCS32::ESP_Mail_WCS32(int sock)
 ESP_Mail_WCS32::ESP_Mail_WCS32(bool secured)
 {
     _connected = false;
-    sslclient = new sslclient_context32;
+    sslclient = new esp_mail_ssl_ctx32;
     ssl_init(sslclient);
     sslclient->socket = -1;
     sslclient->handshake_timeout = 120000;

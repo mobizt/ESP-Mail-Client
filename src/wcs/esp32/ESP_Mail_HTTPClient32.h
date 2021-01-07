@@ -1,11 +1,10 @@
 /*
  * Customized version of ESP32 HTTPClient Library. 
- * Allow custom header and payload with STARTTLS support
  * 
- * v 1.1.0
+ * v 1.1.1
  * 
  * The MIT License (MIT)
- * Copyright (c) 2019 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * HTTPClient Arduino library for ESP32
  *
@@ -58,10 +57,10 @@ enum esp_mail_file_storage_type
   esp_mail_file_storage_type_sd
 };
 
-class TransportTraits
+class ESP_Mail_TransportTraits
 {
 public:
-  virtual ~TransportTraits() {}
+  virtual ~ESP_Mail_TransportTraits() {}
 
   virtual std::unique_ptr<ESP_Mail_WCS32> create()
   {
@@ -75,10 +74,10 @@ public:
   }
 };
 
-class TLSTraits : public TransportTraits
+class ESP_Mail_TLSTraits : public ESP_Mail_TransportTraits
 {
 public:
-  TLSTraits(const char *CAcert, const char *clicert = nullptr, const char *clikey = nullptr) : _cacert(CAcert), _clicert(clicert), _clikey(clikey) {}
+  ESP_Mail_TLSTraits(const char *CAcert, const char *clicert = nullptr, const char *clikey = nullptr) : _cacert(CAcert), _clicert(clicert), _clikey(clikey) {}
 
   std::unique_ptr<ESP_Mail_WCS32> create() override
   {
@@ -102,7 +101,7 @@ protected:
   const char *_clikey;
 };
 
-typedef std::unique_ptr<TransportTraits> TransportTraitsPtr;
+typedef std::unique_ptr<ESP_Mail_TransportTraits> ESP_Mail_TransportTraitsPtr;
 
 class ESP_Mail_HTTPClient32
 {
@@ -166,7 +165,7 @@ public:
 
 protected:
   DebugMsgCallback _debugCallback = NULL;
-  TransportTraitsPtr transportTraits;
+  ESP_Mail_TransportTraitsPtr transportTraits;
   std::unique_ptr<ESP_Mail_WCS32> _wcs;
   std::unique_ptr<char> _cacert;
 

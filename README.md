@@ -1,18 +1,18 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.10
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.11
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The complete and secure Mail Client for ESP32 and ESP8266 devices for sending and reading the Email through the SMTP and IMAP servers.
 
-This library allows the devices to send and read Email with the many options and features e.g. the attachments, inline images, embeded rfc822 messages are supported for upload when sending and download when reading the Emails.
+With this library, the devices can both send and read the Email with many types of attachments supported and provides more reliable and flexible of usages.
 
 The library was test and work well with ESP32s and ESP8266s based modules.
 
-This library was developed to replace the obsoleted ESP32 Mail Client library which provides more options, features and reliabilities improvement and also conforms to the RFC standards.
+This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
 ![ESP32 Mail](/media/images/esp-mail-client.svg)
 
-Copyright (c) 2020 K. Suwatchai (Mobizt).
+Copyright (c) 2021 K. Suwatchai (Mobizt).
 
 # Features
 

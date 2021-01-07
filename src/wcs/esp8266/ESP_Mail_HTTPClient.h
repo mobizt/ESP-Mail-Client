@@ -1,8 +1,8 @@
 /*
- * HTTP Client for ESP8266 wrapper v1.0.0
+ * HTTP Client for ESP8266 wrapper v1.0.1
  * 
  * The MIT License (MIT)
- * Copyright (c) 2020 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -57,7 +57,7 @@
 #if ARDUINO_ESP8266_GIT_VER != 0xf6d232f1 && ARDUINO_ESP8266_GIT_VER != 0x0c897c37 && ARDUINO_ESP8266_GIT_VER != 0x4ceabea9 && ARDUINO_ESP8266_GIT_VER != 0x614f7c32 && ARDUINO_ESP8266_GIT_VER != 0xbb28d4a3
 #include "ESP_Mail_WCS.h"
 #include "ESP_Mail_BearSSLHelpers.h"
-#define SSL_CLIENT ESP_Mail::ESP_Mail_WCS
+#define ESP_MAIL_SSL_CLIENT ESP_Mail::ESP_Mail_WCS
 #else
 #error Please update the ESP8266 Arduino Core SDK to latest version.
 #endif
@@ -138,7 +138,7 @@ public:
   ;
 
 private:
-  std::unique_ptr<SSL_CLIENT> _wcs = std::unique_ptr<SSL_CLIENT>(new SSL_CLIENT());
+  std::unique_ptr<ESP_MAIL_SSL_CLIENT> _wcs = std::unique_ptr<ESP_MAIL_SSL_CLIENT>(new ESP_MAIL_SSL_CLIENT());
   std::unique_ptr<char> _cacert;
   std::string _host = "";
   uint16_t _port = 0;

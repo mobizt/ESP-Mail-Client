@@ -1,9 +1,9 @@
 
 /*
- *Customized WiFiClientSecure.h version 1.0.2
+ *Customized WiFiClientSecure.h version 1.0.3
  * 
  * The MIT License (MIT)
- * Copyright (c) 2020 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -59,7 +59,7 @@ typedef void (*DebugMsgCallback)(const char *msg);
 class ESP_Mail_WCS32 : public WiFiClient
 {
 protected:
-    sslclient_context32 *sslclient;
+    esp_mail_ssl_ctx32 *sslclient;
 
     int _lastError = 0;
     int _peek = -1;

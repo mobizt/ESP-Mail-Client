@@ -1,8 +1,8 @@
 /*
- *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.4
+ *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.5
  * 
  * The MIT License (MIT)
- * Copyright (c) 2019 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -66,7 +66,7 @@ static int handle_error(int err)
     return err;
 }
 
-void ssl_init(sslclient_context32 *ssl_client)
+void ssl_init(esp_mail_ssl_ctx32 *ssl_client)
 {
     mbedtls_ssl_init(&ssl_client->ssl_ctx);
     mbedtls_ssl_config_init(&ssl_client->ssl_conf);
@@ -74,7 +74,7 @@ void ssl_init(sslclient_context32 *ssl_client)
     mbedtls_net_init(&ssl_client->server_fd);
 }
 
-int start_socket(sslclient_context32 *ssl_client, const char *host, uint32_t port, int timeout)
+int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout)
 {
     int enable = 1;
 
@@ -136,7 +136,7 @@ int start_socket(sslclient_context32 *ssl_client, const char *host, uint32_t por
     return ssl_client->socket;
 }
 
-int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey)
+int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey)
 {
     char buf[512];
     int ret, flags;
@@ -446,7 +446,7 @@ int start_ssl_client(sslclient_context32 *ssl_client, const char *host, uint32_t
     return ssl_client->socket;
 }
 
-void stop_ssl_socket(sslclient_context32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
     if (ssl_client->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_22);
@@ -464,7 +464,7 @@ void stop_ssl_socket(sslclient_context32 *ssl_client, const char *rootCABuff, co
     mbedtls_entropy_free(&ssl_client->entropy_ctx);
 }
 
-int data_to_read(sslclient_context32 *ssl_client)
+int data_to_read(esp_mail_ssl_ctx32 *ssl_client)
 {
     int ret, res;
     ret = mbedtls_ssl_read(&ssl_client->ssl_ctx, NULL, 0);
@@ -491,7 +491,7 @@ int data_to_read(sslclient_context32 *ssl_client)
     return res;
 }
 
-int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t len)
+int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t len)
 {
 
     log_v("Writing HTTP request..."); //for low level debug
@@ -510,7 +510,7 @@ int send_ssl_data(sslclient_context32 *ssl_client, const uint8_t *data, uint16_t
     return ret;
 }
 
-int get_ssl_receive(sslclient_context32 *ssl_client, uint8_t *data, int length)
+int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length)
 {
 
     //log_d( "Reading HTTP response...");   //for low level debug
@@ -574,7 +574,7 @@ static bool matchName(const std::string &name, const std::string &domainName)
 }
 
 // Verifies certificate provided by the peer to match specified SHA256 fingerprint
-bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, const char *domain_name)
+bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name)
 {
     // Convert hex string to byte array
     uint8_t fingerprint_local[32];
@@ -641,7 +641,7 @@ bool verify_ssl_fingerprint(sslclient_context32 *ssl_client, const char *fp, con
 }
 
 // Checks if peer certificate has specified domain in CN or SANs
-bool verify_ssl_dn(sslclient_context32 *ssl_client, const char *domain_name)
+bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name)
 {
     log_d("domain name: '%s'", (domain_name) ? domain_name : "(null)");
     std::string domain_name_str(domain_name);
@@ -688,12 +688,12 @@ bool verify_ssl_dn(sslclient_context32 *ssl_client, const char *domain_name)
     return false;
 }
 
-int _ns_lwip_write(sslclient_context32 *ssl_client, const char *buf, int bufLen)
+int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen)
 {
     return lwip_write(ssl_client->socket, buf, bufLen);
 }
 
-int _ns_lwip_read(sslclient_context32 *ssl_client, char *buf, int bufLen)
+int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen)
 {
     fd_set readset;
     fd_set writeset;
@@ -719,7 +719,7 @@ int _ns_lwip_read(sslclient_context32 *ssl_client, char *buf, int bufLen)
     return read(ssl_client->socket, buf, bufLen);
 }
 
-void ssl_client_debug_pgm_send_cb(sslclient_context32 *ssl_client, PGM_P info)
+void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info)
 {
     size_t dbgInfoLen = strlen_P(info) + 1;
     char *dbgInfo = new char[dbgInfoLen];

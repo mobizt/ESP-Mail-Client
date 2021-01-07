@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.0.10) are showed below.
+The detail and usage of the available functions in the latest version (1.0.11) are showed below.
 
 
 ## Global functions
@@ -1927,7 +1927,7 @@ String getDateTimeString();
 
 The MIT License (MIT)
 
-Copyright (c) 2020 K. Suwatchai (Mobizt)
+Copyright (c) 2021 K. Suwatchai (Mobizt)
 
 
 Permission is hereby granted, free of charge, to any person returning a copy of
