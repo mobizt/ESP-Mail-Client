@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.11
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.12
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -84,8 +84,8 @@ ESP_Mail_Session session;
 // Set the session config
 session.server.host_name = "smtp.office365.com"; //for outlook.com
 session.server.port = 587;
-session.login.email = "your Email address";
-session.login.password = "your Email password";
+session.login.email = "your Email address"; //set to empty for no SMTP Authentication
+session.login.password = "your Email password"; //set to empty for no SMTP Authentication
 session.login.user_domain = "your domain or ip e.g. mydomain.com";
 
 // Define the SMTP_Message class variable to handle to message being transport

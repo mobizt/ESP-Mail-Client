@@ -1,7 +1,7 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.11
+ * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.12
  * 
- * January 7, 2021
+ * January 8, 2021
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
  * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
@@ -1613,136 +1613,127 @@ init:
       goto init;
   }
 
-  //rfc4954
-  if (smtp->_send_capability.esmtp)
-  {
-    if (!smtp->_auth_capability.login && !smtp->_auth_capability.plain && !smtp->_auth_capability.xoauth2 /* && !smtp->_auth_capability.cram_md5 && !smtp->_auth_capability.digest_md5 */)
-      return handleSMTPError(smtp, SMTP_STATUS_NO_SUPPORTED_AUTH);
-  }
-
   bool creds = strlen(smtp->_sesson_cfg->login.email) > 0 && strlen(smtp->_sesson_cfg->login.password) > 0;
   bool xoauth_auth = strlen(smtp->_sesson_cfg->login.accessToken) > 0 && smtp->_auth_capability.xoauth2;
   bool login_auth = smtp->_auth_capability.login && creds;
   bool plain_auth = smtp->_auth_capability.plain && creds;
 
-  bool supported_auth = xoauth_auth || login_auth || plain_auth;
-
-  if (supported_auth)
+  if (xoauth_auth || login_auth || plain_auth)
   {
     if (smtp->_sendCallback)
     {
       smtpCB(smtp, "", false);
       smtpCBP(smtp, esp_mail_str_56, false);
     }
-  }
 
-  //log in
-  if (xoauth_auth)
-  {
-    if (smtp->_debug)
-      debugInfoP(esp_mail_str_288);
-
-    if (!smtp->_auth_capability.xoauth2)
-      return handleSMTPError(smtp, SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
-
-    if (smtpSendP(smtp, esp_mail_str_289, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    if (smtpSend(smtp, getEncodedToken(smtp).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
-      return false;
-
-    return true;
-  }
-  else if (plain_auth)
-  {
-
-    if (smtp->_debug)
-      debugInfoP(esp_mail_str_241);
-
-    if (smtp->_debug)
+    //log in
+    if (xoauth_auth)
     {
-      appendP(s, esp_mail_str_261, true);
-      s += smtp->_sesson_cfg->login.email;
-      esp_mail_debug(s.c_str());
+      if (smtp->_debug)
+        debugInfoP(esp_mail_str_288);
 
+      if (!smtp->_auth_capability.xoauth2)
+        return handleSMTPError(smtp, SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
+
+      if (smtpSendP(smtp, esp_mail_str_289, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      if (smtpSend(smtp, getEncodedToken(smtp).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth;
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
+        return false;
+
+      return true;
+    }
+    else if (plain_auth)
+    {
+
+      if (smtp->_debug)
+        debugInfoP(esp_mail_str_241);
+
+      if (smtp->_debug)
+      {
+        appendP(s, esp_mail_str_261, true);
+        s += smtp->_sesson_cfg->login.email;
+        esp_mail_debug(s.c_str());
+
+        appendP(s, esp_mail_str_131, false);
+        for (size_t i = 0; i < strlen(smtp->_sesson_cfg->login.password); i++)
+          appendP(s, esp_mail_str_183, false);
+        esp_mail_debug(s.c_str());
+      }
+
+      //rfc4616
+      const char *usr = smtp->_sesson_cfg->login.email;
+      const char *psw = smtp->_sesson_cfg->login.password;
+      int len = strlen(usr) + strlen(psw) + 2;
+      uint8_t *tmp = new uint8_t[len];
+      memset(tmp, 0, len);
+      int p = 1;
+      memcpy(tmp + p, usr, strlen(usr));
+      p += strlen(usr) + 1;
+      memcpy(tmp + p, psw, strlen(psw));
+      p += strlen(psw);
+
+      std::string s;
+      appendP(s, esp_mail_str_45, true);
       appendP(s, esp_mail_str_131, false);
-      for (size_t i = 0; i < strlen(smtp->_sesson_cfg->login.password); i++)
-        appendP(s, esp_mail_str_183, false);
-      esp_mail_debug(s.c_str());
+      s += encodeBase64Str(tmp, p);
+      delete[] tmp;
+
+      if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth_plain;
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_USER_LOGIN_FAILED))
+        return false;
+
+      return true;
     }
-
-    //rfc4616
-    const char *usr = smtp->_sesson_cfg->login.email;
-    const char *psw = smtp->_sesson_cfg->login.password;
-    int len = strlen(usr) + strlen(psw) + 2;
-    uint8_t *tmp = new uint8_t[len];
-    memset(tmp, 0, len);
-    int p = 1;
-    memcpy(tmp + p, usr, strlen(usr));
-    p += strlen(usr) + 1;
-    memcpy(tmp + p, psw, strlen(psw));
-    p += strlen(psw);
-
-    std::string s;
-    appendP(s, esp_mail_str_45, true);
-    appendP(s, esp_mail_str_131, false);
-    s += encodeBase64Str(tmp, p);
-    delete[] tmp;
-
-    if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth_plain;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_USER_LOGIN_FAILED))
-      return false;
-
-    return true;
-  }
-  else if (login_auth)
-  {
-    if (smtp->_debug)
-      debugInfoP(esp_mail_str_240);
-
-    if (smtpSendP(smtp, esp_mail_str_4, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
-      return false;
-
-    if (smtp->_debug)
+    else if (login_auth)
     {
-      appendP(s, esp_mail_str_261, true);
-      s += smtp->_sesson_cfg->login.email;
-      esp_mail_debug(s.c_str());
+      if (smtp->_debug)
+        debugInfoP(esp_mail_str_240);
+
+      if (smtpSendP(smtp, esp_mail_str_4, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
+        return false;
+
+      if (smtp->_debug)
+      {
+        appendP(s, esp_mail_str_261, true);
+        s += smtp->_sesson_cfg->login.email;
+        esp_mail_debug(s.c_str());
+      }
+
+      if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email, strlen(smtp->_sesson_cfg->login.email)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_user;
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
+        return false;
+
+      if (smtp->_debug)
+      {
+        appendP(s, esp_mail_str_261, true);
+        for (size_t i = 0; i < strlen(smtp->_sesson_cfg->login.password); i++)
+          appendP(s, esp_mail_str_183, false);
+        esp_mail_debug(s.c_str());
+      }
+
+      if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password, strlen(smtp->_sesson_cfg->login.password)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_psw;
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
+        return false;
+
+      return true;
     }
-
-    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email, strlen(smtp->_sesson_cfg->login.email)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_user;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
-      return false;
-
-    if (smtp->_debug)
-    {
-      appendP(s, esp_mail_str_261, true);
-      for (size_t i = 0; i < strlen(smtp->_sesson_cfg->login.password); i++)
-        appendP(s, esp_mail_str_183, false);
-      esp_mail_debug(s.c_str());
-    }
-
-    if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password, strlen(smtp->_sesson_cfg->login.password)).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
-
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_psw;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
-      return false;
-
-    return true;
   }
 
   return true;
