@@ -1,12 +1,16 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.12
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- * January 8, 2021
+ *   Version:   1.0.13
+ *   Released:  January 11, 2021
  * 
- * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
- * which the attachments and inline images can be uploaded (sending) and downloaded (reading). 
+ *   Updates:
+ * - Fix the IMAP search termination checking https://github.com/mobizt/ESP-Mail-Client/issues/15.
+ * - Fix the IMAP startTLS consequence commands
  * 
- * The library supports all Espressif's ESP32 and ESP8266 MCUs based modules.
+ * 
+ * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
+ * through the SMTP and IMAP servers.
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -920,10 +924,12 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   if (imap->_debug)
     debugInfoP(esp_mail_str_228);
 
-  if (!imap->getCapability())
+init:
+
+  if (!imap->checkCapability())
     return false;
 
-  //start TLS when needed
+  //start TLS when needed or the server issue
   if ((imap->_auth_capability.start_tls || imap->_sesson_cfg->secure.startTLS) && !ssl)
   {
     std::string s;
@@ -945,23 +951,23 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
       return false;
 
-    if (imap->_sesson_cfg->secure.startTLS)
+    if (imap->_debug)
     {
-      if (imap->_debug)
-      {
-        debugInfoP(esp_mail_str_310);
-      }
-
-      //connect in secure mode
-      //do ssl handshaking
-      if (!imap->httpClient._stream()->_ns_connect_ssl())
-        return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
-
-      //set the secure mode
-      imap->_sesson_cfg->secure.startTLS = false;
-      ssl = true;
-      imap->_secure = true;
+      debugInfoP(esp_mail_str_310);
     }
+
+    //connect in secure mode
+    //do ssl handshaking
+    if (!imap->httpClient._stream()->_ns_connect_ssl())
+      return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+
+    //set the secure mode
+    imap->_sesson_cfg->secure.startTLS = false;
+    ssl = true;
+    imap->_secure = true;
+
+    //check the capabilitiy again
+    goto init;
   }
 
   imap->clearMessageData();
@@ -4092,6 +4098,9 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &ch
           chunkIdx++;
           return 0;
         }
+
+        if (strposP(buf, esp_mail_imap_response_1, 0) > -1)
+          goto end_search;
       }
       else
       {
@@ -4128,18 +4137,24 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &ch
           if (imap->_config->enable.recent_sort)
             std::sort(imap->_msgNum.begin(), imap->_msgNum.end(), compFunc);
 
-          endSearch = true;
-          int read = available(imap);
-
-          if (!imap->_secure)
-            idx = imap->httpClient._stream()->readBytes(buf + idx, read);
-          else
-            idx = imap->httpClient.stream()->readBytes(buf + idx, read);
-          return idx;
+          goto end_search;
         }
       }
     }
   }
+
+  return idx;
+
+end_search:
+
+  endSearch = true;
+  int read = available(imap);
+
+  if (!imap->_secure)
+    idx = imap->httpClient._stream()->readBytes(buf + idx, read);
+  else
+    idx = imap->httpClient.stream()->readBytes(buf + idx, read);
+
   return idx;
 }
 
@@ -7704,7 +7719,7 @@ bool IMAPSession::getMailboxes(FoldersCollection &folders)
   return true;
 }
 
-bool IMAPSession::getCapability()
+bool IMAPSession::checkCapability()
 {
   if (_readCallback)
   {

@@ -123,7 +123,24 @@ void setup()
     /* Message UID to fetch or read */
     config.fetch.uid = "";
 
-    /* Search criteria */
+    /** Search criteria 
+     * 
+     * A search key can also be a parenthesized list of one or more search keys 
+     * (e.g., for use with the OR and NOT keys). 
+     * 
+     * Since IMAP protocol uses Polish notation, the search criteria which in the polish notation form can be.
+     * 
+     * To search the message from "someone@email.com" with the subject "my subject" since 1 Jan 2021, your search criteria can be
+     * UID SEARCH (OR SUBJECT "my subject" FROM "someone@email.com") SINCE "Fri, 1 Jan 2021 21:52:25 -0800"
+     * 
+     * To search the message from "mail1@domain.com" or from "mail2@domain.com", the search criteria will be
+     * UID SEARCH OR FROM mail1@domain.com FROM mail2@domain.com 
+     * 
+     * For more details on using parentheses, AND, OR and NOT search keys in search criteria.
+     * https://www.limilabs.com/blog/imap-search-requires-parentheses
+     * 
+     * 
+    */
     config.search.criteria = "UID SEARCH ALL";
 
     /* Also search the unseen message */

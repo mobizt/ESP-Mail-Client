@@ -1,12 +1,16 @@
 /**
- * Mail Client Arduino Library for ESP32 and ESP8266, version 1.0.12
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- * January 8, 2021
+ *   Version:   1.0.13
+ *   Released:  January 11, 2021
  * 
- * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email through SMTP and IMAP servers 
- * which the attachments and inline images can be uploaded (sending) and downloaded (reading).
- *  
- * The library supports all Espressif's ESP32 and ESP8266 MCUs based modules.
+ *   Updates:
+ * - Fix the IMAP search termination checking https://github.com/mobizt/ESP-Mail-Client/issues/15.
+ * - Fix the IMAP startTLS consequence commands
+ * 
+ * 
+ * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
+ * through the SMTP and IMAP servers.
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -1265,8 +1269,8 @@ static const char esp_mail_str_60[] PROGMEM = "> C: download HTML message";
 static const char esp_mail_str_61[] PROGMEM = "Selecting the ";
 static const char esp_mail_str_62[] PROGMEM = "fail to list the mailboxes";
 static const char esp_mail_str_63[] PROGMEM = "fail to check the capabilities";
-static const char esp_mail_str_64[] PROGMEM = "Get the capability...";
-static const char esp_mail_str_65[] PROGMEM = "> C: get the capability";
+static const char esp_mail_str_64[] PROGMEM = "Check the capability...";
+static const char esp_mail_str_65[] PROGMEM = "> C: check the capability";
 static const char esp_mail_str_66[] PROGMEM = "Searching messages...";
 static const char esp_mail_str_67[] PROGMEM = "message";
 static const char esp_mail_str_68[] PROGMEM = "Search limit:";
@@ -2397,7 +2401,7 @@ private:
   bool closeMailbox();
   bool openMailbox(const char *folder, esp_mail_imap_auth_mode mode, bool waitResponse);
   bool getMailboxes(FoldersCollection &flders);
-  bool getCapability();
+  bool checkCapability();
 
   bool _tcpConnected = false;
   esp_mail_imap_response_status_t _imapStatus;

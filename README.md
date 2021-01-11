@@ -1,12 +1,12 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.12
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.13
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 The complete and secure Mail Client for ESP32 and ESP8266 devices for sending and reading the Email through the SMTP and IMAP servers.
 
-With this library, the devices can both send and read the Email with many types of attachments supported and provides more reliable and flexible of usages.
+With this library, the devices can both send and read the Email with many types of attachments supported and provides more reliable and flexibilities of usages.
 
-The library was test and work well with ESP32s and ESP8266s based modules.
+The library was tested and work well with ESP32s and ESP8266s based modules.
 
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
@@ -42,6 +42,18 @@ This following devices were tested.
  * Wemos D1 Mini (ESP8266)
 
 
+
+## Prerequisites
+
+
+The library requires Arduino's ESP32 or ESP8266 Core SDK to be installed based on the platform.
+
+The latest Core SDK is recommended. For ESP8266, the Core SDK version 2.6.3 or later is recommended.
+
+The ESP8266 Core SDK version 2.5.x and earlier are not supported.
+
+
+
 ## Instalation
 
 
@@ -72,7 +84,7 @@ The examples in the examples folder provide the full options usages.
 ```C++
 
 // Include ESP Mail Client library (this library)
-#include "ESP_Mail_Client.h"
+#include <ESP_Mail_Client.h>
 
 
 // Define the SMTP Session object which used for SMTP transsport
@@ -86,7 +98,7 @@ session.server.host_name = "smtp.office365.com"; //for outlook.com
 session.server.port = 587;
 session.login.email = "your Email address"; //set to empty for no SMTP Authentication
 session.login.password = "your Email password"; //set to empty for no SMTP Authentication
-session.login.user_domain = "your domain or ip e.g. mydomain.com";
+session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
 // Define the SMTP_Message class variable to handle to message being transport
 SMTP_Message message;
@@ -140,7 +152,7 @@ if (!MailClient.sendMail(&smtp, &message))
 ```C++
 
 // Include ESP Mail Client library (this library)
-#include "ESP_Mail_Client.h"
+#include <ESP_Mail_Client.h>
 
 
 // Define the IMAP Session object which used for IMAP transsport
