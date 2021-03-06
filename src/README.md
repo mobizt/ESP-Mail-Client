@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.0.13) are showed below.
+The detail and usage of the available functions in the latest version (1.0.14) are showed below.
 
 
 ## Global functions
@@ -703,6 +703,10 @@ This property has the sub properties
 
 ###### [const char*] content - The PLAIN text content of the message.
 
+###### [esp_mail_blob_message_content_t] blob - The blob that contins PLAIN text content of the message.
+
+###### [esp_mail_file_message_content_t] file - The file that contins PLAIN text content of the message.
+
 ###### [const char*] charSet - The character transcoding of the PLAIN text content of the message.
 
 ###### [const char*] content_type - The content type of message.
@@ -721,6 +725,10 @@ esp_mail_plain_body_t text;
 This propery has the sub properties
 
 ###### [const char*] content - The HTML content of the message.
+
+###### [esp_mail_blob_message_content_t] blob - The blob that contins HTML content of the message.
+
+###### [esp_mail_file_message_content_t] file - The file that contins HTML content of the message.
 
 ###### [const char*] charSet - The character transcoding of the HTML content of the message.
 
@@ -1327,6 +1335,61 @@ sp_mail_smtp_embed_message_type_inline = 1
 
 ```C++
 esp_mail_smtp_embed_message_type type;
+```
+
+
+
+
+
+
+## esp_mail_blob_message_content_t structured data
+
+
+The following properties are available from the esp_mail_blob_message_content_t data type.
+
+This data type is used for storing the blob info of message body.
+
+
+
+
+##### [Properties] The array of content in flash memory.
+
+```C++
+const uint8_t * data;
+```
+
+
+##### [Properties] The array size in bytes.
+
+```C++
+size_t size;
+```
+
+
+
+
+
+## esp_mail_file_message_content_t structured data
+
+
+The following properties are available from the esp_mail_file_message_content_t data type.
+
+This data type is used for storing the file info of message body.
+
+
+
+
+##### [Properties] The file path include its name.
+
+```C++
+const char *name;
+```
+
+
+##### [Properties] The type of file storages.
+
+```C++
+esp_mail_file_storage_type type;
 ```
 
 

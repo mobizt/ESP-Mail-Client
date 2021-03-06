@@ -20,6 +20,8 @@
 
 //To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
+//The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
+
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>

@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.0.13
- *   Released:  January 11, 2021
+ *   Version:   1.0.14
+ *   Released:  March 7, 2021
  * 
  *   Updates:
- * - Fix the IMAP search termination checking https://github.com/mobizt/ESP-Mail-Client/issues/15.
- * - Fix the IMAP startTLS consequence commands
+ * - Add support SMTP message content from blob and flash and SD files.
+ * - Allow the file systems configuration in ESP_Mail_FS.h.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -42,6 +42,7 @@
 #include <Arduino.h>
 #include "extras/RFC2047.h"
 #include "extras/ESPTimeHelper.h"
+#include "ESP_Mail_FS.h"
 
 #if defined(ESP32)
 #include <WiFi.h>
@@ -58,9 +59,10 @@
 #include <WiFiClientSecure.h>
 #define FS_NO_GLOBALS
 #include <FS.h>
-#include <Ethernet.h>
 #include "wcs/esp8266/ESP_Mail_HTTPClient.h"
 #endif
+#define ESP_MAIl_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
+#define ESP_MAIl_SD_FS ESP_Mail_DEFAULT_SD_FS
 
 #include "extras/MIMEInfo.h"
 
@@ -592,14 +594,44 @@ struct esp_mail_smtp_embed_message_body_t
   esp_mail_smtp_embed_message_type type = esp_mail_smtp_embed_message_type_attachment;
 };
 
+struct esp_mail_file_message_content_t
+{
+  /* The file path include its name */
+  const char *name = "";
+
+  /** The type of file storages e.g. 
+   * esp_mail_file_storage_type_none,
+   * esp_mail_file_storage_type_flash, and
+   * esp_mail_file_storage_type_sd
+  */
+  esp_mail_file_storage_type type = esp_mail_file_storage_type_flash;
+
+};
+
+struct esp_mail_blob_message_content_t
+{
+  /* The array of content in flash memory */
+  const uint8_t *data = nullptr;
+
+  /* The array size in bytes */
+  size_t size = 0;
+
+};
+
 /* The PLAIN text body details of the message */
 struct esp_mail_plain_body_t
 {
   /* The option to embed this message content as a file */
-  esp_mail_smtp_embed_message_body_t embed;
+  struct esp_mail_smtp_embed_message_body_t embed;
 
   /* The PLAIN text content of the message */
   const char *content = "";
+
+  /* The blob that contins PLAIN text content of the message */
+  struct esp_mail_blob_message_content_t blob;
+
+  /* The file that contins PLAIN text content of the message */
+  struct esp_mail_file_message_content_t file;
 
   /* The charset of the PLAIN text content of the message */
   const char *charSet = "UTF-8";
@@ -614,16 +646,23 @@ struct esp_mail_plain_body_t
   bool flowed = false;
 
   /* The internal usage data */
-  esp_mail_internal_use_t _int;
+  struct esp_mail_internal_use_t _int;
 };
+
 
 struct esp_mail_html_body_t
 {
   /* The option to embedded the content as a file */
-  esp_mail_smtp_embed_message_body_t embed;
+  struct esp_mail_smtp_embed_message_body_t embed;
 
   /* The HTML content of the message */
   const char *content = "";
+
+  /* The blob that contins HTML content of the message */
+  struct esp_mail_blob_message_content_t blob;
+
+  /* The file that contins HTML content of the message */
+  struct esp_mail_file_message_content_t file;
 
   /* The charset of the HTML content of the message */
   const char *charSet = "UTF-8";
@@ -635,7 +674,7 @@ struct esp_mail_html_body_t
   const char *transfer_encoding = "7bit";
 
   /* The internal usage data */
-  esp_mail_internal_use_t _int;
+  struct esp_mail_internal_use_t _int;
 };
 
 struct esp_mail_link_internal_t
@@ -703,11 +742,14 @@ struct esp_mail_attach_descr_t
   /* The MIME type of attachment */
   const char *mime = "";
 
-  /* The transfer encoding of attachnent e.g. base64 */
+  /* The transfer encoding of attachment e.g. base64 */
   const char *transfer_encoding = "base64";
 
-  /* The cntent encoding of attachnent e.g. base64 */
+  /* The content encoding of attachment e.g. base64 */
   const char *content_encoding = "";
+
+  /* The content id of attachment file */
+  const char *content_id = "";
 };
 
 struct esp_mail_attach_internal_t
@@ -733,7 +775,7 @@ struct esp_mail_attachment_t
   struct esp_mail_attach_file_t file;
 
   /* reserved for internal usage */
-  esp_mail_attach_internal_t _int;
+  struct esp_mail_attach_internal_t _int;
 };
 
 struct esp_mail_smtp_recipient_t
@@ -1117,10 +1159,10 @@ struct esp_mail_imap_msg_item_t
   const char *subjectCharset = "";
 
   /* The PLAIN text content of the message */
-  esp_mail_plain_body_t text;
+  struct esp_mail_plain_body_t text;
 
   /* The HTML content of the message */
-  esp_mail_html_body_t html;
+  struct esp_mail_html_body_t html;
 
   /* rfc822 related */
 
@@ -1529,6 +1571,8 @@ static const char esp_mail_str_321[] PROGMEM = "> C: delete folder";
 static const char esp_mail_str_322[] PROGMEM = "$ CREATE ";
 static const char esp_mail_str_323[] PROGMEM = "$ DELETE ";
 static const char esp_mail_str_324[] PROGMEM = "HEADER.FIELDS";
+static const char esp_mail_str_325[] PROGMEM = "flash content message";
+static const char esp_mail_str_326[] PROGMEM = "file content message";
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -1588,6 +1632,7 @@ static const char imap_7bit_key12[] PROGMEM = "=E2=80=93";
 static const char imap_7bit_val12[] PROGMEM = "&ndash;";
 static const char imap_7bit_key13[] PROGMEM = "=E2=80=94";
 static const char imap_7bit_val13[] PROGMEM = "&mdash;";
+
 
 static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 static const char boundary_table[] PROGMEM = "=_abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -1679,9 +1724,9 @@ public:
   ~FoldersCollection() { clear(); };
   size_t size() { return _folders.size(); };
 
-  esp_mail_folder_info_item_t info(size_t index)
+  struct esp_mail_folder_info_item_t info(size_t index)
   {
-    esp_mail_folder_info_item_t fd;
+    struct esp_mail_folder_info_item_t fd;
     if (index < _folders.size())
     {
       fd.name = _folders[index].name.c_str();
@@ -1692,7 +1737,7 @@ public:
   }
 
 private:
-  void add(esp_mail_folder_info_t &fd) { _folders.push_back(fd); };
+  void add(struct esp_mail_folder_info_t &fd) { _folders.push_back(fd); };
   void clear()
   {
     for (size_t i = 0; i < _folders.size(); i++)
@@ -1742,6 +1787,7 @@ public:
     att.descr.transfer_encoding = "";
     att.descr.content_encoding = "";
     att.descr.mime = "";
+    att.descr.content_id = "";
     att._int.att_type = esp_mail_att_type_none;
     att._int.index = 0;
     att._int.msg_uid = 0;
@@ -1749,6 +1795,7 @@ public:
     att._int.binary = false;
     att._int.parallel = false;
     att._int.cid = "";
+  
   }
 
   void clear()
@@ -1957,7 +2004,7 @@ public:
   void addHeader(const char *hdr) { _hdr.push_back(hdr); };
 
   /* The message author config */
-  esp_mail_email_info_t sender;
+  struct esp_mail_email_info_t sender;
 
   /* The topic of message */
   const char *subject = "";
@@ -1966,22 +2013,22 @@ public:
   byte type = esp_mail_msg_type_none;
 
   /* The PLAIN text message */
-  esp_mail_plain_body_t text;
+  struct esp_mail_plain_body_t text;
 
   /* The HTML text message */
-  esp_mail_html_body_t html;
+  struct esp_mail_html_body_t html;
 
   /* The response config */
-  esp_mail_smtp_msg_response_t response;
+  struct esp_mail_smtp_msg_response_t response;
 
   /* The priority of the message */
   esp_mail_smtp_priority priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
   /* The enable options */
-  esp_mail_smtp_enable_option_t enable;
+  struct esp_mail_smtp_enable_option_t enable;
 
   /* The message from config */
-  esp_mail_email_info_t from;
+  struct esp_mail_email_info_t from;
 
   /* The message identifier */
   const char *messageID = "";
@@ -2179,6 +2226,7 @@ private:
   bool sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
   bool sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, File &file);
   bool openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, File &file, std::string &s, std::string &buf, const std::string &boundary, bool inlined);
+  bool openFileRead2(SMTPSession *smtp, SMTP_Message *msg, File &file, const char *path, esp_mail_file_storage_type storageType);
   bool sendInline(SMTPSession *smtp, SMTP_Message *msg, const std::string &boundary, byte type);
   void debugInfoP(PGM_P info);
   size_t numAtt(SMTPSession *smtp, esp_mail_attach_type type, SMTP_Message *msg);
@@ -2186,6 +2234,8 @@ private:
   bool checkEmail(SMTPSession *smtp, SMTP_Message *msg);
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
   char *getUID();
+  bool sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
+  bool sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
   void encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, std::string &content);
   void splitTk(std::string &str, std::vector<std::string> &tk, const char *delim);
   void formatFlowedText(std::string &content);
@@ -2345,7 +2395,7 @@ public:
    * @param dest The destination folder that the messages to copy to.
    * @return The boolean value which indicates the success of operation.
   */
-  bool copyMessages(MessageList *toCopy, const char* dest);
+  bool copyMessages(MessageList *toCopy, const char *dest);
 
   /** Delete the messages in the opened mailbox folder. 
    * 
@@ -2396,15 +2446,15 @@ private:
   void clearMessageData();
   void checkUID();
   void checkPath();
-  void getMessages(uint16_t messageIndex, esp_mail_imap_msg_item_t &msg);
-  void getRFC822Messages(uint16_t messageIndex, esp_mail_imap_msg_item_t &msg);
+  void getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg);
+  void getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg);
   bool closeMailbox();
   bool openMailbox(const char *folder, esp_mail_imap_auth_mode mode, bool waitResponse);
   bool getMailboxes(FoldersCollection &flders);
   bool checkCapability();
 
   bool _tcpConnected = false;
-  esp_mail_imap_response_status_t _imapStatus;
+  struct esp_mail_imap_response_status_t _imapStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
   int _totalRead = 0;
@@ -2423,7 +2473,7 @@ private:
   bool _mailboxOpened = false;
   std::string _nextUID = "";
 
-  esp_mail_imap_read_config_t *_config = nullptr;
+  struct esp_mail_imap_read_config_t *_config = nullptr;
 
   bool _headerOnly = true;
   bool _uidSearch = false;
@@ -2453,9 +2503,9 @@ class SendingResult
 {
 private:
   std::vector<struct esp_mail_smtp_send_status_t> _result = std::vector<struct esp_mail_smtp_send_status_t>();
-  void add(esp_mail_smtp_send_status_t r)
+  void add(struct esp_mail_smtp_send_status_t r)
   {
-    esp_mail_smtp_send_status_t _r = r;
+    struct esp_mail_smtp_send_status_t _r = r;
     _result.push_back(_r);
   }
   void clear()
@@ -2477,7 +2527,7 @@ public:
   ~SendingResult() { clear(); };
   SMTP_Result getItem(size_t index)
   {
-    esp_mail_smtp_send_status_t r;
+    struct esp_mail_smtp_send_status_t r;
     if (index < _result.size())
       return _result[index];
     return r;
@@ -2531,7 +2581,7 @@ public:
 
 private:
   bool _tcpConnected = false;
-  esp_mail_smtp_response_status_t _smtpStatus;
+  struct esp_mail_smtp_response_status_t _smtpStatus;
   int _sentSuccessCount = 0;
   int _sentFailedCount = 0;
   bool _chunkedEnable = false;
@@ -2548,7 +2598,7 @@ private:
   smtpStatusCallback _sendCallback = NULL;
 
   SMTP_Status _cbData;
-  esp_mail_smtp_msg_type_t _msgType;
+  struct esp_mail_smtp_msg_type_t _msgType;
 
   int _certType = -1;
   std::shared_ptr<const char> _caCert = nullptr;

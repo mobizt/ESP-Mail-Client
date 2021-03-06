@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.13
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.0.14
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -25,7 +25,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support many types of embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
-* Support SPIFFS and SD card for file storages.
+* Support flash memory and SD card for file storages. Can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32).
 * Customizable operating configurations (see the examples for the usages)
 
