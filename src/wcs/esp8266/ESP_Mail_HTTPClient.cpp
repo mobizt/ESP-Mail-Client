@@ -226,13 +226,13 @@ void ESP_Mail_HTTPClient::setCertFile(const char *caCertFile, esp_mail_file_stor
 
     if (storageType == 0)
     {
-      bool t = FLASH_FS.begin();
+      bool t = ESP_MAIl_FLASH_FS.begin();
       if (t)
       {
         fs::File f;
-        if (FLASH_FS.exists(caCertFile))
+        if (ESP_MAIl_FLASH_FS.exists(caCertFile))
         {
-          f = FLASH_FS.open(caCertFile, "r");
+          f = ESP_MAIl_FLASH_FS.open(caCertFile, "r");
           size_t len = f.size();
           uint8_t *der = new uint8_t[len];
 

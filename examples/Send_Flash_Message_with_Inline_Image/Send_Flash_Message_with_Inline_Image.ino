@@ -56,12 +56,6 @@ SMTPSession smtp;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-static const char html[] PROGMEM = "<span style=\"color:#ff0000;\">This message contains 2 inline images.</span><br/><br/><img src=\"cid:image-001\" alt=\"orange image\"  width=\"100\" height=\"100\"> <img src=\"cid:image-002\" alt=\"green image\" width=\"100\" height=\"100\">";
-
-static const char orangeImg[] PROGMEM = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RMQ0AMAgAsCFgftHLiQpsENJaaFT+fqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBGi/oCaOpTXoAAAAASUVORK5CYII=";
-
-static const char greenImg[] PROGMEM = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
-
 void setup()
 {
 
@@ -91,12 +85,19 @@ void setup()
     if (SPIFFS.begin())
 #endif
     {
+
+        const char *html = "<span style=\"color:#ff0000;\">This message contains 2 inline images.</span><br/><br/><img src=\"cid:image-001\" alt=\"orange image\"  width=\"100\" height=\"100\"> <img src=\"cid:image-002\" alt=\"green image\" width=\"100\" height=\"100\">";
+        const char *orangeImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RMQ0AMAgAsCFgftHLiQpsENJaaFT+fqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBGi/oCaOpTXoAAAAASUVORK5CYII=";
+        const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
+
         //SPIFFS.format();
 
         if (SPIFFS.exists("/orange.png"))
             SPIFFS.remove("/orange.png");
         if (SPIFFS.exists("/green.png"))
             SPIFFS.remove("/green.png");
+        if (SPIFFS.exists("/msg.html"))
+            SPIFFS.remove("/msg.html");
 
         Serial.println("Preparing SPIFFS attachments...");
 
@@ -111,9 +112,17 @@ void setup()
 #if defined(ESP32)
         file = SPIFFS.open("/green.png", FILE_WRITE);
 #elif defined(ESP8266)
-        File file = SPIFFS.open("/green.png", "w");
+        file = SPIFFS.open("/green.png", "w");
 #endif
         file.print(greenImg);
+        file.close();
+
+#if defined(ESP32)
+        file = SPIFFS.open("/msg.html", FILE_WRITE);
+#elif defined(ESP8266)
+        file = SPIFFS.open("/msg.html", "w");
+#endif
+        file.print(html);
         file.close();
     }
     else
@@ -153,9 +162,11 @@ void setup()
     message.subject = "Test sending Email with message content and inline images stored in flash memory";
     message.addRecipient("user1", "####@#####_dot_com");
 
-    /** Two alternative content versions are sending in this example e.g. plain text and html */
+    /* Two alternative content versions are sending in this example e.g. plain text and html */
+
+    /* Assign blob data (in flash or ram) as HTML message */
     message.html.blob.data = (const uint8_t *)html;
-    message.html.blob.size = strlen_P(html);
+    message.html.blob.size = strlen(html);
 
     //Or get the content from file
     //message.html.file.name = "/msg.html";

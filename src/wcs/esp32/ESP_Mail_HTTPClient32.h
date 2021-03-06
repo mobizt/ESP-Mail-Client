@@ -40,6 +40,12 @@
 #include <SPIFFS.h>
 #include <SD.h>
 #include "ESP_Mail_WCS32.h"
+#include "ESP_Mail_FS.h"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#define ESP_MAIl_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
+#define ESP_MAIl_SD_FS ESP_Mail_DEFAULT_SD_FS
 
 #if __has_include(<WiFiEspAT.h>) || __has_include(<espduino.h>)
 #error WiFi UART bridge was not supported.

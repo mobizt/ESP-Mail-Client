@@ -1,7 +1,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.0.14
+ *   Version:   1.0.15
  *   Released:  March 7, 2021
  * 
  *   Updates:
@@ -42,7 +42,6 @@
 #include <Arduino.h>
 #include "extras/RFC2047.h"
 #include "extras/ESPTimeHelper.h"
-#include "ESP_Mail_FS.h"
 
 #if defined(ESP32)
 #include <WiFi.h>
@@ -61,8 +60,6 @@
 #include <FS.h>
 #include "wcs/esp8266/ESP_Mail_HTTPClient.h"
 #endif
-#define ESP_MAIl_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#define ESP_MAIl_SD_FS ESP_Mail_DEFAULT_SD_FS
 
 #include "extras/MIMEInfo.h"
 

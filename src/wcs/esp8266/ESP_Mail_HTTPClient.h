@@ -65,16 +65,11 @@
 #define FS_NO_GLOBALS
 #include <FS.h>
 #include <SD.h>
-#include "extras/ESP_Mail_Client_FS.h"
-
-#ifdef USE_LITTLEFS
-#include <LittleFS.h>
-#define FLASH_FS LittleFS
-#else
+#include "ESP_Mail_FS.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#define FLASH_FS SPIFFS
-#endif
+#define ESP_MAIl_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
+#define ESP_MAIl_SD_FS ESP_Mail_DEFAULT_SD_FS
 
 #if __has_include(<WiFiEspAT.h>) || __has_include(<espduino.h>)
 #error WiFi UART bridge was not supported.

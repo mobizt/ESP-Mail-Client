@@ -1,3 +1,5 @@
+#ifndef ESP_Mail_FS_H
+#define ESP_Mail_FS_H
 
 /**
  * To use other flash file systems
@@ -26,3 +28,6 @@
  * 
 */
 #define ESP_Mail_DEFAULT_SD_FS SD
+
+
+#endif
