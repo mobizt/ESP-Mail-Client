@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.h to support STARTTLS protocol, version 1.0.5
+ *Customized ssl_client.h to support STARTTLS protocol, version 1.0.6
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -31,14 +31,14 @@
 #define ESP_MAIL_SSL_CLIENT32_H
 
 #ifdef ESP32
-
-#include <mbedtls/platform.h>
-#include <mbedtls/net.h>
-#include <mbedtls/debug.h>
-#include <mbedtls/ssl.h>
-#include <mbedtls/entropy.h>
-#include <mbedtls/ctr_drbg.h>
-#include <mbedtls/error.h>
+#include <Arduino.h>
+#include "mbedtls/platform.h"
+#include "mbedtls/net.h"
+#include "mbedtls/debug.h"
+#include "mbedtls/ssl.h"
+#include "mbedtls/entropy.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/error.h"
 
 static const char esp_ssl_client_str_1[] PROGMEM = "! E: ";
 static const char esp_ssl_client_str_2[] PROGMEM = "> C: starting socket";
@@ -62,10 +62,12 @@ static const char esp_ssl_client_str_19[] PROGMEM = "> C: verifying peer X.509 c
 static const char esp_ssl_client_str_20[] PROGMEM = "! E: failed to verify peer certificate!";
 static const char esp_ssl_client_str_21[] PROGMEM = "> C: certificate verified";
 static const char esp_ssl_client_str_22[] PROGMEM = "> C: cleaning SSL connection";
-static const char esp_ssl_client_str_23[] PROGMEM = "!E: fingerprint too short";
-static const char esp_ssl_client_str_24[] PROGMEM = "!E: invalid hex sequence";
-static const char esp_ssl_client_str_25[] PROGMEM = "!E: could not fetch peer certificate";
-static const char esp_ssl_client_str_26[] PROGMEM = "!E: fingerprint doesn't match";
+static const char esp_ssl_client_str_23[] PROGMEM = "! E: fingerprint too short";
+static const char esp_ssl_client_str_24[] PROGMEM = "! E: invalid hex sequence";
+static const char esp_ssl_client_str_25[] PROGMEM = "! E: could not fetch peer certificate";
+static const char esp_ssl_client_str_26[] PROGMEM = "! E: fingerprint doesn't match";
+static const char esp_ssl_client_str_27[] PROGMEM = "! E: root certificate, PSK identity or keys are required for secured connection";
+static const char esp_ssl_client_str_28[] PROGMEM = "! W: Skipping SSL Verification. INSECURE!";
 
 typedef void (*DebugMsgCallback)(const char *msg);
 
@@ -74,7 +76,6 @@ typedef struct esp_mail_ssl_ctx32
     int socket;
     mbedtls_ssl_context ssl_ctx;
     mbedtls_ssl_config ssl_conf;
-    mbedtls_net_context server_fd;
 
     mbedtls_ctr_drbg_context drbg_ctx;
     mbedtls_entropy_context entropy_ctx;
@@ -88,16 +89,20 @@ typedef struct esp_mail_ssl_ctx32
 } esp_mail_ssl_ctx32;
 
 void ssl_init(esp_mail_ssl_ctx32 *ssl_client);
-int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout);
-int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey);
+
+int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
+int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
 void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+
 int data_to_read(esp_mail_ssl_ctx32 *ssl_client);
 int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t len);
 int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length);
 bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name);
 bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name);
+
 int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen);
 int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen);
+void ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo);
 void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info);
 
 #endif //ESP32

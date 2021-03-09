@@ -1,8 +1,8 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.0.15
- *   Released:  March 7, 2021
+ *   Version:   1.1.0
+ *   Released:  March 9, 2021
  * 
  *   Updates:
  * - Add support SMTP message content from blob and flash and SD files.

@@ -1,6 +1,6 @@
 
 /*
- *Customized WiFiClientSecure.h version 1.0.3
+ *Customized WiFiClientSecure.h version 1.0.6
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -58,21 +58,22 @@ typedef void (*DebugMsgCallback)(const char *msg);
 
 class ESP_Mail_WCS32 : public WiFiClient
 {
+    friend class ESP_Mail_HTTPClient32;
+
 protected:
     esp_mail_ssl_ctx32 *sslclient;
 
     int _lastError = 0;
     int _peek = -1;
     int _timeout = 0;
+    bool _use_insecure;
     const char *_CA_cert;
     const char *_cert;
     const char *_private_key;
     const char *_pskIdent; // identity for PSK cipher suites
     const char *_psKey;    // key in hex for PSK cipher suites
-    DebugMsgCallback _debugCallback = NULL;
 
 public:
-    friend class ESP_Mail_HTTPClient32;
     ESP_Mail_WCS32 *next;
     ESP_Mail_WCS32();
     ESP_Mail_WCS32(int socket);
@@ -96,6 +97,7 @@ public:
     void stop();
     uint8_t connected();
     int lastError(char *buf, const size_t size);
+    void setInsecure();                                            // Don't validate the chain, just accept whatever is given.  VERY INSECURE!
     void setPreSharedKey(const char *pskIdent, const char *psKey); // psKey in Hex
     void setCACert(const char *rootCA);
     void setCertificate(const char *client_ca);
@@ -105,6 +107,7 @@ public:
     bool loadPrivateKey(Stream &stream, size_t size);
     bool verify(const char *fingerprint, const char *domain_name);
     void setHandshakeTimeout(unsigned long handshake_timeout);
+    int setTimeout(uint32_t seconds) { return 0; }
     void setSTARTTLS(bool enable);
     void setDebugCB(DebugMsgCallback cb);
     int _ns_available();

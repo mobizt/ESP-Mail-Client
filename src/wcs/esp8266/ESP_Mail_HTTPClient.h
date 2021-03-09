@@ -1,5 +1,5 @@
 /*
- * HTTP Client for ESP8266 wrapper v1.0.1
+ * HTTP Client for ESP8266 wrapper v1.0.2
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -68,8 +68,8 @@
 #include "ESP_Mail_FS.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#define ESP_MAIl_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#define ESP_MAIl_SD_FS ESP_Mail_DEFAULT_SD_FS
+#define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
+#define ESP_MAIL_SD_FS ESP_Mail_DEFAULT_SD_FS
 
 #if __has_include(<WiFiEspAT.h>) || __has_include(<espduino.h>)
 #error WiFi UART bridge was not supported.
