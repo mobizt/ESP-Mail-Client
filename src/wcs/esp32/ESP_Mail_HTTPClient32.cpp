@@ -224,20 +224,7 @@ void ESP_Mail_HTTPClient32::setCertFile(const char *caCertFile, esp_mail_file_st
 
 void ESP_Mail_HTTPClient32::setInsecure()
 {
-#ifdef CONFIG_ARDUINO_IDF_BRANCH
-    size_t len = strlen_P(esp_mail_esp_idf_branch_str);
-    char *tmp = new char[len + 1];
-    memset(tmp, 0, len + 1);
-    std::string s = CONFIG_ARDUINO_IDF_BRANCH;
-    size_t p1 = s.find(tmp, 0);
-    if (p1 != std::string::npos)
-    {
-        float v = atof(s.substr(p1 + len, s.length() - p1 - len).c_str());
-        if (v >= 3.3f)
-            _wcs->setInsecure();
-    }
-    delete[] tmp;
-#endif
+    _wcs->setInsecure();
 }
 
 #endif //ESP32

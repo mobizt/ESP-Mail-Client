@@ -1,8 +1,8 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.0
- *   Released:  March 9, 2021
+ *   Version:   1.1.1
+ *   Released:  March 14, 2021
  * 
  *   Updates:
  * - Add support SMTP message content from blob and flash and SD files.
@@ -2719,7 +2719,7 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
           esp_mail_debug(s.c_str());
 
         buf.clear();
-        getAttachHeader(buf, boundary, att);
+        getAttachHeader(buf, boundary, att, att->blob.size);
 
         if (!bdat(smtp, msg, buf.length(), false))
           return false;
@@ -2839,16 +2839,6 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
   {
 
     buf.clear();
-    if (inlined)
-      getInlineHeader(buf, boundary, att);
-    else
-      getAttachHeader(buf, boundary, att);
-
-    if (!bdat(smtp, msg, buf.length(), false))
-      return false;
-
-    if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
 
     if (att->file.storage_type == esp_mail_file_storage_type_sd)
       file = ESP_MAIL_SD_FS.open(filepath.c_str(), FILE_READ);
@@ -2858,6 +2848,21 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
 #elif defined(ESP8266)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), "r");
 #endif
+
+    if (!file)
+      return false;
+
+    if (inlined)
+      getInlineHeader(buf, boundary, att, file.size());
+    else
+      getAttachHeader(buf, boundary, att, file.size());
+
+    if (!bdat(smtp, msg, buf.length(), false))
+      return false;
+
+    if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+      return false;
+
     return true;
   }
 
@@ -2987,7 +2992,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const std
             esp_mail_debug(s.c_str());
 
           buf.clear();
-          getInlineHeader(buf, related, att);
+          getInlineHeader(buf, related, att, att->blob.size);
 
           if (!bdat(smtp, msg, buf.length(), false))
             return false;
@@ -4045,7 +4050,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const std::s
   return true;
 }
 
-void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach)
+void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach, size_t size)
 {
   appendP(header, esp_mail_str_33, false);
   header += boundary;
@@ -4079,7 +4084,11 @@ void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &bo
 
   appendP(header, esp_mail_str_299, false);
   header += filename;
-  appendP(header, esp_mail_str_36, false);
+  appendP(header, esp_mail_str_327, false);
+  char *tmp = intStr(size);
+  header += tmp;
+  delS(tmp);
+  appendP(header, esp_mail_str_34, false);
 
   appendP(header, esp_mail_str_300, false);
   header += filename;
@@ -4106,7 +4115,7 @@ void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &bo
   std::string().swap(filename);
 }
 
-void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach)
+void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach, size_t size)
 {
   appendP(header, esp_mail_str_33, false);
   header += boundary;
@@ -4141,7 +4150,11 @@ void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &bo
   {
     appendP(header, esp_mail_str_30, false);
     header += filename;
-    appendP(header, esp_mail_str_36, false);
+    appendP(header, esp_mail_str_327, false);
+    char *tmp = intStr(size);
+    header += tmp;
+    delS(tmp);
+    appendP(header, esp_mail_str_34, false);
   }
 
   if (strlen(attach->descr.transfer_encoding) > 0)
@@ -8300,16 +8313,6 @@ void SMTPSession::debug(int level)
 String SMTPSession::errorReason()
 {
   std::string ret;
-  if (_smtpStatus.text.length() > 0)
-  {
-    MailClient.appendP(ret, esp_mail_str_312, true);
-    char *code = MailClient.intStr(_smtpStatus.respCode);
-    ret += code;
-    MailClient.delS(code);
-    MailClient.appendP(ret, esp_mail_str_313, false);
-    ret += _smtpStatus.text;
-    return ret.c_str();
-  }
 
   switch (_smtpStatus.statusCode)
   {
@@ -8376,6 +8379,17 @@ String SMTPSession::errorReason()
 
   default:
     break;
+  }
+
+  if (_smtpStatus.text.length() > 0 && ret.length() == 0)
+  {
+    MailClient.appendP(ret, esp_mail_str_312, true);
+    char *code = MailClient.intStr(_smtpStatus.respCode);
+    ret += code;
+    MailClient.delS(code);
+    MailClient.appendP(ret, esp_mail_str_313, false);
+    ret += _smtpStatus.text;
+    return ret.c_str();
   }
   return ret.c_str();
 }
