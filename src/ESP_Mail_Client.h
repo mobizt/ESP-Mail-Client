@@ -51,7 +51,6 @@
 #include <SPIFFS.h>
 #include <ETH.h>
 #include "wcs/esp32/ESP_Mail_HTTPClient32.h"
-#include "extras/ESPTimeHelper.h"
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
