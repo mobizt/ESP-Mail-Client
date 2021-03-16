@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.1
- *   Released:  March 14, 2021
+ *   Version:   1.1.2
+ *   Released:  March 16, 2021
  * 
  *   Updates:
- * - Add support SMTP message content from blob and flash and SD files.
- * - Allow the file systems configuration in ESP_Mail_FS.h.
+ * - Fix IMAP's mailbox closing timed out.
+ * - Add format flash config if mount failed.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -407,7 +407,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         }
         else if (!_flashOk && imap->_storageType == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -2744,7 +2744,7 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
 
         if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -3016,7 +3016,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const std
 
           if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-            _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+            _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
             _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -5705,22 +5705,27 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 esp_mail_debug((const char *)response);
             }
 
-            //some IMAP servers advertise CAPABILITY in their responses
-            //try to read the next available response
-            memset(response, 0, chunkBufSize);
-            if (!imap->_secure)
-              readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
+            if (imap->_imap_cmd == esp_mail_imap_cmd_close)
+              completedResponse = true;
             else
-              readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
-            if (readLen)
             {
-              completedResponse = false;
-              imapResp = imapResponseStatus(imap, response);
-              if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+              //some IMAP servers advertise CAPABILITY in their responses
+              //try to read the next available response
+              memset(response, 0, chunkBufSize);
+              if (!imap->_secure)
+                readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
+              else
+                readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
+              if (readLen)
+              {
+                completedResponse = false;
+                imapResp = imapResponseStatus(imap, response);
+                if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+                  completedResponse = true;
+              }
+              else
                 completedResponse = true;
             }
-            else
-              completedResponse = true;
           }
           else
           {
@@ -6002,7 +6007,7 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
     _sdOk = sdTest();
   else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
-    _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+    _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
     _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -6240,7 +6245,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       _sdOk = sdTest();
     else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
-      _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -7602,7 +7607,7 @@ bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
 #if defined(ESP32)
-      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -8286,7 +8291,7 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
 #if defined(ESP32)
-      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif

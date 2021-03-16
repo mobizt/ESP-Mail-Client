@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.1
- *   Released:  March 14, 2021
+ *   Version:   1.1.2
+ *   Released:  March 16, 2021
  * 
  *   Updates:
- * - Add support SMTP message content from blob and flash and SD files.
- * - Allow the file systems configuration in ESP_Mail_FS.h.
+ * - Fix IMAP's mailbox closing timed out.
+ * - Add format flash config if mount failed.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -44,6 +44,7 @@
 #include "extras/ESPTimeHelper.h"
 
 #if defined(ESP32)
+#define FORMAT_FLASH FORMAT_FLASH_IF_MOUNT_FAILED
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
@@ -66,7 +67,6 @@
 #include <vector>
 #include <string>
 
-#define FORMAT_SPIFFS_IF_FAILED true
 #if defined(ESP8266)
 #define SD_CS_PIN 15
 #endif
