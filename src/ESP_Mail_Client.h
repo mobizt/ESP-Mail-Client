@@ -1,3 +1,6 @@
+#ifndef ESP_Mail_Client_H
+#define ESP_Mail_Client_H
+
 #define ESP_MAIL_VERSION "1.1.3"
 
 /**
@@ -35,8 +38,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#ifndef ESP_Mail_Client_H
-#define ESP_Mail_Client_H
+
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
