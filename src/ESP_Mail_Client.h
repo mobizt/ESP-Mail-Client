@@ -1,12 +1,13 @@
+#define ESP_MAIL_VERSION "1.1.3"
+
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.2
- *   Released:  March 16, 2021
+ *   Version:   1.1.3
+ *   Released:  March 17, 2021
  * 
  *   Updates:
- * - Fix IMAP's mailbox closing timed out.
- * - Add format flash config if mount failed.
+ * - Update the library version macro.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -36,8 +37,6 @@
 
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
-
-#define ESP_MAIL_VERSION "1.0.8"
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
