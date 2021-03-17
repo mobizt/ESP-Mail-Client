@@ -37,7 +37,9 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.0.8"
+
+//#define ESP_MAIL_VERSION "1.0.8"
+#define ESP_MAIL_VERSION "1.1.2"
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
