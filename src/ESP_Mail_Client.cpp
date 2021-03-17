@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.0
- *   Released:  March 9, 2021
+ *   Version:   1.1.2
+ *   Released:  March 16, 2021
  * 
  *   Updates:
- * - Add support SMTP message content from blob and flash and SD files.
- * - Allow the file systems configuration in ESP_Mail_FS.h.
+ * - Fix IMAP's mailbox closing timed out.
+ * - Add format flash config if mount failed.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -407,7 +407,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         }
         else if (!_flashOk && imap->_storageType == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -2719,7 +2719,7 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
           esp_mail_debug(s.c_str());
 
         buf.clear();
-        getAttachHeader(buf, boundary, att);
+        getAttachHeader(buf, boundary, att, att->blob.size);
 
         if (!bdat(smtp, msg, buf.length(), false))
           return false;
@@ -2744,7 +2744,7 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
 
         if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+          _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -2839,16 +2839,6 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
   {
 
     buf.clear();
-    if (inlined)
-      getInlineHeader(buf, boundary, att);
-    else
-      getAttachHeader(buf, boundary, att);
-
-    if (!bdat(smtp, msg, buf.length(), false))
-      return false;
-
-    if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-      return false;
 
     if (att->file.storage_type == esp_mail_file_storage_type_sd)
       file = ESP_MAIL_SD_FS.open(filepath.c_str(), FILE_READ);
@@ -2858,6 +2848,21 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
 #elif defined(ESP8266)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), "r");
 #endif
+
+    if (!file)
+      return false;
+
+    if (inlined)
+      getInlineHeader(buf, boundary, att, file.size());
+    else
+      getAttachHeader(buf, boundary, att, file.size());
+
+    if (!bdat(smtp, msg, buf.length(), false))
+      return false;
+
+    if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+      return false;
+
     return true;
   }
 
@@ -2987,7 +2992,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const std
             esp_mail_debug(s.c_str());
 
           buf.clear();
-          getInlineHeader(buf, related, att);
+          getInlineHeader(buf, related, att, att->blob.size);
 
           if (!bdat(smtp, msg, buf.length(), false))
             return false;
@@ -3011,7 +3016,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const std
 
           if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
-            _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+            _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
             _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -4045,7 +4050,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const std::s
   return true;
 }
 
-void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach)
+void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach, size_t size)
 {
   appendP(header, esp_mail_str_33, false);
   header += boundary;
@@ -4079,7 +4084,11 @@ void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &bo
 
   appendP(header, esp_mail_str_299, false);
   header += filename;
-  appendP(header, esp_mail_str_36, false);
+  appendP(header, esp_mail_str_327, false);
+  char *tmp = intStr(size);
+  header += tmp;
+  delS(tmp);
+  appendP(header, esp_mail_str_34, false);
 
   appendP(header, esp_mail_str_300, false);
   header += filename;
@@ -4106,7 +4115,7 @@ void ESP_Mail_Client::getInlineHeader(std::string &header, const std::string &bo
   std::string().swap(filename);
 }
 
-void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach)
+void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach, size_t size)
 {
   appendP(header, esp_mail_str_33, false);
   header += boundary;
@@ -4141,7 +4150,11 @@ void ESP_Mail_Client::getAttachHeader(std::string &header, const std::string &bo
   {
     appendP(header, esp_mail_str_30, false);
     header += filename;
-    appendP(header, esp_mail_str_36, false);
+    appendP(header, esp_mail_str_327, false);
+    char *tmp = intStr(size);
+    header += tmp;
+    delS(tmp);
+    appendP(header, esp_mail_str_34, false);
   }
 
   if (strlen(attach->descr.transfer_encoding) > 0)
@@ -5692,22 +5705,27 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 esp_mail_debug((const char *)response);
             }
 
-            //some IMAP servers advertise CAPABILITY in their responses
-            //try to read the next available response
-            memset(response, 0, chunkBufSize);
-            if (!imap->_secure)
-              readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
+            if (imap->_imap_cmd == esp_mail_imap_cmd_close)
+              completedResponse = true;
             else
-              readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
-            if (readLen)
             {
-              completedResponse = false;
-              imapResp = imapResponseStatus(imap, response);
-              if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+              //some IMAP servers advertise CAPABILITY in their responses
+              //try to read the next available response
+              memset(response, 0, chunkBufSize);
+              if (!imap->_secure)
+                readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
+              else
+                readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
+              if (readLen)
+              {
+                completedResponse = false;
+                imapResp = imapResponseStatus(imap, response);
+                if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+                  completedResponse = true;
+              }
+              else
                 completedResponse = true;
             }
-            else
-              completedResponse = true;
           }
           else
           {
@@ -5989,7 +6007,7 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
     _sdOk = sdTest();
   else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
-    _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+    _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
     _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -6227,7 +6245,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       _sdOk = sdTest();
     else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
-      _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -7589,7 +7607,7 @@ bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
 #if defined(ESP32)
-      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -8273,7 +8291,7 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
 #if defined(ESP32)
-      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_SPIFFS_IF_FAILED);
+      MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
@@ -8300,16 +8318,6 @@ void SMTPSession::debug(int level)
 String SMTPSession::errorReason()
 {
   std::string ret;
-  if (_smtpStatus.text.length() > 0)
-  {
-    MailClient.appendP(ret, esp_mail_str_312, true);
-    char *code = MailClient.intStr(_smtpStatus.respCode);
-    ret += code;
-    MailClient.delS(code);
-    MailClient.appendP(ret, esp_mail_str_313, false);
-    ret += _smtpStatus.text;
-    return ret.c_str();
-  }
 
   switch (_smtpStatus.statusCode)
   {
@@ -8376,6 +8384,17 @@ String SMTPSession::errorReason()
 
   default:
     break;
+  }
+
+  if (_smtpStatus.text.length() > 0 && ret.length() == 0)
+  {
+    MailClient.appendP(ret, esp_mail_str_312, true);
+    char *code = MailClient.intStr(_smtpStatus.respCode);
+    ret += code;
+    MailClient.delS(code);
+    MailClient.appendP(ret, esp_mail_str_313, false);
+    ret += _smtpStatus.text;
+    return ret.c_str();
   }
   return ret.c_str();
 }

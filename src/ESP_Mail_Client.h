@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.0
- *   Released:  March 9, 2021
+ *   Version:   1.1.2
+ *   Released:  March 16, 2021
  * 
  *   Updates:
- * - Add support SMTP message content from blob and flash and SD files.
- * - Allow the file systems configuration in ESP_Mail_FS.h.
+ * - Fix IMAP's mailbox closing timed out.
+ * - Add format flash config if mount failed.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -44,6 +44,7 @@
 #include "extras/ESPTimeHelper.h"
 
 #if defined(ESP32)
+#define FORMAT_FLASH FORMAT_FLASH_IF_MOUNT_FAILED
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
@@ -51,7 +52,6 @@
 #include <SPIFFS.h>
 #include <ETH.h>
 #include "wcs/esp32/ESP_Mail_HTTPClient32.h"
-#include "extras/ESPTimeHelper.h"
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -67,7 +67,6 @@
 #include <vector>
 #include <string>
 
-#define FORMAT_SPIFFS_IF_FAILED true
 #if defined(ESP8266)
 #define SD_CS_PIN 15
 #endif
@@ -1570,6 +1569,7 @@ static const char esp_mail_str_323[] PROGMEM = "$ DELETE ";
 static const char esp_mail_str_324[] PROGMEM = "HEADER.FIELDS";
 static const char esp_mail_str_325[] PROGMEM = "flash content message";
 static const char esp_mail_str_326[] PROGMEM = "file content message";
+static const char esp_mail_str_327[] PROGMEM = "\"; size=";
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -2238,9 +2238,9 @@ private:
   void formatFlowedText(std::string &content);
   void softBreak(std::string &content, const char *quoteMarks);
   bool sendMSG(SMTPSession *smtp, SMTP_Message *msg, const std::string &boundary);
-  void getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach);
+  void getAttachHeader(std::string &header, const std::string &boundary, SMTP_Attachment *attach, size_t size);
   void getRFC822PartHeader(SMTPSession *smtp, std::string &header, const std::string &boundary);
-  void getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach);
+  void getInlineHeader(std::string &header, const std::string &boundary, SMTP_Attachment *inlineAttach, size_t size);
   unsigned char *decodeBase64(const unsigned char *src, size_t len, size_t *out_len);
   std::string encodeBase64Str(const unsigned char *src, size_t len);
   std::string encodeBase64Str(uint8_t *src, size_t len);
