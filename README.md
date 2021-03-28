@@ -79,7 +79,7 @@ The examples in the examples folder provide the full options usages.
 
 ## Notes
 
-The string function's parameters or properties of structured data is the pointer to constant char or char array.
+The string in the function's parameters or properties of structured data is the pointer to constant char or char array.
 
 You need to assign the string literal or char array or pointer to constant char to it.
 
