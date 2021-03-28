@@ -12,7 +12,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2020 mobizt
+ * Copyright (c) 2021 mobizt
  *
 */
 
@@ -214,6 +214,39 @@ void setup()
   /* Declare the session config data */
   ESP_Mail_Session session;
 
+  /** ########################################################
+   * Some properties of SMTPSession data and parameters pass to 
+   * SMTP_Message class accept the pointer to constant char
+   * i.e. const char*. 
+   * 
+   * You may assign a string literal to that properties or function 
+   * like below example.
+   *   
+   * session.login.user_domain = "mydomain.net";
+   * session.login.user_domain = String("mydomain.net").c_str();
+   * 
+   * or
+   * 
+   * String doman = "mydomain.net";
+   * session.login.user_domain = domain.c_str();
+   * 
+   * And
+   * 
+   * String name = "Jack " + String("dawson");
+   * String email = "jack_dawson" + String(123) + "@mail.com";
+   * 
+   * message.addRecipient(name.c_str(), email.c_str());
+   * 
+   * message.addHeader(String("Message-ID: <abcde.fghij@gmail.com>").c_str());
+   * 
+   * or
+   * 
+   * String header = "Message-ID: <abcde.fghij@gmail.com>";
+   * message.addHeader(header.c_str());
+   * 
+   * ###########################################################
+  */
+
   /* Set the session config */
   session.server.host_name = SMTP_HOST;
   session.server.port = SMTP_PORT;
@@ -235,7 +268,8 @@ void setup()
   message.addRecipient("user1", "####@#####_dot_com");
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
-  message.html.content = "<span style=\"color:#ff0000;\">This message contains 2 inline images and 2 attachment files.</span><br/><br/><img src=\"green.png\"  width=\"100\" height=\"100\"> <img src=\"orange.png\" width=\"100\" height=\"100\">";
+  String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 2 inline images and 2 attachment files.</span><br/><br/><img src=\"green.png\"  width=\"100\" height=\"100\"> <img src=\"orange.png\" width=\"100\" height=\"100\">";
+  message.html.content = htmlMsg.c_str();
 
   /** The HTML text message character set e.g.
    * us-ascii

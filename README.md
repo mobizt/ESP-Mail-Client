@@ -1,4 +1,4 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.1.3
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.1.4
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -10,7 +10,7 @@ The library was tested and work well with ESP32s and ESP8266s based modules.
 
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
-![ESP32 Mail](/media/images/esp-mail-client.svg)
+![ESP Mail](/media/images/esp-mail-client.svg)
 
 Copyright (c) 2021 K. Suwatchai (Mobizt).
 
@@ -19,13 +19,13 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support Espressif ESP32 and ESP8266 MCUs based devices.
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
-* Secured connection with SSL and TLS.
+* Support secured (with SSL and TLS) and non-secure ports.
 * Support mailbox selection for Email reading and searching.
 * Support the content encodings e.g. quoted-printable and base64.
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support many types of embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
-* Support flash memory and SD card for file storages. Can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
+* Support flash memory and SD card for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32).
 * Customizable operating configurations (see the examples for the usages)
 
@@ -76,6 +76,31 @@ See [Function Description](/src/README.md) for all available functions.
 The following examples showed the minimum usage which many options are not configured.
 
 The examples in the examples folder provide the full options usages.
+
+## Notes
+
+The string function's parameters or properties of structured data is the pointer to constant char or char array.
+
+You need to assign the string literal or char array or pointer to constant char to it.
+
+#### Ex.
+
+```cpp
+message.sender.name = "My Mail";
+message.sender.email = "sender or your Email address";
+```
+
+Or using String class
+
+```cpp
+String name = "John";
+String email = "john@mail.com";
+
+message.sender.name = name.c_str();
+message.sender.email = email.c_str();
+```
+
+
 
 
 ### Send the Email

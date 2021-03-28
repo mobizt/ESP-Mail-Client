@@ -6,11 +6,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.3
- *   Released:  March 17, 2021
+ *   Version:   1.1.4
+ *   Released:  March 28, 2021
  * 
  *   Updates:
- * - Update the library version macro.
+ * - Update the example description for the string literal usages.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -37,8 +37,6 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-
-
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
