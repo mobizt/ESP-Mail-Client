@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.6
+ *Customized ssl_client.cpp to support STARTTLS protocol, version 1.0.8
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -38,6 +38,7 @@
 
 #include <Arduino.h>
 
+#include <esp32-hal-log.h>
 #include <lwip/err.h>
 #include <lwip/sockets.h>
 #include <lwip/sys.h>
@@ -73,16 +74,16 @@ static int _handle_error(int err, const char *file, int line)
 
 #define handle_error(e) _handle_error(e, __FUNCTION__, __LINE__)
 
-void ssl_init(esp_mail_ssl_ctx32 *ssl_client)
+void esp_mail_ssl_client32::ssl_init(esp_mail_ssl_ctx32 *ssl_client)
 {
     mbedtls_ssl_init(&ssl_client->ssl_ctx);
     mbedtls_ssl_config_init(&ssl_client->ssl_conf);
     mbedtls_ctr_drbg_init(&ssl_client->drbg_ctx);
 }
 
-int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+int esp_mail_ssl_client32::start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
 {
-   
+
     if (rootCABuff == NULL && pskIdent == NULL && psKey == NULL && !insecure)
     {
         if (ssl_client->_debugCallback)
@@ -126,19 +127,30 @@ int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port
     if (ssl_client->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_5);
 
-   if (lwip_connect(ssl_client->socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0) {
-        if(timeout <= 0){
+    if (lwip_connect(ssl_client->socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0)
+    {
+        if (timeout <= 0)
+        {
             timeout = 30000; // Milli seconds.
         }
-        timeval so_timeout = { .tv_sec = timeout / 1000, .tv_usec = (timeout % 1000) * 1000 };
+        timeval so_timeout = {.tv_sec = timeout / 1000, .tv_usec = (timeout % 1000) * 1000};
 
-#define ROE(x,msg) { if (((x)<0)) { log_e("LWIP Socket config of " msg " failed."); return -1; }}
-        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_RCVTIMEO, &so_timeout, sizeof(so_timeout)),"SO_RCVTIMEO");
-        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_SNDTIMEO, &so_timeout, sizeof(so_timeout)),"SO_SNDTIMEO");
+#define ROE(x, msg)                                         \
+    {                                                       \
+        if (((x) < 0))                                      \
+        {                                                   \
+            log_e("LWIP Socket config of " msg " failed."); \
+            return -1;                                      \
+        }                                                   \
+    }
+        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_RCVTIMEO, &so_timeout, sizeof(so_timeout)), "SO_RCVTIMEO");
+        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_SNDTIMEO, &so_timeout, sizeof(so_timeout)), "SO_SNDTIMEO");
 
-        ROE(lwip_setsockopt(ssl_client->socket, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable)),"TCP_NODELAY");
-        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)),"SO_KEEPALIVE");
-    } else {
+        ROE(lwip_setsockopt(ssl_client->socket, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable)), "TCP_NODELAY");
+        ROE(lwip_setsockopt(ssl_client->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)), "SO_KEEPALIVE");
+    }
+    else
+    {
         if (ssl_client->_debugCallback)
             ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_7);
         log_e("Connect to Server failed!");
@@ -150,7 +162,7 @@ int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port
     return ssl_client->socket;
 }
 
-int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+int esp_mail_ssl_client32::start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
 {
 
     char buf[512];
@@ -162,16 +174,13 @@ int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t 
     log_v("Seeding the random number generator");
     mbedtls_entropy_init(&ssl_client->entropy_ctx);
 
-    ret = mbedtls_ctr_drbg_seed(&ssl_client->drbg_ctx, mbedtls_entropy_func,
-                                &ssl_client->entropy_ctx, (const unsigned char *)_esp_mail_pers32, strlen(_esp_mail_pers32));
-
+    ret = mbedtls_ctr_drbg_seed(&ssl_client->drbg_ctx, mbedtls_entropy_func, &ssl_client->entropy_ctx, (const unsigned char *)_esp_mail_pers32, strlen(_esp_mail_pers32));
     if (ret < 0)
     {
         if (ssl_client->_debugCallback)
             ssl_client_send_mbedtls_error_cb(ssl_client, ret);
         return handle_error(ret);
     }
-
 
     if (ssl_client->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_10);
@@ -271,7 +280,6 @@ int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t 
             log_e("mbedtls_ssl_conf_psk returned %d", ret);
             return handle_error(ret);
         }
-
     }
     else
     {
@@ -298,7 +306,6 @@ int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t 
             mbedtls_x509_crt_free(&ssl_client->client_cert);
             return handle_error(ret);
         }
-
 
         if (ssl_client->_debugCallback)
             ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_16);
@@ -339,8 +346,6 @@ int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t 
     }
 
     mbedtls_ssl_set_bio(&ssl_client->ssl_ctx, &ssl_client->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
-
-
 
     if (ssl_client->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_18);
@@ -411,7 +416,7 @@ int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t 
     return ssl_client->socket;
 }
 
-void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+void esp_mail_ssl_client32::stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
     if (ssl_client->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl_client, esp_ssl_client_str_22);
@@ -430,7 +435,7 @@ void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, con
     mbedtls_entropy_free(&ssl_client->entropy_ctx);
 }
 
-int data_to_read(esp_mail_ssl_ctx32 *ssl_client)
+int esp_mail_ssl_client32::data_to_read(esp_mail_ssl_ctx32 *ssl_client)
 {
     int ret, res;
     ret = mbedtls_ssl_read(&ssl_client->ssl_ctx, NULL, 0);
@@ -447,7 +452,7 @@ int data_to_read(esp_mail_ssl_ctx32 *ssl_client)
     return res;
 }
 
-int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t len)
+int esp_mail_ssl_client32::send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, size_t len)
 {
     log_v("Writing HTTP request with %d bytes...", len); //for low level debug
     int ret = -1;
@@ -466,7 +471,7 @@ int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t 
     return ret;
 }
 
-int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length)
+int esp_mail_ssl_client32::get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length)
 {
 
     //log_d( "Reading HTTP response...");   //for low level debug
@@ -478,7 +483,7 @@ int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length)
     return ret;
 }
 
-static bool parseHexNibble(char pb, uint8_t *res)
+bool esp_mail_ssl_client32::parseHexNibble(char pb, uint8_t *res)
 {
     if (pb >= '0' && pb <= '9')
     {
@@ -499,7 +504,7 @@ static bool parseHexNibble(char pb, uint8_t *res)
 }
 
 // Compare a name from certificate and domain name, return true if they match
-static bool matchName(const std::string &name, const std::string &domainName)
+bool esp_mail_ssl_client32::matchName(const std::string &name, const std::string &domainName)
 {
     size_t wildcardPos = name.find('*');
     if (wildcardPos == std::string::npos)
@@ -530,7 +535,7 @@ static bool matchName(const std::string &name, const std::string &domainName)
 }
 
 // Verifies certificate provided by the peer to match specified SHA256 fingerprint
-bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name)
+bool esp_mail_ssl_client32::verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name)
 {
     // Convert hex string to byte array
     uint8_t fingerprint_local[32];
@@ -589,7 +594,7 @@ bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, cons
 }
 
 // Checks if peer certificate has specified domain in CN or SANs
-bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name)
+bool esp_mail_ssl_client32::verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name)
 {
     log_d("domain name: '%s'", (domain_name) ? domain_name : "(null)");
     std::string domain_name_str(domain_name);
@@ -636,12 +641,12 @@ bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name)
     return false;
 }
 
-int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen)
+int esp_mail_ssl_client32::_ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen)
 {
     return lwip_write(ssl_client->socket, buf, bufLen);
 }
 
-int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen)
+int esp_mail_ssl_client32::_ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen)
 {
     fd_set readset;
     fd_set writeset;
@@ -667,7 +672,7 @@ int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen)
     return read(ssl_client->socket, buf, bufLen);
 }
 
-void ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo)
+void esp_mail_ssl_client32::ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo)
 {
     char *buf = new char[512];
     char *error_buf = new char[100];
@@ -675,21 +680,23 @@ void ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo)
     strcpy_P(buf, esp_ssl_client_str_1);
     mbedtls_strerror(errNo, error_buf, 100);
     strcat(buf, error_buf);
-    ssl_client->_debugCallback(buf);
+    DebugMsgCallback cb = *ssl_client->_debugCallback;
+    cb(buf);
     delete[] error_buf;
     delete[] buf;
 }
 
-void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info)
+void esp_mail_ssl_client32::ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info)
 {
     size_t dbgInfoLen = strlen_P(info) + 10;
     char *dbgInfo = new char[dbgInfoLen];
     memset(dbgInfo, 0, dbgInfoLen);
     strcpy_P(dbgInfo, info);
-    ssl_client->_debugCallback(dbgInfo);
+    DebugMsgCallback cb = *ssl_client->_debugCallback;
+    cb(dbgInfo);
     delete[] dbgInfo;
 }
 
 #endif //ESP32
 
-#endif //SSL_CLIENT32_CPP
+#endif //ESP_MAIL_SSL_CLIENT32_CPP

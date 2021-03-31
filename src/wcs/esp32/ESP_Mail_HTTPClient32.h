@@ -1,7 +1,7 @@
 /*
  * Customized version of ESP32 HTTPClient Library. 
  * 
- * v 1.1.2
+ * v 1.1.4
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -39,8 +39,8 @@
 #include <FS.h>
 #include <SPIFFS.h>
 #include <SD.h>
-#include "ESP_Mail_WCS32.h"
 #include "ESP_Mail_FS.h"
+#include "ESP_Mail_WCS32.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -50,8 +50,6 @@
 #if __has_include(<WiFiEspAT.h>) || __has_include(<espduino.h>)
 #error WiFi UART bridge was not supported.
 #endif
-
-static const char esp_mail_esp_idf_branch_str[] PROGMEM = "release/v";
 
 #define ESP_MAIL_ERROR_HTTPC_ERROR_CONNECTION_REFUSED (-1)
 #define ESP_MAIL_ERROR_HTTPC_ERROR_SEND_HEADER_FAILED (-2)

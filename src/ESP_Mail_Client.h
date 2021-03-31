@@ -1,16 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.1.3"
+#define ESP_MAIL_VERSION "1.1.5"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.4
- *   Released:  March 28, 2021
+ *   Version:   1.1.5
+ *   Released:  March 31, 2021
  * 
  *   Updates:
- * - Update the example description for the string literal usages.
+ * - Fix the ESP32 Ethernet issue.
+ * - Add ESP32 usage with LAN8720 Ethernet example.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -45,16 +46,12 @@
 #if defined(ESP32)
 #define FORMAT_FLASH FORMAT_FLASH_IF_MOUNT_FAILED
 #include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include <FS.h>
 #include <SPIFFS.h>
 #include <ETH.h>
 #include "wcs/esp32/ESP_Mail_HTTPClient32.h"
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
-#include <WiFiClientSecure.h>
 #define FS_NO_GLOBALS
 #include <FS.h>
 #include "wcs/esp8266/ESP_Mail_HTTPClient.h"
@@ -1569,6 +1566,8 @@ static const char esp_mail_str_324[] PROGMEM = "HEADER.FIELDS";
 static const char esp_mail_str_325[] PROGMEM = "flash content message";
 static const char esp_mail_str_326[] PROGMEM = "file content message";
 static const char esp_mail_str_327[] PROGMEM = "\"; size=";
+static const char esp_mail_str_328[] PROGMEM = "0.0.0.0";
+
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -2172,6 +2171,7 @@ private:
   uint16_t _reconnectTimeout = ESP_MAIL_WIFI_RECONNECT_TIMEOUT;
 
   bool _sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
+  bool ethLinkUp();
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
   void closeTCP(SMTPSession *smtp);
@@ -2586,7 +2586,7 @@ private:
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
   struct esp_mail_auth_capability_t _auth_capability;
   struct esp_mail_smtp_capability_t _send_capability;
-  ESP_Mail_Session *_sesson_cfg;
+  ESP_Mail_Session *_sesson_cfg = NULL;
 
   bool _debug = false;
   int _debugLevel = 0;

@@ -1,11 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.4
- *   Released:  March 28, 2021
+ *   Version:   1.1.5
+ *   Released:  March 31, 2021
  * 
  *   Updates:
- * - Update the example description for the string literal usages.
+ * - Fix the ESP32 Ethernet issue.
+ * - Add ESP32 usage with LAN8720 Ethernet example.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -5373,10 +5374,22 @@ void ESP_Mail_Client::setSecure(ESP_Mail_HTTPClient &httpClient, ESP_Mail_Sessio
 #endif
 }
 
+bool ESP_Mail_Client::ethLinkUp()
+{
+  bool ret = false;
+#if defined(ESP32)
+  char *ip = strP(esp_mail_str_328);
+  if (strcmp(ETH.localIP().toString().c_str(), ip) != 0)
+    ret = ETH.linkUp();
+  delS(ip);
+#endif
+  return ret;
+}
+
 bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 {
-
-  bool status = WiFi.status() == WL_CONNECTED;
+  
+  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp();
 
   if (dataTime > 0)
   {
@@ -5405,7 +5418,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
       _lastReconnectMillis = millis();
     }
 
-    status = WiFi.status() == WL_CONNECTED;
+    status = WiFi.status() == WL_CONNECTED || ethLinkUp();
   }
 
   return status;
@@ -5414,7 +5427,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
 
-  bool status = WiFi.status() == WL_CONNECTED;
+  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp();
 
   if (dataTime > 0)
   {
@@ -5467,7 +5480,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
       _lastReconnectMillis = millis();
     }
 
-    status = WiFi.status() == WL_CONNECTED;
+    status = WiFi.status() == WL_CONNECTED || ethLinkUp();
   }
 
   return status;
@@ -7589,7 +7602,6 @@ bool IMAPSession::closeSession()
 
 bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
 {
-
   if (_tcpConnected)
     MailClient.closeTCP(this);
 

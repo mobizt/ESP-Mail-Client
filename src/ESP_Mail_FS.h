@@ -1,5 +1,5 @@
-#ifndef ESP_Mail_FS_H
-#define ESP_Mail_FS_H
+#ifndef ESP_Mail_CONFIG_H
+#define ESP_Mail_CONFIG_H
 
 /**
  * To use other flash file systems
@@ -31,5 +31,6 @@
 
 //For ESP32, format SPIFFS or FFat if mounting failed
 #define FORMAT_FLASH_IF_MOUNT_FAILED 1
+
 
 #endif

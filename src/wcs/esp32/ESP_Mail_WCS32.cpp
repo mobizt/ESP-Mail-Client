@@ -1,5 +1,5 @@
 /*
- *Customized WiFiClientSecure.cpp version 1.0.6
+ *Customized WiFiClientSecure.cpp version 1.0.8
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -61,8 +61,8 @@ ESP_Mail_WCS32::ESP_Mail_WCS32()
 {
     _connected = false;
 
-    sslclient = new esp_mail_ssl_ctx32;
-    ssl_init(sslclient);
+    sslclient = new esp_mail_ssl_client32::esp_mail_ssl_ctx32;
+    _ssl_client32.ssl_init(sslclient);
     sslclient->socket = -1;
     sslclient->handshake_timeout = 120000;
     _use_insecure = false;
@@ -79,8 +79,8 @@ ESP_Mail_WCS32::ESP_Mail_WCS32(int sock)
     _connected = false;
     _timeout = 0;
 
-    sslclient = new esp_mail_ssl_ctx32;
-    ssl_init(sslclient);
+    sslclient = new esp_mail_ssl_client32::esp_mail_ssl_ctx32;
+    _ssl_client32.ssl_init(sslclient);
     sslclient->socket = sock;
     sslclient->handshake_timeout = 120000;
 
@@ -101,8 +101,8 @@ ESP_Mail_WCS32::ESP_Mail_WCS32(bool secured)
 {
     _connected = false;
 
-    sslclient = new esp_mail_ssl_ctx32;
-    ssl_init(sslclient);
+    sslclient = new esp_mail_ssl_client32::esp_mail_ssl_ctx32;
+    _ssl_client32.ssl_init(sslclient);
     sslclient->socket = -1;
     sslclient->handshake_timeout = 120000;
     _use_insecure = !secured;
@@ -138,7 +138,7 @@ void ESP_Mail_WCS32::stop()
         _connected = false;
         _peek = -1;
     }
-    stop_ssl_socket(sslclient, _CA_cert, _cert, _private_key);
+    _ssl_client32.stop_ssl_socket(sslclient, _CA_cert, _cert, _private_key);
 }
 
 int ESP_Mail_WCS32::connect(IPAddress ip, uint16_t port)
@@ -183,7 +183,7 @@ int ESP_Mail_WCS32::connect(const char *host, uint16_t port, const char *CA_cert
         sslclient->handshake_timeout = _timeout;
     }
 
-    int ret = start_socket(sslclient, host, port, _timeout, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
+    int ret = _ssl_client32.start_socket(sslclient, host, port, _timeout, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
 
     _lastError = ret;
     if (ret < 0)
@@ -195,7 +195,7 @@ int ESP_Mail_WCS32::connect(const char *host, uint16_t port, const char *CA_cert
 
     if (_secured)
     {
-        ret = start_ssl_client(sslclient, host, port, _timeout, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
+        ret = _ssl_client32.start_ssl_client(sslclient, host, port, _timeout, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
         _lastError = ret;
         if (ret < 0)
         {
@@ -226,8 +226,7 @@ int ESP_Mail_WCS32::connect(const char *host, uint16_t port, const char *pskIden
         sslclient->handshake_timeout = _timeout;
     }
 
-
-    int ret = start_socket(sslclient, host, port, _timeout, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
+    int ret = _ssl_client32.start_socket(sslclient, host, port, _timeout, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
     _lastError = ret;
     if (ret < 0)
     {
@@ -238,7 +237,7 @@ int ESP_Mail_WCS32::connect(const char *host, uint16_t port, const char *pskIden
 
     if (_secured)
     {
-        ret = start_ssl_client(sslclient, host, port, _timeout, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
+        ret = _ssl_client32.start_ssl_client(sslclient, host, port, _timeout, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
         _lastError = ret;
         if (ret < 0)
         {
@@ -283,7 +282,7 @@ size_t ESP_Mail_WCS32::write(const uint8_t *buf, size_t size)
     {
         return 0;
     }
-    int res = send_ssl_data(sslclient, buf, size);
+    int res = _ssl_client32.send_ssl_data(sslclient, buf, size);
     if (res < 0)
     {
         stop();
@@ -318,7 +317,7 @@ int ESP_Mail_WCS32::read(uint8_t *buf, size_t size)
         peeked = 1;
     }
 
-    int res = get_ssl_receive(sslclient, buf, size);
+    int res = _ssl_client32.get_ssl_receive(sslclient, buf, size);
     if (res < 0)
     {
         stop();
@@ -334,7 +333,7 @@ int ESP_Mail_WCS32::available()
     {
         return peeked;
     }
-    int res = data_to_read(sslclient);
+    int res = _ssl_client32.data_to_read(sslclient);
     if (res < 0)
     {
         stop();
@@ -387,7 +386,7 @@ bool ESP_Mail_WCS32::verify(const char *fp, const char *domain_name)
     if (!sslclient)
         return false;
 
-    return verify_ssl_fingerprint(sslclient, fp, domain_name);
+    return _ssl_client32.verify_ssl_fingerprint(sslclient, fp, domain_name);
 }
 
 char *ESP_Mail_WCS32::_streamLoad(Stream &stream, size_t size)
@@ -463,9 +462,9 @@ void ESP_Mail_WCS32::setSTARTTLS(bool enable)
     _secured = !enable;
 }
 
-void ESP_Mail_WCS32::setDebugCB(DebugMsgCallback cb)
+void ESP_Mail_WCS32::setDebugCB(DebugMsgCallback *cb)
 {
-    sslclient->_debugCallback = std::move(cb);
+    sslclient->_debugCallback =  cb;
 }
 
 int ESP_Mail_WCS32::_ns_available()
@@ -478,7 +477,7 @@ int ESP_Mail_WCS32::_ns_available()
         int bufLen = 1024;
         char *tmp = new char[bufLen];
         memset(tmp, 0, bufLen);
-        int ret = _ns_lwip_read(sslclient, tmp, bufLen);
+        int ret = _ssl_client32._ns_lwip_read(sslclient, tmp, bufLen);
         if (ret > 0)
             _rxBuf += tmp;
         delete[] tmp;
@@ -497,13 +496,13 @@ size_t ESP_Mail_WCS32::_ns_write(const char *buf, size_t size)
 {
     if (sslclient->socket < 0 || !size)
         return 0;
-    return _ns_lwip_write(sslclient, buf, size);
+    return _ssl_client32._ns_lwip_write(sslclient, buf, size);
 }
 
 size_t ESP_Mail_WCS32::_ns_read(char *buf, size_t size)
 {
     if (_rxBuf.length() == 0)
-        return _ns_lwip_read(sslclient, buf, size);
+        return _ssl_client32._ns_lwip_read(sslclient, buf, size);
     else
     {
         size_t sz = size;
@@ -522,7 +521,7 @@ int ESP_Mail_WCS32::_ns_read()
     {
         char *buf = new char[2];
         memset(buf, 0, 2);
-        int ret = _ns_lwip_read(sslclient, buf, 1);
+        int ret = _ssl_client32._ns_lwip_read(sslclient, buf, 1);
         if (ret > 0)
             c = buf[0];
         delete[] buf;
@@ -545,9 +544,9 @@ bool ESP_Mail_WCS32::_ns_connect_ssl()
 {
     int ret = 0;
     if (_withKey)
-        ret = start_ssl_client(sslclient, _host.c_str(), _port, _timeout, _CA_cert, _cert, _private_key, NULL, NULL, _use_insecure);
+        ret = _ssl_client32.start_ssl_client(sslclient, _host.c_str(), _port, _timeout, _CA_cert, _cert, _private_key, NULL, NULL, _use_insecure);
     else if (_withCert)
-        ret = start_ssl_client(sslclient, _host.c_str(), _port, _timeout, NULL, NULL, NULL, _pskIdent, _psKey, _use_insecure);
+        ret = _ssl_client32.start_ssl_client(sslclient, _host.c_str(), _port, _timeout, NULL, NULL, NULL, _pskIdent, _psKey, _use_insecure);
 
     _lastError = ret;
     if (ret < 0)
@@ -562,4 +561,4 @@ bool ESP_Mail_WCS32::_ns_connect_ssl()
 
 #endif //ESP32
 
-#endif //WiFiClientSecureESP32_CPP
+#endif //ESP_Mail_WCS32_CPP

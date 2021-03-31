@@ -1,6 +1,6 @@
 
 /*
- *Customized WiFiClientSecure.h version 1.0.6
+ *Customized WiFiClientSecure.h version 1.0.8
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -61,7 +61,7 @@ class ESP_Mail_WCS32 : public WiFiClient
     friend class ESP_Mail_HTTPClient32;
 
 protected:
-    esp_mail_ssl_ctx32 *sslclient;
+    esp_mail_ssl_client32::esp_mail_ssl_ctx32 *sslclient;
 
     int _lastError = 0;
     int _peek = -1;
@@ -109,7 +109,7 @@ public:
     void setHandshakeTimeout(unsigned long handshake_timeout);
     int setTimeout(uint32_t seconds) { return 0; }
     void setSTARTTLS(bool enable);
-    void setDebugCB(DebugMsgCallback cb);
+    void setDebugCB(DebugMsgCallback *cb);
     int _ns_available();
     size_t _ns_write(const char *buf, size_t size);
     size_t _ns_read(char *buf, size_t size);
@@ -142,6 +142,7 @@ public:
     }
 
 private:
+    esp_mail_ssl_client32 _ssl_client32;
     char *_streamLoad(Stream &stream, size_t size);
     bool _secured = true;
     bool _withCert = false;

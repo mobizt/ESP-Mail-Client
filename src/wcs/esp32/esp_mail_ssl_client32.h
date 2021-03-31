@@ -1,5 +1,5 @@
 /*
- *Customized ssl_client.h to support STARTTLS protocol, version 1.0.6
+ *Customized ssl_client.h to support STARTTLS protocol, version 1.0.8
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -69,42 +69,50 @@ static const char esp_ssl_client_str_26[] PROGMEM = "! E: fingerprint doesn't ma
 static const char esp_ssl_client_str_27[] PROGMEM = "! E: root certificate, PSK identity or keys are required for secured connection";
 static const char esp_ssl_client_str_28[] PROGMEM = "! W: Skipping SSL Verification. INSECURE!";
 
-typedef void (*DebugMsgCallback)(const char *msg);
-
-typedef struct esp_mail_ssl_ctx32
+class esp_mail_ssl_client32
 {
-    int socket;
-    mbedtls_ssl_context ssl_ctx;
-    mbedtls_ssl_config ssl_conf;
+public:
+    esp_mail_ssl_client32(){};
 
-    mbedtls_ctr_drbg_context drbg_ctx;
-    mbedtls_entropy_context entropy_ctx;
+    typedef void (*DebugMsgCallback)(const char *msg);
 
-    mbedtls_x509_crt ca_cert;
-    mbedtls_x509_crt client_cert;
-    mbedtls_pk_context client_key;
-    DebugMsgCallback _debugCallback;
+    typedef struct esp_mail_ssl_ctx32
+    {
+        int socket;
+        mbedtls_ssl_context ssl_ctx;
+        mbedtls_ssl_config ssl_conf;
 
-    unsigned long handshake_timeout;
-} esp_mail_ssl_ctx32;
+        mbedtls_ctr_drbg_context drbg_ctx;
+        mbedtls_entropy_context entropy_ctx;
 
-void ssl_init(esp_mail_ssl_ctx32 *ssl_client);
+        mbedtls_x509_crt ca_cert;
+        mbedtls_x509_crt client_cert;
+        mbedtls_pk_context client_key;
+        DebugMsgCallback *_debugCallback = NULL;
 
-int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
-int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
-void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+        unsigned long handshake_timeout;
+    } esp_mail_ssl_ctx32;
 
-int data_to_read(esp_mail_ssl_ctx32 *ssl_client);
-int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, uint16_t len);
-int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length);
-bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name);
-bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name);
+    void ssl_init(esp_mail_ssl_ctx32 *ssl_client);
 
-int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen);
-int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen);
-void ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo);
-void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info);
+    int start_socket(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
+    int start_ssl_client(esp_mail_ssl_ctx32 *ssl_client, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
+    void stop_ssl_socket(esp_mail_ssl_ctx32 *ssl_client, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+
+    int data_to_read(esp_mail_ssl_ctx32 *ssl_client);
+    int send_ssl_data(esp_mail_ssl_ctx32 *ssl_client, const uint8_t *data, size_t len);
+    int get_ssl_receive(esp_mail_ssl_ctx32 *ssl_client, uint8_t *data, int length);
+    bool verify_ssl_fingerprint(esp_mail_ssl_ctx32 *ssl_client, const char *fp, const char *domain_name);
+    bool verify_ssl_dn(esp_mail_ssl_ctx32 *ssl_client, const char *domain_name);
+
+    int _ns_lwip_write(esp_mail_ssl_ctx32 *ssl_client, const char *buf, int bufLen);
+    int _ns_lwip_read(esp_mail_ssl_ctx32 *ssl_client, char *buf, int bufLen);
+    void ssl_client_send_mbedtls_error_cb(esp_mail_ssl_ctx32 *ssl_client, int errNo);
+    void ssl_client_debug_pgm_send_cb(esp_mail_ssl_ctx32 *ssl_client, PGM_P info);
+    bool parseHexNibble(char pb, uint8_t *res);
+    bool matchName(const std::string &name, const std::string &domainName);
+};
 
 #endif //ESP32
 
-#endif //SSL_CLIENT32_H
+#endif //ESP_MAIL_SSL_CLIENT32_H
