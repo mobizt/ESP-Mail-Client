@@ -29,7 +29,7 @@
  #define CARD_TYPE_SD_MMC 1
  *
 */
-#define ESP_Mail_DEFAULT_SD_FS SD //For ESP32 SDMMC
+#define ESP_Mail_DEFAULT_SD_FS SD
 #define CARD_TYPE_SD 1
 
 //For ESP32, format SPIFFS or FFat if mounting failed
