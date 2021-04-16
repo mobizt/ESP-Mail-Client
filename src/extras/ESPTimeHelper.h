@@ -49,6 +49,13 @@ public:
   */
   bool setClock(float gmtOffset, float daylightOffset);
 
+  /** Set system time with provided timestamp
+   * 
+   * @param ts timestamp in seconds from midnight Jan 1, 1970.
+   * @return error number, 0 for success.
+  */
+  int setTimestamp(time_t ts);
+
   /** Provide the Unix time
    * 
    * @return uint32_t The value of current Unix time.

@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32 and ESP8266
 
 
-The detail and usage of the available functions in the latest version (1.1.5) are showed below.
+The detail and usage of the available functions in the latest version (1.1.6) are showed below.
 
 
 ## Global functions
@@ -117,6 +117,25 @@ return **`boolean`** The boolean value indicates the success of operation.
 
 ```C++
 bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+```
+
+
+
+
+
+
+#### Initialize the SD_MMC card (ESP32 only).
+
+param **`mountpoint`** The mounting point.
+
+param **`mode1bit`** Allow 1 bit data line (SPI mode).
+
+param **`format_if_mount_failed`** Format SD_MMC card if mount failed.
+
+return **`Boolean`** type status indicates the success of the operation.
+
+```C++
+bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false);
 ```
 
 

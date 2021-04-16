@@ -31,10 +31,17 @@
 ESPTimeHelper::ESPTimeHelper()
 {
 }
+
 uint32_t ESPTimeHelper::getUnixTime()
 {
     uint32_t utime = (msec_time_diff + millis()) / 1000;
     return utime;
+}
+
+int ESPTimeHelper::setTimestamp(time_t ts)
+{
+    struct timeval tm = {ts, 0};//sec, us
+    return settimeofday((const timeval *)&tm, 0);
 }
 
 time_t ESPTimeHelper::getTimestamp(int year, int mon, int date, int hour, int mins, int sec)

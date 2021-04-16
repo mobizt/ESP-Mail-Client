@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.5
- *   Released:  March 31, 2021
- * 
+ *   Version:   1.1.6
+ *   Released:  April 16, 2021
+ *
  *   Updates:
- * - Fix the ESP32 Ethernet issue.
- * - Add ESP32 usage with LAN8720 Ethernet example.
+ * - Allow the SD_MMC card config and compilation errors.
+ * - Fix the loop issues.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -1394,11 +1394,19 @@ void ESP_Mail_Client::createDirs(std::string dirs)
 
 bool ESP_Mail_Client::sdTest()
 {
-
+#if defined(CARD_TYPE_SD)
   if (_sdConfigSet)
     sdBegin(_sck, _miso, _mosi, _ss);
   else
     sdBegin();
+#endif
+
+#if defined(ESP32)
+#if defined(CARD_TYPE_SD_MMC)
+  if (_sdConfigSet)
+    sdMMCBegin(sd_mmc_mountpoint, sd_mmc_mode1bit, sd_mmc_format_if_mount_failed);
+#endif
+#endif
 
   file = ESP_MAIL_SD_FS.open(esp_mail_str_204, FILE_WRITE);
   if (!file)
@@ -3318,11 +3326,14 @@ bool ESP_Mail_Client::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t s
   _ss = ss;
   _sdConfigSet = true;
 #if defined(ESP32)
+#if defined(CARD_TYPE_SD)
   SPI.begin(_sck, _miso, _mosi, _ss);
   return ESP_MAIL_SD_FS.begin(_ss, SPI);
+#endif
 #elif defined(ESP8266)
   return ESP_MAIL_SD_FS.begin(_ss);
 #endif
+  return false;
 }
 
 bool ESP_Mail_Client::sdBegin(void)
@@ -3333,6 +3344,21 @@ bool ESP_Mail_Client::sdBegin(void)
 #elif defined(ESP8266)
   return ESP_MAIL_SD_FS.begin(SD_CS_PIN);
 #endif
+  return false;
+}
+
+bool ESP_Mail_Client::sdMMCBegin(const char *mountpoint, bool mode1bit, bool format_if_mount_failed)
+{
+#if defined(ESP32)
+#if defined(CARD_TYPE_SD_MMC)
+  _sdConfigSet = true;
+  sd_mmc_mountpoint = mountpoint;
+  sd_mmc_mode1bit = mode1bit;
+  sd_mmc_format_if_mount_failed = format_if_mount_failed;
+  return ESP_MAIL_SD_FS.begin(mountpoint, mode1bit, format_if_mount_failed);
+#endif
+#endif
+  return false;
 }
 
 bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, const char *boundary)
@@ -5388,7 +5414,7 @@ bool ESP_Mail_Client::ethLinkUp()
 
 bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 {
-  
+
   bool status = WiFi.status() == WL_CONNECTED || ethLinkUp();
 
   if (dataTime > 0)
@@ -7503,31 +7529,12 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, Fil
     }
     else
     {
-      if (len - fbufIndex == 1)
+      size_t readLen = file.read(fbuf, len - fbufIndex);
+      if (readLen != len - fbufIndex)
       {
-        fbuf[0] = file.read();
-        if (fbuf[0] < 0)
-        {
-          errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
-          break;
-        }
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
+        break;
       }
-      else if (len - fbufIndex == 2)
-      {
-        fbuf[0] = file.read();
-        if (fbuf[0] < 0)
-        {
-          errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
-          break;
-        }
-        fbuf[1] = file.read();
-        if (fbuf[1] < 0)
-        {
-          errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
-          break;
-        }
-      }
-      break;
     }
   }
 

@@ -33,6 +33,7 @@ setFlag KEYWORD2
 addFlag KEYWORD2
 removeFlag  KEYWORD2
 sdBegin KEYWORD2
+sdMMCBegin  KEYWORD2
 connect KEYWORD2
 closeSession    KEYWORD2
 debug   KEYWORD2

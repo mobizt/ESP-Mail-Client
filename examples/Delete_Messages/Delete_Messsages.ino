@@ -123,3 +123,20 @@ void loop()
 {
 
 }
+
+void printAllMailboxesInfo(IMAPSession &imap)
+{
+    /* Declare the folder collection class to get the list of mailbox folders */
+    FoldersCollection folders;
+
+    /* Get the mailbox folders */
+    if (imap.getFolders(folders))
+    {
+        for (size_t i = 0; i < folders.size(); i++)
+        {
+            /* Iterate each folder info using the  folder info item data */
+            FolderInfo folderInfo = folders.info(i);
+            Serial.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+        }
+    }
+}
