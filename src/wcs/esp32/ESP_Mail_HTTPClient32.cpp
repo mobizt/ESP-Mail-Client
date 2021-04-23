@@ -1,7 +1,7 @@
 /*
  * Customized version of ESP32 HTTPClient Library. 
  * 
- * v 1.1.4
+ * v 1.1.5
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -166,7 +166,8 @@ bool ESP_Mail_HTTPClient32::connect(bool secured)
         return true;
     }
 
-    _wcs->setDebugCB(&_debugCallback);
+    if (_debugCallback)
+        _wcs->setDebugCB(&_debugCallback);
     _wcs->setSTARTTLS(!secured);
 
     if (!_wcs->connect(_host.c_str(), _port))

@@ -14,7 +14,7 @@
 */
 
 /**
- * There are may sources for LAN8720 and ESP32 interconnection on the internet which may
+ * There are many sources for LAN8720 and ESP32 interconnection on the internet which may
  * work for your LAN8720 board.
  * 
  * Some methods worked unless no IP is available.
@@ -25,7 +25,7 @@
  * 
  * The on-board LAN8720 50 MHz XTAL chip will be disabled by connect its enable pin or pin 1 to GND.
  * 
- * Pleae see the images in the folder "modified_LAN8720_board_images" for how to modify the LAN8720 board.
+ * Please see the images in the folder "modified_LAN8720_board_images" for how to modify the LAN8720 board.
  * 
  * The LAN8720 Ethernet modified board and ESP32 board wiring connection.
  * 
@@ -45,7 +45,7 @@
  * 
 */
 
-//To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+//In case of Gmail, to send the Email via port 465 (SSL), less secure app option should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
 
 #include <WiFi.h>
 #include <ESP_Mail_Client.h>

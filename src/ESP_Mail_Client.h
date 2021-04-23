@@ -1,19 +1,18 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.1.6"
+#define ESP_MAIL_VERSION "1.1.7"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
- *
- *   Version:   1.1.6
- *   Released:  April 16, 2021
+ * 
+ *   Version:   1.1.7
+ *   Released:  April 24, 2021
  *
  *   Updates:
- * - Allow the SD_MMC card config and compilation errors.
- * - Fix the loop issues.
- *
- *
+ * - Fix the callback issue in non debug mode.
+ * 
+ * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read
  * Email
  * through the SMTP and IMAP servers.

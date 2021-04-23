@@ -1,7 +1,7 @@
 /*
  * Customized version of ESP32 HTTPClient Library. 
  * 
- * v 1.1.4
+ * v 1.1.5
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
