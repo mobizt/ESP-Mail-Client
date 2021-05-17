@@ -1,5 +1,5 @@
 /*
- * HTTP Client for ESP8266 wrapper v1.0.2
+ * HTTP Client for ESP8266 wrapper v1.0.3
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)

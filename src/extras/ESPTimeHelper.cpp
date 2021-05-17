@@ -1,8 +1,8 @@
 /*
- * ESP32 Internet Time Helper Arduino Library v 1.0.1
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.2
  *
  * The MIT License (MIT)
- * Copyright (c) 2019 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of

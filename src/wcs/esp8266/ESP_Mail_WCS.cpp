@@ -1,5 +1,5 @@
 /*
-  Customized version of WiFiClientSecure.cpp
+  Customized version of WiFiClientSecure.cpp v1.0.1
   
   WiFiClientBearSSL- SSL client/server for esp8266 using BearSSL libraries
   - Mostly compatible with Arduino WiFi shield library and standard
@@ -259,7 +259,7 @@ namespace ESP_Mail
       return 0;
     }
     _host_name = name;
-   if (!_secured)
+    if (!_secured)
       return true;
     return _connectSSL(name);
   }
@@ -885,7 +885,6 @@ namespace ESP_Mail
       ctx->match_fingerprint = _use_fingerprint ? _fingerprint : nullptr;
       ctx->allow_self_signed = _allow_self_signed ? 1 : 0;
     }
-    
 
     // Some constants uses to init the server/client contexts
     // Note that suites_P needs to be copied to RAM before use w/BearSSL!
@@ -2009,7 +2008,11 @@ namespace ESP_Mail
       return 0;
     }
     _client->setTimeout(_timeout);
+#if defined(ESP8266_CORE_SDK_V3_X_X)
+    return _client->write((const char *)buf, size);
+#else
     return _client->write(buf, size);
+#endif
   }
 
   size_t ESP_Mail_WCS::_ns_write(Stream &stream, size_t unused)
@@ -2025,17 +2028,32 @@ namespace ESP_Mail
       return 0;
     }
     _client->setTimeout(_timeout);
+#if defined(ESP8266_CORE_SDK_V3_X_X)
+    size_t dl = stream.available();
+    uint8_t buf[dl];
+    stream.readBytes(buf, dl);
+    return _client->write((const char *)buf, dl);
+#else
     return _client->write(stream);
+#endif
   }
 
   size_t ESP_Mail_WCS::_ns_write_P(PGM_P buf, size_t size)
   {
+
     if (!_client || !size)
     {
       return 0;
     }
     _client->setTimeout(_timeout);
+
+#if defined(ESP8266_CORE_SDK_V3_X_X)
+    char dest[size];
+    memcpy_P((void *)dest, (PGM_VOID_P)buf, size);
+    return _client->write((const char *)dest, size);
+#else
     return _client->write_P(buf, size);
+#endif
   }
 
   int ESP_Mail_WCS::_ns_available()

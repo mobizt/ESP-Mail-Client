@@ -1,16 +1,16 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.1.7"
+#define ESP_MAIL_VERSION "1.2.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
  * 
- *   Version:   1.1.7
- *   Released:  April 24, 2021
+ *   Version:   1.2.0
+ *   Released:  May 17, 2021
  *
  *   Updates:
- * - Fix the callback issue in non debug mode.
+ * - Add support ESP8266 Core SDK v3.x.x.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read
