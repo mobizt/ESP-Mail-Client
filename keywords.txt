@@ -34,6 +34,7 @@ addFlag KEYWORD2
 removeFlag  KEYWORD2
 sdBegin KEYWORD2
 sdMMCBegin  KEYWORD2
+getFreeHeap KEYWORD2
 connect KEYWORD2
 closeSession    KEYWORD2
 debug   KEYWORD2
@@ -125,3 +126,9 @@ esp_mail_imap_storage_config_t  KEYWORD3
 esp_mail_file_storage_type_none KEYWORD3
 esp_mail_file_storage_type_flash    KEYWORD3
 esp_mail_file_storage_type_sd   KEYWORD3
+
+######################################
+# Constants (LITERAL1)
+#######################################
+
+ESP_MAIL_PRINTF LITERAL1

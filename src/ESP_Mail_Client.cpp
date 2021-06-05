@@ -1,11 +1,11 @@
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.2.0
- *   Released:  May 17, 2021
+ *   Version:   1.3.0
+ *   Released:  June 5, 2021
  *
  *   Updates:
- * - Add support ESP8266 Core SDK v3.x.x.
+ * - Add support SAMD21 MCUs based board with u-blox NINA-W102 WiFi/Bluetooth module.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -117,7 +117,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
   if (!reconnect(imap))
     return false;
 
-  int cmem = ESP.getFreeHeap();
+  int cmem = MailClient.getFreeHeap();
 
   if (cmem < ESP_MAIL_MIN_MEM)
   {
@@ -135,7 +135,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     //authenticate new
     if (!imapAuth(imap))
     {
-      closeTCP(imap);
+      closeTCPSession(imap);
       return false;
     }
   }
@@ -288,11 +288,10 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
   for (size_t i = 0; i < imap->_msgNum.size(); i++)
   {
-
     imap->_cMsgIdx = i;
     imap->_totalRead++;
 
-    if (ESP.getFreeHeap() - (imap->_config->limit.msg_size * (i + 1)) < ESP_MAIL_MIN_MEM)
+    if (MailClient.getFreeHeap() - (imap->_config->limit.msg_size * (i + 1)) < ESP_MAIL_MIN_MEM)
     {
       if (imap->_debug)
         errorStatusCB(imap, MAIL_CLIENT_ERROR_OUT_OF_MEMORY);
@@ -409,6 +408,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
           _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
+#else
+        {
+        }
 #endif
       }
 
@@ -595,15 +597,19 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
       {
         if (imap->_storageType == esp_mail_file_storage_type_sd)
         {
+#if defined(ESP_MAIL_SD_FS)
           if (_sdOk)
             ESP_MAIL_SD_FS.end();
+#endif
           _sdOk = false;
         }
         else if (imap->_storageType == esp_mail_file_storage_type_flash)
         {
+
+#if defined(ESP_MAIL_FLASH_FS)
           if (_flashOk)
             ESP_MAIL_FLASH_FS.end();
-
+#endif
           _flashOk = false;
         }
       }
@@ -616,7 +622,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
       std::string s;
       appendP(s, esp_mail_str_261, true);
       appendP(s, esp_mail_str_84, false);
-      char *tmp = intStr(ESP.getFreeHeap());
+      char *tmp = intStr(MailClient.getFreeHeap());
       s += tmp;
       delS(tmp);
       esp_mail_debug(s.c_str());
@@ -724,7 +730,7 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
 
   if (!connected(imap))
   {
-    closeTCP(imap);
+    closeTCPSession(imap);
     return false;
   }
   int cLevel = 0;
@@ -816,18 +822,9 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
 
 bool ESP_Mail_Client::connected(IMAPSession *imap)
 {
-  if (!imap->_secure)
-  {
-    if (!imap->httpClient._stream())
-      return false;
-    return imap->httpClient._stream()->_ns_connected();
-  }
-  else
-  {
-    if (!imap->httpClient.stream())
-      return false;
-    return imap->httpClient.stream()->connected();
-  }
+  if (!imap->tcpClient.stream())
+    return false;
+  return imap->tcpClient.stream()->connected();
 }
 
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
@@ -836,7 +833,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   bool ssl = false;
   std::string buf;
 #if defined(ESP32)
-  imap->httpClient.setDebugCallback(NULL);
+  imap->tcpClient.setDebugCallback(NULL);
 #elif defined(ESP8266)
 
 #endif
@@ -855,14 +852,14 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
 #if defined(ESP32)
   if (imap->_debug)
-    imap->httpClient.setDebugCallback(esp_mail_debug);
+    imap->tcpClient.setDebugCallback(esp_mail_debug);
 #elif defined(ESP8266)
-  imap->httpClient.txBufDivider = 16; //minimum, tx buffer size for ssl data and request command data
-  imap->httpClient.rxBufDivider = 1;
+  imap->tcpClient.txBufDivider = 16; //minimum, tx buffer size for ssl data and request command data
+  imap->tcpClient.rxBufDivider = 1;
   if (imap->_config != nullptr)
   {
     if (!imap->_headerOnly && !imap->_config->enable.html && !imap->_config->enable.text && !imap->_config->download.attachment && !imap->_config->download.inlineImg && !imap->_config->download.html && !imap->_config->download.text)
-      imap->httpClient.rxBufDivider = 16; // minimum rx buffer size for only message header
+      imap->tcpClient.rxBufDivider = 16; // minimum rx buffer size for only message header
   }
 #endif
 
@@ -873,9 +870,9 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   }
   else
     secureMode = !imap->_sesson_cfg->secure.startTLS;
-
-  setSecure(imap->httpClient, imap->_sesson_cfg, imap->_caCert);
-
+#if defined(ESP32) || defined(ESP8266)
+  setSecure(imap->tcpClient, imap->_sesson_cfg, imap->_caCert);
+#endif
   if (imap->_readCallback)
     imapCBP(imap, esp_mail_str_50, false);
 
@@ -884,6 +881,18 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     std::string s;
     appendP(s, esp_mail_str_314, true);
     s += ESP_MAIL_VERSION;
+#if defined(ARDUINO_ARCH_SAMD)
+    std::string ninaFw = WiFi.firmwareVersion();
+    appendP(s, esp_mail_str_329, false);
+    s += ninaFw;
+    imap->tcpClient.firmwareBuildNumber();
+    if (imap->tcpClient._fwBuild > 0)
+    {
+      String build = String(imap->tcpClient._fwBuild);
+      appendP(s, esp_mail_str_330, false);
+      s += String(imap->tcpClient._fwBuild).c_str();
+    }
+#endif
     esp_mail_debug(s.c_str());
 
     debugInfoP(esp_mail_str_225);
@@ -899,19 +908,21 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     esp_mail_debug(s.c_str());
   }
 
-  imap->httpClient.begin(imap->_sesson_cfg->server.host_name, imap->_sesson_cfg->server.port);
+  imap->tcpClient.begin(imap->_sesson_cfg->server.host_name, imap->_sesson_cfg->server.port);
 
-  if (!imap->httpClient.connect(secureMode))
+  if (!imap->tcpClient.connect(secureMode, imap->_sesson_cfg->certificate.verify))
     return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 
   imap->_tcpConnected = true;
-  WiFiClient *stream = imap->httpClient.stream();
+
 #if defined(ESP32)
-  stream->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC);
+  WiFiClient *stream = imap->tcpClient.stream();
+  stream->setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 #elif defined(ESP8266)
-  stream->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000);
+  WiFiClient *stream = imap->tcpClient.stream();
+  stream->setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC * 1000);
 #endif
-  imap->httpClient.tcpTimeout = ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000;
+  imap->tcpClient.tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC * 1000;
 
   if (imap->_readCallback)
     imapCBP(imap, esp_mail_str_54, false);
@@ -952,9 +963,14 @@ init:
     }
 
     //connect in secure mode
-    //do ssl handshaking
-    if (!imap->httpClient._stream()->_ns_connect_ssl())
+    //do ssl handshake
+#if defined(ARDUINO_ARCH_SAMD)
+    if (!imap->tcpClient.connectSSL(imap->_sesson_cfg->certificate.verify))
       return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+#else
+    if (!imap->tcpClient.stream()->connectSSL(imap->_sesson_cfg->certificate.verify))
+      return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+#endif
 
     //set the secure mode
     imap->_sesson_cfg->secure.startTLS = false;
@@ -1123,13 +1139,13 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
 {
   if (!reconnect(imap))
   {
-    closeTCP(imap);
+    closeTCPSession(imap);
     return 0;
   }
 
   if (!connected(imap))
   {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -1146,19 +1162,13 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_println(tmp);
-    else
-      len = imap->httpClient.stream()->println(tmp);
+    len = imap->tcpClient.stream()->println(tmp);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_print(tmp);
-    else
-      len = imap->httpClient.stream()->print(tmp);
+    len = imap->tcpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -1176,13 +1186,13 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newli
 {
   if (!reconnect(imap))
   {
-    closeTCP(imap);
+    closeTCPSession(imap);
     return 0;
   }
 
   if (!connected(imap))
   {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -1198,19 +1208,13 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newli
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(data);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_println(data);
-    else
-      len = imap->httpClient.stream()->println(data);
+    len = imap->tcpClient.stream()->println(data);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(data, false);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_print(data);
-    else
-      len = imap->httpClient.stream()->print(data);
+    len = imap->tcpClient.stream()->print(data);
   }
 
   if (len != strlen(data) && len != strlen(data) + 2)
@@ -1225,13 +1229,13 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
 {
   if (!reconnect(imap))
   {
-    closeTCP(imap);
+    closeTCPSession(imap);
     return 0;
   }
 
   if (!connected(imap))
   {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -1248,19 +1252,13 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_println(tmp);
-    else
-      len = imap->httpClient.stream()->println(tmp);
+    len = imap->tcpClient.stream()->println(tmp);
   }
   else
   {
     if (imap->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-    if (!imap->_secure)
-      len = imap->httpClient._ns_print(tmp);
-    else
-      len = imap->httpClient.stream()->print(tmp);
+    len = imap->tcpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -1455,10 +1453,10 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   std::string s;
 
 #if defined(ESP32)
-  smtp->httpClient.setDebugCallback(NULL);
+  smtp->tcpClient.setDebugCallback(NULL);
 #elif defined(ESP8266)
-  smtp->httpClient.rxBufDivider = 16; // minimum rx buffer for smtp status response
-  smtp->httpClient.txBufDivider = 8;  // medium tx buffer for faster attachment/inline data transfer
+  smtp->tcpClient.rxBufDivider = 16; // minimum rx buffer for smtp status response
+  smtp->tcpClient.txBufDivider = 8;  // medium tx buffer for faster attachment/inline data transfer
 #endif
 
   if (smtp->_sesson_cfg->server.port == esp_mail_smtp_port_25)
@@ -1479,7 +1477,9 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
       ssl = true;
   }
 
-  setSecure(smtp->httpClient, smtp->_sesson_cfg, smtp->_caCert);
+#if defined(ESP32) || defined(ESP8266)
+  setSecure(smtp->tcpClient, smtp->_sesson_cfg, smtp->_caCert);
+#endif
 
   //Server connection attempt: no status code
   if (smtp->_sendCallback)
@@ -1489,6 +1489,18 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   {
     appendP(s, esp_mail_str_314, true);
     s += ESP_MAIL_VERSION;
+#if defined(ARDUINO_ARCH_SAMD)
+    std::string ninaFw = WiFi.firmwareVersion();
+    appendP(s, esp_mail_str_329, false);
+    s += ninaFw;
+    smtp->tcpClient.firmwareBuildNumber();
+    if (smtp->tcpClient._fwBuild > 0)
+    {
+      String build = String(smtp->tcpClient._fwBuild);
+      appendP(s, esp_mail_str_330, false);
+      s += String(smtp->tcpClient._fwBuild).c_str();
+    }
+#endif
     esp_mail_debug(s.c_str());
 
     debugInfoP(esp_mail_str_236);
@@ -1505,12 +1517,12 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   }
 #if defined(ESP32)
   if (smtp->_debug)
-    smtp->httpClient.setDebugCallback(esp_mail_debug);
+    smtp->tcpClient.setDebugCallback(esp_mail_debug);
 #endif
 
-  smtp->httpClient.begin(smtp->_sesson_cfg->server.host_name, smtp->_sesson_cfg->server.port);
+  smtp->tcpClient.begin(smtp->_sesson_cfg->server.host_name, smtp->_sesson_cfg->server.port);
 
-  if (!smtp->httpClient.connect(secureMode))
+  if (!smtp->tcpClient.connect(secureMode, smtp->_sesson_cfg->certificate.verify))
     return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED);
 
   //server connected
@@ -1526,11 +1538,11 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   }
 
 #if defined(ESP32)
-  smtp->httpClient.stream()->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC);
+  smtp->tcpClient.stream()->setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 #elif defined(ESP8266)
-  smtp->httpClient.stream()->setTimeout(ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000);
+  smtp->tcpClient.stream()->setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC * 1000);
 #endif
-  smtp->httpClient.tcpTimeout = ESP_MAIL_DEFAULT_TCP_TIMEOUT_SEC * 1000;
+  smtp->tcpClient.tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC * 1000;
 
   smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state;
 
@@ -1607,10 +1619,15 @@ init:
       debugInfoP(esp_mail_str_310);
     }
 
-    //connect using secure mode
-    //do ssl handshaking
-    if (!smtp->httpClient._stream()->_ns_connect_ssl())
+    //connect in secure mode
+    //do ssl handshake
+#if defined(ARDUINO_ARCH_SAMD)
+    if (!smtp->tcpClient.connectSSL(smtp->_sesson_cfg->certificate.verify))
       return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
+#else
+    if (!smtp->tcpClient.stream()->connectSSL(smtp->_sesson_cfg->certificate.verify))
+      return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
+#endif
 
     //set the secure mode
     smtp->_sesson_cfg->secure.startTLS = false;
@@ -1762,18 +1779,9 @@ void ESP_Mail_Client::mimeFromFile(const char *name, std::string &mime)
 
 bool ESP_Mail_Client::connected(SMTPSession *smtp)
 {
-  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-  {
-    if (!smtp->httpClient._stream())
-      return false;
-    return smtp->httpClient._stream()->_ns_connected();
-  }
-  else
-  {
-    if (!smtp->httpClient.stream())
-      return false;
-    return smtp->httpClient.stream()->connected();
-  }
+  if (!smtp->tcpClient.stream())
+    return false;
+  return smtp->tcpClient.stream()->connected();
 }
 
 bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result)
@@ -1785,13 +1793,18 @@ bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
 
   if (smtp->_sendCallback)
   {
-    struct esp_mail_smtp_send_status_t status;
+    SMTP_Result status;
     status.completed = result;
-    status.timesstamp = time(nullptr);
+#if defined(ARDUINO_ARCH_SAMD)
+    unsigned long ts = WiFi.getTime();
+    status.timestamp = ts;
+#else
+    status.timestamp = time(nullptr);
+#endif
     status.subject = msg->subject;
     status.recipients = msg->_rcp[0].email;
 
-    smtp->sendingResult.add(status);
+    smtp->sendingResult.add(&status);
 
     smtp->_cbData._sentSuccess = smtp->_sentSuccessCount;
     smtp->_cbData._sentFailed = smtp->_sentFailedCount;
@@ -1850,10 +1863,17 @@ size_t ESP_Mail_Client::numAtt(SMTPSession *smtp, esp_mail_attach_type type, SMT
 bool ESP_Mail_Client::validEmail(const char *s)
 {
   std::string str(s);
+#if defined(ARDUINO_ARCH_SAMD)
+  size_t at = str.find('@');
+  size_t dot = str.find('.', at);
+  return (at != std::string::npos) && (dot != std::string::npos);
+#else
   auto at = std::find(str.begin(), str.end(), '@');
   auto dot = std::find(at, str.end(), '.');
   return (at != str.end()) && (dot != str.end());
+#endif
 }
+
 bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
 {
   bool validRecipient = false;
@@ -1898,7 +1918,7 @@ bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   {
     if (!smtpAuth(smtp))
     {
-      closeTCP(smtp);
+      closeTCPSession(smtp);
       return setSendingResult(smtp, msg, false);
     }
     smtp->_sentSuccessCount = 0;
@@ -2032,21 +2052,21 @@ bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       {
         appendP(buf, esp_mail_str_262, false);
         int opcnt = 0;
-        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_success)
+        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_success)
         {
           if (opcnt > 0)
             appendP(buf, esp_mail_str_263, false);
           appendP(buf, esp_mail_str_264, false);
           opcnt++;
         }
-        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_failure)
+        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_failure)
         {
           if (opcnt > 0)
             appendP(buf, esp_mail_str_263, false);
           appendP(buf, esp_mail_str_265, false);
           opcnt++;
         }
-        if (msg->response.notify && esp_mail_smtp_notify::esp_mail_smtp_notify_delay)
+        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_delay)
         {
           if (opcnt > 0)
             appendP(buf, esp_mail_str_263, false);
@@ -2807,9 +2827,17 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
   }
 
   if (att->file.storage_type == esp_mail_file_storage_type_sd)
+  {
+#if defined(ESP_MAIL_SD_FS)
     file_existed = ESP_MAIL_SD_FS.exists(filepath.c_str());
+#endif
+  }
   else if (att->file.storage_type == esp_mail_file_storage_type_flash)
+  {
+#if defined(ESP_MAIL_FLASH_FS)
     file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
+#endif
+  }
 
   if (!file_existed)
   {
@@ -2823,9 +2851,15 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
     }
 
     if (att->file.storage_type == esp_mail_file_storage_type_sd)
+#if defined(ESP_MAIL_SD_FS)
       file_existed = ESP_MAIL_SD_FS.exists(filepath.c_str());
-    else if (att->file.storage_type == esp_mail_file_storage_type_flash)
-      file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
+#endif
+  }
+  else if (att->file.storage_type == esp_mail_file_storage_type_flash)
+  {
+#if defined(ESP_MAIL_FLASH_FS)
+    file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
+#endif
   }
 
   if (!file_existed)
@@ -2889,9 +2923,17 @@ bool ESP_Mail_Client::openFileRead2(SMTPSession *smtp, SMTP_Message *msg, File &
   }
 
   if (storageType == esp_mail_file_storage_type_sd)
+  {
+#if defined(ESP_MAIL_SD_FS)
     file_existed = ESP_MAIL_SD_FS.exists(filepath.c_str());
+#endif
+  }
   else if (storageType == esp_mail_file_storage_type_flash)
+  {
+#if defined(ESP_MAIL_FLASH_FS)
     file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
+#endif
+  }
 
   if (!file_existed)
   {
@@ -3106,13 +3148,13 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
 {
   if (!reconnect(smtp))
   {
-    closeTCP(smtp);
+    closeTCPSession(smtp);
     return 0;
   }
 
   if (!connected(smtp))
   {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -3129,20 +3171,13 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_println(tmp);
-    else
-      len = smtp->httpClient.stream()->println(tmp);
+    len = smtp->tcpClient.stream()->println(tmp);
   }
   else
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_print(tmp);
-    else
-      len = smtp->httpClient.stream()->print(tmp);
+    len = smtp->tcpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -3160,13 +3195,13 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
 {
   if (!reconnect(smtp))
   {
-    closeTCP(smtp);
+    closeTCPSession(smtp);
     return 0;
   }
 
   if (!connected(smtp))
   {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -3182,21 +3217,13 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newli
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(data);
-
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_println(data);
-    else
-      len = smtp->httpClient.stream()->println(data);
+    len = smtp->tcpClient.stream()->println(data);
   }
   else
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(data, false);
-
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_print(data);
-    else
-      len = smtp->httpClient.stream()->print(data);
+    len = smtp->tcpClient.stream()->print(data);
   }
 
   if (len != strlen(data) && len != strlen(data) + 2)
@@ -3212,13 +3239,13 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
 {
   if (!reconnect(smtp))
   {
-    closeTCP(smtp);
+    closeTCPSession(smtp);
     return 0;
   }
 
   if (!connected(smtp))
   {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -3235,21 +3262,13 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug(tmp);
-
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_println(tmp);
-    else
-      len = smtp->httpClient.stream()->println(tmp);
+    len = smtp->tcpClient.stream()->println(tmp);
   }
   else
   {
     if (smtp->_debugLevel > esp_mail_debug_level_2)
       esp_mail_debug_line(tmp, false);
-
-    if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-      len = smtp->httpClient._ns_print(tmp);
-    else
-      len = smtp->httpClient.stream()->print(tmp);
+    len = smtp->tcpClient.stream()->print(tmp);
   }
 
   if (len != strlen(tmp) && len != strlen(tmp) + 2)
@@ -3267,13 +3286,13 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
 {
   if (!reconnect(smtp))
   {
-    closeTCP(smtp);
+    closeTCPSession(smtp);
     return 0;
   }
 
   if (!connected(smtp))
   {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
     return 0;
   }
 
@@ -3285,10 +3304,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
 
   size_t len = 0;
 
-  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-    len = smtp->httpClient._stream()->write(data, size);
-  else
-    len = smtp->httpClient.stream()->write(data, size);
+  len = smtp->tcpClient.stream()->write(data, size);
 
   if (len != size)
   {
@@ -3305,7 +3321,7 @@ bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
     errorStatusCB(smtp, err);
 
   if (smtp->_tcpConnected)
-    closeTCP(smtp);
+    closeTCPSession(smtp);
 
   return ret;
 }
@@ -4375,47 +4391,6 @@ int ESP_Mail_Client::readLine(WiFiClient *stream, char *buf, int bufLen, bool cr
   return idx;
 }
 
-#if defined(ESP32)
-int ESP_Mail_Client::_readLine(ESP_Mail_WCS32 *stream, char *buf, int bufLen, bool crlf, int &count)
-#elif defined(ESP8266)
-int ESP_Mail_Client::_readLine(ESP_Mail::ESP_Mail_WCS *stream, char *buf, int bufLen, bool crlf, int &count)
-#endif
-{
-  int ret = -1;
-  char c = 0;
-  char _c = 0;
-  int idx = 0;
-  if (!stream)
-    return idx;
-  while (stream->_ns_available() && idx < bufLen)
-  {
-    ret = stream->_ns_read();
-    if (ret > -1)
-    {
-      if (idx >= bufLen - 1)
-        return idx;
-
-      c = (char)ret;
-      strcat_c(buf, c);
-      idx++;
-      count++;
-      if (_c == '\r' && c == '\n')
-      {
-        if (!crlf)
-        {
-          buf[idx - 2] = 0;
-          idx -= 2;
-        }
-        return idx;
-      }
-      _c = c;
-    }
-    if (!stream)
-      return idx;
-  }
-  return idx;
-}
-
 int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
 {
   int ret = -1;
@@ -4425,10 +4400,8 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &ch
   while (available(imap) > 0 && idx < bufLen)
   {
     delay(0);
-    if (!imap->_secure)
-      ret = imap->httpClient._stream()->read();
-    else
-      ret = imap->httpClient.stream()->read();
+
+    ret = imap->tcpClient.stream()->read();
 
     if (ret > -1)
     {
@@ -4503,10 +4476,7 @@ end_search:
   endSearch = true;
   int read = available(imap);
 
-  if (!imap->_secure)
-    idx = imap->httpClient._stream()->readBytes(buf + idx, read);
-  else
-    idx = imap->httpClient.stream()->readBytes(buf + idx, read);
+  idx = imap->tcpClient.stream()->readBytes(buf + idx, read);
 
   return idx;
 }
@@ -5091,17 +5061,8 @@ void ESP_Mail_Client::handleAuth(SMTPSession *smtp, char *buf)
 int ESP_Mail_Client::available(SMTPSession *smtp)
 {
   int sz = 0;
-  if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-  {
-    if (smtp->httpClient._stream())
-      sz = smtp->httpClient._stream()->_ns_available();
-  }
-  else
-  {
-    if (smtp->httpClient.stream())
-      sz = smtp->httpClient.stream()->available();
-  }
-
+  if (smtp->tcpClient.stream())
+    sz = smtp->tcpClient.stream()->available();
   return sz;
 }
 
@@ -5133,7 +5094,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
       return false;
     if (!connected(smtp))
     {
-      errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+      errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
       return false;
     }
     chunkBufSize = available(smtp);
@@ -5153,7 +5114,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
 
       if (!connected(smtp))
       {
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
         return false;
       }
 
@@ -5167,10 +5128,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
         chunkBufSize = 512;
         response = newS(chunkBufSize + 1);
 
-        if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-          readLen = _readLine(smtp->httpClient._stream(), response, chunkBufSize, false, count);
-        else
-          readLen = readLine(smtp->httpClient.stream(), response, chunkBufSize, false, count);
+        readLen = readLine(smtp->tcpClient.stream(), response, chunkBufSize, false, count);
 
         if (readLen)
         {
@@ -5310,19 +5268,15 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
   }
 }
 
-void ESP_Mail_Client::closeTCP(SMTPSession *smtp)
+void ESP_Mail_Client::closeTCPSession(SMTPSession *smtp)
 {
-
   if (smtp->_tcpConnected)
   {
-    if (smtp->httpClient.stream())
+    if (smtp->tcpClient.stream())
     {
       if (connected(smtp))
       {
-        if (smtp->_sesson_cfg->secure.startTLS || !smtp->_secure)
-          smtp->httpClient._stream()->stop();
-        else
-          smtp->httpClient.stream()->stop();
+        smtp->tcpClient.stream()->stop();
       }
     }
     _lastReconnectMillis = millis();
@@ -5330,19 +5284,16 @@ void ESP_Mail_Client::closeTCP(SMTPSession *smtp)
   smtp->_tcpConnected = false;
 }
 
-void ESP_Mail_Client::closeTCP(IMAPSession *imap)
+void ESP_Mail_Client::closeTCPSession(IMAPSession *imap)
 {
 
   if (imap->_tcpConnected)
   {
-    if (imap->httpClient.stream())
+    if (imap->tcpClient.stream())
     {
       if (connected(imap))
       {
-        if (!imap->_secure)
-          imap->httpClient._stream()->stop();
-        else
-          imap->httpClient.stream()->stop();
+        imap->tcpClient.stream()->stop();
       }
     }
     _lastReconnectMillis = millis();
@@ -5350,54 +5301,51 @@ void ESP_Mail_Client::closeTCP(IMAPSession *imap)
   imap->_tcpConnected = false;
 }
 
-#if defined(ESP32)
-void ESP_Mail_Client::setSecure(ESP_Mail_HTTPClient32 &httpClient, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
-#elif defined(ESP8266)
-void ESP_Mail_Client::setSecure(ESP_Mail_HTTPClient &httpClient, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
-#endif
+#if defined(ESP32) || defined(ESP8266)
+void ESP_Mail_Client::setSecure(TCP_CLIENT &tcpClient, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
 {
+  MailClient.Time.setClock(0, 0);
 
 #if defined(ESP32)
-  if (httpClient._certType == -1)
+  if (tcpClient._certType == -1)
   {
     if (strlen(session->certificate.cert_file) == 0)
     {
       if (caCert != nullptr)
-        httpClient.setCACert(caCert.get());
+        tcpClient.setCACert(caCert.get());
       else
-        httpClient.setCACert(nullptr);
+        tcpClient.setCACert(nullptr);
     }
     else
     {
-      httpClient.setCertFile(session->certificate.cert_file, session->certificate.cert_file_storage_type);
+      tcpClient.setCertFile(session->certificate.cert_file, session->certificate.cert_file_storage_type);
     }
   }
 #elif defined(ESP8266)
 
-  if (httpClient._certType == -1)
+  if (tcpClient._certType == -1)
   {
 
-#ifndef USING_AXTLS
     if (!MailClient._clockReady && (strlen(session->certificate.cert_file) > 0 || caCert != nullptr))
     {
-      MailClient.setClock(MailClient._gmtOffset);
-      httpClient._clockReady = MailClient._clockReady;
+      tcpClient._clockReady = MailClient._clockReady;
     }
-#endif
+
     if (strlen(session->certificate.cert_file) == 0)
     {
       if (caCert != nullptr)
-        httpClient.setCACert(caCert.get());
+        tcpClient.setCACert(caCert.get());
       else
-        httpClient.setCACert(nullptr);
+        tcpClient.setCACert(nullptr);
     }
     else
     {
-      httpClient.setCertFile(session->certificate.cert_file, session->certificate.cert_file_storage_type, MailClient._sdPin);
+      tcpClient.setCertFile(session->certificate.cert_file, session->certificate.cert_file_storage_type, MailClient._sdPin);
     }
   }
 #endif
 }
+#endif
 
 bool ESP_Mail_Client::ethLinkUp()
 {
@@ -5418,9 +5366,9 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 
   if (dataTime > 0)
   {
-    if (millis() - dataTime > smtp->httpClient.tcpTimeout)
+    if (millis() - dataTime > smtp->tcpClient.tcpTimeout)
     {
-      closeTCP(smtp);
+      closeTCPSession(smtp);
       errorStatusCB(smtp, MAIL_CLIENT_ERROR_READ_TIMEOUT);
       return false;
     }
@@ -5429,9 +5377,9 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
   if (!status)
   {
     if (smtp->_tcpConnected)
-      closeTCP(smtp);
+      closeTCPSession(smtp);
 
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
 
     if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->_tcpConnected)
     {
@@ -5456,10 +5404,10 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
 
   if (dataTime > 0)
   {
-    if (millis() - dataTime > imap->httpClient.tcpTimeout)
+    if (millis() - dataTime > imap->tcpClient.tcpTimeout)
     {
 
-      closeTCP(imap);
+      closeTCPSession(imap);
 
       if (imap->_headers.size() > 0)
       {
@@ -5483,9 +5431,9 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
   {
 
     if (imap->_tcpConnected)
-      closeTCP(imap);
+      closeTCPSession(imap);
 
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
 
     if (imap->_headers.size() > 0)
     {
@@ -5596,16 +5544,8 @@ char *ESP_Mail_Client::intStr(int value)
 int ESP_Mail_Client::available(IMAPSession *imap)
 {
   int sz = 0;
-  if (!imap->_secure)
-  {
-    if (imap->httpClient._stream())
-      sz = imap->httpClient._stream()->_ns_available();
-  }
-  else
-  {
-    if (imap->httpClient.stream())
-      sz = imap->httpClient.stream()->available();
-  }
+  if (imap->tcpClient.stream())
+    sz = imap->tcpClient.stream()->available();
   return sz;
 }
 
@@ -5649,7 +5589,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
       return false;
     if (!connected(imap))
     {
-      errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+      errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
       return false;
     }
     chunkBufSize = available(imap);
@@ -5698,7 +5638,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         if (!connected(imap))
         {
-          errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_LOST);
+          errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
           return false;
         }
         return false;
@@ -5716,10 +5656,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         }
         else
         {
-          if (!imap->_secure)
-            readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, crLF, octetCount);
-          else
-            readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, crLF, octetCount);
+          readLen = readLine(imap->tcpClient.stream(), response, chunkBufSize, crLF, octetCount);
         }
 
         if (readLen)
@@ -5749,10 +5686,8 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
               //some IMAP servers advertise CAPABILITY in their responses
               //try to read the next available response
               memset(response, 0, chunkBufSize);
-              if (!imap->_secure)
-                readLen = _readLine(imap->httpClient._stream(), response, chunkBufSize, true, octetCount);
-              else
-                readLen = readLine(imap->httpClient.stream(), response, chunkBufSize, true, octetCount);
+
+              readLen = readLine(imap->tcpClient.stream(), response, chunkBufSize, true, octetCount);
               if (readLen)
               {
                 completedResponse = false;
@@ -6300,22 +6235,30 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       filePath += tmp;
       delS(tmp);
 
+#if defined(ESP_MAIL_SD_FS)
       if (imap->_storageType == esp_mail_file_storage_type_sd)
         if (!ESP_MAIL_SD_FS.exists(filePath.c_str()))
           createDirs(filePath);
+#endif
 
       appendP(filePath, esp_mail_str_202, false);
 
       filePath += cPart(imap)->filename;
 
       if (imap->_storageType == esp_mail_file_storage_type_sd)
+#if defined(ESP_MAIL_SD_FS)
         file = ESP_MAIL_SD_FS.open(filePath.c_str(), FILE_WRITE);
+#endif
       else if (imap->_storageType == esp_mail_file_storage_type_flash)
+      {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
         file = ESP_MAIL_FLASH_FS.open(filePath.c_str(), FILE_WRITE);
 #elif defined(ESP8266)
         file = ESP_MAIL_FLASH_FS.open(filePath.c_str(), "w");
 #endif
+#endif
+      }
     }
   }
 
@@ -6709,13 +6652,21 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
               downloadRequest = true;
 
               if (imap->_storageType == esp_mail_file_storage_type_sd)
+              {
+#if defined(ESP_MAIL_SD_FS)
                 file = ESP_MAIL_SD_FS.open(filePath.c_str(), FILE_WRITE);
+#endif
+              }
               else if (imap->_storageType == esp_mail_file_storage_type_flash)
+              {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
                 file = ESP_MAIL_FLASH_FS.open(filePath.c_str(), FILE_WRITE);
 #elif defined(ESP8266)
                 file = ESP_MAIL_FLASH_FS.open(filePath.c_str(), "w");
 #endif
+#endif
+              }
             }
           }
 
@@ -6812,8 +6763,6 @@ char *ESP_Mail_Client::strReplace(char *orig, char *rep, char *with)
 
 int ESP_Mail_Client::decodeChar(const char *s)
 {
-  assert(s);
-  assert(*s == '=');
   return 16 * hexval(*(s + 1)) + hexval(*(s + 2));
 }
 
@@ -7078,6 +7027,14 @@ void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
           tmp = newS(p2 - p1);
           strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
           char *stk = strP(esp_mail_str_131);
+#if defined(ARDUINO_ARCH_SAMD)
+          std::string content = tmp;
+          std::vector<std::string> tokens = std::vector<std::string>();
+          splitTk(content, tokens, stk);
+          for (size_t i = 0; i < tokens.size(); i++)
+            imap->_mbif.addFlag(tokens[i].c_str());
+#else
+
           char *end_token;
           char *token = strtok_r(tmp, stk, &end_token);
           while (token != NULL)
@@ -7087,6 +7044,7 @@ void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
           }
           if (token)
             delS(token);
+#endif
           delS(tmp);
           delS(stk);
         }
@@ -7135,7 +7093,7 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
   }
 
   if (imap->_tcpConnected)
-    closeTCP(imap);
+    closeTCPSession(imap);
 
   imap->_cbData.empty();
 
@@ -7273,7 +7231,6 @@ std::string ESP_Mail_Client::encodeBase64Str(uint8_t *src, size_t len)
 void ESP_Mail_Client::encodeQP(const char *buf, char *out)
 {
   int n = 0, p = 0, pos = 0;
-  assert(buf);
   for (n = 0; *buf; buf++)
   {
     if (n >= 73 && *buf != 10 && *buf != 13)
@@ -7323,7 +7280,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const uns
   end = data + len;
   in = data;
 
-  size_t chunkSize = 936;
+  size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
   size_t byteAdded = 0;
   size_t byteSent = 0;
 
@@ -7457,7 +7414,7 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, Fil
     return false;
   }
 
-  size_t chunkSize = 936;
+  size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
   size_t byteAdded = 0;
   size_t byteSent = 0;
 
@@ -7582,12 +7539,34 @@ ex:
   return ret;
 }
 
-IMAPSession::IMAPSession() {}
+int ESP_Mail_Client::getFreeHeap()
+{
+#if defined(ESP32) || defined(ESP8266)
+  return ESP.getFreeHeap();
+#elif defined(ARDUINO_ARCH_SAMD)
+  char top;
+#ifdef __arm__
+  return &top - reinterpret_cast<char *>(sbrk(0));
+#elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+  return &top - __brkval;
+#else  // __arm__
+  return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+#endif // __arm__
+#else
+  return 0;
+#endif
+}
+
+IMAPSession::IMAPSession()
+{
+}
 IMAPSession::~IMAPSession()
 {
   empty();
+#if defined(ESP32) || defined(ESP8266)
   _caCert.reset();
   _caCert = nullptr;
+#endif
 }
 
 bool IMAPSession::closeSession()
@@ -7609,10 +7588,13 @@ bool IMAPSession::closeSession()
 bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
 {
   if (_tcpConnected)
-    MailClient.closeTCP(this);
+    MailClient.closeTCPSession(this);
 
   _sesson_cfg = sesssion;
   _config = config;
+
+#if defined(ESP32) || defined(ESP8266)
+
   _caCert = nullptr;
 
   if (strlen(_sesson_cfg->certificate.cert_data) > 0)
@@ -7629,6 +7611,8 @@ bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
   }
+
+#endif
 
   return MailClient.imapAuth(this);
 }
@@ -7661,7 +7645,7 @@ String IMAPSession::errorReason()
   case IMAP_STATUS_SERVER_CONNECT_FAILED:
     MailClient.appendP(ret, esp_mail_str_38, true);
     break;
-  case MAIL_CLIENT_ERROR_CONNECTION_LOST:
+  case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
     MailClient.appendP(ret, esp_mail_str_221, true);
     break;
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:
@@ -7776,7 +7760,7 @@ struct esp_mail_imap_msg_list_t IMAPSession::data()
 
   for (size_t i = 0; i < _headers.size(); i++)
   {
-    if (ESP.getFreeHeap() < ESP_MAIL_MIN_MEM)
+    if (MailClient.getFreeHeap() < ESP_MAIL_MIN_MEM)
       continue;
 
     struct esp_mail_imap_msg_item_t itm;
@@ -8224,42 +8208,6 @@ bool IMAPSession::copyMessages(MessageList *toCopy, const char *dest)
   return true;
 }
 
-#if defined(ESP8266)
-void ESP_Mail_Client::setClock(float offset)
-{
-  if (WiFi.status() != WL_CONNECTED)
-    WiFi.reconnect();
-
-  time_t now = time(nullptr);
-
-  _clockReady = now > ESP_MAIL_CLIENT_VALID_TS;
-
-  if (!_clockReady)
-  {
-    char *server1 = strP(esp_mail_str_283);
-    char *server2 = strP(esp_mail_str_296);
-
-    configTime(offset * 3600, 0, server1, server2);
-
-    now = time(nullptr);
-    uint8_t attempts = 0;
-    while (now < ESP_MAIL_CLIENT_VALID_TS)
-    {
-      now = time(nullptr);
-      attempts++;
-      if (attempts > 200 || now > ESP_MAIL_CLIENT_VALID_TS)
-        break;
-      delay(100);
-    }
-
-    delS(server1);
-    delS(server2);
-  }
-
-  _clockReady = now > ESP_MAIL_CLIENT_VALID_TS;
-}
-#endif
-
 void IMAPSession::empty()
 {
   std::string().swap(_nextUID);
@@ -8287,20 +8235,23 @@ SMTPSession::SMTPSession()
 SMTPSession::~SMTPSession()
 {
   closeSession();
+#if defined(ESP32) || defined(ESP8266)
   _caCert.reset();
   _caCert = nullptr;
+#endif
 }
 
 bool SMTPSession::connect(ESP_Mail_Session *config)
 {
   if (_tcpConnected)
-    MailClient.closeTCP(this);
+    MailClient.closeTCPSession(this);
 
   _sesson_cfg = config;
+#if defined(ESP32) || defined(ESP8266)
   _caCert = nullptr;
-
   if (strlen(_sesson_cfg->certificate.cert_data) > 0)
     _caCert = std::shared_ptr<const char>(_sesson_cfg->certificate.cert_data);
+#endif
 
   if (strlen(_sesson_cfg->certificate.cert_file) > 0)
   {
@@ -8311,6 +8262,9 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
+#else
+    {
+    }
 #endif
   }
   return MailClient.smtpAuth(this);
@@ -8368,7 +8322,7 @@ String SMTPSession::errorReason()
   case SMTP_STATUS_SEND_BODY_FAILED:
     MailClient.appendP(ret, esp_mail_str_49, true);
     break;
-  case MAIL_CLIENT_ERROR_CONNECTION_LOST:
+  case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
     MailClient.appendP(ret, esp_mail_str_221, true);
     break;
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:

@@ -60,6 +60,15 @@ void setup()
 {
 
   Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+  while (!Serial)
+    ;
+  Serial.println();
+  Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
   Serial.println();
 
   Serial.print("Connecting to AP");
@@ -77,12 +86,6 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println();
 
-  Serial.println("Connect to NTP server and set the device time\r\nPlease wait...\r\n");
-  float timeZone = 3;//GMT+3
-  float daylightOffset = 0;
-  
-  /* Set the device time */
-  MailClient.Time.setClock(timeZone, daylightOffset);
 
   /** Enable the debug via Serial port
    * none debug or 0
@@ -164,21 +167,23 @@ void setup()
   rfc822.html.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* The attachment data item */
-  SMTP_Attachment att;
+  SMTP_Attachment att[2];
+  int attIndex = 0;
 
   /** Set the attachment info e.g. 
    * file name, MIME type, BLOB data, BLOB data size,
    * and transfer encoding
   */
-  att.descr.filename = "firebase_logo.png";
-  att.descr.mime = "image/png";
-  att.blob.data = firebase_png;
-  att.blob.size = sizeof(firebase_png);
-  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+  att[attIndex].descr.filename = "firebase_logo.png";
+  att[attIndex].descr.mime = "image/png";
+  att[attIndex].blob.data = firebase_png;
+  att[attIndex].blob.size = sizeof(firebase_png);
+  att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add the attachment to the rfc822 message */
-  rfc822.addAttachment(att);
-
+#if defined(ESP32) || defined(ESP8266)
+  rfc822.addAttachment(att[attIndex]); //Required more stack and may fail on SAMD
+#endif
   /* Prepare other attachment data  */
   uint8_t *a = new uint8_t[512];
   int j = 0;
@@ -195,14 +200,14 @@ void setup()
    * file name, MIME type, BLOB data, BLOB data size.
    * The default transfer encoding is base64.
   */
-  message.resetAttachItem(att); //Clear the attach item data to reuse
-  att.descr.filename = "test.dat";
-  att.descr.mime = "application/octet-stream";
-  att.blob.data = a;
-  att.blob.size = 512;
+  attIndex++;
+  att[attIndex].descr.filename = "test.dat";
+  att[attIndex].descr.mime = "application/octet-stream";
+  att[attIndex].blob.data = a;
+  att[attIndex].blob.size = 512;
 
   /* Add this attachment to the message */
-  message.addAttachment(att);
+  message.addAttachment(att[attIndex]);
 
   /* Add rfc822 message in the message */
   message.addMessage(rfc822);
@@ -214,6 +219,8 @@ void setup()
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
+    
+  ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -230,8 +237,8 @@ void smtpCallback(SMTP_Status status)
   if (status.success())
   {
     Serial.println("----------------");
-    Serial.printf("Message sent success: %d\n", status.completedCount());
-    Serial.printf("Message sent failled: %d\n", status.failedCount());
+    ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
+    ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
     Serial.println("----------------\n");
     struct tm dt;
 
@@ -239,13 +246,14 @@ void smtpCallback(SMTP_Status status)
     {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-      localtime_r(&result.timesstamp, &dt);
+      time_t ts = (time_t)result.timestamp;
+      localtime_r(&ts, &dt);
 
-      Serial.printf("Message No: %d\n", i + 1);
-      Serial.printf("Status: %s\n", result.completed ? "success" : "failed");
-      Serial.printf("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-      Serial.printf("Recipient: %s\n", result.recipients);
-      Serial.printf("Subject: %s\n", result.subject);
+      ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
+      ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
+      ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
+      ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
     }
     Serial.println("----------------\n");
   }

@@ -60,6 +60,15 @@ void setup()
 {
 
   Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+  while (!Serial)
+    ;
+  Serial.println();
+  Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
   Serial.println();
 
   Serial.print("Connecting to AP");
@@ -95,6 +104,10 @@ void setup()
   if (SD.begin()) // MailClient.sdBegin(14,2,15,13) for TTGO T8 v1.7 or 1.8
 #elif defined(ESP8266)
   if (SD.begin(15))
+#else
+  // chip select for SD card
+  const int SD_CS_PIN = 4;
+  if (SD.begin(SD_CS_PIN))
 #endif
   {
 
@@ -139,6 +152,8 @@ void setup()
     Serial.println("SD Card Monting Failed");
   }
 
+#if defined(ESP32) || defined(ESP8266)
+
   Serial.println("Mounting SPIFFS...");
 
 #if defined(ESP32)
@@ -153,7 +168,7 @@ void setup()
       SPIFFS.remove("/green.png");
     if (SPIFFS.exists("/bin2.dat"))
       SPIFFS.remove("/bin2.dat");
-      
+
     Serial.println("Preparing SPIFFS attachments...");
 
     const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
@@ -201,6 +216,8 @@ void setup()
   {
     Serial.println("SPIFFS Monting Failed");
   }
+
+#endif
 
   /** Enable the debug via Serial port
    * none debug or 0
@@ -268,8 +285,13 @@ void setup()
   message.addRecipient("user1", "####@#####_dot_com");
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
+#if defined(ESP32) || defined(ESP8266)
   String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 2 inline images and 2 attachment files.</span><br/><br/><img src=\"green.png\"  width=\"100\" height=\"100\"> <img src=\"orange.png\" width=\"100\" height=\"100\">";
-  message.html.content = htmlMsg.c_str();
+#elif defined(ARDUINO_ARCH_SAMD)
+  String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 1 inline image and 1 attachment file.</span><br/><br/><img src=\"orange.png\" width=\"100\" height=\"100\">";
+#endif
+
+message.html.content = htmlMsg.c_str();
 
   /** The HTML text message character set e.g.
    * us-ascii
@@ -288,8 +310,11 @@ void setup()
    * The default value is "7bit"
   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
-
+#if defined(ESP32) || defined(ESP8266)
   message.text.content = "This message contains 2 inline images and 2 attachment files.\r\nThe inline images were not shown in the plain text message.";
+#elif defined(ARDUINO_ARCH_SAMD)
+  message.text.content = "This message contains 1 inline image and 1 attachment file.\r\nThe inline images were not shown in the plain text message.";
+#endif
   message.text.charSet = "utf-8";
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
@@ -314,73 +339,79 @@ void setup()
   message.addHeader("Message-ID: <user1@gmail.com>");
 
   /* The attachment data item */
-  SMTP_Attachment att;
+  SMTP_Attachment att[4];
+  int attIndex = 0;
 
   /** Set the inline image info e.g. 
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  att.descr.filename = "orange.png";
-  att.descr.mime = "image/png";
-  att.file.path = "/orange.png";
+  att[attIndex].descr.filename = "orange.png";
+  att[attIndex].descr.mime = "image/png";
+  att[attIndex].file.path = "/orange.png";
 
   /** The file storage type e.g. 
    * esp_mail_file_storage_type_none, 
    * esp_mail_file_storage_type_flash, and 
    * esp_mail_file_storage_type_sd 
   */
-  att.file.storage_type = esp_mail_file_storage_type_sd;
+  att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
 
   /* Need to be base64 transfer encoding for inline image */
-  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+  att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /** The orange.png file is already base64 encoded file.
    * Then set the content encoding to match the transfer encoding
    * which no encoding was taken place prior to sending.
   */
-  att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+  att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add inline image to the message */
-  message.addInlineImage(att);
+  message.addInlineImage(att[attIndex]);
 
   /** Set the attachment info e.g. 
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  message.resetAttachItem(att); //Clear the attach item data to reuse
-  att.descr.filename = "bin1.dat";
-  att.descr.mime = "application/octet-stream"; //binary data
-  att.file.path = "/bin1.dat";
-  att.file.storage_type = esp_mail_file_storage_type_sd;
-  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+
+  attIndex++;
+  att[attIndex].descr.filename = "bin1.dat";
+  att[attIndex].descr.mime = "application/octet-stream"; //binary data
+  att[attIndex].file.path = "/bin1.dat";
+  att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
+  att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add attachment to the message */
-  message.addAttachment(att);
+  message.addAttachment(att[attIndex]);
+
+#if defined(ESP32) || defined(ESP8266)
 
   /** Set the inline image info e.g. 
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  message.resetAttachItem(att); //Clear the attach item data to reuse
-  att.descr.filename = "green.png";
-  att.descr.mime = "image/png";
-  att.file.path = "/green.png";
-  att.file.storage_type = esp_mail_file_storage_type_flash;
-  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-  att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
-  message.addInlineImage(att);
+  attIndex++;
+  att[attIndex].descr.filename = "green.png";
+  att[attIndex].descr.mime = "image/png";
+  att[attIndex].file.path = "/green.png";
+  att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
+  att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+  att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+  message.addInlineImage(att[attIndex]);
 
   /** Set the attachment info e.g. 
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  message.resetAttachItem(att); //Clear the attach item data to reuse
-  att.descr.filename = "bin2.dat";
-  att.descr.mime = "application/octet-stream";
-  att.file.path = "/bin2.dat";
-  att.file.storage_type = esp_mail_file_storage_type_flash;
-  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-  message.addAttachment(att);
+  attIndex++;
+  att[attIndex].descr.filename = "bin2.dat";
+  att[attIndex].descr.mime = "application/octet-stream";
+  att[attIndex].file.path = "/bin2.dat";
+  att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
+  att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+  message.addAttachment(att[attIndex]);
+
+#endif
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -389,6 +420,8 @@ void setup()
   /* Start sending the Email and close the session */
   if (!MailClient.sendMail(&smtp, &message, true))
     Serial.println("Error sending Email, " + smtp.errorReason());
+
+  ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -405,8 +438,8 @@ void smtpCallback(SMTP_Status status)
   if (status.success())
   {
     Serial.println("----------------");
-    Serial.printf("Message sent success: %d\n", status.completedCount());
-    Serial.printf("Message sent failled: %d\n", status.failedCount());
+    ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
+    ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
     Serial.println("----------------\n");
     struct tm dt;
 
@@ -414,13 +447,14 @@ void smtpCallback(SMTP_Status status)
     {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-      localtime_r(&result.timesstamp, &dt);
+      time_t ts = (time_t)result.timestamp;
+      localtime_r(&ts, &dt);
 
-      Serial.printf("Message No: %d\n", i + 1);
-      Serial.printf("Status: %s\n", result.completed ? "success" : "failed");
-      Serial.printf("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-      Serial.printf("Recipient: %s\n", result.recipients);
-      Serial.printf("Subject: %s\n", result.subject);
+      ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
+      ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
+      ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
+      ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
     }
     Serial.println("----------------\n");
   }

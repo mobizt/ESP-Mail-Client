@@ -92,6 +92,15 @@ void setup()
 {
 
     Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+    while (!Serial)
+        ;
+    Serial.println();
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
     Serial.println();
 
     Serial.print("Connecting to AP");
@@ -243,7 +252,6 @@ void imapCallback(IMAP_Status status)
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
-        Serial.printf("Free Heap: %d", ESP.getFreeHeap());
     }
 }
 
@@ -259,7 +267,7 @@ void printAllMailboxesInfo(IMAPSession &imap)
         {
             /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
-            Serial.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
     }
 }
@@ -270,36 +278,36 @@ void printSelectedMailboxInfo(IMAPSession &imap)
     SelectedFolderInfo sFolder = imap.selectedFolder();
 
     /* Show the mailbox info */
-    Serial.printf("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    Serial.printf("Predicted next UID: %d\n", sFolder.nextUID());
+    ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
+    ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
-        Serial.printf("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+        ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
 }
 
 void printRFC822Messages(IMAP_MSG_Item &msg)
 {
-    Serial.printf("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+    ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
     for (size_t j = 0; j < msg.rfc822.size(); j++)
     {
         IMAP_MSG_Item rfc822 = msg.rfc822[j];
-        Serial.printf("%d. \n", j + 1);
-        Serial.printf("Messsage ID: %s\n", rfc822.messageID);
-        Serial.printf("From: %s\n", rfc822.from);
-        Serial.printf("Sender: %s\n", rfc822.sender);
-        Serial.printf("To: %s\n", rfc822.to);
-        Serial.printf("CC: %s\n", rfc822.cc);
-        Serial.printf("Subject: %s\n", rfc822.subject);
-        Serial.printf("Date: %s\n", rfc822.date);
-        Serial.printf("Reply-To: %s\n", rfc822.reply_to);
-        Serial.printf("Return-Path: %s\n", rfc822.return_path);
-        Serial.printf("Comment: %s\n", rfc822.comment);
-        Serial.printf("Keyword: %s\n", rfc822.keyword);
-        Serial.printf("Text Message: %s\n", rfc822.text.content);
-        Serial.printf("Text Message Charset: %s\n", rfc822.text.charSet);
-        Serial.printf("Text Message Transfer Encoding: %s\n", rfc822.text.transfer_encoding);
-        Serial.printf("HTML Message: %s\n", rfc822.html.content);
-        Serial.printf("HTML Message Charset: %s\n", rfc822.html.charSet);
-        Serial.printf("HTML Message Transfer Encoding: %s\n\n", rfc822.html.transfer_encoding);
+        ESP_MAIL_PRINTF("%d. \n", j + 1);
+        ESP_MAIL_PRINTF("Messsage ID: %s\n", rfc822.messageID);
+        ESP_MAIL_PRINTF("From: %s\n", rfc822.from);
+        ESP_MAIL_PRINTF("Sender: %s\n", rfc822.sender);
+        ESP_MAIL_PRINTF("To: %s\n", rfc822.to);
+        ESP_MAIL_PRINTF("CC: %s\n", rfc822.cc);
+        ESP_MAIL_PRINTF("Subject: %s\n", rfc822.subject);
+        ESP_MAIL_PRINTF("Date: %s\n", rfc822.date);
+        ESP_MAIL_PRINTF("Reply-To: %s\n", rfc822.reply_to);
+        ESP_MAIL_PRINTF("Return-Path: %s\n", rfc822.return_path);
+        ESP_MAIL_PRINTF("Comment: %s\n", rfc822.comment);
+        ESP_MAIL_PRINTF("Keyword: %s\n", rfc822.keyword);
+        ESP_MAIL_PRINTF("Text Message: %s\n", rfc822.text.content);
+        ESP_MAIL_PRINTF("Text Message Charset: %s\n", rfc822.text.charSet);
+        ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", rfc822.text.transfer_encoding);
+        ESP_MAIL_PRINTF("HTML Message: %s\n", rfc822.html.content);
+        ESP_MAIL_PRINTF("HTML Message Charset: %s\n", rfc822.html.charSet);
+        ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", rfc822.html.transfer_encoding);
 
         if (rfc822.attachments.size() > 0)
             printAttacements(rfc822);
@@ -308,7 +316,7 @@ void printRFC822Messages(IMAP_MSG_Item &msg)
 
 void printAttacements(IMAP_MSG_Item &msg)
 {
-    Serial.printf("Attachment: %d file(s)\n****************************\n", msg.attachments.size());
+    ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", msg.attachments.size());
     for (size_t j = 0; j < msg.attachments.size(); j++)
     {
         IMAP_Attach_Item att = msg.attachments[j];
@@ -317,7 +325,7 @@ void printAttacements(IMAP_MSG_Item &msg)
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
         */
-        Serial.printf("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
+        ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
     }
     Serial.println();
 }
@@ -333,30 +341,30 @@ void printMessages(IMAPSession &imap)
         IMAP_MSG_Item msg = msgList.msgItems[i];
 
         Serial.println("################################");
-        Serial.printf("Messsage Number: %s\n", msg.msgNo);
-        Serial.printf("Messsage UID: %s\n", msg.UID);
-        Serial.printf("Messsage ID: %s\n", msg.ID);
-        Serial.printf("Accept Language: %s\n", msg.acceptLang);
-        Serial.printf("Content Language: %s\n", msg.contentLang);
-        Serial.printf("From: %s\n", msg.from);
-        Serial.printf("From Charset: %s\n", msg.fromCharset);
-        Serial.printf("To: %s\n", msg.to);
-        Serial.printf("To Charset: %s\n", msg.toCharset);
-        Serial.printf("CC: %s\n", msg.cc);
-        Serial.printf("CC Charset: %s\n", msg.ccCharset);
-        Serial.printf("Date: %s\n", msg.date);
-        Serial.printf("Subject: %s\n", msg.subject);
-        Serial.printf("Subject Charset: %s\n", msg.subjectCharset);
+        ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
+        ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
+        ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
+        ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
+        ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
+        ESP_MAIL_PRINTF("From: %s\n", msg.from);
+        ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
+        ESP_MAIL_PRINTF("To: %s\n", msg.to);
+        ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
+        ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
+        ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
+        ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+        ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
+        ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
 
         /* If the result contains the message info (Fetch mode) */
         if (!imap.headerOnly())
         {
-            Serial.printf("Text Message: %s\n", msg.text.content);
-            Serial.printf("Text Message Charset: %s\n", msg.text.charSet);
-            Serial.printf("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-            Serial.printf("HTML Message: %s\n", msg.html.content);
-            Serial.printf("HTML Message Charset: %s\n", msg.html.charSet);
-            Serial.printf("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+            ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
+            ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
+            ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
+            ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
+            ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
+            ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
 
             if (msg.attachments.size() > 0)
                 printAttacements(msg);

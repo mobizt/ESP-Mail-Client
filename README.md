@@ -1,14 +1,21 @@
-# Mail Client Arduino Library for ESP32 and ESP8266 v 1.2.0
+# Mail Client Arduino Library for ESP32 and ESP8266 v 1.3.0
+
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-The complete and secure Mail Client for ESP32 and ESP8266 devices for sending and reading the Email through the SMTP and IMAP servers.
 
-With this library, the devices can both send and read the Email with many types of attachments supported and provides more reliable and flexibilities of usages.
+The first, complete and secure Arduino EMail Client library for Espressif's ESP32 and ESP8266, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module to send and read Email through the SMTP and IMAP servers.
 
-The library was tested and work well with ESP32s and ESP8266s based modules.
+This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
+
+The library was tested and work well with ESP32s, ESP8266s, SAMD21s based modules.
 
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
+
+
+This library has built-in WiFi client and aim to be complete Email client that can send and read Email with no restrictions and no indirect Email proxy (Email sending server) services needed.
+
+Other serial Mobile network modem (GSM/3G/4G) and SPI/I2C Ethernet board which GSM or Ethernet Plain/SSL TCP client libraries are available, are not compattible to integrate to use with this library because network upgradable was not supported in those libraries. 
 
 ![ESP Mail](/media/images/esp-mail-client.svg)
 
@@ -16,16 +23,16 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 
 # Features
 
-* Support Espressif ESP32 and ESP8266 MCUs based devices.
+* Support Espressif's ESP32 and ESP8266, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
-* Support secured (with SSL and TLS) and non-secure ports.
+* Support secured (with SSL and TLS or upgrade via STARTTLS) and non-secure ports.
 * Support mailbox selection for Email reading and searching.
 * Support the content encodings e.g. quoted-printable and base64.
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
-* Support many types of embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
+* Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
-* Support flash memory and SD card for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
+* Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet boards). ESP8266 Ethernet is not yet supported.
 * Customizable operating configurations (see the examples for the usages)
 
@@ -40,21 +47,73 @@ This following devices were tested.
  * M5Stack ESP32
  * NodeMCU ESP8266
  * Wemos D1 Mini (ESP8266)
+ * Arduino MKR WiFi 1010
 
 
 
 ## Prerequisites
 
+### ESP32 and ESP8266
 
-The library requires Arduino's ESP32 or ESP8266 Core SDK to be installed based on the platform.
+For Espressif's ESP32 and ESP8266 based boards, this library requires Arduino's ESP32 or ESP8266 Core SDK to be installed.
 
 The latest Core SDK is recommended. For ESP8266, the Core SDK version 2.6.3 or later is recommended.
 
 The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
+### SAMD21
+
+For Atmel's SAMD21 based boards, custom built WiFiNINA firmware is needed to be installed instead of official Arduino WiFiNINA firmware.
+
+#### Comparison between custom built and official WiFiNINA firmwares.
+
+| Options | Custom Built Firmware | Arduino Official Firmware |
+| ------------- | ------------- | ------------- |
+| Plain connection via port 25, 143  | Yes  | Yes  |
+| Secure (SSL) connection via port 465, 993  | Yes  | Yes  |
+| Upgradable (STARTTLS) via port 25, 587, 143  | Yes  | No  |
+| Require Email Server Root Certificate installation  | Optional, not required by default  | *Yes  |
+| Require WiFiNINA library installation  | No (already built-in)  | Yes  |
+
+*Require root certificate of Email server which is available in Arduino IDE's WiFi101 /WiFiNINA Firmware Updater tool.
 
 
-## Instalation
+### Install Custom Built WiFiNINA Firmware
+
+
+To install custom built WiFiNINA firmware, please follow the following instructions.
+
+1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
+
+
+2. Download file [nina-fw-1.4.5.zip](/firmwares/nina-fw-1.4.5.zip) in [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
+
+
+3. Compile and upload SerialNINAPassthrough.ino to the device.
+
+![SerialNINAPassthrough.ino](/media/images/SerialNINAPassthrough.png)
+
+
+4. Open the terminal program (Linux and macOS) or command prompt (Windows), and type this command.
+
+
+```
+esptool.py --chip esp32 --port <your-com-port> --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 <path/to/extract/files>/bootloader.bin 0xf000 <path/to/extract/files>/phy_init_data.bin 0x30000 <path/to/extract/files>/nina-fw.bin 0x8000 <path/to/extract/file>/partitions.bin
+```
+
+
+From command above, replace ```<your-com-port>``` with your comport e.g. COM5 (Windows) or /dev/ttyUSB0 (Linux and macOS) and also replace ```<path/to/extract/files>``` with your path to the files that have been extracted above. 
+
+![esptool command](/media/images/esptool.png)
+
+
+If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number.
+
+```
+> C: ESP Mail Client v1.3.0, Fw v1.4.5+21060
+```
+
+## Library Instalation
 
 
 Click on **Clone or download** dropdown at the top of repository, select **Download ZIP** and save file on your computer.
@@ -161,7 +220,6 @@ void loop() {
 }
 
 ```
-
 
 
 
@@ -329,30 +387,30 @@ for (size_t i = 0; i < msgList.msgItems.size(); i++)
   IMAP_MSG_Item msg = msgList.msgItems[i];
 
   Serial.println("################################");
-  Serial.printf("Messsage Number: %s\n", msg.msgNo);
-  Serial.printf("Messsage UID: %s\n", msg.UID);
-  Serial.printf("Messsage ID: %s\n", msg.ID);
-  Serial.printf("Accept Language: %s\n", msg.acceptLang);
-  Serial.printf("Content Language: %s\n", msg.contentLang);
-  Serial.printf("From: %s\n", msg.from);
-  Serial.printf("From Charset: %s\n", msg.fromCharset);
-  Serial.printf("To: %s\n", msg.to);
-  Serial.printf("To Charset: %s\n", msg.toCharset);
-  Serial.printf("CC: %s\n", msg.cc);
-  Serial.printf("CC Charset: %s\n", msg.ccCharset);
-  Serial.printf("Date: %s\n", msg.date);
-  Serial.printf("Subject: %s\n", msg.subject);
-  Serial.printf("Subject Charset: %s\n", msg.subjectCharset);
+  ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
+  ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
+  ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
+  ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
+  ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
+  ESP_MAIL_PRINTF("From: %s\n", msg.from);
+  ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
+  ESP_MAIL_PRINTF("To: %s\n", msg.to);
+  ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
+  ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
+  ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
+  ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+  ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
+  ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
 
   // If the message body is available
   if (!imap.headerOnly())
   {
-    Serial.printf("Text Message: %s\n", msg.text.content);
-    Serial.printf("Text Message Charset: %s\n", msg.text.charSet);
-    Serial.printf("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-    Serial.printf("HTML Message: %s\n", msg.html.content);
-    Serial.printf("HTML Message Charset: %s\n", msg.html.charSet);
-    Serial.printf("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+    ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
+    ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
+    ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
+    ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
+    ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
+    ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
   }
 }
 

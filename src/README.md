@@ -141,6 +141,16 @@ bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool 
 
 
 
+#### Get free Heap memory.
+
+return **`int`** Free memory amount in byte.
+
+```C++
+int getFreeHeap();
+```
+
+
+
 
 
 #### Initialize the SD card with the default SPI port.
@@ -1196,6 +1206,8 @@ esp_mail_sesson_secure_config_t secure;
 ##### [consst char *] cert_file - The certificate file (DER format).
 
 ##### [esp_mail_file_storage_type] cert_file_storage_type - The storage type.
+
+##### [bool] verify - The cerificate verification option.
 
 ```C++
 esp_mail_sesson_cert_config_t certificate;

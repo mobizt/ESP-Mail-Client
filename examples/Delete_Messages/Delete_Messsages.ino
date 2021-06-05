@@ -58,6 +58,15 @@ void setup()
 {
 
     Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+    while (!Serial)
+        ;
+    Serial.println();
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
     Serial.println();
 
     Serial.print("Connecting to AP");
@@ -117,6 +126,8 @@ void setup()
 
     /* Delete all messages permanently by assign the second param to true*/
     //imap.deleteMessages(&toDelete, true);
+
+    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -136,7 +147,7 @@ void printAllMailboxesInfo(IMAPSession &imap)
         {
             /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
-            Serial.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
     }
 }

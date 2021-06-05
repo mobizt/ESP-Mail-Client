@@ -17,7 +17,9 @@
  * #define ESP_Mail_DEFAULT_FLASH_FS FFat  //For ESP32 FFat
  * 
 */
+#if defined(ESP32) || defined(ESP8266)
 #define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
+#endif
 
 /**
  * To use SD card file systems with different hardware interface
@@ -29,11 +31,12 @@
  #define CARD_TYPE_SD_MMC 1
  *
 */
+
 #define ESP_Mail_DEFAULT_SD_FS SD
 #define CARD_TYPE_SD 1
 
+
 //For ESP32, format SPIFFS or FFat if mounting failed
 #define FORMAT_FLASH_IF_MOUNT_FAILED 1
-
 
 #endif
