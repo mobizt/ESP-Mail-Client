@@ -48,7 +48,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 This following devices are supported.
 
  * ESP8266 MCUs based boards
- * ESP8266 MCUs based boards
+ * ESP32 MCUs based boards
  * Arduino MKR WiFi 1010
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
