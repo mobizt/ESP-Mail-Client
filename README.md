@@ -21,6 +21,9 @@ Other serial Mobile network modem (GSM/3G/4G) and SPI/I2C Ethernet board which G
 
 Copyright (c) 2021 K. Suwatchai (Mobizt).
 
+
+
+
 # Features
 
 * Support Espressif's ESP32 and ESP8266, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
@@ -36,6 +39,26 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet boards). ESP8266 Ethernet is not yet supported.
 * Customizable operating configurations (see the examples for the usages)
 
+
+
+
+
+## Supported Devices
+
+This following devices are supported.
+
+ * ESP8266 MCUs based boards
+ * ESP8266 MCUs based boards
+ * Arduino MKR WiFi 1010
+ * Arduino Nano 33 IoT
+ * Arduino MKR Vidor 4000
+
+ Note: Arduino UNO WiFi Rev.2 (AVR Platform) is not supported.
+
+
+
+
+
 ## Tested Devices
 
 This following devices were tested.
@@ -48,6 +71,8 @@ This following devices were tested.
  * NodeMCU ESP8266
  * Wemos D1 Mini (ESP8266)
  * Arduino MKR WiFi 1010
+
+
 
 
 
@@ -86,7 +111,7 @@ To install custom built WiFiNINA firmware, please follow the following instructi
 1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
 
 
-2. Download file [nina-fw-1.4.5.zip](/firmwares/nina-fw-1.4.5.zip) in [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
+2. For Arduino MKR WiFi 1010, Arduino Nano 33 IoT and Arduino MKR Vidor 4000 boards, download [nina-fw-1.4.5_samd21.zip](/firmwares/nina-fw-1.4.5_samd21.zip) and for Nano RP2040 Connect board, download [nina-fw-1.4.5_rp2040.zip](/firmwares/nina-fw-1.4.5_rp2040.zip) from [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
 
 
 3. Compile and upload SerialNINAPassthrough.ino to the device.
@@ -102,12 +127,14 @@ esptool.py --chip esp32 --port <your-com-port> --baud 115200 --before default_re
 ```
 
 
-From command above, replace ```<your-com-port>``` with your comport e.g. COM5 (Windows) or /dev/ttyUSB0 (Linux and macOS) and also replace ```<path/to/extract/files>``` with your path to the files that have been extracted above. 
+From command above, replace ```<your-com-port>``` with your comport e.g. COM5 (Windows) or /dev/ttyUSB0 (Linux and macOS) and also replace ```<path/to/extract/files>``` with your path to the files that have been extracted above.
+
+The flash (upload) result shows in the command prompt window will look similar to below image.
 
 ![esptool command](/media/images/esptool.png)
 
 
-If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number.
+If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21060).
 
 ```
 > C: ESP Mail Client v1.3.0, Fw v1.4.5+21060
