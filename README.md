@@ -111,7 +111,7 @@ To install custom built WiFiNINA firmware, please follow the following instructi
 1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
 
 
-2. Download file [nina-fw-1.4.5.zip](/firmwares/nina-fw-1.4.5.zip) in [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
+2. Download file [nina-fw-1.4.5.zip](/firmwares/nina-fw-1.4.5.zip) in [firmwares](/firmwares) folder and extract it. The extracted files included nina-fw.bin and SerialNINAPassthrough.ino.
 
 
 3. Compile and upload SerialNINAPassthrough.ino to the device.
@@ -123,11 +123,11 @@ To install custom built WiFiNINA firmware, please follow the following instructi
 
 
 ```
-esptool.py --chip esp32 --port <your-com-port> --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 <path/to/extract/files>/bootloader.bin 0xf000 <path/to/extract/files>/phy_init_data.bin 0x30000 <path/to/extract/files>/nina-fw.bin 0x8000 <path/to/extract/file>/partitions.bin
+esptool.py --port <com-port> --baud 115200 --before default_reset --after hard_reset write_flash 0x0 <path/to/file>/nina-fw.bin
 ```
 
 
-From command above, replace ```<your-com-port>``` with your comport e.g. COM5 (Windows) or /dev/ttyUSB0 (Linux and macOS) and also replace ```<path/to/extract/files>``` with your path to the files that have been extracted above.
+From command above, replace ```<com-port>``` with your comport e.g. COM5 (Windows) or /dev/ttyUSB0 (Linux and macOS) and also replace ```<path/to/file>``` with your path to the nina-fw.bin that has been extracted.
 
 The flash (upload) result shows in the command prompt window will look similar to below image.
 
