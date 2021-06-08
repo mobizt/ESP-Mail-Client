@@ -111,7 +111,7 @@ To install custom built WiFiNINA firmware, please follow the following instructi
 1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
 
 
-2. For Arduino MKR WiFi 1010, Arduino Nano 33 IoT and Arduino MKR Vidor 4000 boards, download [nina-fw-1.4.5_samd21.zip](/firmwares/nina-fw-1.4.5_samd21.zip) and for Nano RP2040 Connect board, download [nina-fw-1.4.5_rp2040.zip](/firmwares/nina-fw-1.4.5_rp2040.zip) from [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
+2. Download file [nina-fw-1.4.5.zip](/firmwares/nina-fw-1.4.5.zip) in [firmwares](/firmwares) folder and extract it. The extracted files included bootloader.bin, phy_init_data.bin, nina-fw.bin, partitions.bin and SerialNINAPassthrough.ino.
 
 
 3. Compile and upload SerialNINAPassthrough.ino to the device.
