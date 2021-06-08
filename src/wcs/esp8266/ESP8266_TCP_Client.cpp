@@ -94,6 +94,8 @@ int ESP8266_TCP_Client::send(const char *data)
   {
     return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
   }
+
+  return strlen(data);
 }
 
 ESP8266_TCP::ESP8266_WCS *ESP8266_TCP_Client::stream(void)
