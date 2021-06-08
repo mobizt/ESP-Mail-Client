@@ -88,7 +88,7 @@ The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
 ### SAMD21
 
-For Atmel's SAMD21 based boards, custom built WiFiNINA firmware is needed to be installed instead of official Arduino WiFiNINA firmware.
+For Atmel's SAMD21 based boards, [custom built WiFiNINA firmware](https://github.com/mobizt/nina-fw) is needed to be installed instead of official Arduino WiFiNINA firmware.
 
 #### Comparison between custom built and official WiFiNINA firmwares.
 
