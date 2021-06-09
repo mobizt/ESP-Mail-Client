@@ -111,7 +111,7 @@ To install custom built WiFiNINA firmware, please follow the following instructi
 1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
 
 
-2. Download [nina-fw.bin](/firmwares/samd21) in [firmwares](/firmwares/samd21) and [SerialNINAPassthrough.ino](/firmwares/SerialNINAPassthrough/SerialNINAPassthrough.ino).
+2. Download [nina-fw.bin](/firmwares/samd21) in [firmwares/samd21](/firmwares/samd21) and [SerialNINAPassthrough.ino](/firmwares/SerialNINAPassthrough/SerialNINAPassthrough.ino).
 
 
 3. Compile and upload SerialNINAPassthrough.ino to the device.
