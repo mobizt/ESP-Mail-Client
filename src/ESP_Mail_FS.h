@@ -11,10 +11,10 @@
  * #define ESP_Mail_DEFAULT_FLASH_FS LittleFS //For ESP8266 LitteFS
  * 
  * 
- * FFat File system
+ * FAT File system
  * 
  * #include <FFat.h>
- * #define ESP_Mail_DEFAULT_FLASH_FS FFat  //For ESP32 FFat
+ * #define ESP_Mail_DEFAULT_FLASH_FS FFat  //For ESP32 FAT
  * 
 */
 #if defined(ESP32) || defined(ESP8266)

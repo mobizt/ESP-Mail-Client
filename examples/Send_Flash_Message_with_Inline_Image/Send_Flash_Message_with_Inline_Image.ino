@@ -88,9 +88,8 @@ void setup()
 
     Serial.println("Mounting SPIFFS...");
 
-    const char *html = "<span style=\"color:#ff0000;\">This message contains 2 inline images.</span><br/><br/><img src=\"cid:image-001\" alt=\"orange image\"  width=\"100\" height=\"100\"> <img src=\"cid:image-002\" alt=\"green image\" width=\"100\" height=\"100\">";
-    const char *orangeImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RMQ0AMAgAsCFgftHLiQpsENJaaFT+fqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBGi/oCaOpTXoAAAAASUVORK5CYII=";
-    const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
+    const char *html = "<span style=\"color:#023ac7;\">This message contains inline image.</span><br/><br/><img src=\"cid:image-001\" alt=\"orange image\"  width=\"640\" height=\"360\">";
+    const char *base64Img = "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";
 
 #if defined(ESP32) || defined(ESP8266)
 #if defined(ESP32)
@@ -102,29 +101,17 @@ void setup()
 
         //SPIFFS.format();
 
-        if (SPIFFS.exists("/orange.png"))
-            SPIFFS.remove("/orange.png");
-        if (SPIFFS.exists("/green.png"))
-            SPIFFS.remove("/green.png");
-        if (SPIFFS.exists("/msg.html"))
-            SPIFFS.remove("/msg.html");
+        if (SPIFFS.exists("/base64Img.jpg"))
+            SPIFFS.remove("/base64Img.jpg");
 
         Serial.println("Preparing SPIFFS attachments...");
 
 #if defined(ESP32)
-        File file = SPIFFS.open("/orange.png", FILE_WRITE);
+        File file = SPIFFS.open("/base64Img.jpg", FILE_WRITE);
 #elif defined(ESP8266)
-        File file = SPIFFS.open("/orange.png", "w");
+        File file = SPIFFS.open("/base64Img.jpg", "w");
 #endif
-        file.print(orangeImg);
-        file.close();
-
-#if defined(ESP32)
-        file = SPIFFS.open("/green.png", FILE_WRITE);
-#elif defined(ESP8266)
-        file = SPIFFS.open("/green.png", "w");
-#endif
-        file.print(greenImg);
+        file.print(base64Img);
         file.close();
 
 #if defined(ESP32)
@@ -170,7 +157,7 @@ void setup()
     message.sender.name = "ESP Mail";
     message.sender.email = AUTHOR_EMAIL;
 
-    message.subject = "Test sending Email with message content and inline images stored in flash memory";
+    message.subject = "Test sending base64 inline image stored in flash memory";
     message.addRecipient("user1", "####@#####_dot_com");
 
     /* Two alternative content versions are sending in this example e.g. plain text and html */
@@ -201,7 +188,7 @@ void setup()
     */
     message.html.charSet = "utf-8";
 
-    message.text.content = "This message contains 2 inline images.\r\nThe inline images were not shown in the plain text message.";
+    message.text.content = "This message contains inline image.\r\nThe inline image was not shown in the plain text message.";
     message.text.charSet = "utf-8";
     message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
@@ -209,62 +196,40 @@ void setup()
     message.addHeader("Message-ID: <user1@gmail.com>");
 
     /* The attachment data item */
-    SMTP_Attachment att[2];
-    int attIndex = 0;
+    SMTP_Attachment att;
     /** Set the inline image info e.g.
      * file name, MIME type, file path, file storage type,
      * transfer encoding and content encoding
     */
-    att[attIndex].descr.filename = "orange.png";
-    att[attIndex].descr.mime = "image/png";
+    att.descr.filename = "base64Img.jpg";
+    att.descr.mime = "image/jpg";
 
 #if defined(ESP32) || defined(ESP8266)
-    att[attIndex].file.path = "/orange.png";
+    att.file.path = "/base64Img.jpg";
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
      * esp_mail_file_storage_type_flash, and
      * esp_mail_file_storage_type_sd 
     */
-    att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
+    att.file.storage_type = esp_mail_file_storage_type_flash;
 #elif defined(ARDUINO_ARCH_SAMD)
-    att[attIndex].blob.data = (const uint8_t *)orangeImg;
-    att[attIndex].blob.size = sizeof(orangeImg);
+    att.blob.data = (const uint8_t *)base64Img;
+    att.blob.size = sizeof(base64Img);
 #endif
 
-    att[attIndex].descr.content_id = "image-001"; //The content id (cid) of orange image in the src tag
+    att.descr.content_id = "image-001"; //The content id (cid) of orange image in the src tag
 
     /* Need to be base64 transfer encoding for inline image */
-    att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+    att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
-    /** The orange.png file is already base64 encoded file.
+    /** The attach image file is already base64 encoded file.
      * Then set the content encoding to match the transfer encoding
      * which no encoding was taken place prior to sending.
     */
-    att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+    att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
 
     /* Add inline image to the message */
-    message.addInlineImage(att[attIndex]);
-
-    /** Set the inline image info e.g.
-     * file name, MIME type, file path, file storage type,
-     * transfer encoding and content encoding
-    */
-    attIndex++;
-    att[attIndex].descr.filename = "green.png";
-    att[attIndex].descr.mime = "image/png";
-
-#if defined(ESP32) || defined(ESP8266)
-    att[attIndex].file.path = "/green.png";
-    att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
-#elif defined(ARDUINO_ARCH_SAMD)
-    att[attIndex].blob.data = (const uint8_t *)greenImg;
-    att[attIndex].blob.size = sizeof(greenImg);
-#endif
-
-    att[attIndex].descr.content_id = "image-002"; //The content id (cid) of green image in the src tag
-    att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-    att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
-    message.addInlineImage(att[attIndex]);
+    message.addInlineImage(att);
 
     /* Connect to server with the session config */
     if (!smtp.connect(&session))

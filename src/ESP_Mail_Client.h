@@ -1,16 +1,18 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.3.0"
+#define ESP_MAIL_VERSION "1.3.1"
+
 
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 , SAMD21 and Raspberry Pi's RP2040 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.0
- *   Released:  June 5, 2021
+ *   Version:   1.3.1
+ *   Released:  June 27, 2021
  *
  *   Updates:
- * - Add support SAMD21 MCUs based board with u-blox NINA-W102 WiFi/Bluetooth module.
+ * - Fix missing line break for pre-encoded base64 content encoding attachment.
+ * - Add camera image sending Email example.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read
@@ -82,7 +84,7 @@
 
 #endif
 
-#elif defined(ARDUINO_ARCH_SAMD)
+#elif defined(ARDUINO_ARCH_SAMD) 
 #undef min
 #undef max
 #define UPLOAD_CHUNKS_NUM 5
@@ -601,7 +603,7 @@ struct esp_mail_imap_content_disposition_type_t
 struct esp_mail_internal_use_t
 {
   bool binary = false;
-  std::string cid = "";
+  std::string cid;
 };
 
 struct esp_mail_content_transfer_encoding_t
@@ -627,13 +629,13 @@ struct esp_mail_smtp_response_status_t
 {
   int respCode = 0;
   int statusCode = 0;
-  std::string text = "";
+  std::string text;
 };
 
 struct esp_mail_imap_response_status_t
 {
   int statusCode = 0;
-  std::string text = "";
+  std::string text;
 };
 
 /* The option to embed this message content as a file */
@@ -651,6 +653,7 @@ struct esp_mail_smtp_embed_message_body_t
   */
   esp_mail_smtp_embed_message_type type = esp_mail_smtp_embed_message_type_attachment;
 };
+
 
 struct esp_mail_file_message_content_t
 {
@@ -734,7 +737,7 @@ struct esp_mail_html_body_t
 
 struct esp_mail_link_internal_t
 {
-  std::string cid = "";
+  std::string cid;
 };
 
 struct esp_mail_email_info_t
@@ -815,7 +818,7 @@ struct esp_mail_attach_internal_t
   bool flash_blob = false;
   bool binary = false;
   bool parallel = false;
-  std::string cid = "";
+  std::string cid;
 };
 
 struct esp_mail_attachment_t
@@ -896,18 +899,18 @@ struct esp_mail_smtp_capability_t
 
 struct esp_mail_imap_rfc822_msg_header_item_t
 {
-  std::string sender = "";
+  std::string sender;
   std::string from;
-  std::string subject = "";
-  std::string messageID = "";
-  std::string keyword = "";
-  std::string comment = "";
-  std::string date = "";
-  std::string return_path = "";
+  std::string subject;
+  std::string messageID;
+  std::string keyword;
+  std::string comment;
+  std::string date;
+  std::string return_path;
   std::string reply_to;
-  std::string to = "";
-  std::string cc = "";
-  std::string bcc = "";
+  std::string to;
+  std::string cc;
+  std::string bcc;
 };
 
 struct esp_mail_message_part_info_t
@@ -917,21 +920,21 @@ struct esp_mail_message_part_info_t
   int textLen = 0;
   bool sizeProp = false;
   int nestedLevel = 0;
-  std::string partNumStr = "";
-  std::string partNumFetchStr = "";
-  std::string text = "";
-  std::string filename = "";
-  std::string type = "";
-  std::string save_path = "";
-  std::string name = "";
-  std::string content_disposition = "";
-  std::string content_type = "";
-  std::string descr = "";
-  std::string content_transfer_encoding = "";
-  std::string creation_date = "";
-  std::string modification_date = "";
-  std::string charset = "";
-  std::string download_error = "";
+  std::string partNumStr;
+  std::string partNumFetchStr;
+  std::string text;
+  std::string filename;
+  std::string type;
+  std::string save_path;
+  std::string name;
+  std::string content_disposition;
+  std::string content_type;
+  std::string descr;
+  std::string content_transfer_encoding;
+  std::string creation_date;
+  std::string modification_date;
+  std::string charset;
+  std::string download_error;
   esp_mail_attach_type attach_type = esp_mail_att_type_none;
   esp_mail_message_type msg_type = esp_mail_msg_type_none;
   bool file_open_write = false;
@@ -949,33 +952,33 @@ struct esp_mail_message_part_info_t
 struct esp_mail_message_header_t
 {
   int header_data_len = 0;
-  std::string from = "";
-  std::string to = "";
-  std::string cc = "";
-  std::string subject = "";
-  std::string content_type = "";
-  std::string content_transfer_encoding = "";
-  std::string date = "";
-  std::string message_id = "";
-  std::string message_uid = "";
-  std::string message_no = "";
-  std::string boundary = "";
-  std::string accept_language = "";
-  std::string content_language = "";
-  std::string char_set = "";
+  std::string from;
+  std::string to;
+  std::string cc;
+  std::string subject;
+  std::string content_type;
+  std::string content_transfer_encoding;
+  std::string date;
+  std::string message_id;
+  std::string message_uid;
+  std::string message_no;
+  std::string boundary;
+  std::string accept_language;
+  std::string content_language;
+  std::string char_set;
   bool multipart = false;
   bool rfc822_part = false;
   int rfc822Idx = 0;
-  std::string partNumStr = "";
+  std::string partNumStr;
 
   esp_mail_imap_multipart_sub_type multipart_sub_type = esp_mail_imap_multipart_sub_type_none;
   esp_mail_imap_message_sub_type message_sub_type = esp_mail_imap_message_sub_type_none;
-  std::string from_charset = "";
-  std::string to_charset = "";
-  std::string cc_charset = "";
-  std::string subject_charset = "";
-  std::string msgID = "";
-  std::string error_msg = "";
+  std::string from_charset;
+  std::string to_charset;
+  std::string cc_charset;
+  std::string subject_charset;
+  std::string msgID;
+  std::string error_msg;
   bool error = false;
   std::vector<struct esp_mail_message_part_info_t> part_headers = std::vector<struct esp_mail_message_part_info_t>();
   int attachment_count = 0;
@@ -989,9 +992,9 @@ struct esp_mail_message_header_t
 /* Internal use */
 struct esp_mail_folder_info_t
 {
-  std::string name = "";
-  std::string attributes = "";
-  std::string delimiter = "";
+  std::string name;
+  std::string attributes;
+  std::string delimiter;
 };
 
 struct esp_mail_folder_info_item_t
@@ -1826,7 +1829,7 @@ public:
   void empty();
   friend class IMAPSession;
 
-  std::string _info = "";
+  std::string _info;
   bool _success = false;
 };
 
@@ -1855,7 +1858,7 @@ public:
     att._int.flash_blob = false;
     att._int.binary = false;
     att._int.parallel = false;
-    att._int.cid = "";
+    att._int.cid.clear();
   }
 
   void clear()
@@ -2129,7 +2132,7 @@ public:
   size_t failedCount();
 
 private:
-  std::string _info = "";
+  std::string _info;
   bool _success = false;
   size_t _sentSuccess = 0;
   size_t _sentFailed = 0;
@@ -2327,7 +2330,9 @@ private:
   std::string encodeBase64Str(uint8_t *src, size_t len);
   void encodeQP(const char *buf, char *out);
   bool sendBase64(SMTPSession *smtp, SMTP_Message *msg, const unsigned char *data, size_t len, bool flashMem, const char *filename, bool report);
+  bool sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report);
   bool sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, File file, const char *filename, bool report);
+  bool sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, File file, const char *filename, bool report);
   void smtpCBP(SMTPSession *smtp, PGM_P info, bool success = false);
   void smtpCB(SMTPSession *smtp, const char *info, bool success = false);
   void imapCBP(IMAPSession *imap, PGM_P info, bool success);
@@ -2548,7 +2553,6 @@ private:
   std::vector<struct esp_mail_message_header_t> _headers = std::vector<struct esp_mail_message_header_t>();
 
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
-  // std::string _partNumStr = "";
   std::vector<struct esp_mail_imap_multipart_level_t> _multipart_levels = std::vector<struct esp_mail_imap_multipart_level_t>();
   int _rfc822_part_count = 0;
   esp_mail_file_storage_type _storageType = esp_mail_file_storage_type::esp_mail_file_storage_type_flash;
@@ -2556,9 +2560,9 @@ private:
   bool _readOnlyMode = true;
   struct esp_mail_auth_capability_t _auth_capability;
   ESP_Mail_Session *_sesson_cfg;
-  std::string _currentFolder = "";
+  std::string _currentFolder;
   bool _mailboxOpened = false;
-  std::string _nextUID = "";
+  std::string _nextUID;
 
   struct esp_mail_imap_read_config_t *_config = nullptr;
 

@@ -1,11 +1,12 @@
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, SAMD21 and Raspberry Pi's RP2040 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.0
- *   Released:  June 5, 2021
+ *   Version:   1.3.1
+ *   Released:  June 27, 2021
  *
  *   Updates:
- * - Add support SAMD21 MCUs based board with u-blox NINA-W102 WiFi/Bluetooth module.
+ * - Fix missing line break for pre-encoded base64 content encoding attachment.
+ * - Add camera image sending Email example.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
@@ -2573,35 +2574,45 @@ bool ESP_Mail_Client::sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
   {
     if (att->blob.size > 0)
     {
-      size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
-      size_t writeLen = 0;
-      uint8_t *buf = new uint8_t[chunkSize];
-      int pg = 0, _pg = 0;
-      while (writeLen < att->blob.size)
+      if (strcmp(att->descr.content_encoding, Content_Transfer_Encoding::enc_base64) == 0)
       {
-        if (writeLen > att->blob.size - chunkSize)
-          chunkSize = att->blob.size - writeLen;
-
-        if (!bdat(smtp, msg, chunkSize, false))
-          break;
-        memcpy_P(buf, att->blob.data, chunkSize);
-        if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-          break;
-
-        if (smtp->_sendCallback)
-        {
-          pg = (float)(100.0f * writeLen / att->blob.size);
-          if (pg != _pg)
-            uploadReport(att->descr.filename, pg);
-          _pg = pg;
-        }
-        writeLen += chunkSize;
+        if (!sendBase64Raw(smtp, msg, att->blob.data, att->blob.size, att->_int.flash_blob, att->descr.filename, smtp->_sendCallback != NULL))
+          return false;
+        return true;
       }
-      delete[] buf;
-      if (smtp->_sendCallback && _pg < 100)
-        uploadReport(att->descr.filename, 100);
+      else
+      {
 
-      return writeLen >= att->blob.size;
+        size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
+        size_t writeLen = 0;
+        uint8_t *buf = new uint8_t[chunkSize];
+        int pg = 0, _pg = 0;
+        while (writeLen < att->blob.size)
+        {
+          if (writeLen > att->blob.size - chunkSize)
+            chunkSize = att->blob.size - writeLen;
+
+          if (!bdat(smtp, msg, chunkSize, false))
+            break;
+          memcpy_P(buf, att->blob.data, chunkSize);
+          if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            break;
+
+          if (smtp->_sendCallback)
+          {
+            pg = (float)(100.0f * writeLen / att->blob.size);
+            if (pg != _pg)
+              uploadReport(att->descr.filename, pg);
+            _pg = pg;
+          }
+          writeLen += chunkSize;
+        }
+        delete[] buf;
+        if (smtp->_sendCallback && _pg < 100)
+          uploadReport(att->descr.filename, 100);
+
+        return writeLen >= att->blob.size;
+      }
     }
   }
   return false;
@@ -2619,42 +2630,51 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
   {
     if (file.size() > 0)
     {
-      size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
-      size_t writeLen = 0;
-      if (file.size() < chunkSize)
-        chunkSize = file.size();
-      uint8_t *buf = new uint8_t[chunkSize];
-      int pg = 0, _pg = 0;
-      while (writeLen < file.size() && file.available())
+      if (strcmp(att->descr.content_encoding, Content_Transfer_Encoding::enc_base64) == 0)
       {
-        if (writeLen > file.size() - chunkSize)
-          chunkSize = file.size() - writeLen;
-        size_t readLen = file.read(buf, chunkSize);
-        if (readLen != chunkSize)
-        {
-          errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
-          break;
-        }
-
-        if (!bdat(smtp, msg, chunkSize, false))
-          break;
-
-        if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-          break;
-
-        if (smtp->_sendCallback)
-        {
-          pg = (float)(100.0f * writeLen / file.size());
-          if (pg != _pg)
-            uploadReport(att->descr.filename, pg);
-          _pg = pg;
-        }
-        writeLen += chunkSize;
+        if (!sendBase64StreamRaw(smtp, msg, file, att->descr.filename, smtp->_sendCallback != NULL))
+          return false;
+        return true;
       }
-      delete[] buf;
-      if (smtp->_sendCallback && _pg < 100)
-        uploadReport(att->descr.filename, 100);
-      return writeLen == file.size();
+      else
+      {
+        size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
+        size_t writeLen = 0;
+        if (file.size() < chunkSize)
+          chunkSize = file.size();
+        uint8_t *buf = new uint8_t[chunkSize];
+        int pg = 0, _pg = 0;
+        while (writeLen < file.size() && file.available())
+        {
+          if (writeLen > file.size() - chunkSize)
+            chunkSize = file.size() - writeLen;
+          size_t readLen = file.read(buf, chunkSize);
+          if (readLen != chunkSize)
+          {
+            errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
+            break;
+          }
+
+          if (!bdat(smtp, msg, chunkSize, false))
+            break;
+
+          if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            break;
+
+          if (smtp->_sendCallback)
+          {
+            pg = (float)(100.0f * writeLen / file.size());
+            if (pg != _pg)
+              uploadReport(att->descr.filename, pg);
+            _pg = pg;
+          }
+          writeLen += chunkSize;
+        }
+        delete[] buf;
+        if (smtp->_sendCallback && _pg < 100)
+          uploadReport(att->descr.filename, 100);
+        return writeLen == file.size();
+      }
     }
     return false;
   }
@@ -7272,11 +7292,6 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const uns
   bool ret = false;
   const unsigned char *end, *in;
 
-  size_t olen = 4 * ((len + 2) / 3);
-
-  if (olen < len)
-    return false;
-
   end = data + len;
   in = data;
 
@@ -7404,6 +7419,80 @@ ex:
   return ret;
 }
 
+bool ESP_Mail_Client::sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report)
+{
+  bool ret = false;
+
+  size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
+  size_t bufIndex = 0;
+  size_t dataIndex = 0;
+
+  if (len < chunkSize)
+    chunkSize = len;
+
+  uint8_t *buf = new uint8_t[chunkSize];
+  memset(buf, 0, chunkSize);
+
+  int pg = 0, _pg = 0;
+
+  if (report)
+    uploadReport(filename, dataIndex);
+
+  while (dataIndex < len - 1)
+  {
+
+    size_t size = 4;
+    if (dataIndex + size > len - 1)
+      size = len - dataIndex;
+
+    if (flashMem)
+      memcpy_P(buf + bufIndex, data + dataIndex, size);
+    else
+      memcpy(buf + bufIndex, data + dataIndex, size);
+
+    dataIndex += size;
+    bufIndex += size;
+
+    if (bufIndex + 1 == BASE64_CHUNKED_LEN)
+    {
+      if (bufIndex + 2 < chunkSize)
+      {
+        buf[bufIndex++] = 0x0d;
+        buf[bufIndex++] = 0x0a;
+      }
+    }
+
+    if (bufIndex + 1 >= chunkSize - size)
+    {
+      if (!bdat(smtp, msg, bufIndex + 1, false))
+        goto ex;
+
+      if (smtpSend(smtp, buf, bufIndex + 1) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        goto ex;
+
+      bufIndex = 0;
+    }
+
+    if (report)
+    {
+      pg = (float)(100.0f * dataIndex / len);
+      if (pg != _pg)
+        uploadReport(filename, pg);
+      _pg = pg;
+    }
+  }
+
+  if (report && _pg < 100)
+    uploadReport(filename, 100);
+
+  ret = true;
+ex:
+  if (report)
+    esp_mail_debug("");
+  delete[] buf;
+  return ret;
+}
+
 bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, File file, const char *filename, bool report)
 {
   bool ret = false;
@@ -7527,6 +7616,98 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, Fil
     if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       goto ex;
   }
+  ret = true;
+
+  if (report && _pg < 100)
+    uploadReport(filename, 100);
+
+ex:
+  delete[] buf;
+  delete[] fbuf;
+  file.close();
+  return ret;
+}
+
+bool ESP_Mail_Client::sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, File file, const char *filename, bool report)
+{
+  bool ret = false;
+
+  if (!file)
+  {
+    errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
+    return false;
+  }
+
+  size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
+  size_t bufIndex = 0;
+  size_t dataIndex = 0;
+
+  size_t len = file.size();
+
+  if (len < chunkSize)
+    chunkSize = len;
+
+  uint8_t *buf = new uint8_t[chunkSize];
+  memset(buf, 0, chunkSize);
+
+  int pg = 0, _pg = 0;
+
+  uint8_t *fbuf = new uint8_t[4];
+
+  if (report)
+    uploadReport(filename, bufIndex);
+
+  while (file.available())
+  {
+
+    if (dataIndex < len - 1)
+    {
+      size_t size = 4;
+      if (dataIndex + size > len - 1)
+        size = len - dataIndex;
+
+      size_t readLen = file.read(fbuf, size);
+      if (readLen != size)
+      {
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_FILE_IO_ERROR);
+        break;
+      }
+
+      memcpy(buf + bufIndex, fbuf, size);
+
+      bufIndex += size;
+
+      if (bufIndex + 1 == BASE64_CHUNKED_LEN)
+      {
+        if (bufIndex + 2 < chunkSize)
+        {
+          buf[bufIndex++] = 0x0d;
+          buf[bufIndex++] = 0x0a;
+        }
+      }
+
+      if (bufIndex + 1 >= chunkSize - size)
+      {
+        if (!bdat(smtp, msg, bufIndex + 1, false))
+          goto ex;
+
+        if (smtpSend(smtp, buf, bufIndex + 1) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+          goto ex;
+
+        bufIndex = 0;
+      }
+
+      if (report)
+      {
+        pg = (float)(100.0f * dataIndex / len);
+        if (pg != _pg)
+          uploadReport(filename, pg);
+        _pg = pg;
+      }
+    }
+  }
+
+  file.close();
   ret = true;
 
   if (report && _pg < 100)

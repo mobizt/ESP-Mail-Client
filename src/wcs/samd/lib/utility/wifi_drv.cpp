@@ -23,7 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 
-#include "Arduino.h"
+#include <Arduino.h>
 #include "spi_drv.h"
 #include "wifi_drv.h"
 

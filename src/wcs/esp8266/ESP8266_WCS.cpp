@@ -255,7 +255,7 @@ namespace ESP8266_TCP
     _host_name = name;
 
     if (!_secured)
-      return true;
+      return 1;
 
     return _connectSSL(name);
   }

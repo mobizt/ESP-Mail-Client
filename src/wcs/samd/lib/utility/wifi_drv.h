@@ -25,7 +25,7 @@
 
 #include <inttypes.h>
 #include "wifi_spi.h"
-#include "IPAddress.h"
+#include <IPAddress.h>
 #include "../WiFiUdp.h"
 #include "../WiFiClient.h"
 
