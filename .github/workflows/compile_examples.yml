@@ -19,7 +19,7 @@ jobs:
         example: 
         - "examples/Copy_Messages/Copy_Messsages.ino"
         - "examples/Delete_Messages/Delete_Messsages.ino"
-        - "examples/ESP32_Ethernet_Send_Text/ESP32_Ethernet_Send_Text.ino"
+#        - "examples/ESP32_Ethernet_Send_Text/ESP32_Ethernet_Send_Text.ino"
         - "examples/Read_Email_Access_Token/Read_Email_Access_Token.ino"
         - "examples/Read_Single_Email/Read_Single_Email.ino"
         - "examples/Read_Single_Email_Loop/Read_Single_Email_Loop.ino"
@@ -64,8 +64,10 @@ jobs:
         
     - name: Run PlatformIO Examples
       run: |
-        pio ci --board=nodemcuv2
-#        --lib=examples/advanced/EventScheduler/**.h
+        pio ci --board=nodemcuv2 \
+        --lib=examples/Send_RFC822_Attachment/image.h \
+        --lib=examples/Send_Parallel_Attachment/data.h
+      # --lib=examples/Send_Attachment_Blob/image.h
       env:
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
 
@@ -122,10 +124,10 @@ jobs:
 
     - name: Run PlatformIO Examples
       run: |
-        pio ci --board=lolin32
-#        --lib=examples/advanced/EventScheduler/**.h \
-#        --lib=examples/ESP32/ESP32-CAM-adv/**.h \
-#        --lib=examples/Ethernet/**.h
+        pio ci --board=lolin32 \
+         --lib=examples/Send_RFC822_Attachment/image.h \
+         --lib=examples/Send_Parallel_Attachment/data.h
+#         --lib=examples/Send_Attachment_Blob/image.h
 
       env:
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
