@@ -27,7 +27,7 @@
 #include <ESP_Mail_Client.h>
 
 /* This is for attachment data */
-#include "image.h"
+#include "blob_data.h"
 
 #define WIFI_SSID "################"
 #define WIFI_PASSWORD "################"
@@ -173,8 +173,8 @@ void setup()
   */
   att[attIndex].descr.filename = "firebase_logo.png";
   att[attIndex].descr.mime = "image/png";
-  att[attIndex].blob.data = firebase_png;
-  att[attIndex].blob.size = sizeof(firebase_png);
+  att[attIndex].blob.data = firebase_logo_png;
+  att[attIndex].blob.size = sizeof(firebase_logo_png);
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add inline image to the message */
@@ -187,8 +187,8 @@ void setup()
   attIndex++;
   att[attIndex].descr.filename = "tree.gif";
   att[attIndex].descr.mime = "image/gif";
-  att[attIndex].blob.data = tree_gif;
-  att[attIndex].blob.size = sizeof(tree_gif);
+  att[attIndex].blob.data = tree_img_gif;
+  att[attIndex].blob.size = sizeof(tree_img_gif);
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add inline image to the message */
@@ -201,8 +201,8 @@ void setup()
   attIndex++;
   att[attIndex].descr.filename = "bird.gif";
   att[attIndex].descr.mime = "image/gif";
-  att[attIndex].blob.data = bird_gif;
-  att[attIndex].blob.size = sizeof(bird_gif);
+  att[attIndex].blob.data = bird_img_gif;
+  att[attIndex].blob.size = sizeof(bird_img_gif);
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add inline image to the message */
