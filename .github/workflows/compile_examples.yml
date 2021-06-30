@@ -1,0 +1,131 @@
+name: Compile examples
+
+on:
+  push:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
+  pull_request:
+    paths-ignore:
+      - '.github/workflows/cpp_lint.yml'
+      - '.github/workflows/compile_library.yml'
+
+jobs:
+  esp8266:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: 
+        - "examples/Copy_Messages/Copy_Messsages.ino"
+        - "examples/Delete_Messages/Delete_Messsages.ino"
+        - "examples/ESP32_Ethernet_Send_Text/ESP32_Ethernet_Send_Text.ino"
+        - "examples/Read_Email_Access_Token/Read_Email_Access_Token.ino"
+        - "examples/Read_Single_Email/Read_Single_Email.ino"
+        - "examples/Read_Single_Email_Loop/Read_Single_Email_Loop.ino"
+        - "examples/Search_Emails/Search_Emails.ino"
+        - "examples/Send_HTML/Send_HTML.ino"
+        - "examples/Send_Access_Token/Send_Access_Token.ino"
+        - "examples/Send_Reuse_Session/Send_Reuse_Session.ino"
+        - "examples/Send_RFC822_Attachment/Send_RFC822_Attachment.ino"
+        - "examples/Send_Parallel_Attachment/Send_Parallel_Attachment.ino"
+        - "examples/Send_Attachment_Blob/Send_Attachment_Blob.ino"
+        - "examples/Send_Flash_Message_with_Inline_Image/Send_Flash_Message_with_Inline_Image.ino"
+        - "examples/Send_Text/Send_Text.ino"
+        - "examples/Send_Text_Flowed/Send_Text_Flowed.ino"
+        - "examples/Send_Enriched_Text/Send_Enriched_Text.ino"
+        - "examples/Send_Embedded_Message/Send_Embedded_Message.ino"
+        - "examples/Send_Attachment_File/Send_Attachment_File.ino"
+        - "examples/Set_Flags/Set_Flags.ino"
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+    - name: Install 3rd party dependecies
+      run: | 
+        pio lib -g install \
+        https://github.com/mobizt/ESP-Mail-Client
+        
+    - name: Run PlatformIO Examples
+      run: |
+        pio ci --board=nodemcuv2
+#        --lib=examples/advanced/EventScheduler/**.h
+      env:
+        PLATFORMIO_CI_SRC: ${{ matrix.example }}
+
+  esp32:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: 
+        - "examples/Copy_Messages/Copy_Messsages.ino"
+        - "examples/Delete_Messages/Delete_Messsages.ino"
+        - "examples/ESP32_Ethernet_Send_Text/ESP32_Ethernet_Send_Text.ino"
+        - "examples/Read_Email_Access_Token/Read_Email_Access_Token.ino"
+        - "examples/Read_Single_Email/Read_Single_Email.ino"
+        - "examples/Read_Single_Email_Loop/Read_Single_Email_Loop.ino"
+        - "examples/Search_Emails/Search_Emails.ino"
+        - "examples/Send_HTML/Send_HTML.ino"
+        - "examples/Send_Access_Token/Send_Access_Token.ino"
+        - "examples/Send_Reuse_Session/Send_Reuse_Session.ino"
+        - "examples/Send_RFC822_Attachment/Send_RFC822_Attachment.ino"
+        - "examples/Send_Parallel_Attachment/Send_Parallel_Attachment.ino"
+        - "examples/Send_Attachment_Blob/Send_Attachment_Blob.ino"
+        - "examples/Send_Flash_Message_with_Inline_Image/Send_Flash_Message_with_Inline_Image.ino"
+        - "examples/Send_Text/Send_Text.ino"
+        - "examples/Send_Text_Flowed/Send_Text_Flowed.ino"
+        - "examples/Send_Enriched_Text/Send_Enriched_Text.ino"
+        - "examples/Send_Embedded_Message/Send_Embedded_Message.ino"
+        - "examples/Send_Attachment_File/Send_Attachment_File.ino"
+        - "examples/Set_Flags/Set_Flags.ino"
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache pip
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: ${{ runner.os }}-pip-
+    - name: Cache PlatformIO
+      uses: actions/cache@v2
+      with:
+        path: ~/.platformio
+        key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+    - name: Set up Python
+      uses: actions/setup-python@v2
+    - name: Install PlatformIO
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade platformio
+
+    - name: Install 3rd party dependecies
+      run: | 
+        pio lib -g install \
+        https://github.com/mobizt/ESP-Mail-Client
+
+    - name: Run PlatformIO Examples
+      run: |
+        pio ci --board=lolin32
+#        --lib=examples/advanced/EventScheduler/**.h \
+#        --lib=examples/ESP32/ESP32-CAM-adv/**.h \
+#        --lib=examples/Ethernet/**.h
+
+      env:
+        PLATFORMIO_CI_SRC: ${{ matrix.example }}
