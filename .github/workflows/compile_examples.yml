@@ -67,7 +67,7 @@ jobs:
         pio ci --board=nodemcuv2 \
         --lib=examples/Send_RFC822_Attachment/image.h \
         --lib=examples/Send_Parallel_Attachment/data.h
-       --lib=examples/Send_Attachment_Blob/blob_data.h
+        --lib=examples/Send_Attachment_Blob/blob_data.h
       env:
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
 
