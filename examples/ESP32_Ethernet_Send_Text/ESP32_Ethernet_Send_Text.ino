@@ -294,7 +294,8 @@ void smtpCallback(SMTP_Status status)
     {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-      localtime_r(&result.timestamp, &dt);
+      time_t ts = (time_t)result.timestamp;
+      localtime_r(&ts, &dt);
 
       ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
       ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
