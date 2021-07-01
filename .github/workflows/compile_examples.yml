@@ -60,14 +60,14 @@ jobs:
     - name: Install 3rd party dependecies
       run: | 
         pio lib -g install \
-        https://github.com/mobizt/ESP-Mail-Client
+        https://github.com/mobizt/Firebase-ESP-Client.git
         
     - name: Run PlatformIO Examples
       run: |
         pio ci --board=nodemcuv2 \
         --lib=examples/Send_RFC822_Attachment/image.h \
         --lib=examples/Send_Parallel_Attachment/data.h
-      # --lib=examples/Send_Attachment_Blob/image.h
+       --lib=examples/Send_Attachment_Blob/blob_data.h
       env:
         PLATFORMIO_CI_SRC: ${{ matrix.example }}
 
@@ -120,14 +120,14 @@ jobs:
     - name: Install 3rd party dependecies
       run: | 
         pio lib -g install \
-        https://github.com/mobizt/ESP-Mail-Client
+        https://github.com/mobizt/Firebase-ESP-Client.git
 
     - name: Run PlatformIO Examples
       run: |
         pio ci --board=lolin32 \
          --lib=examples/Send_RFC822_Attachment/image.h \
          --lib=examples/Send_Parallel_Attachment/data.h
-#         --lib=examples/Send_Attachment_Blob/image.h
+         --lib=examples/Send_Attachment_Blob/blob_data.h
 
       env:
         PLATFORMIO_CI_SRC: ${{ matrix.example }}

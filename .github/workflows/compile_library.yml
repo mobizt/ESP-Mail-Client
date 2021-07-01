@@ -22,6 +22,7 @@ jobs:
         board: 
           - "nodemcuv2"
           - "lolin32"
+          - "mkrwifi1010"
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip
