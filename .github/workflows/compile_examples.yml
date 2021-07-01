@@ -60,7 +60,7 @@ jobs:
     - name: Install 3rd party dependecies
       run: | 
         pio lib -g install \
-        https://github.com/mobizt/Firebase-ESP-Client.git
+        https://github.com/mobizt/ESP-Mail-Client
         
     - name: Run PlatformIO Examples
       run: |
@@ -120,7 +120,7 @@ jobs:
     - name: Install 3rd party dependecies
       run: | 
         pio lib -g install \
-        https://github.com/mobizt/Firebase-ESP-Client.git
+        https://github.com/mobizt/ESP-Mail-Client
 
     - name: Run PlatformIO Examples
       run: |
