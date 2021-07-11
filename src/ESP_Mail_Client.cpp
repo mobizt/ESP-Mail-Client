@@ -1,12 +1,11 @@
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, SAMD21 and Raspberry Pi's RP2040 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.1
- *   Released:  June 27, 2021
+ *   Version:   1.3.2
+ *   Released:  July 11, 2021
  *
  *   Updates:
- * - Fix missing line break for pre-encoded base64 content encoding attachment.
- * - Add camera image sending Email example.
+ * - Fix compilation error due to missing return value in TCP client send method.
  * 
  * 
  * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 

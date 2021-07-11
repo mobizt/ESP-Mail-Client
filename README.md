@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.3.1
+# Mail Client Arduino Library v1.3.2
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)

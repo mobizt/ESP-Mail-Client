@@ -1,7 +1,7 @@
 /*
  * ESP32 TCP Client Library. 
  * 
- * v 1.0.0
+ * v 1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -77,6 +77,8 @@ int ESP32_TCP_Client::send(const char *data)
     {
         return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
     }
+
+    return strlen(data);
 }
 
 ESP32_WCS *ESP32_TCP_Client::stream(void)

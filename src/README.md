@@ -1,7 +1,7 @@
-# ESP Mail Client Arduino Library for ESP32, ESP8266, SAMD21 and RP2040
+# ESP Mail Client Arduino Library for ESP32, ESP8266, SAMD21
 
 
-The detail and usage of the available functions in the latest version (1.3.1) are showed below.
+The detail and usage of the available functions in the latest version (1.3.2) are showed below.
 
 
 ## Global functions

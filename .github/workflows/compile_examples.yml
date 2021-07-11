@@ -64,7 +64,7 @@ jobs:
         
     - name: Run PlatformIO Examples
       run: |
-        pio ci --board=nodemcuv2 \
+        pio ci --board=d1_mini \
         --lib=examples/Send_RFC822_Attachment/image.h \
         --lib=examples/Send_Parallel_Attachment/data.h \
         --lib=examples/Send_Attachment_Blob/blob_data.h
@@ -124,7 +124,7 @@ jobs:
 
     - name: Run PlatformIO Examples
       run: |
-        pio ci --board=lolin32 \
+        pio ci --board=esp32dev \
          --lib=examples/Send_RFC822_Attachment/image.h \
          --lib=examples/Send_Parallel_Attachment/data.h \
          --lib=examples/Send_Attachment_Blob/blob_data.h

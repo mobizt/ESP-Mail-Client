@@ -20,7 +20,9 @@ jobs:
       fail-fast: false
       matrix:
         board: 
+          - "d1_mini"
           - "nodemcuv2"
+          - "esp32dev"
           - "lolin32"
           - "mkrwifi1010"
     steps:
