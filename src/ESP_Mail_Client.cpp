@@ -1,8 +1,8 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.2
- *   Released:  July 11, 2021
+ *   Version:   1.3.3
+ *   Released:  August 15, 2021
  *
  *   Updates:
  * - Fix compilation error due to missing return value in TCP client send method.
@@ -1274,20 +1274,20 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
 
 bool ESP_Mail_Client::setFlag(IMAPSession *imap, int msgUID, const char *flag, bool closeSession)
 {
-  return _setFlag(imap, msgUID, flag, 0, closeSession);
+  return mSetFlag(imap, msgUID, flag, 0, closeSession);
 }
 
 bool ESP_Mail_Client::addFlag(IMAPSession *imap, int msgUID, const char *flag, bool closeSession)
 {
-  return _setFlag(imap, msgUID, flag, 1, closeSession);
+  return mSetFlag(imap, msgUID, flag, 1, closeSession);
 }
 
 bool ESP_Mail_Client::removeFlag(IMAPSession *imap, int msgUID, const char *flag, bool closeSession)
 {
-  return _setFlag(imap, msgUID, flag, 2, closeSession);
+  return mSetFlag(imap, msgUID, flag, 2, closeSession);
 }
 
-bool ESP_Mail_Client::_setFlag(IMAPSession *imap, int msgUID, const char *flag, uint8_t action, bool closeSession)
+bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, const char *flag, uint8_t action, bool closeSession)
 {
   if (!reconnect(imap))
     return false;
@@ -1831,7 +1831,7 @@ bool ESP_Mail_Client::sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeS
       msg->_rfc822[i].type |= esp_mail_msg_type_plain;
   }
 
-  return _sendMail(smtp, msg, closeSession);
+  return mSendMail(smtp, msg, closeSession);
 }
 
 void ESP_Mail_Client::getMIME(const char *ext, std::string &mime)
@@ -1899,7 +1899,7 @@ bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
   return true;
 }
 
-bool ESP_Mail_Client::_sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession)
+bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession)
 {
 
   smtp->_smtpStatus.statusCode = 0;
@@ -4287,19 +4287,33 @@ void ESP_Mail_Client::strcat_c(char *str, char c)
 }
 int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset)
 {
-  size_t len = strlen(haystack);
-  size_t len2 = strlen(needle);
-  if (len == 0 || len < len2 || len2 == 0 || offset >= (int)len || offset < 0)
+  if (!haystack || !needle)
     return -1;
-  char *_haystack = newS(len - offset + 1);
-  _haystack[len - offset] = 0;
-  strncpy(_haystack, haystack + offset, len - offset);
-  char *p = stristr(_haystack, needle);
-  int r = -1;
-  if (p)
-    r = p - _haystack + offset;
-  delS(_haystack);
-  return r;
+
+  int hlen = strlen(haystack);
+  int nlen = strlen(needle);
+
+  if (hlen == 0 || nlen == 0)
+    return -1;
+
+  int hidx = offset, nidx = 0;
+  while ((*(haystack + hidx) != '\0') && (*(needle + nidx) != '\0') && hidx < hlen)
+  {
+    if (*(needle + nidx) != *(haystack + hidx))
+    {
+      hidx++;
+      nidx = 0;
+    }
+    else
+    {
+      nidx++;
+      hidx++;
+      if (nidx == nlen)
+        return hidx - nidx;
+    }
+  }
+
+  return -1;
 }
 
 char *ESP_Mail_Client::stristr(const char *str1, const char *str2)
@@ -4358,19 +4372,33 @@ char *ESP_Mail_Client::rstrstr(const char *haystack, const char *needle)
 
 int ESP_Mail_Client::rstrpos(const char *haystack, const char *needle, int offset)
 {
-  size_t len = strlen(haystack);
-  size_t len2 = strlen(needle);
-  if (len == 0 || len < len2 || len2 == 0 || offset >= (int)len)
+  if (!haystack || !needle)
     return -1;
-  char *_haystack = newS(len - offset + 1);
-  _haystack[len - offset] = 0;
-  strncpy(_haystack, haystack + offset, len - offset);
-  char *p = rstrstr(_haystack, needle);
-  int r = -1;
-  if (p)
-    r = p - _haystack + offset;
-  delS(_haystack);
-  return r;
+
+  int hlen = strlen(haystack);
+  int nlen = strlen(needle);
+
+  if (hlen == 0 || nlen == 0)
+    return -1;
+
+  int hidx = hlen - 1, nidx = nlen - 1;
+  while (offset < hidx)
+  {
+    if (*(needle + nidx) != *(haystack + hidx))
+    {
+      hidx--;
+      nidx = nlen - 1;
+    }
+    else
+    {
+      nidx--;
+      hidx--;
+      if (nidx == 0)
+        return hidx + nidx;
+    }
+  }
+
+  return -1;
 }
 
 int ESP_Mail_Client::readLine(WiFiClient *stream, char *buf, int bufLen, bool crlf, int &count)

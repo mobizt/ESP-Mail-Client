@@ -51,6 +51,12 @@ SMTPSession smtp;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
+const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
+                                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+
+                                  "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n"
+                                  "-----END CERTIFICATE-----\n";
+
 void setup()
 {
 
@@ -178,10 +184,19 @@ void setup()
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
   */
-  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
   message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+
+  //For Root CA certificate verification (ESP8266 and ESP32 only)
+  //session.certificate.cert_data = rootCACert;
+  //or
+  //session.certificate.cert_file = "/path/to/der/file";
+  //session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+  //session.certificate.verify = true;
+
+  //The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -190,7 +205,10 @@ void setup()
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
-    
+
+  //to clear sending result log
+  //smtp.sendingResult.clear();
+
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 

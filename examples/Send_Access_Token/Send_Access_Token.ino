@@ -162,7 +162,7 @@ void setup()
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
   */
-  message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -174,6 +174,9 @@ void setup()
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
+
+  //to clear sending result log
+  //smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

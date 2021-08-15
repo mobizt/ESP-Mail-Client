@@ -1,13 +1,13 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.3.2"
+#define ESP_MAIL_VERSION "1.3.3"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.2
- *   Released:  July 11, 2021
+ *   Version:   1.3.3
+ *   Released:  August 15, 2021
  *
  *   Updates:
  * - Fix compilation error due to missing return value in TCP client send method.
@@ -2255,7 +2255,7 @@ private:
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = ESP_MAIL_WIFI_RECONNECT_TIMEOUT;
 
-  bool _sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
+  bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
   bool ethLinkUp();
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
@@ -2383,7 +2383,7 @@ private:
   void handleCapability(IMAPSession *imap, char *buf, int &chunkIdx);
   void handleExamine(IMAPSession *imap, char *buf);
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
-  bool _setFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
+  bool mSetFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
   void createDirs(std::string dirs);
   bool sdTest();
 };
@@ -2595,6 +2595,14 @@ private:
   {
     _result.push_back(*r); 
   }
+ 
+
+public:
+  friend class SMTPSession;
+  friend class ESP_Mail_Client;
+  SendingResult(){};
+  ~SendingResult() { clear(); };
+
   void clear()
   {
     for (size_t i = 0; i < _result.size(); i++)
@@ -2606,12 +2614,7 @@ private:
     }
     _result.clear();
   }
-
-public:
-  friend class SMTPSession;
-  friend class ESP_Mail_Client;
-  SendingResult(){};
-  ~SendingResult() { clear(); };
+  
   SMTP_Result getItem(size_t index)
   {
     SMTP_Result r;

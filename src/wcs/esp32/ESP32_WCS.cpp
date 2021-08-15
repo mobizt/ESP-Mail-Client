@@ -1,5 +1,5 @@
 /*
- * ESP32 WiFi Client Secure v1.0.0
+ * ESP32 WiFi Client Secure v1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -218,7 +218,7 @@ int ESP32_WCS::connect(const char *host, uint16_t port, const char *pskIdent, co
 {
     _host = host;
     _port = port;
-    _withCert = true;
+    _withKey = true;
 
     log_v("startesp32_ssl_client with PSK");
     if (_timeout > 0)
@@ -575,9 +575,9 @@ bool ESP32_WCS::connectSSL(bool verify)
     setVerify(verify);
 
     int ret = 0;
-    if (_withKey)
+    if (_withCert)
         ret = esp32_ssl_client.start_ssl_client(ssl, _host.c_str(), _port, _timeout, _CA_cert, _cert, _private_key, NULL, NULL, _use_insecure);
-    else if (_withCert)
+    else if (_withKey)
         ret = esp32_ssl_client.start_ssl_client(ssl, _host.c_str(), _port, _timeout, NULL, NULL, NULL, _pskIdent, _psKey, _use_insecure);
 
     _lastError = ret;

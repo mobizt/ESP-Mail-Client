@@ -239,6 +239,9 @@ void setup()
     if (!MailClient.sendMail(&smtp, &message, true))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
+    //to clear sending result log
+    //smtp.sendingResult.clear();
+
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
