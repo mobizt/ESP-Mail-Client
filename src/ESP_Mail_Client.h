@@ -1,21 +1,19 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.3.3"
+#define ESP_MAIL_VERSION "1.4.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.3
- *   Released:  August 15, 2021
+ *   Version:   1.4.0
+ *   Released:  September 7, 2021
  *
  *   Updates:
- * - Fix compilation error due to missing return value in TCP client send method.
+ * - Add support Ethernet in ESP8266.
  * 
  * 
- * This library allows Espressif's ESP32 and ESP8266 devices to send and read
- * Email
- * through the SMTP and IMAP servers.
+ * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -82,7 +80,7 @@
 
 #endif
 
-#elif defined(ARDUINO_ARCH_SAMD) 
+#elif defined(ARDUINO_ARCH_SAMD)
 #undef min
 #undef max
 #define UPLOAD_CHUNKS_NUM 5
@@ -116,7 +114,6 @@ extern char *__brkval;
 #include <strings.h>
 #include "extras/MIMEInfo.h"
 
-
 #define SMTP_STATUS_SERVER_CONNECT_FAILED -100
 #define SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED -101
 #define SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED -102
@@ -147,7 +144,6 @@ extern char *__brkval;
 #define IMAP_STATUS_NO_SUPPORTED_AUTH -212
 #define IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED -213
 
-
 #define MAIL_CLIENT_ERROR_CONNECTION_CLOSED -28
 #define MAIL_CLIENT_ERROR_READ_TIMEOUT -29
 #define MAIL_CLIENT_ERROR_FILE_IO_ERROR -30
@@ -163,7 +159,6 @@ extern char *__brkval;
 #define ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED 0
 #define ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE 256
 #define ESP_MAIL_CLIENT_VALID_TS 1577836800
-
 
 class IMAPSession;
 class SMTPSession;
@@ -652,7 +647,6 @@ struct esp_mail_smtp_embed_message_body_t
   esp_mail_smtp_embed_message_type type = esp_mail_smtp_embed_message_type_attachment;
 };
 
-
 struct esp_mail_file_message_content_t
 {
   /* The file path include its name */
@@ -1052,6 +1046,21 @@ struct esp_mail_sesson_secure_config_t
   bool startTLS = false;
 };
 
+struct esp_mail_spi_ethernet_module_t
+{
+#if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
+#ifdef INC_ENC28J60_LWIP
+  ENC28J60lwIP *enc28j60;
+#endif
+#ifdef INC_W5100_LWIP
+  Wiznet5100lwIP *w5100;
+#endif
+#ifdef INC_W5500_LWIP
+  Wiznet5500lwIP *w5500;
+#endif
+#endif
+};
+
 struct esp_mail_session_config_t
 {
   /* The server config */
@@ -1065,6 +1074,9 @@ struct esp_mail_session_config_t
 
   /* The certificate config */
   struct esp_mail_sesson_cert_config_t certificate;
+
+  /* SPI Ethernet Module config for ESP8266 */
+  struct esp_mail_spi_ethernet_module_t spi_ethernet_module;
 };
 
 struct esp_mail_imap_download_config_t
@@ -2222,7 +2234,7 @@ public:
   * @return The boolean value indicates the success of operation.
   */
   bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false);
-  
+
   /** Get free Heap memory.
   *
   * @return Free memory amount in byte.
@@ -2230,7 +2242,6 @@ public:
   int getFreeHeap();
 
   ESPTimeHelper Time;
-
 
 private:
   friend class SMTPSession;
@@ -2256,7 +2267,8 @@ private:
   uint16_t _reconnectTimeout = ESP_MAIL_WIFI_RECONNECT_TIMEOUT;
 
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
-  bool ethLinkUp();
+  void ethDNSWorkAround(ESP_Mail_Session *session);
+  bool ethLinkUp(ESP_Mail_Session *session);
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
   void closeTCPSession(SMTPSession *smtp);
@@ -2593,9 +2605,8 @@ private:
 
   void add(SMTP_Result *r)
   {
-    _result.push_back(*r); 
+    _result.push_back(*r);
   }
- 
 
 public:
   friend class SMTPSession;
@@ -2614,7 +2625,7 @@ public:
     }
     _result.clear();
   }
-  
+
   SMTP_Result getItem(size_t index)
   {
     SMTP_Result r;

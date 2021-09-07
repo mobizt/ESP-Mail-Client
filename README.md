@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.3.3
+# Mail Client Arduino Library v1.4.0
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -16,6 +16,9 @@ This library was developed to replace the deprecated ESP32 Mail Client library w
 This library has built-in WiFi client and aim to be complete Email client that can send and read Email with no restrictions and no indirect Email proxy (Email sending server) services needed.
 
 Other serial Mobile network modem (GSM/3G/4G) and SPI/I2C Ethernet board which GSM or Ethernet Plain/SSL TCP client libraries are available, are not compattible to integrate to use with this library because network upgradable was not supported in those libraries. 
+
+This library support sending and receiving Email via Ethernet in ESP32 and ESP8266 devices using Ethernet module through secure (SSL/TLS) and non-secure ports.
+
 
 ![ESP Mail](/media/images/esp-mail-client.svg)
 
@@ -36,7 +39,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
-* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet boards). ESP8266 Ethernet is not yet supported.
+* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 using ENC28J60, W5100 and W5500 Ethernet modules).
 * Customizable operating configurations (see the examples for the usages)
 
 
@@ -52,6 +55,12 @@ This following devices are supported.
  * Arduino MKR WiFi 1010
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
+ * LAN8720 Ethernet PHY
+ * TLK110 Ethernet PHY
+ * IP101 Ethernet PHY
+ * ENC28J60 SPI Ethernet module
+ * W5100 SPI Ethernet module
+ * W5500 SPI Ethernet module
 
  Note: Arduino UNO WiFi Rev.2 (AVR Platform) is not supported.
 
@@ -71,6 +80,8 @@ This following devices were tested.
  * NodeMCU ESP8266
  * Wemos D1 Mini (ESP8266)
  * Arduino MKR WiFi 1010
+ * LAN8720 Ethernet PHY
+ * ENC28J60 SPI Ethernet module
 
 
 

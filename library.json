@@ -1,8 +1,8 @@
 {
   "name": "ESP Mail Client",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "keywords": "communication, email, imap, smtp, esp32, esp8266, samd, arduino",
-  "description": "Mail Client Arduino Library for Arduino. Mail Client Arduino Library for Arduino. Espressif ESP32, ESP8266 and SAMD21 devices with u-blox NINA-W102 module are supported. This library allows the ESP32 and ESP8266 devices to send and read Email with the many options and features e.g. the attachments, inline images, embeded rfc822 messages are supported for upload when sending and download when reading the Emails.",
+  "description": "E-Mail Client Arduino Library that supports Espressif ESP32, ESP8266 and SAMD21 devices with built-in U-blox NINA-W102 module. This allows embedded devices to send and read Email which various types of content and attacment are supported.  The library also supports Ethernet connection (ESP8266 and ESP32) through secure (SSL) and non-secure ports.",
   "repository": {
     "type": "git",
     "url": "https://github.com/mobizt/ESP-Mail-Client.git"

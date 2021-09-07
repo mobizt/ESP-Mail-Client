@@ -1,5 +1,6 @@
-/*
- * HTTP Client for ESP8266 wrapper v1.0.3
+/**
+ * 
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.0
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -49,7 +50,7 @@
 #include <time.h>
 #include <string>
 
-#include "SDK_Version_Common.h"
+#include "extras/SDK_Version_Common.h"
 
 #ifndef ARDUINO_ESP8266_GIT_VER
 #error Your ESP8266 Arduino Core SDK is outdated, please update. From Arduino IDE go to Boards Manager and search 'esp8266' then select the latest version.
@@ -59,10 +60,32 @@
 
 #if ARDUINO_ESP8266_GIT_VER != 0xf6d232f1 && ARDUINO_ESP8266_GIT_VER != 0x0c897c37 && ARDUINO_ESP8266_GIT_VER != 0x4ceabea9 && ARDUINO_ESP8266_GIT_VER != 0x614f7c32 && ARDUINO_ESP8266_GIT_VER != 0xbb28d4a3
 #include "ESP8266_WCS.h"
-#include "ESP8266_BearSSLHelpers.h"
-#define ESP_MAIL_SSL_CLIENT ESP8266_TCP::ESP8266_WCS
+#define ESP_MAIL_SSL_CLIENT ESP8266_WCS
 #else
 #error Please update the ESP8266 Arduino Core SDK to latest version.
+#endif
+
+#if defined __has_include
+
+#if __has_include(<LwipIntfDev.h>)
+#include <LwipIntfDev.h>
+#endif
+
+#if __has_include(<ENC28J60lwIP.h>)
+#define INC_ENC28J60_LWIP
+#include <ENC28J60lwIP.h>
+#endif
+
+#if __has_include(<W5100lwIP.h>)
+#define INC_W5100_LWIP
+#include <W5100lwIP.h>
+#endif
+
+#if __has_include(<W5500lwIP.h>)
+#define INC_W5500_LWIP
+#include <W5500lwIP.h>
+#endif
+
 #endif
 
 #define FS_NO_GLOBALS
@@ -98,7 +121,7 @@ public:
 
   int send(const char *data);
 
-  ESP8266_TCP::ESP8266_WCS *stream(void);
+  ESP8266_WCS *stream(void);
 
   void setCACert(const char *caCert);
   void setCertFile(const char *caCertFile, esp_mail_file_storage_type storageType, uint8_t sdPin);
@@ -127,6 +150,9 @@ private:
   std::unique_ptr<char> _cacert;
   std::string _host = "";
   uint16_t _port = 0;
+#ifndef USING_AXTLS
+  X509List *x509 = nullptr;
+#endif
 };
 
 #endif /* ESP8266 */

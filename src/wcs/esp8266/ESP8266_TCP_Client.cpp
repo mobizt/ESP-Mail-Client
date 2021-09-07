@@ -1,5 +1,6 @@
-/*
- * HTTP Client for ESP8266 wrapper v1.0.3
+/**
+ * 
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.0
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -43,6 +44,11 @@ ESP8266_TCP_Client::~ESP8266_TCP_Client()
     _wcs.release();
   }
 
+#ifndef USING_AXTLS
+  if (x509)
+    delete x509;
+#endif
+
   std::string().swap(_host);
   std::string().swap(_caCertFile);
   _cacert.reset(new char);
@@ -60,7 +66,7 @@ bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
   //probe for fragmentation support at the specified size
   if (!mflnChecked)
   {
-    fragmentable = _wcs->probeMaxFragmentLength(_host.c_str(), _port, chunkSize);
+    fragmentable = WiFiClientSecure::probeMaxFragmentLength(_host.c_str(), _port, chunkSize);
     if (fragmentable)
     {
       _bsslRxSize = chunkSize;
@@ -98,7 +104,7 @@ int ESP8266_TCP_Client::send(const char *data)
   return strlen(data);
 }
 
-ESP8266_TCP::ESP8266_WCS *ESP8266_TCP_Client::stream(void)
+ESP8266_WCS *ESP8266_TCP_Client::stream(void)
 {
   if (connected())
     return _wcs.get();
@@ -133,7 +139,11 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
   if (caCert)
   {
 #ifndef USING_AXTLS
-    _wcs->setTrustAnchors(new ESP8266_TCP::ESP8266_X509_List(caCert));
+    if (x509)
+      delete x509;
+    x509 = new X509List(caCert);
+    _wcs->setTrustAnchors(x509);
+    _wcs->setTA(true);
 #else
     _wcs->setCACert_P(caCert, strlen_P(caCert));
 #endif
@@ -145,6 +155,7 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
     _wcs->setInsecure();
 #endif
     _certType = 0;
+    _wcs->setTA(false);
   }
 
   _wcs->setNoDelay(true);
@@ -181,7 +192,11 @@ void ESP8266_TCP_Client::setCertFile(const char *caCertFile, esp_mail_file_stora
       if (f.available())
         f.read(der, len);
       f.close();
-      _wcs->setTrustAnchors(new ESP8266_TCP::ESP8266_X509_List(der, len));
+      if (x509)
+        delete x509;
+      x509 = new X509List(der, len);
+      _wcs->setTrustAnchors(x509);
+      _wcs->setTA(true);
       delete[] der;
     }
     _certType = 2;

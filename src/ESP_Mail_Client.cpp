@@ -1,15 +1,14 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.3.3
- *   Released:  August 15, 2021
+ *   Version:   1.4.0
+ *   Released:  September 7, 2021
  *
  *   Updates:
- * - Fix compilation error due to missing return value in TCP client send method.
+ * - Add support Ethernet in ESP8266.
  * 
  * 
- * This library allows Espressif's ESP32 and ESP8266 devices to send and read Email 
- * through the SMTP and IMAP servers.
+ * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -910,6 +909,8 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
   imap->tcpClient.begin(imap->_sesson_cfg->server.host_name, imap->_sesson_cfg->server.port);
 
+  ethDNSWorkAround(imap->_sesson_cfg);
+
   if (!imap->tcpClient.connect(secureMode, imap->_sesson_cfg->certificate.verify))
     return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 
@@ -1521,6 +1522,8 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 #endif
 
   smtp->tcpClient.begin(smtp->_sesson_cfg->server.host_name, smtp->_sesson_cfg->server.port);
+
+  ethDNSWorkAround(smtp->_sesson_cfg);
 
   if (!smtp->tcpClient.connect(secureMode, smtp->_sesson_cfg->certificate.verify))
     return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED);
@@ -5394,22 +5397,80 @@ void ESP_Mail_Client::setSecure(TCP_CLIENT &tcpClient, ESP_Mail_Session *session
 }
 #endif
 
-bool ESP_Mail_Client::ethLinkUp()
+void ESP_Mail_Client::ethDNSWorkAround(ESP_Mail_Session *session)
 {
+
+#if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
+
+#if defined(INC_ENC28J60_LWIP)
+  if (session->spi_ethernet_module.enc28j60)
+    goto ex;
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5100)
+    goto ex;
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5500)
+    goto ex;
+#endif
+
+  return;
+
+ex:
+  WiFiClient client;
+  client.connect(session->server.host_name, session->server.port);
+  client.stop();
+#endif
+}
+
+bool ESP_Mail_Client::ethLinkUp(ESP_Mail_Session *session)
+{
+
   bool ret = false;
 #if defined(ESP32)
   char *ip = strP(esp_mail_str_328);
   if (strcmp(ETH.localIP().toString().c_str(), ip) != 0)
     ret = ETH.linkUp();
   delS(ip);
+#elif defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
+
+#if defined(INC_ENC28J60_LWIP)
+  if (session->spi_ethernet_module.enc28j60)
+  {
+    ret = session->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
+    goto ex;
+  }
 #endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5100)
+  {
+    ret = session->spi_ethernet_module.w5100->status() == WL_CONNECTED;
+    goto ex;
+  }
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5500)
+  {
+    ret = session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
+    goto ex;
+  }
+#endif
+
+  return ret;
+
+ex:
+  //workaround for eth
+  Serial.print("\r\r");
+#endif
+
   return ret;
 }
 
 bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 {
 
-  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp();
+  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp(smtp->_sesson_cfg);
 
   if (dataTime > 0)
   {
@@ -5438,7 +5499,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
       _lastReconnectMillis = millis();
     }
 
-    status = WiFi.status() == WL_CONNECTED || ethLinkUp();
+    status = WiFi.status() == WL_CONNECTED || ethLinkUp(smtp->_sesson_cfg);
   }
 
   return status;
@@ -5447,7 +5508,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
 
-  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp();
+  bool status = WiFi.status() == WL_CONNECTED || ethLinkUp(imap->_sesson_cfg);
 
   if (dataTime > 0)
   {
@@ -5500,7 +5561,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
       _lastReconnectMillis = millis();
     }
 
-    status = WiFi.status() == WL_CONNECTED || ethLinkUp();
+    status = WiFi.status() == WL_CONNECTED || ethLinkUp(imap->_sesson_cfg);
   }
 
   return status;

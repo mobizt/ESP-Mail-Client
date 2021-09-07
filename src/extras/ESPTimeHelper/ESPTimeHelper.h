@@ -33,7 +33,7 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#include "SDK_Version_Common.h"
+#include "extras/SDK_Version_Common.h"
 #elif defined (ARDUINO_ARCH_SAMD)
 #include "../../wcs/samd/lib/WiFiNINA.h"
 
