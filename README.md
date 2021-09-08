@@ -17,7 +17,7 @@ This library has built-in WiFi client and aim to be complete Email client that c
 
 Other serial Mobile network modem (GSM/3G/4G) and SPI/I2C Ethernet board which GSM or Ethernet Plain/SSL TCP client libraries are available, are not compattible to integrate to use with this library because network upgradable was not supported in those libraries. 
 
-This library support sending and receiving Email via Ethernet in ESP32 and ESP8266 devices using Ethernet module through secure (SSL/TLS) and non-secure ports.
+This library supports sending and receiving Email via Ethernet in ESP32 and ESP8266 devices using Ethernet module through secure (SSL/TLS) and non-secure ports.
 
 
 ![ESP Mail](/media/images/esp-mail-client.svg)
