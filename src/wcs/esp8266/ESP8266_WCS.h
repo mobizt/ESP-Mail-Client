@@ -1,6 +1,6 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.0
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.1
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -38,7 +38,7 @@
 //#define DEBUG_ESP_SSL
 //#define DEBUG_ESP_PORT Serial
 
-#ifndef USING_AXTLS
+#if !defined(USING_AXTLS) && defined(ESP8266_CORE_SDK_V3_X_X)
 #define WCS_CLASS WiFiClientSecureCtx
 #else
 #define WCS_CLASS WiFiClientSecure
@@ -49,8 +49,8 @@ class ESP8266_WCS : public WCS_CLASS
 {
 public:
   ESP8266_WCS();
+#ifdef ESP8266_CORE_SDK_V3_X_X
   ~ESP8266_WCS() override;
-  
   int connect(const char *name, uint16_t port) override;
   uint8_t connected() override;
   int available() override;
@@ -58,8 +58,22 @@ public:
   int read(uint8_t *buf, size_t size) override;
   size_t write(const uint8_t *buf, size_t size) override;
   size_t write_P(PGM_P buf, size_t size) override;
-  int peek()override;
+  int peek() override;
   size_t peekBytes(uint8_t *buffer, size_t length) override;
+#else
+  ~ESP8266_WCS();
+  int connect(const char *name, uint16_t port);
+  uint8_t connected();
+  int available();
+  int read();
+  int read(uint8_t *buf, size_t size);
+  size_t write(const uint8_t *buf, size_t size);
+  size_t write_P(PGM_P buf, size_t size);
+  int peek();
+  size_t peekBytes(uint8_t *buffer, size_t length);
+#endif
+
+ 
 
   void setTA(bool hasTA);
   void setSecure(bool secure);

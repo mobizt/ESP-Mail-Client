@@ -13,6 +13,8 @@
  *
 */
 
+//This example requires ESP8266 Arduino Core SDK v3.x.x 
+
 /**
  * 
  * The ENC28J60 Ethernet module and ESP8266 board, SPI port wiring connection.
@@ -33,9 +35,11 @@
 #include <ESP8266WiFi.h>
 #include <ESP_Mail_Client.h>
 
+#ifdef ESP8266_CORE_SDK_V3_X_X
 #include <ENC28J60lwIP.h>
 //#include <W5100lwIP.h>
 //#include <W5500lwIP.h>
+#endif
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com
  * For yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
@@ -64,11 +68,14 @@ void smtpCallback(SMTP_Status status);
 
 unsigned long sendMillis = 0;
 
-#define ETH_CS_PIN 16 //D0
+#ifdef ESP8266_CORE_SDK_V3_X_X
 
+#define ETH_CS_PIN 16 //D0
 ENC28J60lwIP eth(ETH_CS_PIN);
 //Wiznet5100lwIP eth(ETH_CS_PIN);
 //Wiznet5500lwIP eth(ETH_CS_PIN);
+
+#endif
 
 void sendMail()
 {
@@ -86,9 +93,11 @@ void sendMail()
   ESP_Mail_Session session;
   
   /* Assign the pointer to Ethernet module lwip interface */
+#ifdef ESP8266_CORE_SDK_V3_X_X
   session.spi_ethernet_module.enc28j60 = &eth;
   //session.spi_ethernet_module.w5100 = &eth;
   //session.spi_ethernet_module.w5500 = &eth;
+#endif
 
   /** ########################################################
    * Some properties of SMTPSession data and parameters pass to 
@@ -194,6 +203,8 @@ void setup()
   Serial.begin(115200);
   Serial.println();
 
+#ifdef ESP8266_CORE_SDK_V3_X_X
+
   SPI.begin();
   SPI.setClockDivider(SPI_CLOCK_DIV4); // 4 MHz?
   SPI.setBitOrder(MSBFIRST);
@@ -219,15 +230,22 @@ void setup()
   Serial.println();
   Serial.print("ethernet IP address: ");
   Serial.println(eth.localIP());
+
+#else
+  Serial.println("This example requires ESP8266 Arduino Core SDK v3.x.x, please update.");
+#endif
+
 }
 
 void loop()
 {
+#ifdef ESP8266_CORE_SDK_V3_X_X
   if (millis() - sendMillis > 300000 || sendMillis == 0)
   {
     sendMillis = millis();
     sendMail();
   }
+#endif
 }
 
 /* Callback function to get the Email sending status */

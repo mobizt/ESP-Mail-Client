@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.4.0
+# Mail Client Arduino Library v1.4.1
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -39,7 +39,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
-* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 using ENC28J60, W5100 and W5500 Ethernet modules).
+* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
 * Customizable operating configurations (see the examples for the usages)
 
 
@@ -93,7 +93,7 @@ This following devices were tested.
 
 For Espressif's ESP32 and ESP8266 based boards, this library requires Arduino's ESP32 or ESP8266 Core SDK to be installed.
 
-The latest Core SDK is recommended. For ESP8266, the Core SDK version 2.6.3 or later is recommended.
+The latest Core SDK is recommended. For ESP8266, the Core SDK version 3.x.x or later is recommended.
 
 The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
@@ -148,7 +148,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21060).
 
 ```
-> C: ESP Mail Client v1.3.0, Fw v1.4.5+21060
+> C: ESP Mail Client v1.4.1, Fw v1.4.5+21060
 ```
 
 ## Library Instalation
