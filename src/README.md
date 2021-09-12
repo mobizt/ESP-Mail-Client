@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32, ESP8266, SAMD21
 
 
-The detail and usage of the available functions in the latest version (1.4.1) are showed below.
+The detail and usage of the available functions in the latest version (1.4.2) are showed below.
 
 
 ## Global functions
@@ -1282,6 +1282,8 @@ This property has the sub properties
 ##### [boolean] download_status - To enable the download status via the serial port.
 
 ##### [boolean] recent_sort - To sort the message UID of the search result in descending order.
+
+##### [boolean] header_case_sesitive - To allow case sesitive in header parsing.
 
 ```C++
 esp_mail_imap_enable_config_t enable;

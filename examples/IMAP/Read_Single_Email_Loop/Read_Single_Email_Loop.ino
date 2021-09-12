@@ -179,6 +179,10 @@ void setup()
     /* Set to report the download progress via the default serial port */
     config.enable.download_status = true;
 
+    /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
+    , to allow case sensitive parse, uncomment below line*/
+    //config.enable.header_case_sesitive = true;
+
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 

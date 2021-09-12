@@ -1,18 +1,18 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.4.1"
+#define ESP_MAIL_VERSION "1.4.2"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.4.1
- *   Released:  September 11, 2021
+ *   Version:   1.4.2
+ *   Released:  September 12, 2021
  *
  *   Updates:
- * - Fix ESP8266 Arduino Core SDK v2.7.4 and earlier compilation error #91.
- * - Add comment to ESP8266 Ethernet example for supported ESP8266 Arduino Core SDK version.
- * - Update ESP8266 Ethernet workaround.
+ * - Fix iCloud IMAP response header paring issue #92, which iCloud always returns uppercase header fields.
+ * - Add IMAP config option to enable case sensitive header parsing.
+ * - Update IMAP examples comment for header parse option.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -50,6 +50,7 @@
 #include "extras/RFC2047.h"
 #include "extras/ESPTimeHelper/ESPTimeHelper.h"
 #include <time.h>
+#include <ctype.h>
 
 #if defined(ESP32) || defined(ESP8266)
 
@@ -1118,6 +1119,9 @@ struct esp_mail_imap_enable_config_t
 
   /* To sort the message UID of the search result in descending order */
   bool recent_sort = false;
+
+  /* To allow case sesitive in header parsing */
+  bool header_case_sesitive = false;
 };
 
 struct esp_mail_imap_limit_config_t
@@ -2284,8 +2288,8 @@ private:
   char *newS(size_t len);
   char *newS(char *p, size_t len);
   char *newS(char *p, size_t len, char *d);
-  bool strcmpP(const char *buf, int ofs, PGM_P beginH);
-  int strposP(const char *buf, PGM_P beginH, int ofs);
+  bool strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive = true);
+  int strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive = true);
   char *strP(PGM_P pgm);
   void appendP(std::string &buf, PGM_P p, bool empty);
   char *intStr(int value);
@@ -2351,14 +2355,14 @@ private:
   void imapCB(IMAPSession *imap, const char *info, bool success);
   int readLine(WiFiClient *stream, char *buf, int bufLen, bool crlf, int &count);
   int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
-  void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount);
+  void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
-  void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part);
-  char *subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos = 0);
+  void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, bool caseSensitive = true);
+  char *subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos = 0, bool caseSensitive = true);
   struct esp_mail_message_part_info_t *cPart(IMAPSession *imap);
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
   void strcat_c(char *str, char c);
-  int strpos(const char *haystack, const char *needle, int offset);
+  int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
   char *stristr(const char *str1, const char *str2);
   char *rstrstr(const char *haystack, const char *needle);
   int rstrpos(const char *haystack, const char *needle, int offset);
