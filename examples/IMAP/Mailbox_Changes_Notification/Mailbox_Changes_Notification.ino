@@ -1,6 +1,5 @@
 /**
- * This example will fetch or read the Email which the known message UID
- * was used for fetching.
+ * This example showed how to get mailbox changes notification in realtime for the selected or opened mailbox.
  * 
  * Email: suwatchai@outlook.com
  * 
@@ -54,6 +53,9 @@ void printAllMailboxesInfo(IMAPSession &imap);
 /* Print the selected folder info */
 void printSelectedMailboxInfo(IMAPSession &imap);
 
+/* Print the selected folder update info */
+void printPollingStatus(IMAPSession &imap);
+
 /* Print all messages from the message list */
 void printMessages(IMAPSession &imap);
 
@@ -66,6 +68,11 @@ void printAttacements(IMAP_MSG_Item &msg);
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
 
+/* Declare the session config data */
+ESP_Mail_Session session;
+
+/* Setup the configuration for searching or fetching operation and its result */
+IMAP_Config config;
 
 void setup()
 {
@@ -118,9 +125,6 @@ void setup()
      * Which pin 15 is the CS pin of SD card adapter
     */
 
-    /* Declare the session config data */
-    ESP_Mail_Session session;
-
     /** ########################################################
      * Some properties of IMAP_Config and ESP_Mail_Session data
      * accept the pointer to constant char i.e. const char*. 
@@ -128,7 +132,7 @@ void setup()
      * You may assign a string literal to that properties like 
      * below example.
      *   
-     * config.storage.saved_path = String("/email_data").c_str();
+     * config.search.criteria = String("UID SEARCH ALL").c_str();
      * 
      * String folder = "INBOX";
      * imap.selectFolder(folder.c_str());
@@ -141,19 +145,6 @@ void setup()
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-
-
-    /* Setup the configuration for searching or fetching operation and its result */
-    IMAP_Config config;
-
-    /* Set seen flag */
-    //config.fetch.set_seen = true;
-
-    /* Search criteria */
-    config.search.criteria = "";
-
-    /* Also search the unseen message */
-    config.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
     config.storage.saved_path = "/email_data";
@@ -189,13 +180,6 @@ void setup()
     /* Set to report the download progress via the default serial port */
     config.enable.download_status = true;
 
-    /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
-    , to allow case sensitive parse, uncomment below line*/
-    //config.enable.header_case_sesitive = true;
-
-    /* Set the limit of number of messages in the search results */
-    config.limit.search = 5;
-
     /** Set the maximum size of message stored in 
      * IMAPSession object in byte
     */
@@ -207,7 +191,6 @@ void setup()
      * as truncated file.
     */
     config.limit.attachment_size = 1024 * 1024 * 5;
-
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
@@ -223,38 +206,21 @@ void setup()
     /*  {Optional] */
     printSelectedMailboxInfo(imap);
 
-    /** Message UID to fetch or read e.g. 100. 
-     * In this case we will get the UID from the max message number (lastest message) 
-    */
-    config.fetch.uid = String(imap.getUID(imap.selectedFolder().msgCount())).c_str();
-
-    /* Read or search the Email and close the session */
-    MailClient.readMail(&imap);
-
-    /* Clear all stored data in IMAPSession object */
-    imap.empty();
 }
 
 void loop()
 {
+    /* imap.connect and imap.selectFolder or imap.openFolder nedded to be called once prior to listen */
 
-}
+    //Listen to mailbox changes
+    if (!imap.listen())
+        return;
 
-/* Callback function to get the Email reading status */
-void imapCallback(IMAP_Status status)
-{
-    /* Print the current status */
-    Serial.println(status.info());
+    //Check the changes
+    if (imap.folderChanged())
+        printPollingStatus(imap);
 
-    /* Show the result when reading finished */
-    if (status.success())
-    {
-        /* Print the result */
-        printMessages(imap);
-
-        /* Clear all stored data in IMAPSession object */
-        imap.empty();
-    }
+    //To stop listen, use imap.stopListen(); and to listen again, call imap.listen()
 }
 
 void printAllMailboxesInfo(IMAPSession &imap)
@@ -274,6 +240,36 @@ void printAllMailboxesInfo(IMAPSession &imap)
     }
 }
 
+void printPollingStatus(IMAPSession &imap)
+{
+    /* Declare the selected folder info class to get the info of selected mailbox folder */
+    SelectedFolderInfo sFolder = imap.selectedFolder();
+
+    /* Show the mailbox info */
+    ESP_MAIL_PRINTF("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
+
+    if (sFolder.pollingStatus().type == imap_polling_status_type_new_message)
+    {
+
+        ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
+
+        //if (sFolder.recentCount() > 0)
+        //    ESP_MAIL_PRINTF("\nMesssage count which recent flag set: %d\n", sFolder.recentCount());
+
+        //we need to stop polling before do anything
+        imap.stopListen();
+
+        //Get the UID of new message and fetch
+        String uid = String(imap.getUID(sFolder.pollingStatus().messageNum));
+        config.fetch.uid = uid.c_str();
+        MailClient.readMail(&imap, false);
+    }
+    else if (sFolder.pollingStatus().type == imap_polling_status_type_remove_message)
+        ESP_MAIL_PRINTF("Message %d, has been removed\n\n", (int)sFolder.pollingStatus().messageNum);
+    else if (sFolder.pollingStatus().type == imap_polling_status_type_fetch_message)
+        ESP_MAIL_PRINTF("Message %d, has been fetched with the argument %s\n\n", (int)sFolder.pollingStatus().messageNum, sFolder.pollingStatus().argument.c_str());
+}
+
 void printSelectedMailboxInfo(IMAPSession &imap)
 {
     /* Declare the selected folder info class to get the info of selected mailbox folder */
@@ -284,6 +280,23 @@ void printSelectedMailboxInfo(IMAPSession &imap)
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+}
+
+/* Callback function to get the Email reading status */
+void imapCallback(IMAP_Status status)
+{
+    /* Print the current status */
+    Serial.println(status.info());
+
+    /* Show the result when reading finished */
+    if (status.success())
+    {
+        /* Print the result */
+        printMessages(imap);
+
+        /* Clear all stored data in IMAPSession object */
+        imap.empty();
+    }
 }
 
 void printRFC822Messages(IMAP_MSG_Item &msg)

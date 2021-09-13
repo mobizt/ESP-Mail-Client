@@ -99,10 +99,12 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println();
 
-  /** Enable the debug via Serial port 
-     * none debug or 0
-     * basic debug or 1
-    */
+  /** Enable the debug via Serial port
+   * none debug or 0
+   * basic debug or 1
+   * 
+   * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+  */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */

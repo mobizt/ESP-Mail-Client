@@ -1,13 +1,14 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.4.2
- *   Released:  September 12, 2021
+ *   Version:   1.5.0
+ *   Released:  September 13, 2021
  *
  *   Updates:
- * - Fix iCloud IMAP response header paring issue #92, which iCloud always returns uppercase header fields.
- * - Add IMAP config option to enable case sensitive header parsing.
- * - Update IMAP examples comment for header parse option.
+ * - Add IMAP listen, stopListen, folderChanged functions to listen to the mailbox changes.
+ * - Add IMAP sendCustomCommand function.
+ * - Add IMAP getUID function to get UID from message number.
+ * - Update examples for the new functions.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -468,7 +469,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                   cPart(imap)->filename = cPart(imap)->name;
                 else
                 {
-                  char *tmp = getUID();
+                  char *tmp = getRandomUID();
                   cPart(imap)->filename = tmp;
                   appendP(cPart(imap)->filename, esp_mail_str_40, false);
                   delS(tmp);
@@ -3443,7 +3444,7 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
         appendP(header, esp_mail_str_26, false);
         appendP(header, esp_mail_str_164, false);
         appendP(header, esp_mail_str_136, false);
-        char *tmp = getUID();
+        char *tmp = getRandomUID();
         msg->text._int.cid = tmp;
         delS(tmp);
       }
@@ -3478,7 +3479,7 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
         appendP(header, esp_mail_str_26, false);
         appendP(header, esp_mail_str_159, false);
         appendP(header, esp_mail_str_136, false);
-        char *tmp = getUID();
+        char *tmp = getRandomUID();
         msg->html._int.cid = tmp;
         delS(tmp);
       }
@@ -3599,7 +3600,7 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
   return true;
 }
 
-char *ESP_Mail_Client::getUID()
+char *ESP_Mail_Client::getRandomUID()
 {
   char *tmp = new char[36];
   memset(tmp, 0, 36);
@@ -5737,6 +5738,10 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     {
       imap->_mbif.clear();
       imap->_mbif._msgCount = 0;
+      std::string().swap(imap->_mbif._polling_status.argument);
+      imap->_mbif._polling_status.messageNum = 0;
+      imap->_mbif._polling_status.type = imap_polling_status_type_undefined;
+      imap->_mbif._idleTimeMs = 0;
       imap->_nextUID = "";
     }
 
@@ -5806,11 +5811,15 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
           if (imapResp != esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
           {
+
             if (imap->_debugLevel > esp_mail_debug_level_1)
             {
               if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
                 esp_mail_debug((const char *)response);
             }
+
+            if (imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback)
+              imap->_customCmdResCallback((const char *)response);
 
             if (imap->_imap_cmd == esp_mail_imap_cmd_close)
               completedResponse = true;
@@ -5845,6 +5854,15 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
               handleFolders(imap, response);
             else if (imap->_imap_cmd == esp_mail_imap_cmd_select || imap->_imap_cmd == esp_mail_imap_cmd_examine)
               handleExamine(imap, response);
+            else if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
+              handleGetUID(imap, response);
+            else if (imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback)
+              imap->_customCmdResCallback((const char *)response);
+            else if (imap->_imap_cmd == esp_mail_imap_cmd_idle)
+            {
+              completedResponse = response[0] == '+';
+              imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_ok;
+            }
             else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header)
             {
               char *tmp = intStr(cMSG(imap));
@@ -5903,6 +5921,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         memset(response, 0, chunkBufSize);
       }
     }
+
     delS(response);
     if (imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_search)
     {
@@ -7050,6 +7069,12 @@ void ESP_Mail_Client::handleCapability(IMAPSession *imap, char *buf, int &chunkI
         imap->_auth_capability.cram_md5 = true;
       if (strposP(buf, esp_mail_imap_response_16, 0) > -1)
         imap->_auth_capability.digest_md5 = true;
+      if (strposP(buf, esp_mail_imap_response_17, 0) > -1)
+        imap->_read_capability.idle = true;
+      if (strposP(buf, esp_mail_imap_response_18, 0) > -1)
+        imap->_read_capability.imap4 = true;
+      if (strposP(buf, esp_mail_imap_response_19, 0) > -1)
+        imap->_read_capability.imap4rev1 = true;
     }
   }
 }
@@ -7128,22 +7153,156 @@ void ESP_Mail_Client::handleFolders(IMAPSession *imap, char *buf)
   }
 }
 
+bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
+{
+
+  int chunkBufSize = 0;
+
+  if (!reconnect(imap))
+    return false;
+
+  if (imap->tcpClient.stream())
+    chunkBufSize = imap->tcpClient.stream()->available();
+  else
+    return false;
+
+  if (chunkBufSize > 0)
+  {
+    chunkBufSize = 512;
+
+    char *buf = newS(chunkBufSize + 1);
+
+    int octetCount = 0;
+
+    int readLen = MailClient.readLine(imap->tcpClient.stream(), buf, chunkBufSize, false, octetCount);
+
+    if (readLen > 0)
+    {
+
+      if (imap->_debugLevel > esp_mail_debug_level_1)
+        esp_mail_debug((const char *)buf);
+
+      char *tmp = nullptr;
+      int p1 = -1;
+      bool exists = false;
+
+      p1 = strposP(buf, esp_mail_str_199, 0);
+      if (p1 != -1)
+      {
+        int numMsg = imap->_mbif._msgCount;
+        tmp = newS(p1);
+        strncpy(tmp, buf + 2, p1 - 1);
+        imap->_mbif._msgCount = atoi(tmp);
+        delS(tmp);
+        exists = true;
+        imap->_mbif._folderChanged |= imap->_mbif._msgCount != numMsg;
+        if (imap->_mbif._msgCount > numMsg)
+        {
+          imap->_mbif._polling_status.type = imap_polling_status_type_new_message;
+          imap->_mbif._polling_status.messageNum = imap->_mbif._msgCount;
+        }
+        goto ex;
+      }
+
+      p1 = strposP(buf, esp_mail_str_333, 0);
+      if (p1 != -1)
+      {
+        imap->_mbif._polling_status.type = imap_polling_status_type_remove_message;
+        tmp = newS(p1);
+        strncpy(tmp, buf + 2, p1 - 1);
+        imap->_mbif._polling_status.messageNum = atoi(tmp);
+
+        if (imap->_mbif._polling_status.messageNum == imap->_mbif._msgCount && imap->_mbif._nextUID > 0)
+          imap->_mbif._nextUID--;
+
+        delS(tmp);
+        imap->_mbif._folderChanged = true;
+        goto ex;
+      }
+
+      p1 = strposP(buf, esp_mail_str_334, 0);
+      if (p1 != -1)
+      {
+        tmp = newS(p1);
+        strncpy(tmp, buf + 2, p1 - 1);
+        imap->_mbif._recentCount = atoi(tmp);
+        delS(tmp);
+        goto ex;
+      }
+
+      p1 = strposP(buf, esp_mail_imap_response_7, 0);
+      if (p1 != -1)
+      {
+        tmp = newS(p1);
+        strncpy(tmp, buf + 2, p1 - 1);
+        imap->_mbif._polling_status.messageNum = atoi(tmp);
+        delS(tmp);
+
+        imap->_mbif._polling_status.argument = buf;
+        imap->_mbif._polling_status.argument.erase(0, p1 + 8);
+        imap->_mbif._polling_status.argument.pop_back();
+        imap->_mbif._folderChanged = true;
+        imap->_mbif._polling_status.type = imap_polling_status_type_fetch_message;
+        goto ex;
+      }
+
+    ex:
+
+      imap->_mbif._floderChangedState = (imap->_mbif._folderChanged && exists) || imap->_mbif._polling_status.type == imap_polling_status_type_fetch_message;
+      ;
+    }
+
+    delS(buf);
+  }
+
+  if (millis() - imap->_mbif._idleTimeMs > imap->_config->limit.imap_idle_timeout)
+  {
+    if (imap->mStopListen(true))
+      return imap->mListen(true);
+    return false;
+  }
+
+  return true;
+}
+
+void ESP_Mail_Client::handleGetUID(IMAPSession *imap, char *buf)
+{
+  char *tmp = nullptr;
+  int p1 = strposP(buf, esp_mail_str_342, 0);
+  imap->_uid_tmp = 0;
+  if (p1 != -1)
+  {
+    tmp = newS(p1);
+    strncpy(tmp, buf + p1 + strlen_P(esp_mail_str_342), strlen(buf) - p1 - strlen_P(esp_mail_str_342) - 1);
+    imap->_uid_tmp = atoi(tmp);
+    delS(tmp);
+    return;
+  }
+}
+
 void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
 {
   char *tmp = nullptr;
   int p1, p2;
 
-  if (imap->_mbif._msgCount == 0)
+  p1 = strposP(buf, esp_mail_str_199, 0);
+  if (p1 != -1)
   {
-    p1 = strposP(buf, esp_mail_str_199, 0);
-    if (p1 != -1)
-    {
-      tmp = newS(p1);
-      strncpy(tmp, buf + 2, p1 - 1);
-      imap->_mbif._msgCount = atoi(tmp);
-      delS(tmp);
-      return;
-    }
+    tmp = newS(p1);
+    strncpy(tmp, buf + 2, p1 - 1);
+    imap->_mbif._msgCount = atoi(tmp);
+    delS(tmp);
+    return;
+  }
+
+  p1 = strposP(buf, esp_mail_str_334, 0);
+  if (p1 != -1)
+  {
+    tmp = newS(p1);
+    strncpy(tmp, buf + 2, p1 - 1);
+    imap->_mbif._recentCount = atoi(tmp);
+    delS(tmp);
+    return;
   }
 
   if (imap->_mbif._flags.size() == 0)
@@ -7867,6 +8026,10 @@ bool IMAPSession::closeSession()
 {
   if (!_tcpConnected)
     return false;
+
+  if (_mbif._idleTimeMs > 0)
+    mStopListen(false);
+
 #if defined(ESP32)
   /** 
    * The strange behavior in ESP8266 SSL client, BearSSLWiFiClientSecure
@@ -8021,6 +8184,144 @@ bool IMAPSession::closeFolder(const char *folderName)
   if (!_tcpConnected)
     return false;
   return closeMailbox();
+}
+
+bool IMAPSession::mListen(bool recon)
+{
+  //no folder opened or IDLE was not supported
+  if (_currentFolder.length() == 0 || !_read_capability.idle)
+  {
+    _mbif._floderChangedState = false;
+    _mbif._folderChanged = false;
+    return false;
+  }
+
+  if (!MailClient.reconnect(this))
+    return false;
+
+  if (!_tcpConnected)
+  {
+    if (!_sesson_cfg || !_config)
+      return false;
+
+    //re-authenticate after session closed
+    if (!MailClient.imapAuth(this))
+    {
+      MailClient.closeTCPSession(this);
+      return false;
+    }
+
+    //re-open folder
+    if (!selectFolder(_currentFolder.c_str()))
+      return false;
+  }
+
+  if (_mbif._idleTimeMs == 0)
+  {
+    _mbif._polling_status.messageNum = 0;
+    _mbif._polling_status.type = imap_polling_status_type_undefined;
+    std::string().swap(_mbif._polling_status.argument);
+    _mbif._recentCount = 0;
+    _mbif._folderChanged = false;
+
+    std::string s;
+
+    if (!recon)
+    {
+
+      if (_readCallback)
+      {
+        MailClient.appendP(s, esp_mail_str_336, true);
+        s += _currentFolder;
+        MailClient.appendP(s, esp_mail_str_337, false);
+        MailClient.imapCB(this, "", false);
+        MailClient.imapCB(this, s.c_str(), false);
+      }
+
+      if (_debug)
+        MailClient.debugInfoP(esp_mail_str_335);
+    }
+
+    if (MailClient.imapSendP(this, esp_mail_str_331, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+      return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_idle;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+      return false;
+
+    if (!recon)
+    {
+
+      if (_readCallback)
+      {
+        MailClient.appendP(s, esp_mail_str_338, true);
+        MailClient.imapCB(this, s.c_str(), false);
+      }
+
+      if (_debug)
+        MailClient.debugInfoP(esp_mail_str_339);
+    }
+
+    _mbif._idleTimeMs = millis();
+  }
+  else
+  {
+
+    if (_mbif._floderChangedState)
+    {
+      _mbif._floderChangedState = false;
+      _mbif._folderChanged = false;
+      _mbif._polling_status.messageNum = 0;
+      _mbif._polling_status.type = imap_polling_status_type_undefined;
+      std::string().swap(_mbif._polling_status.argument);
+      _mbif._recentCount = 0;
+    }
+
+    return MailClient.handleIdle(this);
+  }
+
+  return true;
+}
+
+bool IMAPSession::mStopListen(bool recon)
+{
+  _mbif._idleTimeMs = 0;
+  _mbif._floderChangedState = false;
+  _mbif._folderChanged = false;
+  _mbif._polling_status.messageNum = 0;
+  _mbif._polling_status.type = imap_polling_status_type_undefined;
+  std::string().swap(_mbif._polling_status.argument);
+  _mbif._recentCount = 0;
+
+  if (!_tcpConnected || _currentFolder.length() == 0 || !_read_capability.idle)
+    return false;
+
+  if (MailClient.imapSendP(this, esp_mail_str_332, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    return false;
+
+  _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_done;
+  if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+    return false;
+
+  if (!recon)
+  {
+    if (_readCallback)
+    {
+      std::string s;
+      MailClient.appendP(s, esp_mail_str_340, true);
+      MailClient.imapCB(this, s.c_str(), false);
+    }
+
+    if (_debug)
+      MailClient.debugInfoP(esp_mail_str_341);
+  }
+
+  return true;
+}
+
+bool IMAPSession::folderChanged()
+{
+  return _mbif._floderChangedState;
 }
 
 void IMAPSession::checkUID()
@@ -8384,6 +8685,78 @@ bool IMAPSession::createFolder(const char *folderName)
     return false;
 
   _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_create;
+  if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+    return false;
+
+  return true;
+}
+
+int IMAPSession::getUID(int msg)
+{
+  if (_currentFolder.length() == 0)
+    return 0;
+
+  std::string cmd;
+  MailClient.appendP(cmd, esp_mail_str_143, true);
+  char *tmp = MailClient.intStr(msg);
+  cmd += tmp;
+  MailClient.delS(tmp);
+  MailClient.appendP(cmd, esp_mail_str_138, false);
+
+  std::string s;
+
+  if (_readCallback)
+  {
+    MailClient.appendP(s, esp_mail_str_344, true);
+    MailClient.imapCB(this, s.c_str(), false);
+  }
+
+  if (_debug)
+    MailClient.debugInfoP(esp_mail_str_343);
+
+  if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    return 0;
+
+  _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_get_uid;
+  if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+    return 0;
+
+  if (_readCallback || _debug)
+  {
+
+    char *num = MailClient.intStr(_uid_tmp);
+
+    if (_readCallback)
+    {
+      MailClient.appendP(s, esp_mail_str_346, true);
+      s += num;
+      MailClient.imapCB(this, s.c_str(), false);
+    }
+
+    if (_debug)
+    {
+      MailClient.appendP(s, esp_mail_str_345, true);
+      s += num;
+      esp_mail_debug(s.c_str());
+    }
+
+    MailClient.delS(num);
+  }
+
+  return _uid_tmp;
+}
+
+bool IMAPSession::sendCustomCommand(const char *cmd, imapResponseCallback callback)
+{
+  if (_currentFolder.length() == 0)
+    return false;
+
+  _customCmdResCallback = std::move(callback);
+
+  if (MailClient.imapSend(this, cmd, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    return false;
+
+  _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
   if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
     return false;
 

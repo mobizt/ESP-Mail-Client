@@ -1,7 +1,7 @@
 # ESP Mail Client Arduino Library for ESP32, ESP8266, SAMD21
 
 
-The detail and usage of the available functions in the latest version (1.4.2) are showed below.
+The description of the available functions in the current reease are shown below.
 
 
 ## Global functions
@@ -203,6 +203,7 @@ bool closeSession();
 
 
 
+
 #### Set to enable the debug.
 
 param **`level`** The level to enable the debug message
@@ -317,6 +318,45 @@ bool deleteFolder(const char *folderName);
 
 
 
+#### Get UID number in selected or opened mailbox. 
+
+param **`msg`** The message order in the total message numbers.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+Returns 0 when fail to get UID.
+
+```C++
+int getUID(int msg);
+```
+
+
+
+
+
+
+
+#### Send the custom IMAP command and get the result via callback.
+
+param **`cmd`** The command string.
+
+param **`callback`** The function that accepts the pointer to const char (const char*) as parameter.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
+
+```C++
+bool sendCustomCommand(const char *cmd, imapResponseCallback callback);
+```
+
+
+
+
+
+
+
+
 #### Copy the messages to the defined mailbox folder. 
 
 param **`toCopy`** The pointer to the MessageList class that contains the list of messages to copy.
@@ -345,6 +385,48 @@ return **`boolean`** The boolean value which indicates the success of operation.
 bool deleteMessages(MessageList *toDelete, bool expunge = false);
 ```
 
+
+
+
+
+
+
+#### Listen to the selected or open mailbox for updates.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool listen();
+```
+
+
+
+
+
+
+
+
+#### Stop listen to the mailbox for updates.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```C++
+bool stopListen();
+```
+
+
+
+
+
+
+
+#### Check for the selected or open mailbox updates.
+
+return **`boolean`** The boolean value which indicates the changes status of mailbox.
+
+```C++
+bool folderChanged();
+```
 
 
 
@@ -1100,6 +1182,44 @@ size_t msgCount();
 
 
 
+
+#### Get the numbers of messages in this mailbox that recent flag was set.
+
+return **`number`** The numbers of messages in the selected mailbox folder that recent flag was set
+
+```C++
+size_t recentCount();
+```
+
+
+
+
+
+
+#### Get the order of message in number of message in this mailbox that reoved.
+
+return **`IMAP_Polling_Status`** The data that holds the polling status.
+
+The IMAP_Polling_Status has the properties e.g. type, messageNum, and argument.
+
+The type property is the type of status e.g.imap_polling_status_type_undefined, imap_polling_status_type_new_message,
+imap_polling_status_type_remove_message, and imap_polling_status_type_fetch_message.
+
+The messageNum property is message number or order from the total number of message that added, fetched or deleted.
+
+The argument property is the argument of commands e.g. FETCH
+
+```C++
+struct IMAP_Polling_Status pollingStatus();
+```
+
+
+
+
+
+
+
+
 #### Provide the predicted next message UID in the sselected folder.
 
 return **`number`** The number represents the next message UID number
@@ -1107,6 +1227,8 @@ return **`number`** The number represents the next message UID number
 ```C++
 size_t nextUID();
 ```
+
+
 
 
 
@@ -1262,6 +1384,10 @@ This property has the sub properties
 This is only limit for data to be stored in the IMAPSession. 
 
 ##### [size_t] attachment_size - The maximum size of each attachment to download.
+
+The IMAP idle (polling) timeout in ms.
+
+##### [size_t] imap_idle_timeout - The maximum size of each attachment to download.
 
 ```C++
 esp_mail_imap_limit_config_t limit;

@@ -69,10 +69,10 @@ void printAttacements(IMAP_MSG_Item &msg);
 IMAPSession imap;
 
 unsigned long readMillis = 0;
-
-int nextMsgUID = 0;
-int msgUID = 0;
+int totalMessage = 0;
+int msgNum = 0;
 int sign = -1;
+
 
 /* Declare the session config data */
 ESP_Mail_Session session;
@@ -113,6 +113,8 @@ void setup()
     /** Enable the debug via Serial port 
      * none debug or 0
      * basic debug or 1
+     * 
+     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -134,7 +136,6 @@ void setup()
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-
 
     /* Message UID to fetch or read */
     config.fetch.uid = "";
@@ -197,7 +198,6 @@ void setup()
      * as truncated file.
     */
     config.limit.attachment_size = 1024 * 1024 * 5;
-    
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
@@ -220,14 +220,20 @@ void loop()
     {
         readMillis = millis();
 
-        if (msgUID == 0)
+        if (msgNum == 0)
+        {
+            msgNum = 1;
             sign = 1;
-        else if (msgUID >= nextMsgUID)
+        }
+        else if (msgNum > totalMessage)
+        {
+            msgNum = totalMessage;
             sign = -1;
+        }
+           
 
-        msgUID += sign;
-
-        String uid = String(msgUID);
+        /* Get message UID from message number */
+        String uid = String(imap.getUID(msgNum));
 
         /* Message UID to fetch or read */
         config.fetch.uid = uid.c_str();
@@ -242,6 +248,8 @@ void loop()
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
+
+        msgNum += sign;
     }
 }
 
@@ -284,8 +292,7 @@ void printSelectedMailboxInfo(IMAPSession &imap)
     /* Declare the selected folder info class to get the info of selected mailbox folder */
     SelectedFolderInfo sFolder = imap.selectedFolder();
 
-    nextMsgUID = sFolder.nextUID();
-    msgUID = nextMsgUID;
+    msgNum = totalMessage = sFolder.msgCount();
 
     /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());

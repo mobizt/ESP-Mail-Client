@@ -1,5 +1,5 @@
 /**
- * This example showed how to copy messages from the opened mailbox folder to other folder.
+ * This example showed how to send custom IMAP command and get the server response.
  * 
  * Email: suwatchai@outlook.com
  * 
@@ -53,6 +53,11 @@ void printSelectedMailboxInfo(IMAPSession &imap);
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
 
+void customCommandCallback(const char *res)
+{
+    Serial.print("< S: ");
+    Serial.println(res);
+}
 
 void setup()
 {
@@ -101,7 +106,6 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 
@@ -116,30 +120,15 @@ void setup()
     if (!imap.selectFolder("INBOX"))
         return;
 
-    /* Define the MessageList class to add the message to copy */
-    MessageList toCopy;
+    /* Send custom command to fetch message no.1 for UID */
+    Serial.println("Send custom command to fetch message no.1 for UID");
+    Serial.println("---------------------");
 
-    /* Add message uid to copy to the list */
-    toCopy.add(3);
-    toCopy.add(4);
-
-    //imap.createFolder("test");
-
-    /* Copy all messages in the list to the folder "test" */
-    if (imap.deleteMessages(&toCopy, "test"))
-        Serial.println("Messages copied");
-
-    /* Delete all messages in the list from the opened folder (move to trash) */
-    //imap.deleteMessages(&toCopy);
-
-    //imap.deleteolder("test");
-
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    imap.sendCustomCommand("A01 FETCH 1 UID", customCommandCallback);
 }
 
 void loop()
 {
-
 }
 
 void printAllMailboxesInfo(IMAPSession &imap)

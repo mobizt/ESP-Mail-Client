@@ -39,4 +39,7 @@
 //For ESP32, format SPIFFS or FFat if mounting failed
 #define FORMAT_FLASH_IF_MOUNT_FAILED 1
 
+
+#define ESP_Mail_DEFAULT_DEBUG_PORT Serial
+
 #endif

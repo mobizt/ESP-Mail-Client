@@ -94,6 +94,8 @@ void setup()
     /** Enable the debug via Serial port
      * none debug or 0
      * basic debug or 1
+     * 
+     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     smtp.debug(1);
 
@@ -151,7 +153,7 @@ void setup()
     */
     att.descr.filename = "camera.jpg";
     att.descr.mime = "image/jpg";
-    
+
     att.blob.data = cam.getfb();
     att.blob.size = cam.getSize();
 

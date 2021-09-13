@@ -17,6 +17,7 @@ IMAP_MSG_List   KEYWORD1
 SelectedFolderInfo  KEYWORD1
 ESP_Mail_Session    KEYWORD1
 smtpStatusCallback  KEYWORD1
+imapResponseCallback    KEYWORD1
 SMTP_Attachment KEYWORD1
 SMTP_Result KEYWORD1
 IMAP_MSG_Item   KEYWORD1
@@ -73,7 +74,9 @@ getItem KEYWORD2
 size    KEYWORD2
 flagCount   KEYWORD2
 msgCount    KEYWORD2
+recentCount KEYWORD2
 nextUID KEYWORD2
+pollingStatus   KEYWORD2
 searchCount KEYWORD2
 availableMessages   KEYWORD2
 flag    KEYWORD2
@@ -99,6 +102,10 @@ copyMessages    KEYWORD2
 deleteMessages  KEYWORD2
 createFolder    KEYWORD2
 deleteFolder    KEYWORD2
+listen  KEYWORD2
+stopListen  KEYWORD2
+folderChanged   KEYWORD2
+sendCustomCommand   KEYWORD2
 
 
 #######################################
@@ -122,6 +129,9 @@ esp_mail_imap_limit_config_t    KEYWORD3
 esp_mail_imap_enable_config_t   KEYWORD3
 esp_mail_imap_download_config_t KEYWORD3
 esp_mail_imap_storage_config_t  KEYWORD3
+esp_mail_imap_polling_status_t  KEYWORD3
+IMAP_Polling_Status KEYWORD3
+
 
 esp_mail_file_storage_type_none KEYWORD3
 esp_mail_file_storage_type_flash    KEYWORD3

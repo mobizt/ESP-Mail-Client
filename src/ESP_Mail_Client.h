@@ -1,18 +1,19 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.4.2"
+#define ESP_MAIL_VERSION "1.5.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.4.2
- *   Released:  September 12, 2021
+ *   Version:   1.5.0
+ *   Released:  September 13, 2021
  *
  *   Updates:
- * - Fix iCloud IMAP response header paring issue #92, which iCloud always returns uppercase header fields.
- * - Add IMAP config option to enable case sensitive header parsing.
- * - Update IMAP examples comment for header parse option.
+ * - Add IMAP listen, stopListen, folderChanged functions to listen to the mailbox changes.
+ * - Add IMAP sendCustomCommand function.
+ * - Add IMAP getUID function to get UID from message number.
+ * - Update examples for the new functions.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -55,7 +56,7 @@
 #if defined(ESP32) || defined(ESP8266)
 
 #define UPLOAD_CHUNKS_NUM 12
-#define ESP_MAIL_PRINTF Serial.printf
+#define ESP_MAIL_PRINTF ESP_Mail_DEFAULT_DEBUG_PORT.printf
 #include <SD.h>
 
 #if defined(ESP32)
@@ -99,7 +100,7 @@
 
 extern "C" __attribute__((weak)) void _putchar(char c)
 {
-  Serial.print(c);
+  ESP_Mail_DEFAULT_DEBUG_PORT.print(c);
 }
 
 #define ESP_MAIL_PRINTF printf
@@ -294,6 +295,14 @@ enum esp_mail_imap_response_status
   esp_mail_imap_resp_bad
 };
 
+enum esp_mail_imap_polling_status_type
+{
+  imap_polling_status_type_undefined,
+  imap_polling_status_type_new_message,
+  imap_polling_status_type_remove_message,
+  imap_polling_status_type_fetch_message
+};
+
 enum esp_mail_imap_header_state
 {
   esp_mail_imap_state_from = 1,
@@ -332,7 +341,11 @@ enum esp_mail_imap_command
   esp_mail_imap_cmd_store,
   esp_mail_imap_cmd_expunge,
   esp_mail_imap_cmd_create,
-  esp_mail_imap_cmd_delete
+  esp_mail_imap_cmd_delete,
+  esp_mail_imap_cmd_idle,
+  esp_mail_imap_cmd_done,
+  esp_mail_imap_cmd_get_uid,
+  esp_mail_imap_cmd_custom,
 };
 
 enum esp_mail_imap_mime_fetch_type
@@ -595,6 +608,23 @@ struct esp_mail_imap_content_disposition_type_t
   */
   static constexpr const char *attachment = "attachment";
 };
+
+/* IMAP polling status */
+typedef struct esp_mail_imap_polling_status_t
+{
+  /** The type of status e.g. imap_polling_status_type_undefined, imap_polling_status_type_new_message, 
+   * imap_polling_status_type_fetch_message and imap_polling_status_type_remove_message.
+  */
+  esp_mail_imap_polling_status_type type = imap_polling_status_type_undefined;
+
+  /** Message number or order from the total number of message that added, fetched or deleted.
+  */
+  size_t messageNum = 0;
+
+  /** Argument of commands e.g. FETCH
+  */
+  std::string argument;
+} IMAP_Polling_Status;
 
 struct esp_mail_internal_use_t
 {
@@ -881,6 +911,14 @@ struct esp_mail_auth_capability_t
   bool start_tls = false;
 };
 
+struct esp_mail_imap_capability_t
+{
+  bool imap4 = false;
+  bool imap4rev1 = false;
+  //rfc2177
+  bool idle = false;
+};
+
 struct esp_mail_smtp_capability_t
 {
   bool esmtp = false;
@@ -1136,6 +1174,9 @@ struct esp_mail_imap_limit_config_t
 
   /* The maximum size of each attachment to download */
   size_t attachment_size = 1024 * 1024 * 5;
+
+  /* The IMAP idle timeout in ms */
+  size_t imap_idle_timeout = 10 * 60 * 1000;
 };
 
 struct esp_mail_imap_storage_config_t
@@ -1658,6 +1699,22 @@ static const char esp_mail_str_327[] PROGMEM = "\"; size=";
 static const char esp_mail_str_328[] PROGMEM = "0.0.0.0";
 static const char esp_mail_str_329[] PROGMEM = ", Fw v";
 static const char esp_mail_str_330[] PROGMEM = "+";
+static const char esp_mail_str_331[] PROGMEM = "$ IDLE";
+static const char esp_mail_str_332[] PROGMEM = "DONE";
+static const char esp_mail_str_333[] PROGMEM = " EXPUNGE";
+static const char esp_mail_str_334[] PROGMEM = " RECENT";
+static const char esp_mail_str_335[] PROGMEM = "> C: listening to mailbox changes...";
+static const char esp_mail_str_336[] PROGMEM = "Listening to ";
+static const char esp_mail_str_337[] PROGMEM = " folder changes...";
+static const char esp_mail_str_338[] PROGMEM = "Polling established";
+static const char esp_mail_str_339[] PROGMEM = "> C: polling established";
+static const char esp_mail_str_340[] PROGMEM = "Mailbox listening stopped";
+static const char esp_mail_str_341[] PROGMEM = "> C: mailbox listening stopped";
+static const char esp_mail_str_342[] PROGMEM = " FETCH (UID ";
+static const char esp_mail_str_343[] PROGMEM = "> C: Get UID...";
+static const char esp_mail_str_344[] PROGMEM = "Get UID...";
+static const char esp_mail_str_345[] PROGMEM = "> C: UID is ";
+static const char esp_mail_str_346[] PROGMEM = "UID is ";
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -1690,6 +1747,9 @@ static const char esp_mail_imap_response_13[] PROGMEM = "AUTH=XOAUTH2";
 static const char esp_mail_imap_response_14[] PROGMEM = "STARTTLS";
 static const char esp_mail_imap_response_15[] PROGMEM = "CRAM-MD5";
 static const char esp_mail_imap_response_16[] PROGMEM = "DIGEST-MD5";
+static const char esp_mail_imap_response_17[] PROGMEM = "IDLE"; //rfc2177
+static const char esp_mail_imap_response_18[] PROGMEM = "IMAP4";
+static const char esp_mail_imap_response_19[] PROGMEM = "IMAP4rev1";
 
 static const char imap_7bit_key1[] PROGMEM = "=20";
 static const char imap_7bit_val1[] PROGMEM = " ";
@@ -1759,6 +1819,22 @@ public:
   /* Get the numbers of messages in this mailbox */
   size_t msgCount() { return _msgCount; };
 
+  /* Get the numbers of messages in this mailbox that recent flag was set */
+  size_t recentCount() { return _recentCount; };
+
+  /* Get the order of message in number of message in this mailbox that reoved */
+  /**
+   * The IMAP_Polling_Status has the properties e.g. type, messageNum, and argument.
+   * 
+   * The type property is the type of status e.g.imap_polling_status_type_undefined, imap_polling_status_type_new_message,
+   * imap_polling_status_type_remove_message, and imap_polling_status_type_fetch_message.
+   * 
+   * The messageNum property is message number or order from the total number of message that added, fetched or deleted.
+   * 
+   * The argument property is the argument of commands e.g. FETCH
+   */
+  IMAP_Polling_Status pollingStatus() { return _polling_status; };
+
   /* Get the predict next message UID */
   size_t nextUID() { return _nextUID; };
 
@@ -1786,9 +1862,14 @@ private:
     _flags.clear();
   }
   size_t _msgCount = 0;
+  size_t _recentCount = 0;
   size_t _nextUID = 0;
   size_t _searchCount = 0;
   size_t _availableItems = 0;
+  unsigned long _idleTimeMs = 0;
+  bool _folderChanged = false;
+  bool _floderChangedState = false;
+  IMAP_Polling_Status _polling_status;
   std::vector<std::string> _flags = std::vector<std::string>();
 };
 
@@ -2155,6 +2236,7 @@ private:
 };
 
 typedef void (*imapStatusCallback)(IMAP_Status);
+typedef void (*imapResponseCallback)(const char*);
 typedef void (*smtpStatusCallback)(SMTP_Status);
 
 class ESP_Mail_Client
@@ -2330,7 +2412,7 @@ private:
   bool validEmail(const char *s);
   bool checkEmail(SMTPSession *smtp, SMTP_Message *msg);
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
-  char *getUID();
+  char *getRandomUID();
   bool sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
   bool sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
   void encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, std::string &content);
@@ -2399,6 +2481,8 @@ private:
   bool authFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
   void handleFolders(IMAPSession *imap, char *buf);
   void handleCapability(IMAPSession *imap, char *buf, int &chunkIdx);
+  bool handleIdle(IMAPSession *imap);
+  void handleGetUID(IMAPSession *imap, char *buf);
   void handleExamine(IMAPSession *imap, char *buf);
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
   bool mSetFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
@@ -2489,6 +2573,25 @@ public:
   */
   bool deleteFolder(const char *folderName);
 
+  /** Get UID number in selected or opened mailbox.
+   *
+   * @param msg The message order in the total message numbers.
+   * @return UID number in selected or opened mailbox.
+   * 
+   * @note Returns 0 when fail to get UID.
+  */
+  int getUID(int msg);
+
+  /** Send the custom IMAP command and get the result via callback.
+   *
+   * @param cmd The command string.
+   * @param callback The function that accepts the pointer to const char (const char*) as parameter.
+   * @return he boolean value which indicates the success of operation.
+   * 
+   * @note imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
+  */
+  bool sendCustomCommand(const char *cmd, imapResponseCallback callback);
+
   /** Copy the messages to the defined mailbox folder.
    *
    * @param toCopy The pointer to the MessageListList class that contains the
@@ -2506,6 +2609,21 @@ public:
    * @return The boolean value which indicates the success of operation.
   */
   bool deleteMessages(MessageList *toDelete, bool expunge = false);
+
+  /** Listen to the selected or open mailbox for updates.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool listen() { return mListen(false); };
+
+  /** Stop listen to the mailbox for updates.
+   * @return The boolean value which indicates the success of operation.
+  */
+  bool stopListen() { return mStopListen(false); };
+
+  /** Check for the selected or open mailbox updates.
+   * @return The boolean value which indicates the changes status of mailbox.
+  */
+  bool folderChanged();
 
   /** Assign the callback function that returns the operating status when
    * fetching or reading the Email.
@@ -2560,6 +2678,8 @@ private:
   bool openMailbox(const char *folder, esp_mail_imap_auth_mode mode, bool waitResponse);
   bool getMailboxes(FoldersCollection &flders);
   bool checkCapability();
+  bool mListen(bool recon);
+  bool mStopListen(bool recon);
 
   bool _tcpConnected = false;
   struct esp_mail_imap_response_status_t _imapStatus;
@@ -2575,6 +2695,7 @@ private:
   bool _unseen = false;
   bool _readOnlyMode = true;
   struct esp_mail_auth_capability_t _auth_capability;
+  struct esp_mail_imap_capability_t _read_capability;
   ESP_Mail_Session *_sesson_cfg;
   std::string _currentFolder;
   bool _mailboxOpened = false;
@@ -2589,10 +2710,12 @@ private:
   int _debugLevel = 0;
   bool _secure = false;
   imapStatusCallback _readCallback = NULL;
+  imapResponseCallback _customCmdResCallback = NULL;
 
   std::vector<uint32_t> _msgNum = std::vector<uint32_t>();
   FoldersCollection _folders;
   SelectedFolderInfo _mbif;
+  int _uid_tmp = 0;
 
   int _certType = -1;
 #if defined(ESP32) || defined(ESP8266)
@@ -2720,7 +2843,7 @@ private:
 static void __attribute__((used)) esp_mail_debug(const char *msg)
 {
   delay(0);
-  Serial.println(msg);
+  ESP_Mail_DEFAULT_DEBUG_PORT.println(msg);
 }
 
 static void __attribute__((used))
@@ -2728,9 +2851,9 @@ esp_mail_debug_line(const char *msg, bool newline)
 {
   delay(0);
   if (newline)
-    Serial.println(msg);
+    ESP_Mail_DEFAULT_DEBUG_PORT.println(msg);
   else
-    Serial.print(msg);
+    ESP_Mail_DEFAULT_DEBUG_PORT.print(msg);
 }
 
 extern ESP_Mail_Client MailClient;

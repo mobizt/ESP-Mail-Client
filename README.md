@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.4.2
+# Mail Client Arduino Library v1.5.0
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -33,14 +33,15 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
 * Support secured (with SSL and TLS or upgrade via STARTTLS) and non-secure ports.
-* Support mailbox selection for Email reading and searching.
+* Support mailbox selection for Email reading and searching (IMAP).
+* Support mailbox changes notification (IMAP).
 * Support the content encodings e.g. quoted-printable and base64.
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
-* Customizable operating configurations (see the examples for the usages)
+* Customizable configurations (see the examples for the usages)
 
 
 
@@ -148,7 +149,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21060).
 
 ```
-> C: ESP Mail Client v1.4.2, Fw v1.4.5+21060
+> C: ESP Mail Client v1.5.0, Fw v1.4.5+21060
 ```
 
 ## Library Instalation
