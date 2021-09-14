@@ -108,7 +108,7 @@ void setup()
      * none debug or 0
      * basic debug or 1
      * 
-     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -146,64 +146,18 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = "/email_data";
-
-    /** The file storage type e.g.
-     * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and 
-     * esp_mail_file_storage_type_sd 
-    */
-    config.storage.type = esp_mail_file_storage_type_flash;
-
-    /** Set to download heades, text and html messaeges, 
-     * attachments and inline images respectively.
-    */
-    config.download.header = true;
-    config.download.text = true;
-    config.download.html = true;
-    config.download.attachment = true;
-    config.download.inlineImg = true;
-
-    /** Set to enable the results i.e. html and text messaeges 
-     * which the content stored in the IMAPSession object is limited
-     * by the option config.limit.msg_size.
-     * The whole message can be download through config.download.text
-     * or config.download.html which not depends on these enable options.
-    */
-    config.enable.html = true;
-    config.enable.text = true;
-
-    /* Set to enable the sort the result by message UID in the ascending order */
-    config.enable.recent_sort = true;
-
-    /* Set to report the download progress via the default serial port */
-    config.enable.download_status = true;
-
-    /** Set the maximum size of message stored in 
-     * IMAPSession object in byte
-    */
-    config.limit.msg_size = 512;
-
-    /** Set the maximum attachments and inline images files size
-     * that can be downloaded in byte. 
-     * The file which its size is largger than this limit may be saved 
-     * as truncated file.
-    */
-    config.limit.attachment_size = 1024 * 1024 * 5;
-
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder("INBOX"))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printSelectedMailboxInfo(imap);
 
 }

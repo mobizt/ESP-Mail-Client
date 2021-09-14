@@ -320,14 +320,14 @@ bool deleteFolder(const char *folderName);
 
 #### Get UID number in selected or opened mailbox. 
 
-param **`msg`** The message order in the total message numbers.
+param **`msgNum`** The message number or order in the total message numbers.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
 Returns 0 when fail to get UID.
 
 ```C++
-int getUID(int msg);
+int getUID(int msgNum);
 ```
 
 

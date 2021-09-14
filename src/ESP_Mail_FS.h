@@ -35,11 +35,15 @@
 #define ESP_Mail_DEFAULT_SD_FS SD
 #define CARD_TYPE_SD 1
 
-
 //For ESP32, format SPIFFS or FFat if mounting failed
 #define FORMAT_FLASH_IF_MOUNT_FAILED 1
 
+#ifdef ESP_MAIL_DEBUG_PORT
+#define ESP_MAIL_DEFAULT_DEBUG_PORT ESP_MAIL_DEBUG_PORT
+#endif
 
-#define ESP_Mail_DEFAULT_DEBUG_PORT Serial
+#ifndef ESP_MAIL_DEFAULT_DEBUG_PORT
+#define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
+#endif
 
 #endif

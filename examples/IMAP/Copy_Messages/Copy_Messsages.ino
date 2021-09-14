@@ -88,7 +88,7 @@ void setup()
      * none debug or 0
      * basic debug or 1
      * 
-     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -109,7 +109,7 @@ void setup()
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */

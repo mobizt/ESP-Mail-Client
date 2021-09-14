@@ -53,7 +53,6 @@ void printSelectedMailboxInfo(IMAPSession &imap);
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
 
-
 void setup()
 {
 
@@ -88,7 +87,7 @@ void setup()
      * none debug or 0
      * basic debug or 1
      * 
-     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -101,7 +100,6 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 
@@ -109,7 +107,7 @@ void setup()
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
@@ -118,12 +116,16 @@ void setup()
 
     /* Define the MessageList class to add the message to delete */
     MessageList toDelete;
-    /* Add message uid to delete to the list */
-    toDelete.add(10);
-    toDelete.add(12);
+
+    /** Add message uid to delete to the list
+     * In this case we will delete last 10 messages by get the UID of these message 
+     * and add it to the list
+    */
+    for (int i = imap.selectedFolder().msgCount(); i > imap.selectedFolder().msgCount() - 10 && i > 0; i--)
+        toDelete.add(imap.getUID(i));
 
     /* Delete all messages in the list (move to trash) */
-    if(imap.deleteMessages(&toDelete))
+    if (imap.deleteMessages(&toDelete))
         Serial.println("Messages deeted");
 
     /* Delete all messages permanently by assign the second param to true*/
@@ -134,7 +136,6 @@ void setup()
 
 void loop()
 {
-
 }
 
 void printAllMailboxesInfo(IMAPSession &imap)

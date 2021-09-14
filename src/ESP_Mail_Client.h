@@ -1,19 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.0"
+#define ESP_MAIL_VERSION "1.5.1"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.0
- *   Released:  September 13, 2021
+ *   Version:   1.5.1
+ *   Released:  September 14, 2021
  *
  *   Updates:
- * - Add IMAP listen, stopListen, folderChanged functions to listen to the mailbox changes.
- * - Add IMAP sendCustomCommand function.
- * - Add IMAP getUID function to get UID from message number.
- * - Update examples for the new functions.
+ * - Fix the IMAP issue #94, undetected attachments and unable to download since v1.3.3 to v1.5.0.
+ * - Defer the IMAP polling error report.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -56,7 +54,7 @@
 #if defined(ESP32) || defined(ESP8266)
 
 #define UPLOAD_CHUNKS_NUM 12
-#define ESP_MAIL_PRINTF ESP_Mail_DEFAULT_DEBUG_PORT.printf
+#define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf
 #include <SD.h>
 
 #if defined(ESP32)
@@ -100,7 +98,7 @@
 
 extern "C" __attribute__((weak)) void _putchar(char c)
 {
-  ESP_Mail_DEFAULT_DEBUG_PORT.print(c);
+  ESP_MAIL_DEFAULT_DEBUG_PORT.print(c);
 }
 
 #define ESP_MAIL_PRINTF printf
@@ -2445,9 +2443,6 @@ private:
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
   void strcat_c(char *str, char c);
   int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
-  char *stristr(const char *str1, const char *str2);
-  char *rstrstr(const char *haystack, const char *needle);
-  int rstrpos(const char *haystack, const char *needle, int offset);
   void getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
   void handleAuth(SMTPSession *smtp, char *buf);
   std::string getEncodedToken(SMTPSession *smtp);
@@ -2575,12 +2570,12 @@ public:
 
   /** Get UID number in selected or opened mailbox.
    *
-   * @param msg The message order in the total message numbers.
+   * @param msgNum The message number or order in the total message numbers.
    * @return UID number in selected or opened mailbox.
    * 
    * @note Returns 0 when fail to get UID.
   */
-  int getUID(int msg);
+  int getUID(int msgNum);
 
   /** Send the custom IMAP command and get the result via callback.
    *
@@ -2682,6 +2677,7 @@ private:
   bool mStopListen(bool recon);
 
   bool _tcpConnected = false;
+  unsigned long _last_polling_error = 0;
   struct esp_mail_imap_response_status_t _imapStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
@@ -2843,7 +2839,7 @@ private:
 static void __attribute__((used)) esp_mail_debug(const char *msg)
 {
   delay(0);
-  ESP_Mail_DEFAULT_DEBUG_PORT.println(msg);
+  ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
 }
 
 static void __attribute__((used))
@@ -2851,9 +2847,9 @@ esp_mail_debug_line(const char *msg, bool newline)
 {
   delay(0);
   if (newline)
-    ESP_Mail_DEFAULT_DEBUG_PORT.println(msg);
+    ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
   else
-    ESP_Mail_DEFAULT_DEBUG_PORT.print(msg);
+    ESP_MAIL_DEFAULT_DEBUG_PORT.print(msg);
 }
 
 extern ESP_Mail_Client MailClient;

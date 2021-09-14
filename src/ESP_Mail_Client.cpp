@@ -1,14 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.0
- *   Released:  September 13, 2021
+ *   Version:   1.5.1
+ *   Released:  September 14, 2021
  *
  *   Updates:
- * - Add IMAP listen, stopListen, folderChanged functions to listen to the mailbox changes.
- * - Add IMAP sendCustomCommand function.
- * - Add IMAP getUID function to get UID from message number.
- * - Update examples for the new functions.
+ * - Fix the IMAP issue #94, undetected attachments and unable to download since v1.3.3 to v1.5.0.
+ * - Defer the IMAP polling error report.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -4291,6 +4289,7 @@ void ESP_Mail_Client::strcat_c(char *str, char c)
   *str++ = c;
   *str++ = 0;
 }
+
 int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset, bool caseSensitive)
 {
   if (!haystack || !needle)
@@ -4318,91 +4317,6 @@ int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset
       hidx++;
       if (nidx == nlen)
         return hidx - nidx;
-    }
-  }
-
-  return -1;
-}
-
-char *ESP_Mail_Client::stristr(const char *str1, const char *str2)
-{
-  const char *p1 = str1;
-  const char *p2 = str2;
-  const char *r = *p2 == 0 ? str1 : 0;
-
-  while (*p1 != 0 && *p2 != 0)
-  {
-    if (tolower((unsigned char)*p1) == tolower((unsigned char)*p2))
-    {
-      if (r == 0)
-        r = p1;
-      p2++;
-    }
-    else
-    {
-      p2 = str2;
-      if (r != 0)
-        p1 = r + 1;
-
-      if (tolower((unsigned char)*p1) == tolower((unsigned char)*p2))
-      {
-        r = p1;
-        p2++;
-      }
-      else
-        r = 0;
-    }
-
-    p1++;
-  }
-
-  return *p2 == 0 ? (char *)r : 0;
-}
-
-char *ESP_Mail_Client::rstrstr(const char *haystack, const char *needle)
-{
-  size_t needle_length = strlen(needle);
-  const char *haystack_end = haystack + strlen(haystack) - needle_length;
-  const char *p;
-  size_t i;
-  for (p = haystack_end; p >= haystack; --p)
-  {
-    for (i = 0; i < needle_length; ++i)
-    {
-      if (p[i] != needle[i])
-        goto next;
-    }
-    return (char *)p;
-  next:;
-  }
-  return 0;
-}
-
-int ESP_Mail_Client::rstrpos(const char *haystack, const char *needle, int offset)
-{
-  if (!haystack || !needle)
-    return -1;
-
-  int hlen = strlen(haystack);
-  int nlen = strlen(needle);
-
-  if (hlen == 0 || nlen == 0)
-    return -1;
-
-  int hidx = hlen - 1, nidx = nlen - 1;
-  while (offset < hidx)
-  {
-    if (*(needle + nidx) != *(haystack + hidx))
-    {
-      hidx--;
-      nidx = nlen - 1;
-    }
-    else
-    {
-      nidx--;
-      hidx--;
-      if (nidx == 0)
-        return hidx + nidx;
     }
   }
 
@@ -4738,7 +4652,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
   {
     if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
     {
-      tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, caseSensitive);
+      tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, caseSensitive);
       bool con_type = false;
       if (tmp)
       {
@@ -4802,7 +4716,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
       {
         if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched)
         {
-          tmp = subStr(buf, esp_mail_str_168, esp_mail_str_136, 0, caseSensitive);
+          tmp = subStr(buf, esp_mail_str_168, esp_mail_str_136, 0, 0, caseSensitive);
           if (tmp)
           {
             part.charset = tmp;
@@ -4826,7 +4740,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
 
         if (part.charset.length() == 0)
         {
-          tmp = subStr(buf, esp_mail_str_168, esp_mail_str_136, 0, caseSensitive);
+          tmp = subStr(buf, esp_mail_str_168, esp_mail_str_136, 0, 0, caseSensitive);
           if (tmp)
           {
             part.charset = tmp;
@@ -4843,7 +4757,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
           }
         }
 
-        tmp = subStr(buf, esp_mail_str_170, esp_mail_str_136, 0, caseSensitive);
+        tmp = subStr(buf, esp_mail_str_170, esp_mail_str_136, 0, 0, caseSensitive);
         if (tmp)
         {
           part.name = tmp;
@@ -4880,9 +4794,10 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
     }
     else if (strcmpP(buf, 0, esp_mail_str_175, caseSensitive))
     {
-      tmp = subStr(buf, esp_mail_str_175, esp_mail_str_97, 0, caseSensitive);
+      tmp = subStr(buf, esp_mail_str_175, esp_mail_str_97, 0, 0, caseSensitive);
       if (tmp)
       {
+
         //don't count altenative part text and html as embedded contents
         if (cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
         {
@@ -5023,7 +4938,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
         }
       }
 
-      tmp = subStr(buf, esp_mail_str_178, esp_mail_str_97, 0, caseSensitive);
+      tmp = subStr(buf, esp_mail_str_178, esp_mail_str_97, 0, 0, caseSensitive);
       if (tmp)
       {
         part.attach_data_size = atoi(tmp);
@@ -5043,7 +4958,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
         }
       }
 
-      tmp = subStr(buf, esp_mail_str_179, esp_mail_str_136, 0, caseSensitive);
+      tmp = subStr(buf, esp_mail_str_179, esp_mail_str_136, 0, 0, caseSensitive);
       if (tmp)
       {
         part.creation_date = tmp;
@@ -5059,7 +4974,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
         }
       }
 
-      tmp = subStr(buf, esp_mail_str_181, esp_mail_str_136, 0, caseSensitive);
+      tmp = subStr(buf, esp_mail_str_181, esp_mail_str_136, 0, 0, caseSensitive);
       if (tmp)
       {
         part.modification_date = tmp;
@@ -5082,7 +4997,6 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
 
 char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos, bool caseSensitive)
 {
-
   char *tmp = nullptr;
   int p1 = strposP(buf, beginH, beginPos, caseSensitive);
   if (p1 != -1)
@@ -5567,7 +5481,17 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
     if (imap->_tcpConnected)
       closeTCPSession(imap);
 
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+    //defer the polling error report
+    if (imap->_mbif._idleTimeMs > 0)
+    {
+      if (millis() - imap->_last_polling_error > 10000 && !imap->_tcpConnected)
+      {
+        imap->_last_polling_error = millis();
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+      }
+    }
+    else
+      errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
 
     if (imap->_headers.size() > 0)
     {
@@ -5968,7 +5892,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
       strcpy(buf, header.content_type.c_str());
       header.content_type.clear();
 
-      tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0);
+      tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, false);
       if (tmp)
       {
         headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_type;
@@ -6016,7 +5940,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             header.message_sub_type = esp_mail_imap_message_sub_type_delivery_status;
         }
 
-        tmp = subStr(buf, esp_mail_str_169, NULL, 0, -1);
+        tmp = subStr(buf, esp_mail_str_169, NULL, 0, -1, false);
         if (tmp)
         {
           headerState = esp_mail_imap_header_state::esp_mail_imap_state_char_set;
@@ -6028,7 +5952,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         {
           if (strcmpP(buf, 0, esp_mail_str_277))
           {
-            tmp = subStr(buf, esp_mail_str_277, esp_mail_str_136, 0);
+            tmp = subStr(buf, esp_mail_str_277, esp_mail_str_136, 0, 0, false);
             if (tmp)
             {
               headerState = esp_mail_imap_header_state::esp_mail_imap_state_boundary;
@@ -7195,8 +7119,8 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
         imap->_mbif._msgCount = atoi(tmp);
         delS(tmp);
         exists = true;
-        imap->_mbif._folderChanged |= imap->_mbif._msgCount != numMsg;
-        if (imap->_mbif._msgCount > numMsg)
+        imap->_mbif._folderChanged |= (int)imap->_mbif._msgCount != numMsg;
+        if ((int)imap->_mbif._msgCount > numMsg)
         {
           imap->_mbif._polling_status.type = imap_polling_status_type_new_message;
           imap->_mbif._polling_status.messageNum = imap->_mbif._msgCount;
@@ -7249,7 +7173,6 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
     ex:
 
       imap->_mbif._floderChangedState = (imap->_mbif._folderChanged && exists) || imap->_mbif._polling_status.type == imap_polling_status_type_fetch_message;
-      ;
     }
 
     delS(buf);

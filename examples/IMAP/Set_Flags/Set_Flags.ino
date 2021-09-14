@@ -99,7 +99,7 @@ void setup()
      * none debug or 0
      * basic debug or 1
      * 
-     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -129,7 +129,8 @@ void setup()
     IMAP_Config config;
 
     /* Message UID to fetch or read e.g. 100 */
-    config.fetch.uid = "100";
+    String uid = String(imap.getUID(imap.selectedFolder().msgCount()));
+    config.fetch.uid = uid.c_str();
 
     /* Set seen flag */
     //config.fetch.set_seen = true;
@@ -193,14 +194,14 @@ void setup()
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder("INBOX"))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printSelectedMailboxInfo(imap);
 
     /** Set \Seen and \Answered to flags for message with UID 100

@@ -101,7 +101,7 @@ void setup()
      * none debug or 0
      * basic debug or 1
      * 
-     * Debug port can be changed via ESP_Mail_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
     imap.debug(1);
 
@@ -213,20 +213,21 @@ void setup()
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder("INBOX"))
         return;
 
-    /*  {Optional] */
+    /*  {Optional} */
     printSelectedMailboxInfo(imap);
 
     /** Message UID to fetch or read e.g. 100. 
      * In this case we will get the UID from the max message number (lastest message) 
     */
-    config.fetch.uid = String(imap.getUID(imap.selectedFolder().msgCount())).c_str();
+    String uid = String(imap.getUID(imap.selectedFolder().msgCount()));
+    config.fetch.uid = uid.c_str();
 
     /* Read or search the Email and close the session */
     MailClient.readMail(&imap);
