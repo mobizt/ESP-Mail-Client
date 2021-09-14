@@ -1,12 +1,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.1
+ *   Version:   1.5.2
  *   Released:  September 14, 2021
  *
  *   Updates:
- * - Fix the IMAP issue #94, undetected attachments and unable to download since v1.3.3 to v1.5.0.
- * - Defer the IMAP polling error report.
+ * - Fix the IMAP issue #94, unable to save file to SD media since v1.3.3 to v1.5.1.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -396,14 +395,14 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
       if (imap->_config->download.text || imap->_config->download.html || imap->_config->download.attachment || imap->_config->download.inlineImg)
       {
-        if (!_sdOk && imap->_storageType == esp_mail_file_storage_type_sd)
+        if (!_sdOk && imap->_config->storage.type == esp_mail_file_storage_type_sd)
         {
           _sdOk = sdTest();
           if (_sdOk)
             if (!ESP_MAIL_SD_FS.exists(imap->_config->storage.saved_path))
               createDirs(imap->_config->storage.saved_path);
         }
-        else if (!_flashOk && imap->_storageType == esp_mail_file_storage_type_flash)
+        else if (!_flashOk && imap->_config->storage.type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
           _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
@@ -595,7 +594,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
       if (closeSession)
       {
-        if (imap->_storageType == esp_mail_file_storage_type_sd)
+        if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
         {
 #if defined(ESP_MAIL_SD_FS)
           if (_sdOk)
@@ -603,7 +602,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 #endif
           _sdOk = false;
         }
-        else if (imap->_storageType == esp_mail_file_storage_type_flash)
+        else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
         {
 
 #if defined(ESP_MAIL_FLASH_FS)
@@ -6051,9 +6050,9 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
 
   std::string headerFilePath;
   prepareFilePath(imap, headerFilePath, true);
-  if (imap->_storageType == esp_mail_file_storage_type_sd && !_sdOk)
+  if (imap->_config->storage.type == esp_mail_file_storage_type_sd && !_sdOk)
     _sdOk = sdTest();
-  else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
+  else if (imap->_config->storage.type == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
     _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
@@ -6065,9 +6064,9 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
     if (file)
       file.close();
 
-    if (imap->_storageType == esp_mail_file_storage_type_sd)
+    if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
       file = ESP_MAIL_SD_FS.open(headerFilePath.c_str(), FILE_WRITE);
-    else if (imap->_storageType == esp_mail_file_storage_type_flash)
+    else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
 #if defined(ESP32)
       file = ESP_MAIL_FLASH_FS.open(headerFilePath.c_str(), FILE_WRITE);
 #elif defined(ESP8266)
@@ -6289,9 +6288,9 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
 
     cPart(imap)->file_open_write = true;
 
-    if (imap->_storageType == esp_mail_file_storage_type_sd && !_sdOk)
+    if (imap->_config->storage.type == esp_mail_file_storage_type_sd && !_sdOk)
       _sdOk = sdTest();
-    else if (imap->_storageType == esp_mail_file_storage_type_flash && !_flashOk)
+    else if (imap->_config->storage.type == esp_mail_file_storage_type_flash && !_flashOk)
 #if defined(ESP32)
       _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
@@ -6312,7 +6311,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       delS(tmp);
 
 #if defined(ESP_MAIL_SD_FS)
-      if (imap->_storageType == esp_mail_file_storage_type_sd)
+      if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
         if (!ESP_MAIL_SD_FS.exists(filePath.c_str()))
           createDirs(filePath);
 #endif
@@ -6321,11 +6320,11 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
 
       filePath += cPart(imap)->filename;
 
-      if (imap->_storageType == esp_mail_file_storage_type_sd)
+      if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
 #if defined(ESP_MAIL_SD_FS)
         file = ESP_MAIL_SD_FS.open(filePath.c_str(), FILE_WRITE);
 #endif
-      else if (imap->_storageType == esp_mail_file_storage_type_flash)
+      else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
       {
 #if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
@@ -6727,13 +6726,13 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
             {
               downloadRequest = true;
 
-              if (imap->_storageType == esp_mail_file_storage_type_sd)
+              if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
               {
 #if defined(ESP_MAIL_SD_FS)
                 file = ESP_MAIL_SD_FS.open(filePath.c_str(), FILE_WRITE);
 #endif
               }
-              else if (imap->_storageType == esp_mail_file_storage_type_flash)
+              else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
               {
 #if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
@@ -6765,7 +6764,7 @@ void ESP_Mail_Client::prepareFilePath(IMAPSession *imap, std::string &filePath, 
   fpath += tmp;
   delS(tmp);
 
-  if (imap->_storageType == esp_mail_file_storage_type_sd)
+  if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
     if (!ESP_MAIL_SD_FS.exists(fpath.c_str()))
       createDirs(fpath);
 

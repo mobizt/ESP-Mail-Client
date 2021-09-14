@@ -1,17 +1,16 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.1"
+#define ESP_MAIL_VERSION "1.5.2"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.1
+ *   Version:   1.5.2
  *   Released:  September 14, 2021
  *
  *   Updates:
- * - Fix the IMAP issue #94, undetected attachments and unable to download since v1.3.3 to v1.5.0.
- * - Defer the IMAP polling error report.
+ * - Fix the IMAP issue #94, unable to save file to SD media since v1.3.3 to v1.5.1.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -2687,7 +2686,6 @@ private:
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
   std::vector<struct esp_mail_imap_multipart_level_t> _multipart_levels = std::vector<struct esp_mail_imap_multipart_level_t>();
   int _rfc822_part_count = 0;
-  esp_mail_file_storage_type _storageType = esp_mail_file_storage_type::esp_mail_file_storage_type_flash;
   bool _unseen = false;
   bool _readOnlyMode = true;
   struct esp_mail_auth_capability_t _auth_capability;
