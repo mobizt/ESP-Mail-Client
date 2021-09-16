@@ -106,6 +106,9 @@ listen  KEYWORD2
 stopListen  KEYWORD2
 folderChanged   KEYWORD2
 sendCustomCommand   KEYWORD2
+getFlags    KEYWORD2
+getUID  KEYWORD2
+
 
 
 #######################################

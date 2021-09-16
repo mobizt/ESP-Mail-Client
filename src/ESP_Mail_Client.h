@@ -1,16 +1,18 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.2"
+#define ESP_MAIL_VERSION "1.5.3"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.2
- *   Released:  September 14, 2021
- *
  *   Updates:
- * - Fix the IMAP issue #94, unable to save file to SD media since v1.3.3 to v1.5.1.
+ * - Rename typo IMAP rfc822 comments and keywords header fields (breaking changes).
+ * - Change the return value of IMAP IMAP_MSG_Item from index number to message number or order in total message numbers (breaking changes).
+ * - Add supports Return-Path, Reply-To, In-Reply-To, References, Comments, Keywords headers in IMAP and SMTP messages.
+ * - Add IMAP getFlags function.
+ * - Update examples e.g. SMTP reply message.
+ * - Set charSet property for headers as deprecated.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -303,6 +305,7 @@ enum esp_mail_imap_polling_status_type
 enum esp_mail_imap_header_state
 {
   esp_mail_imap_state_from = 1,
+  esp_mail_imap_state_sender,
   esp_mail_imap_state_to,
   esp_mail_imap_state_cc,
   esp_mail_imap_state_subject,
@@ -312,6 +315,12 @@ enum esp_mail_imap_header_state
   esp_mail_imap_state_content_language,
   esp_mail_imap_state_date,
   esp_mail_imap_state_msg_id,
+  esp_mail_imap_state_return_path,
+  esp_mail_imap_state_reply_to,
+  esp_mail_imap_state_in_reply_to,
+  esp_mail_imap_state_references,
+  esp_mail_imap_state_comments,
+  esp_mail_imap_state_keywords,
   esp_mail_imap_state_char_set,
   esp_mail_imap_state_boundary
 };
@@ -342,6 +351,7 @@ enum esp_mail_imap_command
   esp_mail_imap_cmd_idle,
   esp_mail_imap_cmd_done,
   esp_mail_imap_cmd_get_uid,
+  esp_mail_imap_cmd_get_flags,
   esp_mail_imap_cmd_custom,
 };
 
@@ -933,14 +943,17 @@ struct esp_mail_imap_rfc822_msg_header_item_t
   std::string from;
   std::string subject;
   std::string messageID;
-  std::string keyword;
-  std::string comment;
+  std::string keywords;
+  std::string comments;
   std::string date;
   std::string return_path;
   std::string reply_to;
   std::string to;
   std::string cc;
   std::string bcc;
+  std::string in_reply_to;
+  std::string references;
+  std::string flags;
 };
 
 struct esp_mail_message_part_info_t
@@ -982,32 +995,27 @@ struct esp_mail_message_part_info_t
 struct esp_mail_message_header_t
 {
   int header_data_len = 0;
-  std::string from;
-  std::string to;
-  std::string cc;
-  std::string subject;
+
+  struct esp_mail_imap_rfc822_msg_header_item_t header_fields;
+
   std::string content_type;
   std::string content_transfer_encoding;
-  std::string date;
-  std::string message_id;
-  std::string message_uid;
-  std::string message_no;
+  uint32_t message_uid;
+  uint32_t message_no;
   std::string boundary;
   std::string accept_language;
   std::string content_language;
   std::string char_set;
   bool multipart = false;
   bool rfc822_part = false;
+  bool hasAttachment = false;
   int rfc822Idx = 0;
   std::string partNumStr;
 
   esp_mail_imap_multipart_sub_type multipart_sub_type = esp_mail_imap_multipart_sub_type_none;
   esp_mail_imap_message_sub_type message_sub_type = esp_mail_imap_message_sub_type_none;
-  std::string from_charset;
-  std::string to_charset;
-  std::string cc_charset;
-  std::string subject_charset;
   std::string msgID;
+  std::string flags;
   std::string error_msg;
   bool error = false;
   std::vector<struct esp_mail_message_part_info_t> part_headers = std::vector<struct esp_mail_message_part_info_t>();
@@ -1156,7 +1164,7 @@ struct esp_mail_imap_enable_config_t
   bool recent_sort = false;
 
   /* To allow case sesitive in header parsing */
-  bool header_case_sesitive = false;
+  bool header_case_sensitive = false;
 };
 
 struct esp_mail_imap_limit_config_t
@@ -1232,10 +1240,10 @@ struct esp_mail_imap_read_config_t
 struct esp_mail_imap_msg_item_t
 {
   /* The message number */
-  const char *msgNo = "";
+  int msgNo = 0;
 
   /* The message UID */
-  const char *UID = "";
+  int UID = 0;
 
   /* The message identifier (RFC 4021) */
   const char *ID = "";
@@ -1250,18 +1258,21 @@ struct esp_mail_imap_msg_item_t
   const char *from = "";
 
   /* The charset of the mailbox of message author */
+  //deprecated
   const char *fromCharset = "";
 
   /* The primary recipient mailbox (RFC 4021) */
   const char *to = "";
 
   /* The charset of the primary recipient mailbox */
+  //deprecated
   const char *toCharset = "";
 
   /* The Carbon-copy recipient mailboxes (RFC 4021) */
   const char *cc = "";
 
   /* The charset of the Carbon-copy recipient mailbox header */
+  //deprecated
   const char *ccCharset = "";
 
   /* The message date and time (RFC 4021) */
@@ -1271,7 +1282,11 @@ struct esp_mail_imap_msg_item_t
   const char *subject = "";
 
   /* The topic of message charset */
+  //deprecated
   const char *subjectCharset = "";
+
+  /* The message flags */
+  const char *flags = "";
 
   /* The PLAIN text content of the message */
   struct esp_mail_plain_body_t text;
@@ -1284,14 +1299,21 @@ struct esp_mail_imap_msg_item_t
   /* The sender Email  */
   const char *sender;
 
-  /* The message identifier */
-  const char *messageID = "";
+  /* The charset of the sender Email */
+  //deprecated
+  const char *senderCharset = "";
 
   /* The keywords or phrases, separated by commas */
-  const char *keyword = "";
+  const char *keywords = "";
 
-  /* The comment about message */
-  const char *comment = "";
+  /* The comments about message */
+  const char *comments = "";
+
+  /* The field that contains the parent's message ID of the message to which this one is a reply */
+  const char *in_reply_to = "";
+
+  /* The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply */
+  const char *references = "";
 
   /* The return recipient of the message */
   const char *return_path = "";
@@ -1299,8 +1321,9 @@ struct esp_mail_imap_msg_item_t
   /* The Email address to reply */
   const char *reply_to;
 
-  /* The Blind carbon-copy recipients */
-  const char *bcc = "";
+  /* The charset of the Blind carbon-copy recipient mailbox header */
+  //deprecated
+  const char *bccCharset = "";
 
   /* The error description from fetching the message */
   const char *fetchError = "";
@@ -1310,6 +1333,9 @@ struct esp_mail_imap_msg_item_t
 
   /* The info about the rfc822 messages included in the message */
   std::vector<esp_mail_imap_msg_item_t> rfc822 = std::vector<esp_mail_imap_msg_item_t>();
+
+  /* The status for message that contains attachment */
+  bool hasAttachment = false;
 };
 
 struct esp_mail_imap_msg_list_t
@@ -1376,9 +1402,9 @@ static const char esp_mail_str_6[] PROGMEM = "EHLO ";
 static const char esp_mail_str_7[] PROGMEM = "QUIT";
 static const char esp_mail_str_8[] PROGMEM = "MAIL FROM:";
 static const char esp_mail_str_9[] PROGMEM = "RCPT TO:";
-static const char esp_mail_str_10[] PROGMEM = "From: ";
-static const char esp_mail_str_11[] PROGMEM = "To: ";
-static const char esp_mail_str_12[] PROGMEM = "Cc: ";
+static const char esp_mail_str_10[] PROGMEM = "From:";
+static const char esp_mail_str_11[] PROGMEM = "To:";
+static const char esp_mail_str_12[] PROGMEM = "Cc:";
 static const char esp_mail_str_13[] PROGMEM = ",<";
 static const char esp_mail_str_14[] PROGMEM = "<";
 static const char esp_mail_str_15[] PROGMEM = ">";
@@ -1390,8 +1416,8 @@ static const char esp_mail_str_20[] PROGMEM = "X-MSMail-Priority: Low\r\n";
 static const char esp_mail_str_21[] PROGMEM = "Importance: High\r\n";
 static const char esp_mail_str_22[] PROGMEM = "Importance: Normal\r\n";
 static const char esp_mail_str_23[] PROGMEM = "Importance: Low\r\n";
-static const char esp_mail_str_24[] PROGMEM = "Subject: ";
-static const char esp_mail_str_25[] PROGMEM = "Content-Type: ";
+static const char esp_mail_str_24[] PROGMEM = "Subject:";
+static const char esp_mail_str_25[] PROGMEM = "Content-Type:";
 static const char esp_mail_str_26[] PROGMEM = "; Name=\"";
 static const char esp_mail_str_27[] PROGMEM = "$";
 static const char esp_mail_str_28[] PROGMEM = "Content-Type: multipart/parallel; boundary=\"";
@@ -1412,12 +1438,12 @@ static const char esp_mail_str_42[] PROGMEM = "the provided SASL authentication 
 static const char esp_mail_str_43[] PROGMEM = "authentication failed";
 static const char esp_mail_str_44[] PROGMEM = "mydomain.com";
 static const char esp_mail_str_45[] PROGMEM = "AUTH PLAIN";
-static const char esp_mail_str_46[] PROGMEM = "Return-Path: ";
+static const char esp_mail_str_46[] PROGMEM = "Return-Path:";
 static const char esp_mail_str_47[] PROGMEM = "login password is not valid";
 static const char esp_mail_str_48[] PROGMEM = "send header failed";
 static const char esp_mail_str_49[] PROGMEM = "send body failed";
 static const char esp_mail_str_50[] PROGMEM = "Connecting to IMAP server...";
-static const char esp_mail_str_51[] PROGMEM = ".HEADER.FIELDS (SUBJECT FROM SENDER RETURN-PATH TO REPLY-TO DATE CC Message-ID COMMENT KEYWORD content-type Content-transfer-encoding)]";
+static const char esp_mail_str_51[] PROGMEM = "* ";
 static const char esp_mail_str_52[] PROGMEM = "failed";
 static const char esp_mail_str_53[] PROGMEM = "Error, ";
 static const char esp_mail_str_54[] PROGMEM = "IMAP server connected";
@@ -1439,7 +1465,7 @@ static const char esp_mail_str_69[] PROGMEM = "Found ";
 static const char esp_mail_str_70[] PROGMEM = " messages";
 static const char esp_mail_str_71[] PROGMEM = "Show ";
 static const char esp_mail_str_72[] PROGMEM = "No message found for search criteria";
-static const char esp_mail_str_73[] PROGMEM = "Search criteria does not set, fetch the recent message";
+static const char esp_mail_str_73[] PROGMEM = "\nNo search criteria provided, then fetching the latest message";
 static const char esp_mail_str_74[] PROGMEM = "Fetching message ";
 static const char esp_mail_str_75[] PROGMEM = ", UID: ";
 static const char esp_mail_str_76[] PROGMEM = ", Number: ";
@@ -1465,20 +1491,20 @@ static const char esp_mail_str_95[] PROGMEM = ".txt";
 static const char esp_mail_str_96[] PROGMEM = " folder...";
 static const char esp_mail_str_97[] PROGMEM = ";";
 static const char esp_mail_str_98[] PROGMEM = "Content-Disposition: attachment\r\n";
-static const char esp_mail_str_99[] PROGMEM = "Date: ";
-static const char esp_mail_str_100[] PROGMEM = "Messsage UID: ";
-static const char esp_mail_str_101[] PROGMEM = "Messsage ID: ";
-static const char esp_mail_str_102[] PROGMEM = "Accept Language: ";
-static const char esp_mail_str_103[] PROGMEM = "Content Language: ";
+static const char esp_mail_str_99[] PROGMEM = "Date:";
+static const char esp_mail_str_100[] PROGMEM = "UID:";
+static const char esp_mail_str_101[] PROGMEM = "Message-ID:";
+static const char esp_mail_str_102[] PROGMEM = "Accept-Language: ";
+static const char esp_mail_str_103[] PROGMEM = "Content-Language: ";
 static const char esp_mail_str_104[] PROGMEM = " BODY=BINARYMIME";
-static const char esp_mail_str_105[] PROGMEM = "From Charset: ";
+static const char esp_mail_str_105[] PROGMEM = "> C: get flags...";
 static const char esp_mail_str_106[] PROGMEM = "BDAT ";
-static const char esp_mail_str_107[] PROGMEM = "To Charset: ";
+static const char esp_mail_str_107[] PROGMEM = "References:";
 static const char esp_mail_str_108[] PROGMEM = "CC: ";
-static const char esp_mail_str_109[] PROGMEM = "CC Charset: ";
+static const char esp_mail_str_109[] PROGMEM = "In-Reply-To:";
 static const char esp_mail_str_110[] PROGMEM = "delsp=\"no\"";
-static const char esp_mail_str_111[] PROGMEM = "Subject Charset: ";
-static const char esp_mail_str_112[] PROGMEM = "Message Charset: ";
+static const char esp_mail_str_111[] PROGMEM = "> C: UID is ";
+static const char esp_mail_str_112[] PROGMEM = " FETCH (FLAGS (";
 static const char esp_mail_str_113[] PROGMEM = "Attachment: ";
 static const char esp_mail_str_114[] PROGMEM = "File Index: ";
 static const char esp_mail_str_115[] PROGMEM = "Filename: ";
@@ -1500,7 +1526,7 @@ static const char esp_mail_str_130[] PROGMEM = "$ LOGIN ";
 static const char esp_mail_str_131[] PROGMEM = " ";
 static const char esp_mail_str_132[] PROGMEM = "fail to set up the SSL/TLS structure";
 static const char esp_mail_str_133[] PROGMEM = "$ LIST \"\" *";
-static const char esp_mail_str_134[] PROGMEM = "Comment: ";
+static const char esp_mail_str_134[] PROGMEM = "Comments:";
 static const char esp_mail_str_135[] PROGMEM = "$ EXAMINE \"";
 static const char esp_mail_str_136[] PROGMEM = "\"";
 static const char esp_mail_str_137[] PROGMEM = "UID ";
@@ -1510,19 +1536,19 @@ static const char esp_mail_str_140[] PROGMEM = "UID";
 static const char esp_mail_str_141[] PROGMEM = "SEARCH";
 static const char esp_mail_str_142[] PROGMEM = "$ UID FETCH ";
 static const char esp_mail_str_143[] PROGMEM = "$ FETCH ";
-static const char esp_mail_str_144[] PROGMEM = "HEADER.FIELDS (SUBJECT FROM TO DATE CC Message-ID Accept-Language content-type Content-transfer-encoding Content-Language)";
-static const char esp_mail_str_145[] PROGMEM = "Keyword: ";
+static const char esp_mail_str_144[] PROGMEM = "HEADER.FIELDS (SUBJECT FROM SENDER RETURN-PATH TO REPLY-TO IN-REPLY-TO REFERENCES DATE CC Message-ID COMMENTS KEYWORDS content-type Content-transfer-encoding Content-Language Accept-Language)";
+static const char esp_mail_str_145[] PROGMEM = "Keywords:";
 static const char esp_mail_str_146[] PROGMEM = "$ LOGOUT";
 static const char esp_mail_str_147[] PROGMEM = " BODY";
 static const char esp_mail_str_148[] PROGMEM = ".MIME]";
 static const char esp_mail_str_149[] PROGMEM = "Bcc: ";
-static const char esp_mail_str_150[] PROGMEM = "Sender: ";
+static const char esp_mail_str_150[] PROGMEM = "Sender:";
 static const char esp_mail_str_151[] PROGMEM = "no mailbox opened";
 static const char esp_mail_str_152[] PROGMEM = ".";
 static const char esp_mail_str_153[] PROGMEM = "No mailbox opened";
 static const char esp_mail_str_154[] PROGMEM = "Remove FLAG";
 static const char esp_mail_str_155[] PROGMEM = "Add FLAG";
-static const char esp_mail_str_156[] PROGMEM = "]";
+static const char esp_mail_str_156[] PROGMEM = "Get UID...";
 static const char esp_mail_str_157[] PROGMEM = "Set FLAG";
 static const char esp_mail_str_158[] PROGMEM = "file does not exist or can't access";
 static const char esp_mail_str_159[] PROGMEM = "msg.html";
@@ -1537,10 +1563,10 @@ static const char esp_mail_str_168[] PROGMEM = "charset=\"";
 static const char esp_mail_str_169[] PROGMEM = "charset=";
 static const char esp_mail_str_170[] PROGMEM = "name=\"";
 static const char esp_mail_str_171[] PROGMEM = "name=";
-static const char esp_mail_str_172[] PROGMEM = "content-transfer-encoding: ";
+static const char esp_mail_str_172[] PROGMEM = "content-transfer-encoding:";
 static const char esp_mail_str_173[] PROGMEM = " LAST";
-static const char esp_mail_str_174[] PROGMEM = "content-description: ";
-static const char esp_mail_str_175[] PROGMEM = "content-disposition: ";
+static const char esp_mail_str_174[] PROGMEM = "content-description:";
+static const char esp_mail_str_175[] PROGMEM = "content-disposition:";
 static const char esp_mail_str_176[] PROGMEM = "filename=\"";
 static const char esp_mail_str_177[] PROGMEM = "filename=";
 static const char esp_mail_str_178[] PROGMEM = "size=";
@@ -1549,14 +1575,14 @@ static const char esp_mail_str_180[] PROGMEM = "creation-date=";
 static const char esp_mail_str_181[] PROGMEM = "modification-date=\"";
 static const char esp_mail_str_182[] PROGMEM = "modification-date=";
 static const char esp_mail_str_183[] PROGMEM = "*";
-static const char esp_mail_str_184[] PROGMEM = "Reply-To: ";
+static const char esp_mail_str_184[] PROGMEM = "Reply-To:";
 static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";
 static const char esp_mail_str_187[] PROGMEM = "Message fetch cmpleted";
 static const char esp_mail_str_188[] PROGMEM = "fail to close the mailbox";
-static const char esp_mail_str_189[] PROGMEM = "message-id: ";
-static const char esp_mail_str_190[] PROGMEM = "accept-language: ";
-static const char esp_mail_str_191[] PROGMEM = "content-language: ";
+static const char esp_mail_str_189[] PROGMEM = "> C: get UID...";
+static const char esp_mail_str_190[] PROGMEM = "accept-language:";
+static const char esp_mail_str_191[] PROGMEM = "content-language:";
 static const char esp_mail_str_192[] PROGMEM = ")";
 static const char esp_mail_str_193[] PROGMEM = "{";
 static const char esp_mail_str_194[] PROGMEM = "}";
@@ -1638,13 +1664,13 @@ static const char esp_mail_str_269[] PROGMEM = "header.fields (content-type Cont
 static const char esp_mail_str_270[] PROGMEM = "format=\"flowed\"";
 static const char esp_mail_str_271[] PROGMEM = "> C: send inline data";
 static const char esp_mail_str_272[] PROGMEM = "Content-transfer-encoding: ";
-static const char esp_mail_str_273[] PROGMEM = "Date: ";
-static const char esp_mail_str_274[] PROGMEM = "Message-ID:";
+static const char esp_mail_str_273[] PROGMEM = " (FLAGS)";
+static const char esp_mail_str_274[] PROGMEM = "UID is ";
 static const char esp_mail_str_275[] PROGMEM = "format=flowed";
-static const char esp_mail_str_276[] PROGMEM = "CC: ";
+static const char esp_mail_str_276[] PROGMEM = "Number:";
 static const char esp_mail_str_277[] PROGMEM = "boundary=\"";
 static const char esp_mail_str_278[] PROGMEM = "quoted-printable";
-static const char esp_mail_str_279[] PROGMEM = "Subject:";
+static const char esp_mail_str_279[] PROGMEM = "Get Flags...";
 static const char esp_mail_str_280[] PROGMEM = "> C: no content";
 static const char esp_mail_str_281[] PROGMEM = "fail to open the mailbox";
 static const char esp_mail_str_282[] PROGMEM = "file I/O error";
@@ -1708,10 +1734,8 @@ static const char esp_mail_str_339[] PROGMEM = "> C: polling established";
 static const char esp_mail_str_340[] PROGMEM = "Mailbox listening stopped";
 static const char esp_mail_str_341[] PROGMEM = "> C: mailbox listening stopped";
 static const char esp_mail_str_342[] PROGMEM = " FETCH (UID ";
-static const char esp_mail_str_343[] PROGMEM = "> C: Get UID...";
-static const char esp_mail_str_344[] PROGMEM = "Get UID...";
-static const char esp_mail_str_345[] PROGMEM = "> C: UID is ";
-static const char esp_mail_str_346[] PROGMEM = "UID is ";
+
+
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -2176,8 +2200,7 @@ public:
   struct esp_mail_smtp_msg_response_t response;
 
   /* The priority of the message */
-  esp_mail_smtp_priority priority =
-      esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
+  esp_mail_smtp_priority priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
   /* The enable options */
   struct esp_mail_smtp_enable_option_t enable;
@@ -2189,16 +2212,20 @@ public:
   const char *messageID = "";
 
   /* The keywords or phrases, separated by commas */
-  const char *keyword = "";
+  const char *keywords = "";
 
-  /* The comment about message */
-  const char *comment = "";
+  /* The comments about message */
+  const char *comments = "";
 
   /* The date of message */
   const char *date = "";
 
-  /* The return recipient of the message */
-  const char *return_path = "";
+  /* The field that contains the parent's message ID of the message to which this one is a reply */
+  const char *in_reply_to = "";
+
+  /* The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply */
+  const char *references = "";
+
 
 private:
   friend class ESP_Mail_Client;
@@ -2233,7 +2260,7 @@ private:
 };
 
 typedef void (*imapStatusCallback)(IMAP_Status);
-typedef void (*imapResponseCallback)(const char*);
+typedef void (*imapResponseCallback)(const char *);
 typedef void (*smtpStatusCallback)(SMTP_Status);
 
 class ESP_Mail_Client
@@ -2461,7 +2488,7 @@ private:
   esp_mail_imap_response_status imapResponseStatus(IMAPSession *imap, char *response);
   void saveHeader(IMAPSession *imap);
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
-  void decodeHeader(std::string &headerField, std::string &headerEnc);
+  void decodeHeader(std::string &headerField);
   bool handleAttachment(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, File &file, std::string &filePath, bool &downloadRequest, int &octetCount, int &octetLength, int &oCount, int &reportState, int &downloadCount);
   int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
   void decodeTIS620_UTF8(char *out, const char *in, size_t len);
@@ -2477,6 +2504,7 @@ private:
   void handleCapability(IMAPSession *imap, char *buf, int &chunkIdx);
   bool handleIdle(IMAPSession *imap);
   void handleGetUID(IMAPSession *imap, char *buf);
+  void handleGetFlags(IMAPSession *imap, char *buf);
   void handleExamine(IMAPSession *imap, char *buf);
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
   bool mSetFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
@@ -2576,6 +2604,15 @@ public:
   */
   int getUID(int msgNum);
 
+  /** Get message flags in selected or opened mailbox.
+   *
+   * @param msgNum The message number or order in the total message numbers.
+   * @return Message flags in selected or opened mailbox.
+   * 
+   * @note Returns empty string when fail to get flags.
+  */
+  const char *getFlags(int msgNum);
+
   /** Send the custom IMAP command and get the result via callback.
    *
    * @param cmd The command string.
@@ -2604,12 +2641,12 @@ public:
   */
   bool deleteMessages(MessageList *toDelete, bool expunge = false);
 
-  /** Listen to the selected or open mailbox for updates.
+  /** Listen for the selected or open mailbox for updates.
    * @return The boolean value which indicates the success of operation.
   */
   bool listen() { return mListen(false); };
 
-  /** Stop listen to the mailbox for updates.
+  /** Stop listen for the mailbox for updates.
    * @return The boolean value which indicates the success of operation.
   */
   bool stopListen() { return mStopListen(false); };
@@ -2694,6 +2731,7 @@ private:
   std::string _currentFolder;
   bool _mailboxOpened = false;
   std::string _nextUID;
+  std::string _flags_tmp;
 
   struct esp_mail_imap_read_config_t *_config = nullptr;
 
@@ -2706,7 +2744,7 @@ private:
   imapStatusCallback _readCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
 
-  std::vector<uint32_t> _msgNum = std::vector<uint32_t>();
+  std::vector<uint32_t> _msgUID = std::vector<uint32_t>();
   FoldersCollection _folders;
   SelectedFolderInfo _mbif;
   int _uid_tmp = 0;

@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.5.2
+# Mail Client Arduino Library v1.5.3
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -149,7 +149,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21060).
 
 ```
-> C: ESP Mail Client v1.5.1, Fw v1.4.5+21060
+> C: ESP Mail Client v1.5.3, Fw v1.4.5+21060
 ```
 
 ## Library Instalation

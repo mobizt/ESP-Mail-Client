@@ -31,11 +31,11 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "################"
-#define WIFI_PASSWORD "################"
+#define WIFI_SSID "<ssid>"
+#define WIFI_PASSWORD "<password>"
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
-#define IMAP_HOST "################"
+#define IMAP_HOST "<host>"
 
 /** The imap port e.g. 
  * 143  or esp_mail_imap_port_143
@@ -44,8 +44,8 @@
 #define IMAP_PORT 993
 
 /* The log in credentials */
-#define AUTHOR_EMAIL "################"
-#define AUTHOR_PASSWORD "################"
+#define AUTHOR_EMAIL "<email>"
+#define AUTHOR_PASSWORD "<password>"
 
 /* Callback function to get the Email reading status */
 void imapCallback(IMAP_Status status);
@@ -54,16 +54,13 @@ void imapCallback(IMAP_Status status);
 void printAllMailboxesInfo(IMAPSession &imap);
 
 /* Print the selected folder info */
-void printSelectedMailboxInfo(IMAPSession &imap);
+void printSelectedMailboxInfo(SelectedFolderInfo sFolder);
 
 /* Print all messages from the message list */
-void printMessages(IMAPSession &imap);
-
-/* Print all rfc822 messages included in the message */
-void printRFC822Messages(IMAP_MSG_Item &msg);
+void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly);
 
 /* Print all attachments info from the message */
-void printAttacements(IMAP_MSG_Item &msg);
+void printAttacements(std::vector<IMAP_Attach_Item> &atts);
 
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
@@ -72,7 +69,6 @@ unsigned long readMillis = 0;
 int totalMessage = 0;
 int msgNum = 0;
 int sign = -1;
-
 
 /* Declare the session config data */
 ESP_Mail_Session session;
@@ -182,7 +178,7 @@ void setup()
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    //config.enable.header_case_sesitive = true;
+    //config.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
@@ -211,7 +207,7 @@ void setup()
         return;
 
     /*  {Optional} */
-    printSelectedMailboxInfo(imap);
+    printSelectedMailboxInfo(imap.selectedFolder());
 }
 
 void loop()
@@ -230,7 +226,6 @@ void loop()
             msgNum = totalMessage;
             sign = -1;
         }
-           
 
         /* Get message UID from message number */
         String uid = String(imap.getUID(msgNum));
@@ -244,6 +239,10 @@ void loop()
         /** Read or search the Email and keep the TCP session to open
          * The second parameter is for close the session.
         */
+
+        //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
+        //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
+        //to message, see the Set_Flags.ino example.
         MailClient.readMail(&imap, false);
 
         /* Clear all stored data in IMAPSession object */
@@ -263,7 +262,9 @@ void imapCallback(IMAP_Status status)
     if (status.success())
     {
         /* Print the result */
-        printMessages(imap);
+        /* Get the message list from the message list data */
+        IMAP_MSG_List msgList = imap.data();
+        printMessages(msgList.msgItems, imap.headerOnly());
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
@@ -287,13 +288,8 @@ void printAllMailboxesInfo(IMAPSession &imap)
     }
 }
 
-void printSelectedMailboxInfo(IMAPSession &imap)
+void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
-    /* Declare the selected folder info class to get the info of selected mailbox folder */
-    SelectedFolderInfo sFolder = imap.selectedFolder();
-
-    msgNum = totalMessage = sFolder.msgCount();
-
     /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
@@ -301,42 +297,12 @@ void printSelectedMailboxInfo(IMAPSession &imap)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
 }
 
-void printRFC822Messages(IMAP_MSG_Item &msg)
+void printAttacements(std::vector<IMAP_Attach_Item> &atts)
 {
-    ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
-    for (size_t j = 0; j < msg.rfc822.size(); j++)
+    ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", atts.size());
+    for (size_t j = 0; j < atts.size(); j++)
     {
-        IMAP_MSG_Item rfc822 = msg.rfc822[j];
-        ESP_MAIL_PRINTF("%d. \n", j + 1);
-        ESP_MAIL_PRINTF("Messsage ID: %s\n", rfc822.messageID);
-        ESP_MAIL_PRINTF("From: %s\n", rfc822.from);
-        ESP_MAIL_PRINTF("Sender: %s\n", rfc822.sender);
-        ESP_MAIL_PRINTF("To: %s\n", rfc822.to);
-        ESP_MAIL_PRINTF("CC: %s\n", rfc822.cc);
-        ESP_MAIL_PRINTF("Subject: %s\n", rfc822.subject);
-        ESP_MAIL_PRINTF("Date: %s\n", rfc822.date);
-        ESP_MAIL_PRINTF("Reply-To: %s\n", rfc822.reply_to);
-        ESP_MAIL_PRINTF("Return-Path: %s\n", rfc822.return_path);
-        ESP_MAIL_PRINTF("Comment: %s\n", rfc822.comment);
-        ESP_MAIL_PRINTF("Keyword: %s\n", rfc822.keyword);
-        ESP_MAIL_PRINTF("Text Message: %s\n", rfc822.text.content);
-        ESP_MAIL_PRINTF("Text Message Charset: %s\n", rfc822.text.charSet);
-        ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", rfc822.text.transfer_encoding);
-        ESP_MAIL_PRINTF("HTML Message: %s\n", rfc822.html.content);
-        ESP_MAIL_PRINTF("HTML Message Charset: %s\n", rfc822.html.charSet);
-        ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", rfc822.html.transfer_encoding);
-
-        if (rfc822.attachments.size() > 0)
-            printAttacements(rfc822);
-    }
-}
-
-void printAttacements(IMAP_MSG_Item &msg)
-{
-    ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", msg.attachments.size());
-    for (size_t j = 0; j < msg.attachments.size(); j++)
-    {
-        IMAP_Attach_Item att = msg.attachments[j];
+        IMAP_Attach_Item att = atts[j];
         /** att.type can be
          * esp_mail_att_type_none or 0
          * esp_mail_att_type_attachment or 1
@@ -347,47 +313,74 @@ void printAttacements(IMAP_MSG_Item &msg)
     Serial.println();
 }
 
-void printMessages(IMAPSession &imap)
+void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
-    /* Get the message list from the message list data */
-    IMAP_MSG_List msgList = imap.data();
 
-    for (size_t i = 0; i < msgList.msgItems.size(); i++)
+    for (size_t i = 0; i < msgItems.size(); i++)
     {
-        /* Iterate to get each message data through the message item data */
-        IMAP_MSG_Item msg = msgList.msgItems[i];
 
-        Serial.println("################################");
-        ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
-        ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
-        ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
-        ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
-        ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
-        ESP_MAIL_PRINTF("From: %s\n", msg.from);
-        ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
-        ESP_MAIL_PRINTF("To: %s\n", msg.to);
-        ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
-        ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
-        ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
-        ESP_MAIL_PRINTF("Date: %s\n", msg.date);
-        ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
-        ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
+        /* Iterate to get each message data through the message item data */
+        IMAP_MSG_Item msg = msgItems[i];
+
+        Serial.println("****************************");
+        ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
+        ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
+        ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
+
+        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
+
+        ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
+
+        if (strlen(msg.acceptLang))
+            ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
+        if (strlen(msg.contentLang))
+            ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
+        if (strlen(msg.from))
+            ESP_MAIL_PRINTF("From: %s\n", msg.from);
+        if (strlen(msg.sender))
+            ESP_MAIL_PRINTF("Sender: %s\n", msg.sender);
+        if (strlen(msg.to))
+            ESP_MAIL_PRINTF("To: %s\n", msg.to);
+        if (strlen(msg.cc))
+            ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
+        if (strlen(msg.date))
+            ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+        if (strlen(msg.subject))
+            ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
+        if (strlen(msg.reply_to))
+            ESP_MAIL_PRINTF("Reply-To: %s\n", msg.reply_to);
+        if (strlen(msg.return_path))
+            ESP_MAIL_PRINTF("Return-Path: %s\n", msg.return_path);
+        if (strlen(msg.in_reply_to))
+            ESP_MAIL_PRINTF("In-Reply-To: %s\n", msg.in_reply_to);
+        if (strlen(msg.references))
+            ESP_MAIL_PRINTF("References: %s\n", msg.references);
+        if (strlen(msg.comments))
+            ESP_MAIL_PRINTF("Comments: %s\n", msg.comments);
+        if (strlen(msg.keywords))
+            ESP_MAIL_PRINTF("Keywords: %s\n", msg.keywords);
 
         /* If the result contains the message info (Fetch mode) */
-        if (!imap.headerOnly())
+        if (!headerOnly)
         {
-            ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
-            ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
-            ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-            ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
-            ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
-            ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
-
-            if (msg.attachments.size() > 0)
-                printAttacements(msg);
+            if (strlen(msg.text.content))
+                ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
+            if (strlen(msg.text.charSet))
+                ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
+            if (strlen(msg.text.transfer_encoding))
+                ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
+            if (strlen(msg.html.content))
+                ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
+            if (strlen(msg.html.charSet))
+                ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
+            if (strlen(msg.html.transfer_encoding))
+                ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
 
             if (msg.rfc822.size() > 0)
-                printRFC822Messages(msg);
+            {
+                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                printMessages(msg.rfc822, headerOnly);
+            }
         }
 
         Serial.println();

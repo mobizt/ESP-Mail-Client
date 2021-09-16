@@ -79,7 +79,7 @@ static bool eth_connected = false;
  * and use the app password as password with your yahoo mail account to login.
  * The google app password signin is also available https://support.google.com/mail/answer/185833?hl=en
 */
-#define SMTP_HOST "################"
+#define SMTP_HOST "<host>"
 
 /** The smtp port e.g. 
  * 25  or esp_mail_smtp_port_25
@@ -89,8 +89,8 @@ static bool eth_connected = false;
 #define SMTP_PORT 25
 
 /* The sign in credentials */
-#define AUTHOR_EMAIL "################"
-#define AUTHOR_PASSWORD "################"
+#define AUTHOR_EMAIL "<email>"
+#define AUTHOR_PASSWORD "<password>"
 
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
@@ -306,5 +306,13 @@ void smtpCallback(SMTP_Status status)
       ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
     }
     Serial.println("----------------\n");
+
+    //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
+    //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
+
+    //Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
+    //a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
+
+    //smtp.sendingResult.clear();
   }
 }

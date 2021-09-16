@@ -17,7 +17,7 @@ param **`closeSession`** The option to Close the SMTP session after sent.
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 ```
 
@@ -33,7 +33,7 @@ param **`closeSession`** The option to close the IMAP session after fetching or 
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool readMail(IMAPSession *imap, bool closeSession = true);
 ```
 
@@ -53,7 +53,7 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool setFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
 ```
 
@@ -73,7 +73,7 @@ param **`closeSession`** The option to close the IMAP session after add flag.
 
 return **`boolean`** The boolean value indicates the success of operation.
  
-```C++
+```cpp
 bool addFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
 ```
 
@@ -94,7 +94,7 @@ param **`closeSession`** The option to close the IMAP session after remove flag.
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool removeFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
 ```
 
@@ -115,7 +115,7 @@ param **`ss`** The SPI Chip/Slave Select pin (ESP32 and ESP8266).
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
 ```
 
@@ -134,7 +134,7 @@ param **`format_if_mount_failed`** Format SD_MMC card if mount failed.
 
 return **`Boolean`** type status indicates the success of the operation.
 
-```C++
+```cpp
 bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false);
 ```
 
@@ -145,7 +145,7 @@ bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool 
 
 return **`int`** Free memory amount in byte.
 
-```C++
+```cpp
 int getFreeHeap();
 ```
 
@@ -157,7 +157,7 @@ int getFreeHeap();
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool sdBegin(void);
 ```
 
@@ -185,7 +185,7 @@ param **`config`** The pointer to IMAP_Config structured data that keeps the ope
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 ```
 
@@ -194,7 +194,7 @@ bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool closeSession();
 ```
 
@@ -216,7 +216,7 @@ level = 2, full debug 1
 
 level = 333, full debug 2
 
-```C++
+```cpp
 void debug(int level);
 ```
 
@@ -231,7 +231,7 @@ FolderInfo structured data.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool getFolders(FoldersCollection &folders);
 ```
 
@@ -248,7 +248,7 @@ to modify the Flags using the setFlag, addFlag and removeFlag functions.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool selectFolder(const char *folderName, bool readOnly = true);
 ```
 
@@ -265,7 +265,7 @@ to modify the flags using the setFlag, addFlag and removeFlag functions.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool openFolder(const char *folderName, bool readOnly = true);
 ```
 
@@ -279,7 +279,7 @@ param **`folderName`** The mailbox folder name.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool closeFolder(const char *folderName);
 ```
 
@@ -294,7 +294,7 @@ param **`folderName`** The name of folder to create.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool createFolder(const char *folderName);
 ```
 
@@ -309,7 +309,7 @@ param **`folderName`** The name of folder to delete..
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool deleteFolder(const char *folderName);
 ```
 
@@ -326,10 +326,27 @@ return **`boolean`** The boolean value which indicates the success of operation.
 
 Returns 0 when fail to get UID.
 
-```C++
+```cpp
 int getUID(int msgNum);
 ```
 
+
+
+
+
+
+
+#### Get message flags in selected or opened mailbox. 
+
+param **`msgNum`** The message number or order in the total message numbers.
+
+return **`string`** Message flags in selected or opened mailbox.
+
+empty string when fail to get flags.
+
+```cpp
+const char *getFlags(int msgNum);
+```
 
 
 
@@ -346,7 +363,7 @@ return **`boolean`** The boolean value which indicates the success of operation.
 
 imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
 
-```C++
+```cpp
 bool sendCustomCommand(const char *cmd, imapResponseCallback callback);
 ```
 
@@ -365,7 +382,7 @@ param **`dest`** The destination folder that the messages to copy to.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool copyMessages(MessageList *toCopy, const char *dest);
 ```
 
@@ -381,7 +398,7 @@ param **`expunge`** The boolean option to expunge all messages.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool deleteMessages(MessageList *toDelete, bool expunge = false);
 ```
 
@@ -391,11 +408,11 @@ bool deleteMessages(MessageList *toDelete, bool expunge = false);
 
 
 
-#### Listen to the selected or open mailbox for updates.
+#### Listen for the selected or open mailbox for updates.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool listen();
 ```
 
@@ -406,11 +423,11 @@ bool listen();
 
 
 
-#### Stop listen to the mailbox for updates.
+#### Stop listen for the mailbox for updates.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
-```C++
+```cpp
 bool stopListen();
 ```
 
@@ -424,7 +441,7 @@ bool stopListen();
 
 return **`boolean`** The boolean value which indicates the changes status of mailbox.
 
-```C++
+```cpp
 bool folderChanged();
 ```
 
@@ -437,7 +454,7 @@ bool folderChanged();
 
 param **`imapCallback`** The function that accepts the imapStatusCallback as parameter.
 
-```C++
+```cpp
 void callback(imapStatusCallback imapCallback);
 ```
 
@@ -447,7 +464,7 @@ void callback(imapStatusCallback imapCallback);
 
 #### Determine if no message body contained in the search result and only the message header is available.
 
-```C++
+```cpp
 bool headerOnly();
 ```
 
@@ -460,7 +477,7 @@ bool headerOnly();
 return **`The IMAP_MSG_List structured`** data which contains the text and html contents, 
 attachments, inline images, embedded rfc822 messages details for each message.
 
-```C++
+```cpp
 IMAP_MSG_List data();
 ```
 
@@ -473,7 +490,7 @@ IMAP_MSG_List data();
 return **`The SelectedFolderInfo class`** instance which contains the info about flags, total messages, next UID,  
 earch count and the available messages count.
 
-```C++
+```cpp
 SelectedFolderInfo selectedFolder();
 ```
 
@@ -485,7 +502,7 @@ SelectedFolderInfo selectedFolder();
 
 return **`String`** The string of error details.
 
-```C++
+```cpp
 String errorReason();
 ```
 
@@ -495,7 +512,7 @@ String errorReason();
 
 #### Clear all the cache data stored in the IMAP session object.
 
-```C++
+```cpp
 void empty();
 ```
 
@@ -522,7 +539,7 @@ param **`session`** The pointer to ESP_Mail_Session structured data that keeps t
 
 return **`boolean`** The boolean value indicates the success of operation.
 
-```C++
+```cpp
 bool connect(ESP_Mail_Session *session);
 ```
 
@@ -532,7 +549,7 @@ bool connect(ESP_Mail_Session *session);
 
 ### Close the SMTP session.
 
-```C++
+```cpp
 bool closeSession();
 ```
 
@@ -552,7 +569,7 @@ level = 2, full debug 1
 
 level = 333, full debug 2
 
-```C++
+```cpp
 void debug(int level);
 ```
 
@@ -564,7 +581,7 @@ void debug(int level);
 
 return **`String`** The string of error details.
 
-```C++
+```cpp
 String errorReason();
 ```
 
@@ -576,7 +593,7 @@ String errorReason();
 
 param **`smtpCallback`** The callback function that accept the smtpStatusCallback param.
 
-```C++
+```cpp
 void callback(smtpStatusCallback smtpCallback);
 ```
 
@@ -601,7 +618,7 @@ param **`att`** The SMTP_Attachment class that stores the info about attachment
 
 This function was used for clear the internal data of attachment item to be ready for reuse.
 
-```C++
+```cpp
 void resetAttachItem(SMTP_Attachment &att);
 ```
 
@@ -609,7 +626,7 @@ void resetAttachItem(SMTP_Attachment &att);
 
 #### To clear all data in SMTP_Message class included headers, bodies and attachments
 
-```C++
+```cpp
 void clear();
 ```
 
@@ -618,7 +635,7 @@ void clear();
 
 #### To clear all the inline images in SMTP_Message class.
 
-```C++
+```cpp
 void clearInlineimages();
 ```
 
@@ -628,7 +645,7 @@ void clearInlineimages();
 
 #### To clear all the attachments.
 
-```C++
+```cpp
 void clearAttachments();
 ```
 
@@ -638,7 +655,7 @@ void clearAttachments();
 
 #### To clear all rfc822 message attachment.
 
-```C++
+```cpp
 void clearRFC822Messages();
 ```
 
@@ -648,7 +665,7 @@ void clearRFC822Messages();
 
 #### To clear the primary recipient mailboxes.
 
-```C++
+```cpp
 void clearRecipients();
 ```
 
@@ -658,7 +675,7 @@ void clearRecipients();
 
 #### To clear the Carbon-copy recipient mailboxes.
 
-```C++
+```cpp
 void clearCc();
 ```
 
@@ -668,14 +685,14 @@ void clearCc();
 
 #### To clear the Blind-carbon-copy recipient mailboxes.
 
-```C++
+```cpp
 void clearBcc();
 ```
 
 
 #### To clear the custom message headers.
 
-```C++
+```cpp
 void clearHeader();
 ```
 
@@ -686,7 +703,7 @@ void clearHeader();
 
 param **`att`** The SMTP_Attachment data item
 
-```C++
+```cpp
 void addAttachment(SMTP_Attachment &att);
 ```
 
@@ -698,7 +715,7 @@ void addAttachment(SMTP_Attachment &att);
 
 param **`att`** The SMTP_Attachment data item
 
-```C++
+```cpp
 void addParallelAttachment(SMTP_Attachment &att);
 ```
 
@@ -710,7 +727,7 @@ void addParallelAttachment(SMTP_Attachment &att);
 
 param **`att`** The SMTP_Attachment data item
 
-```C++
+```cpp
 void addInlineImage(SMTP_Attachment &att);
 ```
 
@@ -722,7 +739,7 @@ void addInlineImage(SMTP_Attachment &att);
 
 param **`msg`** The RFC822_Message class object
 
-```C++
+```cpp
 void addMessage(SMTP_Message &msg);
 ```
 
@@ -736,7 +753,7 @@ param **`name`** The name of primary recipient
 
 param **`email`** The Email address of primary recipient
 
-```C++
+```cpp
 void addRecipient(const char *name, const char *email);
 ```
 
@@ -748,7 +765,7 @@ void addRecipient(const char *name, const char *email);
 
 param **`email`** The Email address of secondary recipient
 
-```C++
+```cpp
 void addCc(const char *email);
 ```
 
@@ -760,7 +777,7 @@ void addCc(const char *email);
 
 param **`email`** The Email address of the tertiary recipient
 
-```C++
+```cpp
 void addBcc(const char *email);
 ```
 
@@ -772,7 +789,7 @@ void addBcc(const char *email);
 
 param **`hdr`** The header name and value
 
-```C++
+```cpp
 void addHeader(const char *hdr);
 ```
 
@@ -787,21 +804,21 @@ This property has the sub properties
 
 ###### [const char*] email - The sender Email address.
 
-```C++
+```cpp
 esp_mail_email_info_t sender;
 ```
 
 
 ##### [properties] The topic of message
 
-```C++
+```cpp
 const char *subject;
 ```
 
 
 ##### [properties] The message type
 
-```C++
+```cpp
 byte type;
 ```
 
@@ -826,7 +843,7 @@ This property has the sub properties
 
 ###### [boolean] flowed - The option to send the PLAIN text with wrapping.
 
-```C++
+```cpp
 esp_mail_plain_body_t text;
 ```
 
@@ -847,7 +864,7 @@ This propery has the sub properties
 
 ###### [const char*] transfer_encoding - The option to encode the content for data transfer.
 
-```C++
+```cpp
 esp_mail_html_body_t html;
 ```
 
@@ -870,7 +887,7 @@ esp_mail_smtp_notify_failure = 2, and
 
 esp_mail_smtp_notify_delay = 4 
 
-```C++
+```cpp
 esp_mail_smtp_msg_response_t response;
 ```
 
@@ -885,7 +902,7 @@ esp_mail_smtp_priority_normal = 3,
 
 esp_mail_smtp_priority_low = 5
 
-```C++
+```cpp
 esp_mail_smtp_priority priority;
 ```
 
@@ -896,7 +913,7 @@ This propery has the sub property
 
 ###### [boolean] chunking - enable chunk data sending for large message.
 
-```C++
+```cpp
 esp_mail_smtp_enable_option_t enable;
 ```
 
@@ -909,47 +926,59 @@ This property has the sub properties
 
 ###### [const char*] email - The message author Email address.
 
-```C++
+```cpp
 esp_mail_email_info_t from;
 ```
 
 
 ##### [properties] The message identifier
 
-```C++
-const char *messageID;
+```cpp
+const char *ID;
 ```
 
 ##### [properties] The keywords or phrases, separated by commas
 
-```C++
-const char *keyword;
+```cpp
+const char *keywords;
 ```
 
 
-##### [properties] The comment about message
+##### [properties] The comments about message
 
-```C++
-const char *comment;
+```cpp
+const char *comments;
 ```
 
 
 ##### [properties] The date of message
 
-```C++
+```cpp
 const char *date;
 ```
 
 
 ##### [properties] The return recipient of the message
 
-```C++
+```cpp
 const char *return_path;
 ```
 
 
 
+##### [properties] The field that contains the parent's message ID of the message to which this one is a reply
 
+```cpp
+const char *in_reply_to;
+```
+
+
+
+##### [properties] The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply
+
+```cpp
+const char *references;
+```
 
 
 ## IMAP_Status class functions
@@ -966,7 +995,7 @@ This class is used as the callback parameter for retrieving the status while rea
 
 return **`string`** The info for each process
 
-```C++
+```cpp
 const char *info();
 ```
 
@@ -977,7 +1006,7 @@ const char *info();
 
 return **`boolean`** The bool value indicates that all reading processes are finished
 
-```C++
+```cpp
 bool success();
 ```
 
@@ -987,7 +1016,7 @@ bool success();
 
 #### To clear all data store in this class.
 
-```C++
+```cpp
 void empty();
 ```
 
@@ -1010,7 +1039,7 @@ This class is used as the callback parameter for retrieving the status while sen
 
 return **`string`** The info for each process
 
-```C++
+```cpp
 const char *info();
 ```
 
@@ -1021,7 +1050,7 @@ const char *info();
 
 return **`boolean`** The bool value indicates that all sending processes are finished
 
-```C++
+```cpp
 bool success();
 ```
 
@@ -1031,7 +1060,7 @@ bool success();
 
 #### To clear all data store in this class.
 
-```C++
+```cpp
 void empty();
 ```
 
@@ -1042,7 +1071,7 @@ void empty();
 
 return **`number`** The number of message that was sent
 
-```C++
+```cpp
 size_t completedCount();
 ```
 
@@ -1054,7 +1083,7 @@ size_t completedCount();
 
 return **`number`** The number of message that was not sent
 
-```C++
+```cpp
 size_t failedCount();
 ```
 
@@ -1085,7 +1114,7 @@ return **`SMTP_Result`** The SMTP_Result type data that provides these propertie
 
 #### [time_t] timesstamp - The timestamp of the message
 
-```C++
+```cpp
 SMTP_Result getItem(size_t index);
 ```
 
@@ -1097,7 +1126,7 @@ SMTP_Result getItem(size_t index);
 
 return **`number`** The number of result item
 
-```C++
+```cpp
 size_t size();
 ```
 
@@ -1127,7 +1156,7 @@ return **`esp_mail_folder_info_item_t`** The esp_mail_folder_info_item_t structu
 
 #### [const char *] delimiter - The delimeter of folder
 
-```C++
+```cpp
 esp_mail_folder_info_item_t info(size_t index);
 ```
 
@@ -1139,7 +1168,7 @@ esp_mail_folder_info_item_t info(size_t index);
 
 return **`number`** The number of folder in the collection
 
-```C++
+```cpp
 size_t size();
 ```
 
@@ -1162,7 +1191,7 @@ This class is used for retrieving the info about the sselected or opened mailbox
 
 return **`number`** The numbers of flags
 
-```C++
+```cpp
 size_t flagCount();
 ```
 
@@ -1174,7 +1203,7 @@ size_t flagCount();
 
 return **`number`** The numbers of messages in the selected mailbox folder
 
-```C++
+```cpp
 size_t msgCount();
 ```
 
@@ -1187,7 +1216,7 @@ size_t msgCount();
 
 return **`number`** The numbers of messages in the selected mailbox folder that recent flag was set
 
-```C++
+```cpp
 size_t recentCount();
 ```
 
@@ -1209,7 +1238,7 @@ The messageNum property is message number or order from the total number of mess
 
 The argument property is the argument of commands e.g. FETCH
 
-```C++
+```cpp
 struct IMAP_Polling_Status pollingStatus();
 ```
 
@@ -1224,7 +1253,7 @@ struct IMAP_Polling_Status pollingStatus();
 
 return **`number`** The number represents the next message UID number
 
-```C++
+```cpp
 size_t nextUID();
 ```
 
@@ -1238,7 +1267,7 @@ size_t nextUID();
 
 return **`number`** The total number of messsages from search
 
-```C++
+```cpp
 size_t searchCount();
 ```
 
@@ -1250,7 +1279,7 @@ size_t searchCount();
 
 return **`number`** The number of messsage stored from search
 
-```C++
+```cpp
 size_t availableMessages();
 ```
 
@@ -1264,7 +1293,7 @@ return **`index`** The index of flag in the flags list
 
 return **`String`** The argument of selected flag
 
-```C++
+```cpp
 String flag(size_t index);
 ```
 
@@ -1287,7 +1316,7 @@ This property has the sub properties
 
 ##### [uint16_t] port - The port on the server to connect to.
 
-```C++
+```cpp
 esp_mail_sesson_sever_config_t server;
 ```
 
@@ -1304,7 +1333,7 @@ This property has the sub properties
 
 ##### [consst char *] user_domain - The user domain or ip of client.
 
-```C++
+```cpp
 esp_mail_sesson_login_config_t login;
 ```
 
@@ -1315,7 +1344,7 @@ This property has the sub properties
 
 ##### [bool] startTLS - The option to send the command to start the TLS connection.
 
-```C++
+```cpp
 esp_mail_sesson_secure_config_t secure;
 ```
 
@@ -1331,7 +1360,7 @@ esp_mail_sesson_secure_config_t secure;
 
 ##### [bool] verify - The cerificate verification option.
 
-```C++
+```cpp
 esp_mail_sesson_cert_config_t certificate;
 ```
 
@@ -1355,7 +1384,7 @@ This property has the sub property
 
 ##### [const char *] uid - The UID of message to fetch.
 
-```C++
+```cpp
 esp_mail_imap_fetch_config_t fetch;
 ```
 
@@ -1368,7 +1397,7 @@ This property has the sub properties
 
 ##### [boolean] unseen_msg - The option to search the unseen message.
 
-```C++
+```cpp
 esp_mail_imap_search_config_t search;
 ```
 
@@ -1389,7 +1418,7 @@ The IMAP idle (polling) timeout in ms.
 
 ##### [size_t] imap_idle_timeout - The maximum size of each attachment to download.
 
-```C++
+```cpp
 esp_mail_imap_limit_config_t limit;
 ```
 
@@ -1411,7 +1440,7 @@ This property has the sub properties
 
 ##### [boolean] header_case_sesitive - To allow case sesitive in header parsing.
 
-```C++
+```cpp
 esp_mail_imap_enable_config_t enable;
 ```
 
@@ -1433,7 +1462,7 @@ This property has the sub properties
 
 ##### [boolean] header - To download the message header.
 
-```C++
+```cpp
 esp_mail_imap_download_config_t download;
 ```
 
@@ -1453,7 +1482,7 @@ esp_mail_file_storage_type_flash = 1, and
 
 esp_mail_file_storage_type_sd = 2
 
-```C++
+```cpp
 esp_mail_imap_storage_config_t storage;
 ```
 
@@ -1474,14 +1503,14 @@ control and store the operation result e.g. the messahe contents from search and
 
 ##### [Properties] Enable to send this message body as file
 
-```C++
+```cpp
 bool enable;
 ```
 
 
 ##### [Properties] The name of embedded file
 
-```C++
+```cpp
 const char* enable;
 ```
 
@@ -1492,7 +1521,7 @@ esp_mail_smtp_embed_message_type_attachment = 0
 
 sp_mail_smtp_embed_message_type_inline = 1
 
-```C++
+```cpp
 esp_mail_smtp_embed_message_type type;
 ```
 
@@ -1513,14 +1542,14 @@ This data type is used for storing the blob info of message body.
 
 ##### [Properties] The array of content in flash memory.
 
-```C++
+```cpp
 const uint8_t * data;
 ```
 
 
 ##### [Properties] The array size in bytes.
 
-```C++
+```cpp
 size_t size;
 ```
 
@@ -1540,14 +1569,14 @@ This data type is used for storing the file info of message body.
 
 ##### [Properties] The file path include its name.
 
-```C++
+```cpp
 const char *name;
 ```
 
 
 ##### [Properties] The type of file storages.
 
-```C++
+```cpp
 esp_mail_file_storage_type type;
 ```
 
@@ -1568,21 +1597,21 @@ This data type is used for message item info and its contents from search and fe
 
 #### [Properties] The message number
 
-```C++
-const char *msgNo;
+```cpp
+int msgNo;
 ```
 
 
 #### [Properties] The message UID
 
-```C++
-const char *UID;
+```cpp
+int UID;
 ```
 
 
 #### [Properties] The message identifier
 
-```C++
+```cpp
 const char *ID;
 ```
 
@@ -1590,7 +1619,7 @@ const char *ID;
 
 #### [Properties] The language(s) for auto-responses
 
-```C++
+```cpp
 const char *acceptLang;
 ```
 
@@ -1598,7 +1627,7 @@ const char *acceptLang;
 
 #### [Properties] The language of message content
 
-```C++
+```cpp
 const char *contentLang;
 ```
 
@@ -1606,137 +1635,146 @@ const char *contentLang;
 
 #### [Properties] The mailbox of message author
 
-```C++
+```cpp
 const char *from;
 ```
 
 
-#### [Properties] The charset of the mailbox of message author
+#### [Properties] The charset of the mailbox of message author (deprecate)
 
-```C++
+```cpp
 const char *fromCharset;
 ```
 
 
 #### [Properties] The primary recipient mailbox
 
-```C++
+```cpp
 const char *to;
 ```
 
 
-#### [Properties] The charset of the primary recipient mailbox
+#### [Properties] The charset of the primary recipient mailbox (deprecate)
 
-```C++
+```cpp
 const char *toCharset;
 ```
 
 
 #### [Properties] The Carbon-copy recipient mailboxes
 
-```C++
+```cpp
 const char *cc;
 ```
 
 
-#### [Properties] The charset of the Carbon-copy recipient mailbox header
+#### [Properties] The charset of the Carbon-copy recipient mailbox header (deprecate)
 
-```C++
+```cpp
 const char *ccCharset;
 ```
 
 #### [Properties] The message date and time
 
-```C++
+```cpp
 const char *date;
 ```
 
 #### [Properties] The topic of message
 
-```C++
+```cpp
 const char *subject;
 ```
 
-#### [Properties] The topic of message charset
+#### [Properties] The topic of message charset (deprecate)
 
-```C++
+```cpp
 const char *subjectCharset;
 ```
 
 #### [Properties] The PLAIN text content of the message
 
-```C++
+```cpp
 esp_mail_plain_body_t text;
 ```
 
 #### [Properties] The HTML content of the message
 
-```C++
+```cpp
 esp_mail_html_body_t html;
 ```
 
 #### [Properties] The sender Email
 
-```C++
+```cpp
 const char *sender;
 ```
 
-#### [Properties] The message identifier
-
-```C++
-const char *messageID;
-```
 
 #### [Properties] The keywords or phrases, separated by commas
 
-```C++
+```cpp
 const char *keyword;
 ```
 
-#### [Properties] The comment about message
+#### [Properties] The comments about message
 
-```C++
-const char *comment;
+```cpp
+const char *comments;
 ```
 
 
 #### [Properties] The return recipient of the message
 
-```C++
+```cpp
 const char *return_path;
 ```
 
 
 #### [Properties] The Email address to reply
 
-```C++
+```cpp
 const char *reply_to;
+```
+
+
+#### [Properties] The field that contains the parent's message ID of the message to which this one is a reply
+
+```cpp
+const char *in_reply_to;
+```
+
+
+#### [Properties] The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply
+
+```cpp
+const char *references;
 ```
 
 
 #### [Properties] The Blind carbon-copy recipients
 
-```C++
+```cpp
 const char *bcc;
 ```
 
 
 #### [Properties] The error description from fetching the message
 
-```C++
+```cpp
 const char *fetchError;
 ```
 
 
 #### [Properties] The info about the attachments in the message
 
-```C++
+```cpp
 std::vector<IMAP_Attach_Item> attachments;
 ```
 
 #### [Properties] The info about the rfc822 messages included in the message
 
-```C++
+```cpp
 std::vector<IMAP_MSG_Item> rfc822;
 ```
 
@@ -1881,7 +1919,7 @@ return **`boolean`** The status indicates the success of operation.
 
 This requires internet connection
 
-```C++
+```cpp
 bool setClock(float gmtOffset, float daylightOffset);
 ```
 
@@ -1894,7 +1932,7 @@ bool setClock(float gmtOffset, float daylightOffset);
 
 return **`uint32_t`** The value of current Unix time.
 
-```C++
+```cpp
 uint32_t getUnixTime();
 ```
 
@@ -1919,7 +1957,7 @@ param **`sec`** The seconds.
 
 return **`time_t`** The value of timestamp.
 
-```C++
+```cpp
 time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 ```
 
@@ -1932,7 +1970,7 @@ time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 
 return **`int`** The value of current year.
 
-```C++
+```cpp
 int getYear();
 ```
 
@@ -1945,7 +1983,7 @@ int getYear();
 
 return **`int`** The value of current month.
 
-```C++
+```cpp
 int getMonth();
 ```
 
@@ -1957,7 +1995,7 @@ int getMonth();
 
 return **`int`** The value of current date.
 
-```C++
+```cpp
 int getDay();
 ```
 
@@ -1972,7 +2010,7 @@ return **`int`** The value of day of week.
 
 1 for sunday and 7 for saturday
 
-```C++
+```cpp
 int getDayOfWeek();
 ```
 
@@ -1986,7 +2024,7 @@ return **`String`** The value of day of week.
 
 Returns sunday, monday, tuesday, wednesday, thurseday, friday and saturday.
 
-```C++
+```cpp
 String getDayOfWeekString();
 ```
 
@@ -1999,7 +2037,7 @@ String getDayOfWeekString();
 
 return **`int`** The value of current hour (0 to 23).
 
-```C++
+```cpp
 int getHour();
 ```
 
@@ -2012,7 +2050,7 @@ int getHour();
 
 return **`int`** The value of current minute (0 to 59).
 
-```C++
+```cpp
 int getMin();
 ```
 
@@ -2025,7 +2063,7 @@ int getMin();
 
 return **`int`** The value of current second (0 to 59).
 
-```C++
+```cpp
 int getSecond();
 ```
 
@@ -2039,7 +2077,7 @@ int getSecond();
 
 return **`int`** The value of total days of current year.
 
-```C++
+```cpp
 int getNumberOfDayThisYear();
 ```
 
@@ -2058,7 +2096,7 @@ param **`date`** The dates.
 
 return **`int`** The value of total days.
 
-```C++
+```cpp
 int getTotalDays(int year, int month, int day);
 ```
 
@@ -2078,7 +2116,7 @@ return **`int`** The value of day of week.
 
 1 for sunday and 7 for saturday
 
-```C++
+```cpp
 int dayofWeek(int year, int month, int day);
 ```
 
@@ -2091,7 +2129,7 @@ int dayofWeek(int year, int month, int day);
 
 return **`int`** The value of current second.
 
-```C++
+```cpp
 int getCurrentSecond();
 ```
 
@@ -2103,7 +2141,7 @@ int getCurrentSecond();
 
 return **`uint64_t`** The value of current timestamp.
 
-```C++
+```cpp
 uint64_t getCurrentTimestamp();
 ```
 
@@ -2122,7 +2160,7 @@ The returned structured data tm has the members e.g.
 
 tm_year (from 1900), tm_mon (from 0 to 11), tm_mday, tm_hour, tm_min and tm_sec.
 
-```C++
+```cpp
 struct tm getTimeFromSec(int secCount);
 ```
 
@@ -2135,7 +2173,7 @@ struct tm getTimeFromSec(int secCount);
 
 return **`String`** The current date time string.
 
-```C++
+```cpp
 String getDateTimeString();
 ```
 

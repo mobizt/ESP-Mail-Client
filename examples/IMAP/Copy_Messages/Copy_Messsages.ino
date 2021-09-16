@@ -28,11 +28,11 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "################"
-#define WIFI_PASSWORD "################"
+#define WIFI_SSID "<ssid>"
+#define WIFI_PASSWORD "<password>"
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
-#define IMAP_HOST "################"
+#define IMAP_HOST "<host>"
 
 /** The imap port e.g. 
  * 143  or esp_mail_imap_port_143
@@ -41,8 +41,8 @@
 #define IMAP_PORT 993
 
 /* The log in credentials */
-#define AUTHOR_EMAIL "################"
-#define AUTHOR_PASSWORD "################"
+#define AUTHOR_EMAIL "<email>"
+#define AUTHOR_PASSWORD "<password>"
 
 /* Print the list of mailbox folders */
 void printAllMailboxesInfo(IMAPSession &imap);

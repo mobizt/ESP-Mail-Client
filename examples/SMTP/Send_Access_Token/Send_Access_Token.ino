@@ -23,11 +23,11 @@
 #endif
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "################"
-#define WIFI_PASSWORD "################"
+#define WIFI_SSID "<ssid>"
+#define WIFI_PASSWORD "<password>"
 
 
-#define SMTP_HOST "################"
+#define SMTP_HOST "<host>"
 
 /** The smtp port e.g. 
  * 25  or esp_mail_smtp_port_25
@@ -37,7 +37,7 @@
 #define SMTP_PORT 25
 
 /* The user Email for OAuth2.0 access token */
-#define AUTHOR_EMAIL "################"
+#define AUTHOR_EMAIL "<email>"
 
 /** The OAuth2.0 access token
  * The generation, exchange and refresh of the access token are not available
@@ -61,7 +61,7 @@
  * The token will be expired in 3600 seconds (1 Hr).
  * The AUTHOR_EMAIL above is the Email address that you granted to access the Gmail services.
 */
-#define AUTHOR_ACCESS_TOKEN "################"
+#define AUTHOR_ACCESS_TOKEN "<access token>"
 
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
@@ -216,5 +216,13 @@ void smtpCallback(SMTP_Status status)
       ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
     }
     Serial.println("----------------\n");
+
+    //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
+    //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
+
+    //Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
+    //a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
+
+    //smtp.sendingResult.clear();
   }
 }
