@@ -145,7 +145,7 @@ void setup()
   message.sender.name = "ESP Mail";
   message.sender.email = AUTHOR_EMAIL;
   message.subject = "Test sending plain text Email";
-  message.addRecipient("Someone", "####@#####_dot_com");
+  message.addRecipient("Someone", "change_this@your_mail_dot_com");
 
   String textMsg = "This is simple plain text message";
   message.text.content = textMsg.c_str();

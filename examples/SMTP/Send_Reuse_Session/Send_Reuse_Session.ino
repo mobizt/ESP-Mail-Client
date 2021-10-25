@@ -110,10 +110,10 @@ void setup()
   message.sender.name = "ESP Mail";
   message.sender.email = AUTHOR_EMAIL;
   message.subject = "First Email with session reusage";
-  message.addRecipient("Admin1", "####@#####_dot_com");
-  message.addRecipient("Admin2", "####@#####_dot_com");
-  message.addCc("####@#####_dot_com");
-  message.addBcc("####@#####_dot_com");
+  message.addRecipient("Admin1", "change_this@your_mail_dot_com");
+  message.addRecipient("Admin2", "change_this@your_mail_dot_com");
+  message.addCc("change_this@your_mail_dot_com");
+  message.addBcc("change_this@your_mail_dot_com");
 
   message.html.content = "<p>This is the <span style=\"color:#ff0000;\">first message</span>.</p>";
 
@@ -194,10 +194,10 @@ void setup()
 
   message.subject = "Second Email with session reusage";
 
-  message.addRecipient("Admin3", "####@#####_dot_com");
-  message.addRecipient("Admin4", "####@#####_dot_com");
-  message.addCc("####@#####_dot_com");
-  message.addBcc("####@#####_dot_com");
+  message.addRecipient("Admin3", "change_this@your_mail_dot_com");
+  message.addRecipient("Admin4", "change_this@your_mail_dot_com");
+  message.addCc("change_this@your_mail_dot_com");
+  message.addBcc("change_this@your_mail_dot_com");
 
   message.html.content = "<p>This is the <span style=\"color:#ff0000;\">second message</span>.</p>";
   message.html.charSet = "us-ascii";

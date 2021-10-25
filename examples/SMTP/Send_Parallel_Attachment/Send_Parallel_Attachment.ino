@@ -123,7 +123,7 @@ void setup()
   message.sender.email = AUTHOR_EMAIL;
 
   message.subject = "Test sending Email with parallel attachments";
-  message.addRecipient("user1", "####@#####_dot_com");
+  message.addRecipient("user1", "change_this@your_mail_dot_com");
 
   message.html.content = "<span style=\"color:#ff0000;\">This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).";
 

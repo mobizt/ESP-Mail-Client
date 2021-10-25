@@ -1,10 +1,7 @@
 
 
 /**
- * This example will send the Email with inline images stored in flash memory.
- * The message content stores as HTML data in flash memory
- * 
- * The html and text version messages will be sent.
+ * This example will send the Email with attachment stored in PSRAM (ESP32 only).
  * 
  * Created by K. Suwatchai (Mobizt)
  * 
@@ -18,18 +15,11 @@
 
 //To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
-//The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
-
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>
 #endif
 #include <ESP_Mail_Client.h>
-
-//The OV2640 library
-#if defined(ESP32)
-#include "cam/OV2640.h"
-#endif
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -56,21 +46,16 @@
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
 
-/* Define the OV2640 object */
-#if defined(ESP32)
-OV2640 cam;
-#endif
-
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-void initCam();
+const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
+                                  "-----END CERTIFICATE-----\n";
 
 void setup()
 {
-    Serial.begin(115200);
 
-#if defined(ESP32)
+    Serial.begin(115200);
 
     Serial.println();
 
@@ -89,14 +74,12 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    initCam();
-
     /** Enable the debug via Serial port
-     * none debug or 0
-     * basic debug or 1
-     * 
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+   * none debug or 0
+   * basic debug or 1
+   * 
+   * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+  */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -104,6 +87,39 @@ void setup()
 
     /* Declare the session config data */
     ESP_Mail_Session session;
+
+    /** ########################################################
+   * Some properties of SMTPSession data and parameters pass to 
+   * SMTP_Message class accept the pointer to constant char
+   * i.e. const char*. 
+   * 
+   * You may assign a string literal to that properties or function 
+   * like below example.
+   *   
+   * session.login.user_domain = "mydomain.net";
+   * session.login.user_domain = String("mydomain.net").c_str();
+   * 
+   * or
+   * 
+   * String doman = "mydomain.net";
+   * session.login.user_domain = domain.c_str();
+   * 
+   * And
+   * 
+   * String name = "Jack " + String("dawson");
+   * String email = "jack_dawson" + String(123) + "@mail.com";
+   * 
+   * message.addRecipient(name.c_str(), email.c_str());
+   * 
+   * message.addHeader(String("Message-ID: <abcde.fghij@gmail.com>").c_str());
+   * 
+   * or
+   * 
+   * String header = "Message-ID: <abcde.fghij@gmail.com>";
+   * message.addHeader(header.c_str());
+   * 
+   * ###########################################################
+  */
 
     /* Set the session config */
     session.server.host_name = SMTP_HOST;
@@ -115,114 +131,111 @@ void setup()
     /* Declare the message class */
     SMTP_Message message;
 
-    /* Enable the chunked data transfer with pipelining for large message if server supported */
-    message.enable.chunking = true;
-
     /* Set the message headers */
     message.sender.name = "ESP Mail";
     message.sender.email = AUTHOR_EMAIL;
+    message.subject = "Test sending plain text Email with PSRAM attachment";
+    message.addRecipient("Someone", "change_this@your_mail_dot_com");
 
-    message.subject = "Test sending camera image";
-    message.addRecipient("user1", "change_this@your_mail_dot_com");
+    String textMsg = "This is simple plain text message with PSRAM attachment";
+    message.text.content = textMsg.c_str();
 
-    message.html.content = "<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"800\" height=\"600\">";
+    /** The Plain text message character set e.g.
+   * us-ascii
+   * utf-8
+   * utf-7
+   * The default value is utf-8
+  */
+    message.text.charSet = "us-ascii";
 
     /** The content transfer encoding e.g.
-     * enc_7bit or "7bit" (not encoded)
-     * enc_qp or "quoted-printable" (encoded) <- not supported for message from blob and file
-     * enc_base64 or "base64" (encoded)
-     * enc_binary or "binary" (not encoded)
-     * enc_8bit or "8bit" (not encoded)
-     * The default value is "7bit"
-    */
-    message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+   * enc_7bit or "7bit" (not encoded)
+   * enc_qp or "quoted-printable" (encoded)
+   * enc_base64 or "base64" (encoded)
+   * enc_binary or "binary" (not encoded)
+   * enc_8bit or "8bit" (not encoded)
+   * The default value is "7bit"
+  */
+    message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
-    /** The HTML text message character set e.g.
-     * us-ascii
-     * utf-8
-     * utf-7
-     * The default value is utf-8
-    */
-    message.html.charSet = "utf-8";
+    //If this is a reply message
+    //message.in_reply_to = "<parent message id>";
+    //message.references = "<parent references> <parent message id>";
 
-    SMTP_Attachment att;
+    /** The message priority
+   * esp_mail_smtp_priority_high or 1
+   * esp_mail_smtp_priority_normal or 3
+   * esp_mail_smtp_priority_low or 5
+   * The default value is esp_mail_smtp_priority_low
+  */
+    message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
-    /** Set the inline image info e.g.
-     * file name, MIME type, file path, file storage type,
-     * transfer encoding and content encoding
-    */
-    att.descr.filename = "camera.jpg";
-    att.descr.mime = "image/jpg";
+    //message.response.reply_to = "someone@somemail.com";
+    //message.response.return_path = "someone@somemail.com";
 
-    att.blob.data = cam.getfb();
-    att.blob.size = cam.getSize();
+    /** The Delivery Status Notifications e.g.
+   * esp_mail_smtp_notify_never
+   * esp_mail_smtp_notify_success
+   * esp_mail_smtp_notify_failure
+   * esp_mail_smtp_notify_delay
+   * The default value is esp_mail_smtp_notify_never
+  */
+    //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
-    att.descr.content_id = "image-001"; //The content id (cid) of camera.jpg image in the src tag
+    /* Set the custom message header */
+    message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
 
-    /* Need to be base64 transfer encoding for inline image */
-    att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
-    /* Add inline image to the message */
-    message.addInlineImage(att);
+    //For Root CA certificate verification (ESP8266 and ESP32 only)
+    //session.certificate.cert_data = rootCACert;
+    //or
+    //session.certificate.cert_file = "/path/to/der/file";
+    //session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    //session.certificate.verify = true;
+
+    //The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
+
+    /* The attachment data item */
+    SMTP_Attachment att[1];
+    int attIndex = 0;
+
+#if defined(ESP32)
+
+    int dlen = 3 * 1024 * 1024 + 512 * 1024;
+    uint8_t *data = (uint8_t *)ps_malloc(dlen);
+
+    if (psramFound())
+    {
+        memset(data, 0xff, dlen);
+
+        att[attIndex].descr.filename = "data.dat";
+        att[attIndex].descr.mime = "application/octet-stream";
+        att[attIndex].blob.data = data;
+        att[attIndex].blob.size = dlen;
+        att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+
+        /* Add inline image to the message */
+        message.addInlineImage(att[attIndex]);
+    }
+
+#endif
 
     /* Connect to server with the session config */
     if (!smtp.connect(&session))
         return;
 
-    /* Start sending the Email and close the session */
-    if (!MailClient.sendMail(&smtp, &message, true))
+    /* Start sending Email and close the session */
+    if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
     //to clear sending result log
     //smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
-
-#endif
 }
 
 void loop()
 {
-}
-
-void initCam()
-{
-
-#if defined(ESP32)
-
-    camera_config_t camera_config;
-
-    /** For M5Stack M5Cam - ESP32 Camera (OV2640)
-   * Change to match your pin configuration between OV2640 Camera and ESP32 connection
-  */
-    camera_config.ledc_channel = LEDC_CHANNEL_0;
-    camera_config.ledc_timer = LEDC_TIMER_0;
-    camera_config.pin_d0 = 17;
-    camera_config.pin_d1 = 35;
-    camera_config.pin_d2 = 34;
-    camera_config.pin_d3 = 5;
-    camera_config.pin_d4 = 39;
-    camera_config.pin_d5 = 18;
-    camera_config.pin_d6 = 36;
-    camera_config.pin_d7 = 19;
-    camera_config.pin_xclk = 27;
-    camera_config.pin_pclk = 21;
-    camera_config.pin_vsync = 22;
-    camera_config.pin_href = 26;
-    camera_config.pin_sscb_sda = 25;
-    camera_config.pin_sscb_scl = 23;
-    camera_config.pin_reset = 15;
-    camera_config.xclk_freq_hz = 20000000;
-
-    camera_config.pixel_format = CAMERA_PF_JPEG;
-    camera_config.frame_size = CAMERA_FS_SVGA;
-
-    cam.init(camera_config);
-
-    delay(100);
-
-    cam.run();
-#endif
 }
 
 /* Callback function to get the Email sending status */
@@ -254,7 +267,7 @@ void smtpCallback(SMTP_Status status)
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
         }
         Serial.println("----------------\n");
-        
+
         //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
         //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
 

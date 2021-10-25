@@ -144,7 +144,7 @@ void setup()
   message.sender.name = "ESP Mail";
   message.sender.email = AUTHOR_EMAIL;
   message.subject = "Test sending html Email";
-  message.addRecipient("Admin", "####@#####_dot_com");
+  message.addRecipient("Admin", "change_this@your_mail_dot_com");
 
   String htmlMsg = "<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>";
   message.html.content = htmlMsg.c_str();

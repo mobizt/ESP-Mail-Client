@@ -109,7 +109,7 @@ void setup()
   message.sender.name = "ESP Mail";
   message.sender.email = AUTHOR_EMAIL;
   message.subject = "Test sending enriched text Email";
-  message.addRecipient("Someone", "####@#####_dot_com");
+  message.addRecipient("Someone", "change_this@your_mail_dot_com");
 
   message.text.content = "This is <bold><italic>enriched </italic></bold> <smaller>as defined in RFC 1896</smaller>\r\n\r\nIsn't it <bigger><bigger>cool?</bigger></bigger>";
 

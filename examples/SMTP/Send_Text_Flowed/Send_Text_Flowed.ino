@@ -144,7 +144,7 @@ void setup()
     message.sender.name = "ESP Mail";
     message.sender.email = AUTHOR_EMAIL;
     message.subject = "Test sending flowed plain text Email";
-    message.addRecipient("Someone", "####@#####_dot_com");
+    message.addRecipient("Someone", "change_this@your_mail_dot_com");
 
     /** The option to add soft line break to to the message for
      * the long text message > 78 characters (rfc 3676)

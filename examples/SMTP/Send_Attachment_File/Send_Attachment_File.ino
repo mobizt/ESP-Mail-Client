@@ -284,7 +284,7 @@ void setup()
   message.sender.email = AUTHOR_EMAIL;
 
   message.subject = "Test sending Email with attachments and inline images from SD card and Flash";
-  message.addRecipient("user1", "####@#####_dot_com");
+  message.addRecipient("user1", "change_this@your_mail_dot_com");
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
 #if defined(ESP32) || defined(ESP8266)
