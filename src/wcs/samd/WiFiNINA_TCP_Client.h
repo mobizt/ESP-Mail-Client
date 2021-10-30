@@ -41,6 +41,10 @@
 #include <string>
 #include <vector>
 
+#include "extras/MB_String.h"
+
+#define MBSTRING MB_String
+
 #if defined(ESP_Mail_DEFAULT_FLASH_FS)
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
 #endif

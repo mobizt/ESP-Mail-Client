@@ -1,7 +1,7 @@
 /*
  * ESP32 TCP Client Library. 
  * 
- * v 1.0.1
+ * v 1.0.2
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)

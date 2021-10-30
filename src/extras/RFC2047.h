@@ -4,7 +4,13 @@
 
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
 
+#if defined(ESP32)
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
+#include <esp32-hal-psram.h>
+#endif
+#endif
 
 #define strfcpy(A,B,C) strncpy(A,B,C), *(A+(C)-1)=0
 

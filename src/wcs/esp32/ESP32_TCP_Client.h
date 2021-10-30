@@ -1,7 +1,7 @@
 /*
  * ESP32 TCP Client Library. 
  * 
- * v 1.0.1
+ * v 1.0.2
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -42,10 +42,23 @@
 #include "ESP_Mail_FS.h"
 #include "ESP32_WCS.h"
 
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
+#include <esp32-hal-psram.h>
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
 #define ESP_MAIL_SD_FS ESP_Mail_DEFAULT_SD_FS
+#define ESP_MAIL_USE_PSRAM ESP_Mail_USE_PSRAM
+
+#if defined(ESP_Mail_USE_PSRAM)
+#define MB_STRING_USE_PSRAM
+#endif
+
+#include "extras/MB_String.h"
+
+#define MBSTRING MB_String
 
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
 #define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)

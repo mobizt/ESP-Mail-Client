@@ -52,6 +52,10 @@
 
 #include "extras/SDK_Version_Common.h"
 
+#include "extras/MB_String.h"
+
+#define MBSTRING MB_String
+
 #ifndef ARDUINO_ESP8266_GIT_VER
 #error Your ESP8266 Arduino Core SDK is outdated, please update. From Arduino IDE go to Boards Manager and search 'esp8266' then select the latest version.
 #endif

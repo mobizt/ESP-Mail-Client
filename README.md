@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.5.3
+# Mail Client Arduino Library v1.5.4
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -39,7 +39,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
-* Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](/src/ESP_Mail_FS.h).
+* Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
 * Customizable configurations (see the examples for the usages)
 
@@ -300,6 +300,28 @@ message.sender.email = email.c_str();
 ```
 
 
+### Use PSRAM on ESP32
+
+
+To enable PSRAM in ESP32 module with PSRAM chip, in Arduino IDE
+
+![Enable PSRAM in ESP32](/media/images/ESP32-PSRAM.png)
+
+
+In PlatformIO in VSCode IDE, add the following build_flags in your project's platformio.ini file
+
+```ini
+build_flags = -DBOARD_HAS_PSRAM -mfix-esp32-psram-cache-issue
+```
+
+The [**examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino**](examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino) showed how to send the attachment stored in PSRAM. 
+
+
+Since v1.5.4, this library supports PSRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
+
+```cpp
+#define ESP_Mail_USE_PSRAM
+```
 
 
 ### Send the Email

@@ -21,6 +21,11 @@
 #define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
 #endif
 
+/** Use PSRAM for supported ESP32 module */
+#if defined(ESP32)
+#define ESP_Mail_USE_PSRAM
+#endif
+
 /**
  * To use SD card file systems with different hardware interface
  * e.g. SDMMC hardware bus on the ESP32

@@ -159,11 +159,20 @@ void *RFC2047_Decoder::safe_calloc(size_t nmemb, size_t size)
 
   if (!nmemb || !size)
     return NULL;
-  if (!(p = calloc (nmemb, size)))
+
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
+  if (!(p = ps_calloc (nmemb, size)))
   {
     //out of memory
     return NULL;
   }
+#else
+  if (!(p = calloc(nmemb, size)))
+  {
+    //out of memory
+    return NULL;
+  }
+#endif
   return p;
 }
 
@@ -173,11 +182,20 @@ void *RFC2047_Decoder::safe_malloc(unsigned int siz)
 
   if (siz == 0)
     return 0;
-  if ((p = (void *) malloc (siz)) == 0)
+    
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
+  if ((p = (void *) ps_malloc (siz)) == 0)
   {
     //out of memory
     return NULL;
   }
+#else
+  if ((p = (void *)malloc(siz)) == 0)
+  {
+    //out of memory
+    return NULL;
+  }
+#endif
   return (p);
 }
 
@@ -195,12 +213,21 @@ void RFC2047_Decoder::safe_realloc(void **p, size_t siz)
     return;
   }
 
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
   if (*p)
-    r = (void *) realloc (*p, siz);
+    r = (void *) ps_realloc (*p, siz);
   else
   {
-    r = (void *) malloc (siz);
+    r = (void *) ps_malloc (siz);
   }
+#else
+  if (*p)
+    r = (void *)realloc(*p, siz);
+  else
+  {
+    r = (void *)malloc(siz);
+  }
+#endif
 
   if (!r)
   {
