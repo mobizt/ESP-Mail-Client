@@ -26,6 +26,8 @@
 #endif
 #include <ESP_Mail_Client.h>
 
+//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+
 //The OV2640 library
 #if defined(ESP32)
 #include "cam/OV2640.h"

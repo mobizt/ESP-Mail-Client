@@ -35,6 +35,8 @@
 #include <ESP8266WiFi.h>
 #include <ESP_Mail_Client.h>
 
+//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+
 #ifdef ESP8266_CORE_SDK_V3_X_X
 #include <ENC28J60lwIP.h>
 //#include <W5100lwIP.h>

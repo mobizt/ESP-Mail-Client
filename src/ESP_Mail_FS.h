@@ -50,4 +50,10 @@
 #define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
 #endif
 
+//Enable IMAP class
+#define ENABLE_IMAP //comment this line to disable or exclude it
+
+//Enable SMTP class
+#define ENABLE_SMTP //comment this line to disable or exclude it
+
 #endif

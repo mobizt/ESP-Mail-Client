@@ -50,6 +50,8 @@
 #include <WiFi.h>
 #include <ESP_Mail_Client.h>
 
+//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+
 #ifdef ETH_CLK_MODE
 #undef ETH_CLK_MODE
 #endif

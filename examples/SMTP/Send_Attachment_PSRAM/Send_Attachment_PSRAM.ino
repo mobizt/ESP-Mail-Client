@@ -21,6 +21,8 @@
 #endif
 #include <ESP_Mail_Client.h>
 
+//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 

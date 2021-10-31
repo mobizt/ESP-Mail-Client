@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.5.4
+# Mail Client Arduino Library v1.5.5
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -261,6 +261,44 @@ void loop() {
 ```
 
 
+## Use PSRAM on ESP32
+
+
+To enable PSRAM in ESP32 module with PSRAM chip, in Arduino IDE
+
+![Enable PSRAM in ESP32](/media/images/ESP32-PSRAM.png)
+
+
+In PlatformIO in VSCode IDE, add the following build_flags in your project's platformio.ini file
+
+```ini
+build_flags = -DBOARD_HAS_PSRAM -mfix-esp32-psram-cache-issue
+```
+
+The [**examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino**](examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino) showed how to send the attachment stored in PSRAM. 
+
+
+Since v1.5.4, this library supports PSRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
+
+```cpp
+#define ESP_Mail_USE_PSRAM
+```
+
+
+## Exclude unused classes to save memory 
+
+Now you can comple the library only for seclected classes.
+
+In [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h), the IMAP and SMTP class can be enabled with the macros.
+
+```cpp
+#define ENABLE_IMAP
+
+#define ENABLE_SMTP
+```
+
+You can comment these macros to disable or exclude them from compile.
+
 
 
 
@@ -299,29 +337,6 @@ message.sender.name = name.c_str();
 message.sender.email = email.c_str();
 ```
 
-
-### Use PSRAM on ESP32
-
-
-To enable PSRAM in ESP32 module with PSRAM chip, in Arduino IDE
-
-![Enable PSRAM in ESP32](/media/images/ESP32-PSRAM.png)
-
-
-In PlatformIO in VSCode IDE, add the following build_flags in your project's platformio.ini file
-
-```ini
-build_flags = -DBOARD_HAS_PSRAM -mfix-esp32-psram-cache-issue
-```
-
-The [**examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino**](examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino) showed how to send the attachment stored in PSRAM. 
-
-
-Since v1.5.4, this library supports PSRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
-
-```cpp
-#define ESP_Mail_USE_PSRAM
-```
 
 
 ### Send the Email
