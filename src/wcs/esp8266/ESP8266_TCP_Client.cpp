@@ -49,8 +49,8 @@ ESP8266_TCP_Client::~ESP8266_TCP_Client()
     delete x509;
 #endif
 
-  std::string().swap(_host);
-  std::string().swap(_caCertFile);
+  MBSTRING().swap(_host);
+  MBSTRING().swap(_caCertFile);
   _cacert.reset(new char);
   _cacert = nullptr;
 }

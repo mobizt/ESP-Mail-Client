@@ -52,10 +52,6 @@
 
 #include "extras/SDK_Version_Common.h"
 
-#include "extras/MB_String.h"
-
-#define MBSTRING MB_String
-
 #ifndef ARDUINO_ESP8266_GIT_VER
 #error Your ESP8266 Arduino Core SDK is outdated, please update. From Arduino IDE go to Boards Manager and search 'esp8266' then select the latest version.
 #endif
@@ -95,7 +91,6 @@
 #define FS_NO_GLOBALS
 #include <FS.h>
 #include <SD.h>
-#include "ESP_Mail_FS.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
@@ -132,7 +127,7 @@ public:
   bool connect(bool secured, bool verify);
 
   int _certType = -1;
-  std::string _caCertFile = "";
+  MBSTRING _caCertFile = "";
   esp_mail_file_storage_type _caCertFileStoreageType = esp_mail_file_storage_type::esp_mail_file_storage_type_none;
   uint16_t tcpTimeout = 40000;
 
@@ -152,7 +147,7 @@ public:
 private:
   std::unique_ptr<ESP_MAIL_SSL_CLIENT> _wcs = std::unique_ptr<ESP_MAIL_SSL_CLIENT>(new ESP_MAIL_SSL_CLIENT());
   std::unique_ptr<char> _cacert;
-  std::string _host = "";
+  MBSTRING _host = "";
   uint16_t _port = 0;
 #ifndef USING_AXTLS
   X509List *x509 = nullptr;

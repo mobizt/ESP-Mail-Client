@@ -35,6 +35,12 @@
 #include "extras/SDK_Version_Common.h"
 #include <WiFiClientSecure.h>
 
+#include "ESP_Mail_FS.h"
+
+#include "extras/MB_String.h"
+
+#define MBSTRING MB_String
+
 //#define DEBUG_ESP_SSL
 //#define DEBUG_ESP_PORT Serial
 
@@ -96,7 +102,7 @@ private:
   uint8_t ns_connected();
 
   bool _secured = false;
-  std::string _host_name;
+  MBSTRING _host_name;
   bool _has_ta = false;
   bool _base_use_insecure = false;
 };

@@ -48,8 +48,8 @@ ESP32_TCP_Client::~ESP32_TCP_Client()
         _wcs.reset(nullptr);
         _wcs.release();
     }
-    std::string().swap(_host);
-    std::string().swap(_caCertFile);
+    MBSTRING().swap(_host);
+    MBSTRING().swap(_caCertFile);
 }
 
 bool ESP32_TCP_Client::begin(const char *host, uint16_t port)
