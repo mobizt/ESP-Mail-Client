@@ -333,7 +333,7 @@ struct esp_mail_html_body_t
   struct esp_mail_internal_use_t _int;
 };
 
-struct esp_mail_attacment_info_t
+struct esp_mail_attachment_info_t
 {
   const char *filename = "";
   const char *name = "";
@@ -1260,7 +1260,7 @@ struct esp_mail_imap_msg_item_t
   const char *fetchError = "";
 
   /* The info about the attachments in the message */
-  std::vector<struct esp_mail_attacment_info_t> attachments = std::vector<struct esp_mail_attacment_info_t>();
+  std::vector<struct esp_mail_attachment_info_t> attachments = std::vector<struct esp_mail_attachment_info_t>();
 
   /* The info about the rfc822 messages included in the message */
   std::vector<esp_mail_imap_msg_item_t> rfc822 = std::vector<esp_mail_imap_msg_item_t>();
@@ -1408,7 +1408,7 @@ typedef struct esp_mail_attachment_t SMTP_Attachment;
 typedef struct esp_mail_folder_info_item_t FolderInfo;
 /* The attachment item details for a message which returned from fetching the
  * Email */
-typedef struct esp_mail_attacment_info_t IMAP_Attach_Item;
+typedef struct esp_mail_attachment_info_t IMAP_Attach_Item;
 
 /** The IMAP operation configuations */
 typedef struct esp_mail_imap_read_config_t IMAP_Config;

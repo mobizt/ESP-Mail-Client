@@ -3782,7 +3782,7 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
         {
           if (imap->_headers[cIdx(imap)].part_headers[j].attach_type == esp_mail_att_type_none || imap->_headers[cIdx(imap)].part_headers[j].rfc822_part)
             continue;
-          struct esp_mail_attacment_info_t att;
+          struct esp_mail_attachment_info_t att;
           att.filename = imap->_headers[cIdx(imap)].part_headers[j].filename.c_str();
           att.mime = imap->_headers[cIdx(imap)].part_headers[j].content_type.c_str();
           att.name = imap->_headers[cIdx(imap)].part_headers[j].name.c_str();
@@ -5079,7 +5079,7 @@ void IMAPSession::getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_it
           }
           else
           {
-            struct esp_mail_attacment_info_t att;
+            struct esp_mail_attachment_info_t att;
             att.filename = _headers[messageIndex].part_headers[i].filename.c_str();
             att.mime = _headers[messageIndex].part_headers[i].content_type.c_str();
             att.name = _headers[messageIndex].part_headers[i].name.c_str();
@@ -5160,7 +5160,7 @@ void IMAPSession::getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_
               }
               else
               {
-                struct esp_mail_attacment_info_t att;
+                struct esp_mail_attachment_info_t att;
                 att.filename = _headers[messageIndex].part_headers[i].filename.c_str();
                 att.mime = _headers[messageIndex].part_headers[i].content_type.c_str();
                 att.name = _headers[messageIndex].part_headers[i].name.c_str();
