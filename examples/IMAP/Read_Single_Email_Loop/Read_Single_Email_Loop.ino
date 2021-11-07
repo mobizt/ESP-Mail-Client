@@ -210,6 +210,16 @@ void setup()
 
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
+
+    totalMessage = imap.selectedFolder().msgCount();
+
+    /* Start fetch from last message */
+    msgNum = totalMessage;
+    sign = -1; //count down
+
+    /* To start fetch from first message */
+    //msgNum = 1;
+    //sign = 1;// count up
 }
 
 void loop()
@@ -218,37 +228,44 @@ void loop()
     {
         readMillis = millis();
 
-        if (msgNum == 0)
+        if (msgNum <= 0)
         {
             msgNum = 1;
             sign = 1;
         }
-        else if (msgNum > totalMessage)
+        else if (msgNum >= totalMessage)
         {
             msgNum = totalMessage;
             sign = -1;
         }
 
-        /* Get message UID from message number */
-        String uid = String(imap.getUID(msgNum));
+        int uid = imap.getUID(msgNum);
+        
+        //UID must be greater than 0
+        if (uid > 0)
+        {
 
-        /* Message UID to fetch or read */
-        config.fetch.uid = uid.c_str();
+            /* Get message UID from message number */
+            String uidStr = String(imap.getUID(msgNum));
 
-        /* Set seen flag */
-        //config.fetch.set_seen = true;
+            /* Message UID to fetch or read */
+            config.fetch.uid = uidStr.c_str();
 
-        /** Read or search the Email and keep the TCP session to open
-         * The second parameter is for close the session.
-        */
+            /* Set seen flag */
+            //config.fetch.set_seen = true;
 
-        //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
-        //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
-        //to message, see the Set_Flags.ino example.
-        MailClient.readMail(&imap, false);
+            /** Read or search the Email and keep the TCP session to open
+             * The second parameter is for close the session.
+            */
 
-        /* Clear all stored data in IMAPSession object */
-        imap.empty();
+            //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
+            //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
+            //to message, see the Set_Flags.ino example.
+            MailClient.readMail(&imap, false);
+
+            /* Clear all stored data in IMAPSession object */
+            imap.empty();
+        }
 
         msgNum += sign;
     }
