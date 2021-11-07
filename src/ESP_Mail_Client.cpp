@@ -2612,7 +2612,7 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
 
 void ESP_Mail_Client::setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state)
 {
-  int i = 0;
+  size_t i = 0;
   while (buf[i] == ' ')
   {
     i++;

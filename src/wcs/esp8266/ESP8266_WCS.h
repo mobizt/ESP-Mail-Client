@@ -41,8 +41,15 @@
 
 #define MBSTRING MB_String
 
-//#define DEBUG_ESP_SSL
-//#define DEBUG_ESP_PORT Serial
+#ifdef DEBUG_ESP_SSL
+#if defined(DEBUG_ESP_PORT)
+#define DEBUG_BSSL(fmt, ...) DEBUG_ESP_PORT.printf_P((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
+#else
+#define DEBUG_BSSL(fmt, ...) ESP_MAIL_DEFAULT_DEBUG_PORT.printf((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
+#endif
+#else
+#define DEBUG_BSSL(...)
+#endif
 
 #if !defined(USING_AXTLS) && defined(ESP8266_CORE_SDK_V3_X_X)
 #define WCS_CLASS WiFiClientSecureCtx

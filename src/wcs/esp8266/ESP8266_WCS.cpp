@@ -55,11 +55,6 @@ extern "C"
 #include <c_types.h>
 #include <coredecls.h>
 
-#ifdef DEBUG_ESP_SSL
-#define DEBUG_BSSL(fmt, ...) DEBUG_ESP_PORT.printf_P((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
-#else
-#define DEBUG_BSSL(...)
-#endif
 
 ESP8266_WCS::ESP8266_WCS()
 {
