@@ -246,7 +246,7 @@ void loop()
         {
 
             /* Get message UID from message number */
-            String uidStr = String(imap.getUID(msgNum));
+            String uidStr = String(uid);
 
             /* Message UID to fetch or read */
             config.fetch.uid = uidStr.c_str();
