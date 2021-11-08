@@ -1,11 +1,13 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.5
- *   Released:  October 31, 2021
+ *   Version:   1.5.6
+ *   Released:  November 8, 2021
  *
  *   Updates:
- * - Add support IMAP and SMTP classes enables
+ * - Fix the exception error when IMAP status callback was not set when delete and move messages and create, select (open) and close folder.
+ * - Fix IMAP folder selection issues #114.
+ * - Add support IMAP decoded attachment file name.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -44,7 +46,6 @@ extern "C"
 #include <esp_wifi.h>
 }
 #endif
-
 
 bool ESP_Mail_Client::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss)
 {
@@ -108,7 +109,6 @@ int ESP_Mail_Client::getFreeHeap()
 }
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
-
 
 bool ESP_Mail_Client::validEmail(const char *s)
 {
@@ -489,7 +489,6 @@ char *ESP_Mail_Client::intStr(int value)
   return buf;
 }
 
-
 char *ESP_Mail_Client::strReplace(char *orig, char *rep, char *with)
 {
   char *result = nullptr;
@@ -673,7 +672,6 @@ MBSTRING ESP_Mail_Client::encodeBase64Str(uint8_t *src, size_t len)
 
   return outStr;
 }
-
 
 void ESP_Mail_Client::createDirs(MBSTRING dirs)
 {
@@ -1333,11 +1331,15 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
       if (cHeader(imap)->part_headers.size() > 0)
       {
+
+        cHeader(imap)->hasAttachment = cHeader(imap)->attachment_count > 0;
+
         if (cHeader(imap)->attachment_count > 0 && imap->_readCallback)
         {
           MBSTRING s;
           appendP(s, esp_mail_str_34, true);
           appendP(s, esp_mail_str_78, false);
+
           char *tmp = intStr(cHeader(imap)->attachment_count);
           s += tmp;
           delP(&tmp);
@@ -2997,7 +2999,9 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
       tmp = subStr(buf, esp_mail_str_176, esp_mail_str_136, 0, caseSensitive);
       if (tmp)
       {
-        part.filename = tmp;
+        MBSTRING s = tmp;
+        decodeHeader(s);
+        part.filename = s;
         delP(&tmp);
       }
       else
@@ -3005,7 +3009,9 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
         tmp = subStr(buf, esp_mail_str_177, NULL, 0, -1, caseSensitive);
         if (tmp)
         {
-          part.filename = tmp;
+          MBSTRING s = tmp;
+          decodeHeader(s);
+          part.filename = s;
           delP(&tmp);
         }
       }
@@ -5215,19 +5221,26 @@ bool IMAPSession::closeMailbox()
 bool IMAPSession::openMailbox(const char *folder, esp_mail_imap_auth_mode mode, bool waitResponse)
 {
 
-  if (!MailClient.reconnect(this))
+  if (!MailClient.reconnect(this) || !folder)
     return false;
 
-  if (_currentFolder.length() > 0)
+  if (strlen(folder) == 0)
+    return false;
+
+  //The SELECT/EXAMINE command automatically deselects any currently selected mailbox
+  //before attempting the new selection (RFC3501 p.33)
+
+  //folder should not close for re-selection otherwise the server returned * BAD Command Argument Error. 12
+
+  if (_mailboxOpened)
   {
-    if (strcmp(_currentFolder.c_str(), folder) != 0)
-    {
-      if (!closeMailbox())
-        return false;
-    }
+    if ((_readOnlyMode && mode == esp_mail_imap_mode_examine) || (!_readOnlyMode && mode == esp_mail_imap_mode_select))
+      return true;
   }
 
-  _currentFolder = folder;
+  if (strcmp(_currentFolder.c_str(), folder) != 0)
+    _currentFolder = folder;
+
   MBSTRING s;
   if (_readCallback)
   {
@@ -5320,7 +5333,7 @@ bool IMAPSession::createFolder(const char *folderName)
 {
   if (_debug)
   {
-    MailClient.imapCB(this, "", false);
+    esp_mail_debug("");
     MailClient.debugInfoP(esp_mail_str_320);
   }
 
@@ -5447,7 +5460,7 @@ bool IMAPSession::deleteFolder(const char *folderName)
 {
   if (_debug)
   {
-    MailClient.imapCB(this, "", false);
+    esp_mail_debug("");
     MailClient.debugInfoP(esp_mail_str_321);
   }
 
@@ -5475,12 +5488,12 @@ bool IMAPSession::deleteMessages(MessageList *toDelete, bool expunge)
 
     if (_debug)
     {
-      MailClient.imapCB(this, "", false);
+      esp_mail_debug("");
       MailClient.debugInfoP(esp_mail_str_316);
     }
 
     MBSTRING cmd;
-    char *tmp = nullptr;
+    char *tmp = NULL;
     MailClient.appendP(cmd, esp_mail_str_249, true);
     for (size_t i = 0; i < toDelete->_list.size(); i++)
     {
@@ -5523,7 +5536,6 @@ bool IMAPSession::copyMessages(MessageList *toCopy, const char *dest)
 
     if (_debug)
     {
-      MailClient.imapCB(this, "", false);
       MBSTRING s;
       MailClient.appendP(s, esp_mail_str_318, true);
       s += dest;
@@ -5602,7 +5614,6 @@ void IMAP_Status::empty()
 #endif
 
 #if defined(ENABLE_SMTP)
-
 
 void ESP_Mail_Client::mimeFromFile(const char *name, MBSTRING &mime)
 {
@@ -5969,7 +5980,6 @@ init:
   return true;
 }
 
-
 bool ESP_Mail_Client::connected(SMTPSession *smtp)
 {
   if (!smtp->tcpClient.stream())
@@ -6037,7 +6047,6 @@ size_t ESP_Mail_Client::numAtt(SMTPSession *smtp, esp_mail_attach_type type, SMT
   }
   return count;
 }
-
 
 bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
 {
@@ -8452,7 +8461,6 @@ void ESP_Mail_Client::getRFC822PartHeader(SMTPSession *smtp, MBSTRING &header, c
   appendP(header, esp_mail_str_34, false);
 }
 
-
 void ESP_Mail_Client::smtpCBP(SMTPSession *smtp, PGM_P info, bool success)
 {
   MBSTRING s;
@@ -9469,7 +9477,6 @@ void SMTP_Status::empty()
 }
 
 #endif
-
 
 ESP_Mail_Client MailClient = ESP_Mail_Client();
 

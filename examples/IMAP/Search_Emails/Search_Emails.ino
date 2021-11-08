@@ -351,7 +351,9 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
         ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
-
+        
+        //The attachment may not detect in search because the multipart/mixed 
+        //was not found in Content-Type header field.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))
