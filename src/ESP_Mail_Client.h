@@ -1,18 +1,16 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.6"
+#define ESP_MAIL_VERSION "1.5.7"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.6
- *   Released:  November 8, 2021
+ *   Version:   1.5.7
+ *   Released:  November 11, 2021
  *
  *   Updates:
- * - Fix the exception error when IMAP status callback was not set when delete and move messages and create, select (open) and close folder.
- * - Fix IMAP folder selection issues #114.
- * - Add support IMAP decoded attachment file name.
+ * - Fix IMAP folder open issue and add the timing guard for opening the same folder with the same mode.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -2666,6 +2664,9 @@ public:
    * option to false when you wish
    * to modify the Flags using the setFlag, addFlag and removeFlag functions.
    * @return The boolean value which indicates the success of operation.
+   * 
+   * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
+   * with the same readOnly mode, is less than 5 seconds.
   */
   bool selectFolder(const char *folderName, bool readOnly = true);
 
@@ -2676,6 +2677,9 @@ public:
    * option to false when you wish
    * to modify the flags using the setFlag, addFlag and removeFlag functions.
    * @return The boolean value which indicates the success of operation.
+   * 
+   * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
+   * with the same readOnly mode, is less than 5 seconds.
   */
   bool openFolder(const char *folderName, bool readOnly = true);
 
@@ -2835,6 +2839,7 @@ private:
   ESP_Mail_Session *_sesson_cfg;
   MBSTRING _currentFolder;
   bool _mailboxOpened = false;
+  unsigned long _lastSameFolderOpenMillis = 0;
   MBSTRING _nextUID;
   MBSTRING _flags_tmp;
 

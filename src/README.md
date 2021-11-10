@@ -248,6 +248,8 @@ to modify the Flags using the setFlag, addFlag and removeFlag functions.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
+note: the function will exit immediately and return true if the time since previous success folder selection (open) with the same readOnly mode, is less than 5 seconds.
+
 ```cpp
 bool selectFolder(const char *folderName, bool readOnly = true);
 ```
@@ -264,6 +266,8 @@ param **`readOnly`** The option to open the mailbox for reading only. Set this o
 to modify the flags using the setFlag, addFlag and removeFlag functions.
 
 return **`boolean`** The boolean value which indicates the success of operation.
+
+note: the function will exit immediately and return true if the time since previous success folder selection (open) with the same readOnly mode, is less than 5 seconds.
 
 ```cpp
 bool openFolder(const char *folderName, bool readOnly = true);

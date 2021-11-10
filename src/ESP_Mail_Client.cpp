@@ -1,13 +1,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.6
- *   Released:  November 8, 2021
+ *   Version:   1.5.7
+ *   Released:  November 11, 2021
  *
  *   Updates:
- * - Fix the exception error when IMAP status callback was not set when delete and move messages and create, select (open) and close folder.
- * - Fix IMAP folder selection issues #114.
- * - Add support IMAP decoded attachment file name.
+ * - Fix IMAP folder open issue and add the timing guard for opening the same folder with the same mode.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -5232,13 +5230,16 @@ bool IMAPSession::openMailbox(const char *folder, esp_mail_imap_auth_mode mode, 
 
   //folder should not close for re-selection otherwise the server returned * BAD Command Argument Error. 12
 
-  if (_mailboxOpened)
+  bool sameFolder = strcmp(_currentFolder.c_str(), folder) == 0;
+
+  //guards 5 seconds to prevent accidently frequently select the same folder with the same mode
+  if (_mailboxOpened && sameFolder && millis() - _lastSameFolderOpenMillis < 5000)
   {
     if ((_readOnlyMode && mode == esp_mail_imap_mode_examine) || (!_readOnlyMode && mode == esp_mail_imap_mode_select))
       return true;
   }
 
-  if (strcmp(_currentFolder.c_str(), folder) != 0)
+  if (!sameFolder)
     _currentFolder = folder;
 
   MBSTRING s;
@@ -5268,6 +5269,9 @@ bool IMAPSession::openMailbox(const char *folder, esp_mail_imap_auth_mode mode, 
   MailClient.appendP(s, esp_mail_str_136, false);
   if (MailClient.imapSend(this, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
     return false;
+
+  _lastSameFolderOpenMillis = millis();
+
   if (waitResponse)
   {
 
