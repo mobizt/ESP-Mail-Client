@@ -287,7 +287,7 @@ Since v1.5.4, this library supports PSRAM for internal memory allocation which y
 
 ## Exclude unused classes to save memory 
 
-Now you can comple the library only for seclected classes.
+Now you can compile the library only for seclected classes.
 
 In [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h), the IMAP and SMTP class can be enabled with the macros.
 
