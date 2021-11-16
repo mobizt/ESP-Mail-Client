@@ -1,6 +1,8 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.0
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.1
+ * 
+ * November 16, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -174,15 +176,19 @@ void ESP8266_TCP_Client::setCertFile(const char *caCertFile, esp_mail_file_stora
     fs::File f;
     if (storageType == esp_mail_file_storage_type_flash)
     {
+#if defined(ESP_MAIL_FLASH_FS)
       ESP_MAIL_FLASH_FS.begin();
       if (ESP_MAIL_FLASH_FS.exists(caCertFile))
         f = ESP_MAIL_FLASH_FS.open(caCertFile, "r");
+#endif
     }
     else if (storageType == esp_mail_file_storage_type_sd)
     {
+#if defined(ESP_MAIL_SD_FS)
       ESP_MAIL_SD_FS.begin(_sdPin);
       if (ESP_MAIL_SD_FS.exists(caCertFile))
         f = ESP_MAIL_SD_FS.open(caCertFile, FILE_READ);
+#endif
     }
 
     if (f)

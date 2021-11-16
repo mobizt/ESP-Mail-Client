@@ -1,6 +1,8 @@
 
 /*
- *ESP32 WiFi Client Secure v1.0.1
+ *ESP32 WiFi Client Secure v1.0.2
+ * 
+ * November 16, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -61,8 +63,13 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined(ESP_Mail_DEFAULT_FLASH_FS)
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#define ESP_MAIL_SD_FS ESP_Mail_DEFAULT_SD_FS
+#endif
+
+#if defined(ESP_MAIL_DEFAULT_SD_FS)
+#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
+#endif
 #define ESP_MAIL_USE_PSRAM ESP_Mail_USE_PSRAM
 
 #if defined(ESP_Mail_USE_PSRAM)

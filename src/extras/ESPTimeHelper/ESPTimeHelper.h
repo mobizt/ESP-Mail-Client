@@ -1,6 +1,8 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.3
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.4
  *
+ * November 16, 2021 
+ * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
@@ -23,10 +25,10 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-
 #ifndef ESPTimeHelper_H
 #define ESPTimeHelper_H
 
+#include <vector>
 #include <time.h>
 #include <Arduino.h>
 #if defined(ESP32)
@@ -39,6 +41,12 @@
 
 #endif
 
+#if defined(ESP_Mail_USE_PSRAM)
+#define MB_STRING_USE_PSRAM
+#endif
+
+#include "../MB_String.h"
+
 #define ESP_TIME_DEFAULT_TS 1618971013
 
 class ESPTimeHelper
@@ -50,11 +58,12 @@ public:
    * 
    * @param gmtOffset The GMT time offset in hour.
    * @param daylightOffset The Daylight time offset in hour.
+   * @param servers Optional. The NTP servers, use comma to separate the server.
    * @return boolean The status indicates the success of operation.
    * 
    * @note This requires internet connection
   */
-  bool setClock(float gmtOffset, float daylightOffset);
+  bool setClock(float gmtOffset, float daylightOffset, const char *servers = "pool.ntp.org,time.nist.gov");
 
   /** Set system time with provided timestamp
    * 
@@ -186,20 +195,30 @@ public:
   */
   String getDateTimeString();
 
+
+  /** get the clock ready state */
+  bool clockReady();
+
   time_t now;
   uint64_t msec_time_diff = 0;
   struct tm timeinfo;
   float TZ = 0.0;
-  uint8_t DST_MN = 0;
-  bool clockReady = false;
+  float DST_MN = 0.0;
 
 private:
   int totalDays(int y, int m, int d);
+  void splitTk(MB_String &str, std::vector<MB_String> &tk, const char *delim);
   char *intStr(int value);
   void setSysTime();
+  char *trimwhitespace(char *str);
+
+  bool _clockReady = false;
   const char *dow[7] = {"sunday", "monday", "tuesday", "wednesday", "thurseday", "friday", "saturday"};
   const char *months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   const char *sdow[7] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
+
+  //in ESP8266 these NTP sever strings should be existed during configuring time.
+  MB_String _sv1, _sv2, _sv3;
 };
 
 #endif //ESPTimeHelper_H

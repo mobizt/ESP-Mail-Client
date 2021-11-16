@@ -151,6 +151,11 @@ void setup()
     session.login.password = AUTHOR_PASSWORD;
     session.login.user_domain = "mydomain.net";
 
+    /* Set the NTP config time */
+    session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    session.time.gmt_offset = 3;
+    session.time.day_light_offset = 0;
+
     /* Declare the message class */
     SMTP_Message message;
 

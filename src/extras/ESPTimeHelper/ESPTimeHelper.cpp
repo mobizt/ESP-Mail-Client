@@ -1,6 +1,8 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.3
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.4
  *
+ * November 16, 2021 
+ * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
  * 
@@ -62,7 +64,7 @@ time_t ESPTimeHelper::getTimestamp(int year, int mon, int date, int hour, int mi
     return ts;
 }
 
-bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset)
+bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *servers)
 {
     bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
     TZ = gmtOffset;
@@ -79,7 +81,41 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset)
 #else
     if (now < ESP_TIME_DEFAULT_TS || newConfig)
     {
-        configTime((TZ)*3600, (DST_MN)*60, "pool.ntp.org", "time.nist.gov");
+
+        std::vector<MB_String> tk = std::vector<MB_String>();
+        MB_String sv = servers;
+
+        splitTk(sv, tk, ",");
+
+        switch (tk.size())
+        {
+        case 1:
+
+            _sv1 = tk[0];
+            configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str());
+
+            break;
+        case 2:
+
+            _sv1 = tk[0];
+            _sv2 = tk[1];
+            configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str());
+
+            break;
+        case 3:
+
+            _sv1 = tk[0];
+            _sv2 = tk[1];
+            _sv3 = tk[2];
+            configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+
+            break;
+        default:
+
+            configTime((TZ)*3600, (DST_MN)*60, "pool.ntp.org", "time.nist.gov");
+
+            break;
+        }
 
         now = time(nullptr);
         uint64_t tmp = now;
@@ -95,8 +131,52 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset)
 
 #endif
 
-    clockReady = now > ESP_TIME_DEFAULT_TS;
-    return clockReady;
+    _clockReady = now > ESP_TIME_DEFAULT_TS;
+
+    if (_clockReady)
+    {
+        _sv1.clear();
+        _sv2.clear();
+        _sv3.clear();
+    }
+
+    return _clockReady;
+}
+
+char *ESPTimeHelper::trimwhitespace(char *str)
+{
+    char *end;
+
+    // Trim leading space
+    while (isspace((unsigned char)*str))
+        str++;
+
+    if (*str == 0) // All spaces?
+        return str;
+
+    // Trim trailing space
+    end = str + strlen(str) - 1;
+    while (end > str && isspace((unsigned char)*end))
+        end--;
+
+    // Write new null terminator character
+    end[1] = '\0';
+
+    return str;
+}
+
+bool ESPTimeHelper::clockReady()
+{
+    time_t now = time(nullptr);
+    _clockReady = now > ESP_TIME_DEFAULT_TS;
+
+    if (_clockReady)
+    {
+        _sv1.clear();
+        _sv2.clear();
+        _sv3.clear();
+    }
+    return _clockReady;
 }
 
 int ESPTimeHelper::getYear()
@@ -297,6 +377,30 @@ void ESPTimeHelper::setSysTime()
         now = ts + TZ * 3600;
     localtime_r(&now, &timeinfo);
 #endif
+}
+
+void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const char *delim)
+{
+    std::size_t current, previous = 0;
+    current = str.find(delim, previous);
+    MB_String s;
+    while (current != MB_String::npos)
+    {
+
+        s = str.substr(previous, current - previous);
+
+#if defined(MB_STRING_MAJOR) && defined(MB_STRING_MINOR) && defined(MB_STRING_PATCH)
+        if (MB_STRING_MAJOR >= 1 && MB_STRING_MINOR >= 0 && MB_STRING_PATCH >= 1)
+            s.trim();
+#endif
+
+        tk.push_back(s);
+        previous = current + strlen(delim);
+        current = str.find(delim, previous);
+    }
+    s = str.substr(previous, current - previous);
+    tk.push_back(s);
+    MB_String().swap(s);
 }
 
 #endif //ESPTimeHelper_CPP

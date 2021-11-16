@@ -1,16 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.7"
+#define ESP_MAIL_VERSION "1.5.8"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.7
- *   Released:  November 11, 2021
+ *   Version:   1.5.8
+ *   Released:  November 16, 2021
  *
  *   Updates:
- * - Fix IMAP folder open issue and add the timing guard for opening the same folder with the same mode.
+ * - Add support storage file system libraries e.g. SD, SPIFFS, attachable and detachable at compile time.
+ * - Set the Date header field for SMTP by default when the NTP time was set already.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -46,7 +47,6 @@
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
-#include "extras/ESPTimeHelper/ESPTimeHelper.h"
 #include <time.h>
 #include <ctype.h>
 
@@ -61,7 +61,6 @@
 #define FORMAT_FLASH FORMAT_FLASH_IF_MOUNT_FAILED
 #include <WiFi.h>
 #include <FS.h>
-#include <SPIFFS.h>
 #include <ETH.h>
 #include "wcs/esp32/ESP32_TCP_Client.h"
 #define WCS_CLIENT ESP32_WCS
@@ -111,6 +110,8 @@ extern char *__brkval;
 
 #endif
 
+#include "extras/ESPTimeHelper/ESPTimeHelper.h"
+
 #include <vector>
 #include <strings.h>
 #include "extras/MIMEInfo.h"
@@ -130,7 +131,6 @@ extern char *__brkval;
 #define SMTP_STATUS_NO_VALID_RECIPIENTS_EXISTED -111
 #define SMTP_STATUS_NO_VALID_SENDER_EXISTED -112
 #define SMTP_STATUS_NO_SUPPORTED_AUTH -113
-
 #endif
 
 #if defined(ENABLE_IMAP)
@@ -1341,6 +1341,19 @@ struct esp_mail_sesson_login_config_t
   const char *user_domain = "";
 };
 
+/* The device time config */
+struct esp_mail_sesson_time_config_t
+{
+  /* set the NTP servers (use comma to separate the servers) to let the library to set the time from NTP server */
+  const char *ntp_server = "";
+
+  /* the GMT offset or time zone */
+  float gmt_offset = 0;
+  
+  /* the day light saving offset */
+  float day_light_offset = 0;
+};
+
 struct esp_mail_sesson_secure_config_t
 {
   /* The option to send the command to start the TLS connection */
@@ -1369,6 +1382,9 @@ struct esp_mail_session_config_t
 
   /* The log in config */
   struct esp_mail_sesson_login_config_t login;
+
+  /* The device time config */
+  struct esp_mail_sesson_time_config_t time;
 
   /* The secure config */
   struct esp_mail_sesson_secure_config_t secure;
@@ -1521,7 +1537,6 @@ static const char esp_mail_str_313[] PROGMEM = ", text: ";
 static const char esp_mail_str_325[] PROGMEM = "flash content message";
 static const char esp_mail_str_326[] PROGMEM = "file content message";
 static const char esp_mail_str_327[] PROGMEM = "\"; size=";
-
 
 static const char esp_mail_smtp_response_1[] PROGMEM = "AUTH ";
 static const char esp_mail_smtp_response_2[] PROGMEM = " LOGIN";
@@ -2363,7 +2378,7 @@ public:
 #if defined(ENABLE_IMAP)
   /** Reading Email through IMAP server.
    *
-   * @param imap The pointer to IMAP sesssion object which holds the data and
+   * @param imap The pointer to IMAP session object which holds the data and
    the TCP client.
 
    * @param closeSession The option to close the IMAP session after fetching or
@@ -2453,9 +2468,9 @@ private:
   const char *sd_mmc_mountpoint = "";
   bool sd_mmc_mode1bit = false;
   bool sd_mmc_format_if_mount_failed = false;
+  bool _clockReady = false;
 
 #if defined(ESP8266)
-  bool _clockReady = false;
   uint8_t _sdPin = SD_CS_PIN;
 #endif
 

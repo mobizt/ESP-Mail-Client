@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library. 
+ * ESP32 TCP Client Library v1.0.3.
  * 
- * v 1.0.2
+ * November 16, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -139,15 +139,19 @@ void ESP32_TCP_Client::setCertFile(const char *caCertFile, esp_mail_file_storage
         File f;
         if (storageType == esp_mail_file_storage_type_flash)
         {
+#if defined(ESP_MAIL_FLASH_FS)
             ESP_MAIL_FLASH_FS.begin();
             if (ESP_MAIL_FLASH_FS.exists(caCertFile))
                 f = ESP_MAIL_FLASH_FS.open(caCertFile, FILE_READ);
+#endif
         }
         else if (storageType == esp_mail_file_storage_type_sd)
         {
+#if defined(ESP_MAIL_SD_FS)
             ESP_MAIL_SD_FS.begin();
             if (ESP_MAIL_SD_FS.exists(caCertFile))
                 f = ESP_MAIL_SD_FS.open(caCertFile, FILE_READ);
+#endif
         }
 
         if (f)

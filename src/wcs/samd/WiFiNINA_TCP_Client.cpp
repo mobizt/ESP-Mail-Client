@@ -1,8 +1,8 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.0
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.1
  *
  * 
- * June 1, 2021
+ * November 16, 2021
  * 
  * 
  * 

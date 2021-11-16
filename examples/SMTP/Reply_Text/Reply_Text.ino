@@ -178,6 +178,7 @@ void setupIMAP()
     imap_mail_app_session.login.email = IMAP_AUTHOR_EMAIL;
     imap_mail_app_session.login.password = IMAP_AUTHOR_PASSWORD;
 
+
     /* Connect to server with the session and config */
     if (!imap.connect(&imap_mail_app_session, &imap_config))
         return;
@@ -202,6 +203,11 @@ bool setupHelloSMTP()
     hello_smtp_mail_app_session.login.email = HELLO_SMTP_AUTHOR_EMAIL;
     hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
     hello_smtp_mail_app_session.login.user_domain = "mydomain.net";
+
+    /* Set the NTP config time */
+    hello_smtp_mail_app_session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    hello_smtp_mail_app_session.time.gmt_offset = 3;
+    hello_smtp_mail_app_session.time.day_light_offset = 0;
 
     /* Connect to server with the session config */
     if (!hello_smtp.connect(&hello_smtp_mail_app_session))

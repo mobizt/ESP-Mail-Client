@@ -1,8 +1,8 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.0
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.1
  *
  * 
- * June 1, 2021
+ * November 16, 2021
  * 
  * 
  * 
@@ -49,8 +49,8 @@
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
 #endif
 
-#if defined(ESP_Mail_DEFAULT_SD_FS)
-#define ESP_MAIL_SD_FS ESP_Mail_DEFAULT_SD_FS
+#if defined(ESP_MAIL_DEFAULT_SD_FS)
+#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
 #endif
 
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
@@ -76,7 +76,7 @@ public:
     * Initialization of new TCP connection.
     * \param host - Host name without protocols.
     * \param port - Server's port.
-    * \return True as default.
+    * \return True by default.
     * If no certificate string provided, use (const char*)NULL to CAcert param 
     */
   bool begin(const char *host, uint16_t port);

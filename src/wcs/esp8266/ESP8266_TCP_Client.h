@@ -1,6 +1,8 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.0
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.1
+ * 
+ * November 16, 2021
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -90,12 +92,19 @@
 
 #define FS_NO_GLOBALS
 #include <FS.h>
+#if defined(ESP_MAIL_DEFAULT_SD_FS)
+#if ESP_MAIL_DEFAULT_SD_FS == SD
 #include <SD.h>
+#endif
+#endif
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#if defined(ESP_Mail_DEFAULT_FLASH_FS)
 #define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#define ESP_MAIL_SD_FS ESP_Mail_DEFAULT_SD_FS
-
+#endif
+#if defined(ESP_MAIL_DEFAULT_SD_FS)
+#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
+#endif
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
 #define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)
 #define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30

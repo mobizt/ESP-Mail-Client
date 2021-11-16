@@ -1,11 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.7
- *   Released:  November 11, 2021
+ *   Version:   1.5.8
+ *   Released:  November 16, 2021
  *
  *   Updates:
- * - Fix IMAP folder open issue and add the timing guard for opening the same folder with the same mode.
+ * - Add support storage file system libraries e.g. SD, SPIFFS, attachable and detachable at compile time.
+ * - Set the Date header field for SMTP by default when the NTP time was set already.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -47,6 +48,7 @@ extern "C"
 
 bool ESP_Mail_Client::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss)
 {
+#if defined(ESP_MAIL_SD_FS)
   _sck = sck;
   _miso = miso;
   _mosi = mosi;
@@ -60,22 +62,26 @@ bool ESP_Mail_Client::sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t s
 #elif defined(ESP8266)
   return ESP_MAIL_SD_FS.begin(_ss);
 #endif
+#endif
   return false;
 }
 
 bool ESP_Mail_Client::sdBegin(void)
 {
+#if defined(ESP_MAIL_SD_FS)
   _sdConfigSet = false;
 #if defined(ESP32)
   return ESP_MAIL_SD_FS.begin();
 #elif defined(ESP8266)
   return ESP_MAIL_SD_FS.begin(SD_CS_PIN);
 #endif
+#endif
   return false;
 }
 
 bool ESP_Mail_Client::sdMMCBegin(const char *mountpoint, bool mode1bit, bool format_if_mount_failed)
 {
+#if defined(ESP_MAIL_SD_FS)
 #if defined(ESP32)
 #if defined(CARD_TYPE_SD_MMC)
   _sdConfigSet = true;
@@ -83,6 +89,7 @@ bool ESP_Mail_Client::sdMMCBegin(const char *mountpoint, bool mode1bit, bool for
   sd_mmc_mode1bit = mode1bit;
   sd_mmc_format_if_mount_failed = format_if_mount_failed;
   return ESP_MAIL_SD_FS.begin(mountpoint, mode1bit, format_if_mount_failed);
+#endif
 #endif
 #endif
   return false;
@@ -262,7 +269,8 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginH, PGM_P endH, int beg
 #if defined(ESP32) || defined(ESP8266)
 void ESP_Mail_Client::setSecure(TCP_CLIENT &tcpClient, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
 {
-  MailClient.Time.setClock(0, 0);
+  MailClient.Time.setClock(session->time.gmt_offset, session->time.day_light_offset, session->time.ntp_server);
+  MailClient._clockReady = MailClient.Time.clockReady();
 
 #if defined(ESP32)
   if (tcpClient._certType == -1)
@@ -673,6 +681,7 @@ MBSTRING ESP_Mail_Client::encodeBase64Str(uint8_t *src, size_t len)
 
 void ESP_Mail_Client::createDirs(MBSTRING dirs)
 {
+#if defined(ESP_MAIL_SD_FS)
   MBSTRING dir = "";
   int count = 0;
   for (size_t i = 0; i < dirs.length(); i++)
@@ -689,10 +698,12 @@ void ESP_Mail_Client::createDirs(MBSTRING dirs)
   if (count > 0)
     ESP_MAIL_SD_FS.mkdir(dir.c_str());
   MBSTRING().swap(dir);
+#endif
 }
 
 bool ESP_Mail_Client::sdTest()
 {
+#if defined(ESP_MAIL_SD_FS)
 #if defined(CARD_TYPE_SD)
   if (_sdConfigSet)
     sdBegin(_sck, _miso, _mosi, _ss);
@@ -729,6 +740,9 @@ bool ESP_Mail_Client::sdTest()
   ESP_MAIL_SD_FS.remove(esp_mail_str_204);
 
   return true;
+#else
+  return false;
+#endif
 }
 
 #endif
@@ -1311,20 +1325,23 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
       {
         if (!_sdOk && imap->_config->storage.type == esp_mail_file_storage_type_sd)
         {
+#if defined(ESP_MAIL_SD_FS)
           _sdOk = sdTest();
           if (_sdOk)
             if (!ESP_MAIL_SD_FS.exists(imap->_config->storage.saved_path))
               createDirs(imap->_config->storage.saved_path);
+#endif
         }
         else if (!_flashOk && imap->_config->storage.type == esp_mail_file_storage_type_flash)
+        {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
           _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
-#else
-        {
-        }
 #endif
+#endif
+        }
       }
 
       if (cHeader(imap)->part_headers.size() > 0)
@@ -3624,11 +3641,15 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
   if (imap->_config->storage.type == esp_mail_file_storage_type_sd && !_sdOk)
     _sdOk = sdTest();
   else if (imap->_config->storage.type == esp_mail_file_storage_type_flash && !_flashOk)
+  {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
     _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
     _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
+#endif
+  }
 
   if (_sdOk || _flashOk)
   {
@@ -3636,13 +3657,21 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap)
       file.close();
 
     if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
+    {
+#if defined(ESP_MAIL_SD_FS)
       file = ESP_MAIL_SD_FS.open(headerFilePath.c_str(), FILE_WRITE);
+#endif
+    }
     else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       file = ESP_MAIL_FLASH_FS.open(headerFilePath.c_str(), FILE_WRITE);
 #elif defined(ESP8266)
       file = ESP_MAIL_FLASH_FS.open(headerFilePath.c_str(), "w");
 #endif
+#endif
+    }
 
     if (file)
     {
@@ -4215,11 +4244,15 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
     if (imap->_config->storage.type == esp_mail_file_storage_type_sd && !_sdOk)
       _sdOk = sdTest();
     else if (imap->_config->storage.type == esp_mail_file_storage_type_flash && !_flashOk)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
+#endif
+    }
 
     if (_sdOk || _flashOk)
     {
@@ -4245,9 +4278,11 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       filePath += cPart(imap)->filename;
 
       if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
+      {
 #if defined(ESP_MAIL_SD_FS)
         file = ESP_MAIL_SD_FS.open(filePath.c_str(), FILE_WRITE);
 #endif
+      }
       else if (imap->_config->storage.type == esp_mail_file_storage_type_flash)
       {
 #if defined(ESP_MAIL_FLASH_FS)
@@ -4610,9 +4645,11 @@ void ESP_Mail_Client::prepareFilePath(IMAPSession *imap, MBSTRING &filePath, boo
   fpath += tmp;
   delP(&tmp);
 
+#if defined(ESP_MAIL_SD_FS)
   if (imap->_config->storage.type == esp_mail_file_storage_type_sd)
     if (!ESP_MAIL_SD_FS.exists(fpath.c_str()))
       createDirs(fpath);
+#endif
 
   if (header)
   {
@@ -4684,13 +4721,30 @@ bool IMAPSession::closeSession()
   return MailClient.handleIMAPError(this, 0, true);
 }
 
-bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
+bool IMAPSession::connect(ESP_Mail_Session *session, IMAP_Config *config)
 {
   if (_tcpConnected)
     MailClient.closeTCPSession(this);
 
-  _sesson_cfg = sesssion;
+  _sesson_cfg = session;
   _config = config;
+
+  if (session)
+  {
+    if (strlen(session->time.ntp_server) > 0)
+    {
+#if defined(ESP_MAIL_DEFAULT_DEBUG_PORT)
+      ESP_MAIL_DEFAULT_DEBUG_PORT.println(F("Acquiring time from NTP server...\n"));
+#endif
+      MailClient.Time.setClock(session->time.gmt_offset, session->time.day_light_offset, session->time.ntp_server);
+      unsigned long waitMs = millis();
+      while (!MailClient.Time.clockReady() && millis() - waitMs < 5000)
+      {
+        delay(0);
+      }
+      MailClient._clockReady = MailClient.Time.clockReady();
+    }
+  }
 
 #if defined(ESP32) || defined(ESP8266)
 
@@ -4704,11 +4758,15 @@ bool IMAPSession::connect(ESP_Mail_Session *sesssion, IMAP_Config *config)
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_sd && !MailClient._sdOk)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
+#endif
+    }
   }
 
 #endif
@@ -6346,11 +6404,33 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   s += msg->subject;
   appendP(s, esp_mail_str_34, false);
 
+  bool dateHdr = false;
+
   if (msg->_hdr.size() > 0)
   {
     for (uint8_t k = 0; k < msg->_hdr.size(); k++)
     {
       s += msg->_hdr[k];
+      appendP(s, esp_mail_str_34, false);
+
+      if (strcmpP(msg->_hdr[k], 0, esp_mail_str_99, false))
+        dateHdr = true;
+    }
+  }
+
+  if (!dateHdr)
+  {
+
+#if defined(ARDUINO_ARCH_SAMD)
+    unsigned long now = WiFi.getTime();
+#else
+    time_t now = time(nullptr);
+#endif
+    if (now > ESP_TIME_DEFAULT_TS)
+    {
+      appendP(s, esp_mail_str_99, false);
+      appendP(s, esp_mail_str_131, false);
+      s += Time.getDateTimeString();
       appendP(s, esp_mail_str_34, false);
     }
   }
@@ -6577,6 +6657,22 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     appendP(buf, esp_mail_str_99, false);
     buf += msg->date;
     appendP(buf, esp_mail_str_34, false);
+  }
+  else
+  {
+
+#if defined(ARDUINO_ARCH_SAMD)
+      unsigned long now = WiFi.getTime();
+#else
+      time_t now = time(nullptr);
+#endif
+      if (now > ESP_TIME_DEFAULT_TS)
+      {
+        appendP(buf, esp_mail_str_99, false);
+        appendP(buf, esp_mail_str_131, false);
+        buf += Time.getDateTimeString();
+        appendP(buf, esp_mail_str_34, false);
+      }
   }
 
   if (strlen(msg->from.email) > 0)
@@ -7041,11 +7137,15 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
           _sdOk = sdTest();
 
         if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
+        {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
           _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
           _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
+#endif
+        }
 
         if ((!_sdOk && att->file.storage_type == esp_mail_file_storage_type_sd) || (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash))
         {
@@ -7122,15 +7222,17 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
     }
 
     if (att->file.storage_type == esp_mail_file_storage_type_sd)
+    {
 #if defined(ESP_MAIL_SD_FS)
       file_existed = ESP_MAIL_SD_FS.exists(filepath.c_str());
 #endif
-  }
-  else if (att->file.storage_type == esp_mail_file_storage_type_flash)
-  {
+    }
+    else if (att->file.storage_type == esp_mail_file_storage_type_flash)
+    {
 #if defined(ESP_MAIL_FLASH_FS)
-    file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
+      file_existed = ESP_MAIL_FLASH_FS.exists(filepath.c_str());
 #endif
+    }
   }
 
   if (!file_existed)
@@ -7153,13 +7255,21 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
     buf.clear();
 
     if (att->file.storage_type == esp_mail_file_storage_type_sd)
+    {
+#if defined(ESP_MAIL_SD_FS)
       file = ESP_MAIL_SD_FS.open(filepath.c_str(), FILE_READ);
+#endif
+    }
     else if (att->file.storage_type == esp_mail_file_storage_type_flash)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), FILE_READ);
 #elif defined(ESP8266)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), "r");
 #endif
+#endif
+    }
 
     if (!file)
       return false;
@@ -7223,13 +7333,21 @@ bool ESP_Mail_Client::openFileRead2(SMTPSession *smtp, SMTP_Message *msg, File &
   if (file_existed)
   {
     if (storageType == esp_mail_file_storage_type_sd)
+    {
+#if defined(ESP_MAIL_SD_FS)
       file = ESP_MAIL_SD_FS.open(filepath.c_str(), FILE_READ);
+#endif
+    }
     else if (storageType == esp_mail_file_storage_type_flash)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), FILE_READ);
 #elif defined(ESP8266)
       file = ESP_MAIL_FLASH_FS.open(filepath.c_str(), "r");
 #endif
+#endif
+    }
     return true;
   }
 
@@ -7335,11 +7453,15 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MBS
             _sdOk = sdTest();
 
           if (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash)
+          {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
             _flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
             _flashOk = ESP_MAIL_FLASH_FS.begin();
 #endif
+#endif
+          }
 
           if ((!_sdOk && att->file.storage_type == esp_mail_file_storage_type_sd) || (!_flashOk && att->file.storage_type == esp_mail_file_storage_type_flash))
           {
@@ -9268,6 +9390,24 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
   if (_tcpConnected)
     MailClient.closeTCPSession(this);
 
+  if (config)
+  {
+    if (strlen(config->time.ntp_server) > 0)
+    {
+
+#if defined(ESP_MAIL_DEFAULT_DEBUG_PORT)
+      ESP_MAIL_DEFAULT_DEBUG_PORT.println(F("Acquiring time from NTP server...\n"));
+#endif
+      MailClient.Time.setClock(config->time.gmt_offset, config->time.day_light_offset, config->time.ntp_server);
+      unsigned long waitMs = millis();
+      while (!MailClient.Time.clockReady() && millis() - waitMs < 5000)
+      {
+        delay(0);
+      }
+      MailClient._clockReady = MailClient.Time.clockReady();
+    }
+  }
+
   _sesson_cfg = config;
 #if defined(ESP32) || defined(ESP8266)
   _caCert = nullptr;
@@ -9280,14 +9420,15 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_sd && !MailClient._sdOk)
       MailClient._sdOk = MailClient.sdTest();
     if (_sesson_cfg->certificate.cert_file_storage_type == esp_mail_file_storage_type::esp_mail_file_storage_type_flash && !MailClient._flashOk)
+    {
+#if defined(ESP_MAIL_FLASH_FS)
 #if defined(ESP32)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin(FORMAT_FLASH);
 #elif defined(ESP8266)
       MailClient._flashOk = ESP_MAIL_FLASH_FS.begin();
-#else
-    {
-    }
 #endif
+#endif
+    }
   }
   return MailClient.smtpAuth(this);
 }
@@ -9374,7 +9515,6 @@ String SMTPSession::errorReason()
   case SMTP_STATUS_NO_SUPPORTED_AUTH:
     MailClient.appendP(ret, esp_mail_str_42, true);
     break;
-
   default:
     break;
   }

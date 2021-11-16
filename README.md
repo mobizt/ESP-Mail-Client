@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.5.7
+# Mail Client Arduino Library v1.5.8
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -149,7 +149,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21060).
 
 ```
-> C: ESP Mail Client v1.5.3, Fw v1.4.5+21060
+> C: ESP Mail Client v1.5.8, Fw v1.4.5+21060
 ```
 
 ## Library Instalation
@@ -297,7 +297,15 @@ In [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h), the IMAP and SMTP class can be enable
 #define ENABLE_SMTP
 ```
 
-You can comment these macros to disable or exclude them from compile.
+
+In ESP8266 and ESP32, when no attachments require for uploading and downloading, the storage file systems libraries e.g. SD or SD_MMC (ESP32), SPIFFS and LittleFS will no longer use and can be excluded when compiling the code to reduce program flash size, by comment the following macros to exclude them.
+
+```cpp
+#define ESP_MAIL_DEFAULT_SD_FS SD
+
+#define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
+```
+
 
 
 

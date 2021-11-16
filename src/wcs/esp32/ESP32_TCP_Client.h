@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library. 
+ * ESP32 TCP Client Library v1.0.3.
  * 
- * v 1.0.2
+ * November 16, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -38,7 +38,11 @@
 #include <WiFiClient.h>
 #include <FS.h>
 #include <SPIFFS.h>
+#if defined(ESP_MAIL_DEFAULT_SD_FS)
+#if ESP_MAIL_DEFAULT_SD_FS == SD
 #include <SD.h>
+#endif
+#endif
 #include "ESP32_WCS.h"
 
 
@@ -64,7 +68,7 @@ public:
     * Initialization of new TCP connection.
     * \param host - Host name without protocols.
     * \param port - Server's port.
-    * \return True as default.
+    * \return True by default.
     * If no certificate string provided, use (const char*)NULL to CAcert param 
     */
   bool begin(const char *host, uint16_t port);

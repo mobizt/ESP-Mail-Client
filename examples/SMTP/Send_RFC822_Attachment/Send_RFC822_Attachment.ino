@@ -109,6 +109,11 @@ void setup()
   session.login.password = AUTHOR_PASSWORD;
   session.login.user_domain = "mydomain.net";
 
+  /* Set the NTP config time */
+  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.gmt_offset = 3;
+  session.time.day_light_offset = 0;
+
   /* Declare the message class */
   SMTP_Message message;
 
@@ -155,8 +160,11 @@ void setup()
   rfc822.from.email = "rob@example.com";
   rfc822.sender.name = "steve";
   rfc822.sender.email = "steve@example.com";
+  
+  //This date field will set by default if the device time was already set or set date field manually
   String dt = MailClient.Time.getDateTimeString();
   rfc822.date = dt.c_str();
+
   rfc822.subject = "Test rfc822 message";
   rfc822.comments = "This is comment";
   rfc822.addRecipient("joe", "joe@example.com");

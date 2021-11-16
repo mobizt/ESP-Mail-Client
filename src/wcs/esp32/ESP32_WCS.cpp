@@ -1,5 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v1.0.1
+ * ESP32 WiFi Client Secure v1.0.2
+ * 
+ * November 16, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
