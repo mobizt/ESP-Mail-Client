@@ -1,7 +1,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.9
+ *   Version:   1.5.10
  *   Released:  November 16, 2021
  *
  *   Updates:
