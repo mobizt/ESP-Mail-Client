@@ -62,12 +62,12 @@ jobs:
         pip install --upgrade platformio
     - name: Install 3rd party dependecies
       run: | 
-        pio lib install \
+        pio lib -g install \
         https://github.com/mobizt/ESP-Mail-Client
 
     - name: update library
       run: |
-        pio lib update
+        pio lib --global update
         
     - name: Run PlatformIO Examples
       run: |
@@ -130,8 +130,12 @@ jobs:
 
     - name: Install 3rd party dependecies
       run: | 
-        pio lib install \
+        pio lib -g install \
         https://github.com/mobizt/ESP-Mail-Client
+
+    - name: update library
+      run: |
+        pio lib --global update
 
     - name: Run PlatformIO Examples
       run: |
