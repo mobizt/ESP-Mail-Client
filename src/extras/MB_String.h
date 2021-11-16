@@ -183,7 +183,7 @@ public:
     void trim()
     {
         int p1 = 0, p2 = length() - 1;
-        while (p1 < length())
+        while (p1 < (int)length())
         {
             if (buf[p1] != ' ')
                 break;
@@ -197,13 +197,13 @@ public:
             p2--;
         }
 
-        if (p1 == length() && p2 < 0)
+        if (p1 == (int)length() && p2 < 0)
         {
             clear();
             return;
         }
 
-        if (p2 >= p1 && p2 >= 0 && p1 < length())
+        if (p2 >= p1 && p2 >= 0 && p1 < (int)length())
         {
             memmove(buf, buf + p1, p2 - p1 + 1);
             buf[p2 - p1 + 1] = '\0';
