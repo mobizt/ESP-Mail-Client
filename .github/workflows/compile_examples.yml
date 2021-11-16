@@ -67,7 +67,7 @@ jobs:
 
     - name: update library
       run: |
-        pio lib --global update
+        pio lib update
         
     - name: Run PlatformIO Examples
       run: |

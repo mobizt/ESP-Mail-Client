@@ -369,6 +369,11 @@ session.login.email = "your Email address"; //set to empty for no SMTP Authentic
 session.login.password = "your Email password"; //set to empty for no SMTP Authentication
 session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
+// Set the NTP config time
+session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+session.time.gmt_offset = 3;
+session.time.day_light_offset = 0;
+
 // Define the SMTP_Message class variable to handle to message being transport
 SMTP_Message message;
 
