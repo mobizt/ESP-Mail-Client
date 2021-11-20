@@ -20,13 +20,8 @@
 //To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
 #include <Arduino.h>
-#if defined(ESP32)
 #include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#endif
 #include <ESP_Mail_Client.h>
-//#include "image.h"
 
 #include "esp_camera.h"
 #include "camera_pins.h"

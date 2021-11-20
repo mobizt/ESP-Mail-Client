@@ -20,9 +20,7 @@
 //The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
 
 #include <Arduino.h>
-#if defined(ESP32)
 #include <WiFi.h>
-#endif
 #include <ESP_Mail_Client.h>
 
 //To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
