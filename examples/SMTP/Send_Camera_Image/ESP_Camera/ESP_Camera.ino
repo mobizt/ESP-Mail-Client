@@ -1,8 +1,9 @@
 
 
 /**
- * This example will send the Email with inline images stored in flash memory.
- * The message content stores as HTML data in flash memory
+ * This example will send the Email with inline image from ESP32 camera module.
+ * 
+ * The ESP32 board used in this example is ESP32 PSRAM Timer Camera X (OV3660).
  * 
  * The html and text version messages will be sent.
  * 
@@ -18,20 +19,17 @@
 
 //To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
-//The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
-
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
 #endif
 #include <ESP_Mail_Client.h>
+//#include "image.h"
 
-//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
-
-//The OV2640 library
-#if defined(ESP32)
-#include "cam/OV2640.h"
-#endif
+#include "esp_camera.h"
+#include "camera_pins.h"
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -58,23 +56,49 @@
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
 
-/* Define the OV2640 object */
-#if defined(ESP32)
-OV2640 cam;
-#endif
-
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-void initCam();
 
 void setup()
 {
+
     Serial.begin(115200);
 
-#if defined(ESP32)
-
     Serial.println();
+
+    camera_config_t config;
+    config.ledc_channel = LEDC_CHANNEL_0;
+    config.ledc_timer = LEDC_TIMER_0;
+    config.pin_d0 = Y2_GPIO_NUM;
+    config.pin_d1 = Y3_GPIO_NUM;
+    config.pin_d2 = Y4_GPIO_NUM;
+    config.pin_d3 = Y5_GPIO_NUM;
+    config.pin_d4 = Y6_GPIO_NUM;
+    config.pin_d5 = Y7_GPIO_NUM;
+    config.pin_d6 = Y8_GPIO_NUM;
+    config.pin_d7 = Y9_GPIO_NUM;
+    config.pin_xclk = XCLK_GPIO_NUM;
+    config.pin_pclk = PCLK_GPIO_NUM;
+    config.pin_vsync = VSYNC_GPIO_NUM;
+    config.pin_href = HREF_GPIO_NUM;
+    config.pin_sscb_sda = SIOD_GPIO_NUM;
+    config.pin_sscb_scl = SIOC_GPIO_NUM;
+    config.pin_pwdn = PWDN_GPIO_NUM;
+    config.pin_reset = RESET_GPIO_NUM;
+    config.xclk_freq_hz = 20000000;
+    config.pixel_format = PIXFORMAT_JPEG;
+    config.frame_size = FRAMESIZE_QXGA;
+    config.jpeg_quality = 10;
+    config.fb_count = 2;
+
+    // camera init
+    esp_err_t err = esp_camera_init(&config);
+    if (err != ESP_OK)
+    {
+        Serial.printf("Camera init failed with error 0x%x", err);
+        return;
+    }
 
     Serial.print("Connecting to AP");
 
@@ -91,14 +115,12 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    initCam();
-
     /** Enable the debug via Serial port
-     * none debug or 0
-     * basic debug or 1
-     * 
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+   * none debug or 0
+   * basic debug or 1
+   * 
+   * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+  */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -132,7 +154,7 @@ void setup()
     message.subject = "Test sending camera image";
     message.addRecipient("user1", "change_this@your_mail_dot_com");
 
-    message.html.content = "<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"800\" height=\"600\">";
+    message.html.content = "<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"2048\" height=\"1536\">";
 
     /** The content transfer encoding e.g.
      * enc_7bit or "7bit" (not encoded)
@@ -152,6 +174,8 @@ void setup()
     */
     message.html.charSet = "utf-8";
 
+    camera_fb_t *fb = esp_camera_fb_get();
+
     SMTP_Attachment att;
 
     /** Set the inline image info e.g.
@@ -161,8 +185,8 @@ void setup()
     att.descr.filename = "camera.jpg";
     att.descr.mime = "image/jpg";
 
-    att.blob.data = cam.getfb();
-    att.blob.size = cam.getSize();
+    att.blob.data = fb->buf;
+    att.blob.size = fb->len;
 
     att.descr.content_id = "image-001"; //The content id (cid) of camera.jpg image in the src tag
 
@@ -184,52 +208,10 @@ void setup()
     //smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
-
-#endif
 }
 
 void loop()
 {
-}
-
-void initCam()
-{
-
-#if defined(ESP32)
-
-    camera_config_t camera_config;
-
-    /** For M5Stack M5Cam - ESP32 Camera (OV2640)
-   * Change to match your pin configuration between OV2640 Camera and ESP32 connection
-  */
-    camera_config.ledc_channel = LEDC_CHANNEL_0;
-    camera_config.ledc_timer = LEDC_TIMER_0;
-    camera_config.pin_d0 = 17;
-    camera_config.pin_d1 = 35;
-    camera_config.pin_d2 = 34;
-    camera_config.pin_d3 = 5;
-    camera_config.pin_d4 = 39;
-    camera_config.pin_d5 = 18;
-    camera_config.pin_d6 = 36;
-    camera_config.pin_d7 = 19;
-    camera_config.pin_xclk = 27;
-    camera_config.pin_pclk = 21;
-    camera_config.pin_vsync = 22;
-    camera_config.pin_href = 26;
-    camera_config.pin_sscb_sda = 25;
-    camera_config.pin_sscb_scl = 23;
-    camera_config.pin_reset = 15;
-    camera_config.xclk_freq_hz = 20000000;
-
-    camera_config.pixel_format = CAMERA_PF_JPEG;
-    camera_config.frame_size = CAMERA_FS_SVGA;
-
-    cam.init(camera_config);
-
-    delay(100);
-
-    cam.run();
-#endif
 }
 
 /* Callback function to get the Email sending status */
@@ -261,7 +243,7 @@ void smtpCallback(SMTP_Status status)
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
         }
         Serial.println("----------------\n");
-        
+
         //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
         //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
 
