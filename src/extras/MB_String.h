@@ -1,11 +1,14 @@
 
 /**
- * Mobizt's PSRAM supported String, version 1.1.0
+ * Mobizt's PSRAM supported String, version 1.1.1
  * 
  * 
  * November 23, 2021
  * 
  * Changes Log
+ * 
+ * v1.1.1
+ * - Fix possible ESP8266 code exit without resetting the external heap stack
  * 
  * v1.1.0
  * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
@@ -783,28 +786,29 @@ private:
                 int slen = length();
 
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-
                 buf = (char *)ps_realloc(buf, len);
 #else
                 buf = (char *)realloc(buf, len);
 #endif
-
-                if (!buf)
-                    return;
-                buf[slen] = '\0';
-                bufLen = len;
+                if (buf)
+                {
+                    buf[slen] = '\0';
+                    bufLen = len;
+                }
             }
             else
             {
+                bool nn = false;
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-                if ((buf = (char *)ps_malloc(len)) == 0)
-                    return;
+                nn = ((buf = (char *)ps_malloc(len)) > 0);
 #else
-                if ((buf = (char *)malloc(len)) == 0)
-                    return;
+                nn = ((buf = (char *)malloc(len)) > 0);
 #endif
-                buf[0] = '\0';
-                bufLen = len;
+                if (nn)
+                {
+                    buf[0] = '\0';
+                    bufLen = len;
+                }
             }
 
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
