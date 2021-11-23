@@ -1,11 +1,14 @@
 
 /**
- * Mobizt's PSRAM supported String, version 1.0.1
+ * Mobizt's PSRAM supported String, version 1.1.0
  * 
  * 
- * November 16, 2021
+ * November 23, 2021
  * 
  * Changes Log
+ * 
+ * v1.1.0
+ * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
  * 
  * v1.0.1
  * - Add trim function
@@ -44,16 +47,28 @@
 #include <strings.h>
 
 #define MB_STRING_MAJOR 1
-#define MB_STRING_MINOR 0
-#define MB_STRING_PATCH 1
+#define MB_STRING_MINOR 1
+#define MB_STRING_PATCH 0
+
+#if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
+#include <umm_malloc/umm_malloc.h>
+#include <umm_malloc/umm_heap_select.h>
+#define ESP8266_USE_EXTERNAL_HEAP
+#endif
 
 class MB_String
 {
 public:
-    MB_String(){};
+    MB_String()
+    {
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+        //reserve default 1 byte external heap to refer to its pointer later
+        reset(1);
+#endif
+    };
     ~MB_String()
     {
-        clear();
+        allocate(0, false);
     };
 
     MB_String(const char *cstr)
@@ -405,8 +420,32 @@ public:
 
     void clear()
     {
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+        reset(1);
+#else
         allocate(0, false);
+#endif
     }
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+    void reset(size_t len)
+    {
+        if (len == 0)
+            len = 4;
+        ESP.setExternalHeap();
+        if (buf)
+            buf = (char *)realloc(buf, len);
+        else
+            buf = (char *)malloc(len);
+        ESP.resetHeap();
+
+        if (buf)
+        {
+            bufLen = len;
+            memset(buf, 0, len);
+        }
+    }
+#endif
 
     void resize(size_t len)
     {
@@ -722,6 +761,7 @@ private:
 
     void allocate(size_t len, bool shrink)
     {
+
         if (len == 0)
         {
             if (buf)
@@ -733,6 +773,10 @@ private:
 
         if (len > bufLen || shrink)
         {
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+            ESP.setExternalHeap();
+#endif
 
             if (shrink || (bufLen > 0 && buf))
             {
@@ -762,6 +806,10 @@ private:
                 buf[0] = '\0';
                 bufLen = len;
             }
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+            ESP.resetHeap();
+#endif
         }
     }
 

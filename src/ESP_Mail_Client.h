@@ -1,17 +1,16 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.5.10"
+#define ESP_MAIL_VERSION "1.6.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.10
- *   Released:  November 16, 2021
+ *   Version:   1.6.0
+ *   Released:  November 23, 2021
  *
  *   Updates:
- * - Add support storage file system libraries e.g. SD, SPIFFS, attachable and detachable at compile time.
- * - Set the Date header field for SMTP by default when the NTP time was set already.
+ * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.

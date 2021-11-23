@@ -1,12 +1,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.5.10
- *   Released:  November 16, 2021
+ *   Version:   1.6.0
+ *   Released:  November 23, 2021
  *
  *   Updates:
- * - Add support storage file system libraries e.g. SD, SPIFFS, attachable and detachable at compile time.
- * - Set the Date header field for SMTP by default when the NTP time was set already.
+ * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -418,7 +417,17 @@ void *ESP_Mail_Client::newP(size_t len)
 
 #else
 
-  if ((p = (void *)malloc(getReservedLen(len))) == 0)
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+  ESP.setExternalHeap();
+#endif
+
+  bool nn = ((p = (void *)malloc(getReservedLen(len))) > 0);
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+  ESP.resetHeap();
+#endif
+
+  if (!nn)
     return NULL;
 
 #endif
@@ -579,7 +588,25 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   extra_pad = (4 - count % 4) % 4;
 
   olen = (count + extra_pad) / 4 * 3;
+
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_MAIL_USE_PSRAM)
+
+  pos = out = (unsigned char *)ps_malloc(olen);
+
+#else
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+  ESP.setExternalHeap();
+#endif
+
   pos = out = (unsigned char *)malloc(olen);
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+  ESP.resetHeap();
+#endif
+
+#endif
+
   if (out == NULL)
     goto exit;
 
@@ -6662,17 +6689,17 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
   {
 
 #if defined(ARDUINO_ARCH_SAMD)
-      unsigned long now = WiFi.getTime();
+    unsigned long now = WiFi.getTime();
 #else
-      time_t now = time(nullptr);
+    time_t now = time(nullptr);
 #endif
-      if (now > ESP_TIME_DEFAULT_TS)
-      {
-        appendP(buf, esp_mail_str_99, false);
-        appendP(buf, esp_mail_str_131, false);
-        buf += Time.getDateTimeString();
-        appendP(buf, esp_mail_str_34, false);
-      }
+    if (now > ESP_TIME_DEFAULT_TS)
+    {
+      appendP(buf, esp_mail_str_99, false);
+      appendP(buf, esp_mail_str_131, false);
+      buf += Time.getDateTimeString();
+      appendP(buf, esp_mail_str_34, false);
+    }
   }
 
   if (strlen(msg->from.email) > 0)

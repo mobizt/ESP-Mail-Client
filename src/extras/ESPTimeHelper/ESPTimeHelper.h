@@ -1,7 +1,7 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.4
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.5
  *
- * November 16, 2021 
+ * November 23, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -211,6 +211,7 @@ private:
   char *intStr(int value);
   void setSysTime();
   char *trimwhitespace(char *str);
+  int compareVersion(uint8_t major1, uint8_t minor1, uint8_t patch1, uint8_t major2, uint8_t minor2, uint8_t patch2);
 
   bool _clockReady = false;
   const char *dow[7] = {"sunday", "monday", "tuesday", "wednesday", "thurseday", "friday", "saturday"};

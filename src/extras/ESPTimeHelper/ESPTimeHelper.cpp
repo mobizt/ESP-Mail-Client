@@ -1,7 +1,7 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.4
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.5
  *
- * November 16, 2021 
+ * November 23, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -379,6 +379,26 @@ void ESPTimeHelper::setSysTime()
 #endif
 }
 
+int ESPTimeHelper::compareVersion(uint8_t major1, uint8_t minor1, uint8_t patch1, uint8_t major2, uint8_t minor2, uint8_t patch2)
+{
+    if (major1 > major2)
+        return 1;
+    else if (major1 < major2)
+        return -1;
+
+    if (minor1 > minor2)
+        return 1;
+    else if (minor1 < minor2)
+        return -1;
+
+    if (patch1 > patch2)
+        return 1;
+    else if (patch1 < patch2)
+        return -1;
+
+    return 0;
+}
+
 void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const char *delim)
 {
     std::size_t current, previous = 0;
@@ -390,7 +410,7 @@ void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const ch
         s = str.substr(previous, current - previous);
 
 #if defined(MB_STRING_MAJOR) && defined(MB_STRING_MINOR) && defined(MB_STRING_PATCH)
-        if (MB_STRING_MAJOR >= 1 && MB_STRING_MINOR >= 0 && MB_STRING_PATCH >= 1)
+        if (compareVersion(MB_STRING_MAJOR, 1, MB_STRING_MINOR, 0,  MB_STRING_PATCH, 1) >=0)
             s.trim();
 #endif
 

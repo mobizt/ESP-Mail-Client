@@ -37,6 +37,11 @@
 
 #include "ESP_Mail_FS.h"
 
+#define ESP_MAIL_USE_PSRAM ESP_Mail_USE_PSRAM
+#if defined(ESP_Mail_USE_PSRAM)
+#define MB_STRING_USE_PSRAM
+#endif
+
 #include "extras/MB_String.h"
 
 #define MBSTRING MB_String

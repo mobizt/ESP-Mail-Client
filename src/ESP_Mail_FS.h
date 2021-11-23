@@ -21,8 +21,8 @@
 #define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
 #endif
 
-/** Use PSRAM for supported ESP32 module */
-#if defined(ESP32)
+/** Use PSRAM for supported ESP32/ESP8266 module */
+#if defined(ESP32) || defined(ESP8266)
 #define ESP_Mail_USE_PSRAM
 #endif
 
