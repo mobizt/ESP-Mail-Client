@@ -42,7 +42,7 @@
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
 */
-#define SMTP_PORT esp_mail_smtp_port_587
+#define SMTP_PORT esp_mail_smtp_port_587 //port 465 is not available for Outlook.com
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"

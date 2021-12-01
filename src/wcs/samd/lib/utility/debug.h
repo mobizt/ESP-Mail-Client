@@ -24,7 +24,7 @@
 // 
 //********************************************/
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef Debug_H
 #define Debug_H

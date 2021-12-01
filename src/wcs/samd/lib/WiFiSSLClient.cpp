@@ -17,15 +17,17 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #include "WiFiSSLClient.h"
 
-WiFiSSLClient::WiFiSSLClient() : WiFiClient()
+WiFiSSLClient::WiFiSSLClient() : 
+	WiFiClient()
 {
 }
 
-WiFiSSLClient::WiFiSSLClient(uint8_t sock) : WiFiClient(sock)
+WiFiSSLClient::WiFiSSLClient(uint8_t sock) :
+	WiFiClient(sock)
 {  
 }
 
@@ -39,21 +41,25 @@ int WiFiSSLClient::connect(const char* host, uint16_t port)
 	return WiFiClient::connectSSL(host, port);
 }
 
+/* Secure Connection Upgradable Supports */
 int WiFiSSLClient::ns_connect(const char *host, uint16_t port)
 {
   return WiFiClient::ns_connect(host, port);
 }
 
+/* Secure Connection Upgradable Supports */
 int WiFiSSLClient::ns_connectSSL(const char *host, uint16_t port, bool verify)
 {
   return WiFiClient::ns_connectSSL(host, port, verify);
 }
 
-WiFiBearSSLClient::WiFiBearSSLClient() :WiFiClient()
+WiFiBearSSLClient::WiFiBearSSLClient() :
+	WiFiClient()
 {
 }
 
-WiFiBearSSLClient::WiFiBearSSLClient(uint8_t sock) : WiFiClient(sock)
+WiFiBearSSLClient::WiFiBearSSLClient(uint8_t sock) :
+	WiFiClient(sock)
 {
 }
 

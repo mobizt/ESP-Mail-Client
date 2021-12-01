@@ -18,7 +18,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef Server_Drv_h
 #define Server_Drv_h
@@ -26,6 +26,7 @@
 #include <inttypes.h>
 #include "wifi_spi.h"
 
+/* ESP Mail Client */
 typedef enum eProtMode {TCP_MODE, UDP_MODE, TLS_MODE, UDP_MULTICAST_MODE, TLS_BEARSSL_MODE, NS_MODE = 0xf0, NS_TLS_MODE = 0xf1, NS_TLS_VERIFY_MODE = 0xf2}tProtMode;
 
 class ServerDrv
@@ -42,7 +43,7 @@ public:
     static void startClient(const char* host, uint8_t host_len, uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode=TCP_MODE);
 
     static void stopClient(uint8_t sock);
-
+                                                                                  
     static uint8_t getServerState(uint8_t sock);
 
     static uint8_t getClientState(uint8_t sock);

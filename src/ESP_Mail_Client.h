@@ -1,16 +1,16 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.6.0"
+#define ESP_MAIL_VERSION "1.6.1"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.6.0
- *   Released:  November 23, 2021
+ *   Version:   1.6.1
+ *   Released:  December 1, 2021
  *
  *   Updates:
- * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
+ * - Update WiFiNINA library v1.8.13 and NINA Firmware v1.4.8 for Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -79,13 +79,14 @@
 
 #endif
 
-#elif defined(ARDUINO_ARCH_SAMD)
+#elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 #undef min
 #undef max
 #define UPLOAD_CHUNKS_NUM 5
 #define ESP_MAIL_MIN_MEM 3000
-
+#if defined(ARDUINO_ARCH_SAMD)
 #include <algorithm>
+#endif
 #include <SPI.h>
 #include "extras/SD/SD.h"
 #include "wcs/samd/WiFiNINA_TCP_Client.h"
@@ -110,9 +111,10 @@ extern char *__brkval;
 #endif
 
 #include "extras/ESPTimeHelper/ESPTimeHelper.h"
-
+#if !defined(__AVR__)
 #include <vector>
 #include <strings.h>
+#endif
 #include "extras/MIMEInfo.h"
 
 #if defined(ENABLE_SMTP)
@@ -343,7 +345,6 @@ struct esp_mail_attachment_info_t
 };
 
 #endif
-
 
 #if defined(ENABLE_SMTP)
 
@@ -605,7 +606,6 @@ struct esp_mail_email_info_t
 };
 
 #endif
-
 
 #if defined(ENABLE_IMAP)
 
@@ -1283,7 +1283,6 @@ struct esp_mail_imap_multipart_level_t
 
 #endif
 
-
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
 struct esp_mail_link_internal_t
@@ -1348,7 +1347,7 @@ struct esp_mail_sesson_time_config_t
 
   /* the GMT offset or time zone */
   float gmt_offset = 0;
-  
+
   /* the day light saving offset */
   float day_light_offset = 0;
 };
@@ -1851,7 +1850,6 @@ static const char esp_mail_str_329[] PROGMEM = ", Fw v";
 static const char esp_mail_str_330[] PROGMEM = "+";
 
 #endif
-
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
@@ -2457,7 +2455,6 @@ private:
   friend class SMTPSession;
   friend class IMAPSession;
 
- 
   File file;
 
   bool _sdOk = false;
@@ -2472,7 +2469,6 @@ private:
 #if defined(ESP8266)
   uint8_t _sdPin = SD_CS_PIN;
 #endif
-
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 

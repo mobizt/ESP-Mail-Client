@@ -18,14 +18,14 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WiFi_Drv_h
 #define WiFi_Drv_h
 
 #include <inttypes.h>
 #include "wifi_spi.h"
-#include <IPAddress.h>
+#include "IPAddress.h"
 #include "../WiFiUdp.h"
 #include "../WiFiClient.h"
 
@@ -45,7 +45,7 @@ private:
 	// firmware version string in the format a.b.c
 	static char 	fwVersion[WL_FW_VER_LENGTH];
 
-    // settings of current selected network
+	// settings of current selected network
 	static char 	_ssid[WL_SSID_MAX_LENGTH];
 	static uint8_t 	_bssid[WL_MAC_ADDR_LENGTH];
 	static uint8_t 	_mac[WL_MAC_ADDR_LENGTH];
@@ -272,8 +272,9 @@ public:
      * result: version as string with this format a.b.c
      */
     static const char* getFwVersion();
-
-    static const char *getBuild();
+	
+	/* ESP Mail Client */
+	static const char *getBuild();
 
     static uint32_t getTime();
 

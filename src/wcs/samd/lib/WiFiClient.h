@@ -18,7 +18,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef wificlient_h
 #define wificlient_h
@@ -38,7 +38,9 @@ public:
   virtual int connect(const char *host, uint16_t port);
   virtual int connectSSL(IPAddress ip, uint16_t port);
   virtual int connectSSL(const char *host, uint16_t port);
+  /* Secure Connection Upgradable Supports */
   virtual int ns_connect(const char *host, uint16_t port);
+  /* Secure Connection Upgradable Supports */
   virtual int ns_connectSSL(const char *host, uint16_t port, bool verify);
   virtual int connectBearSSL(IPAddress ip, uint16_t port);
   virtual int connectBearSSL(const char *host, uint16_t port);

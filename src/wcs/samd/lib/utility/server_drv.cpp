@@ -20,7 +20,7 @@
 
 //#define _DEBUG_
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #include "server_drv.h"
 
@@ -172,6 +172,7 @@ void ServerDrv::stopClient(uint8_t sock)
     SpiDrv::spiSlaveDeselect();
 }
 
+
 uint8_t ServerDrv::getServerState(uint8_t sock)
 {
 	WAIT_FOR_SLAVE_SELECT();
@@ -223,7 +224,7 @@ uint8_t ServerDrv::getClientState(uint8_t sock)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-    return _data;
+   return _data;
 }
 
 uint16_t ServerDrv::availData(uint8_t sock)

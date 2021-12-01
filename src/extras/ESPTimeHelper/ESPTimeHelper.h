@@ -27,8 +27,9 @@
 
 #ifndef ESPTimeHelper_H
 #define ESPTimeHelper_H
-
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD)
 #include <vector>
+#endif
 #include <time.h>
 #include <Arduino.h>
 #if defined(ESP32)
@@ -36,7 +37,7 @@
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include "extras/SDK_Version_Common.h"
-#elif defined (ARDUINO_ARCH_SAMD)
+#elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 #include "../../wcs/samd/lib/WiFiNINA.h"
 
 #endif

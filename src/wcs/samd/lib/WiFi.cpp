@@ -18,7 +18,7 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #include "utility/wifi_drv.h"
 #include "WiFi.h"
@@ -29,7 +29,7 @@ extern "C" {
   #include "utility/debug.h"
 }
 
-WiFiClass::WiFiClass() : _timeout(50000)
+WiFiClass::WiFiClass() : _timeout(50000), _feed_watchdog_func(0)
 {
 }
 
@@ -43,6 +43,7 @@ const char* WiFiClass::firmwareVersion()
 	return WiFiDrv::getFwVersion();
 }
 
+/* ESP Mail Client */
 const char *WiFiClass::getBuild()
 {
 	return WiFiDrv::getBuild();
@@ -56,6 +57,7 @@ int WiFiClass::begin(const char* ssid)
    {
 	   for (unsigned long start = millis(); (millis() - start) < _timeout;)
 	   {
+		   feedWatchdog();
 		   delay(WL_DELAY_START_CONNECTION);
 		   status = WiFiDrv::getConnectionStatus();
 		   if ((status != WL_IDLE_STATUS) && (status != WL_NO_SSID_AVAIL) && (status != WL_SCAN_COMPLETED)) {
@@ -78,6 +80,7 @@ int WiFiClass::begin(const char* ssid, uint8_t key_idx, const char *key)
    {
 	   for (unsigned long start = millis(); (millis() - start) < _timeout;)
 	   {
+		   feedWatchdog();
 		   delay(WL_DELAY_START_CONNECTION);
 		   status = WiFiDrv::getConnectionStatus();
 		   if ((status != WL_IDLE_STATUS) && (status != WL_NO_SSID_AVAIL) && (status != WL_SCAN_COMPLETED)) {
@@ -99,6 +102,7 @@ int WiFiClass::begin(const char* ssid, const char *passphrase)
     {
 	   for (unsigned long start = millis(); (millis() - start) < _timeout;)
  	   {
+		   feedWatchdog();
  		   delay(WL_DELAY_START_CONNECTION);
  		   status = WiFiDrv::getConnectionStatus();
 		   if ((status != WL_IDLE_STATUS) && (status != WL_NO_SSID_AVAIL) && (status != WL_SCAN_COMPLETED)) {
@@ -389,6 +393,18 @@ void WiFiClass::setTimeout(unsigned long timeout)
 {
 	_timeout = timeout;
 }
+
+void WiFiClass::setFeedWatchdogFunc(FeedHostProcessorWatchdogFuncPointer func)
+{
+  _feed_watchdog_func = func;
+}
+
+void WiFiClass::feedWatchdog()
+{
+  if (_feed_watchdog_func)
+	_feed_watchdog_func();
+}
+
 WiFiClass WiFi;
 
 #endif

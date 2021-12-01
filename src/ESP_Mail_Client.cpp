@@ -1,11 +1,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.6.0
- *   Released:  November 23, 2021
+ *   Version:   1.6.1
+ *   Released:  December 1, 2021
  *
  *   Updates:
- * - Add support ESP8266 external virtual RAM (SRAM or PSRAM)
+ * - Update WiFiNINA library v1.8.13 and NINA Firmware v1.4.8 for Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -98,7 +98,7 @@ int ESP_Mail_Client::getFreeHeap()
 {
 #if defined(ESP32) || defined(ESP8266)
   return ESP.getFreeHeap();
-#elif defined(ARDUINO_ARCH_SAMD)
+#elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
   char top;
 #ifdef __arm__
   return &top - reinterpret_cast<char *>(sbrk(0));
@@ -139,7 +139,7 @@ char *ESP_Mail_Client::getRandomUID()
 /* Safe string splitter to avoid strsep bugs*/
 void ESP_Mail_Client::splitTk(MBSTRING &str, std::vector<MBSTRING> &tk, const char *delim)
 {
-  std::size_t current, previous = 0;
+  uint32_t current, previous = 0;
   current = str.find(delim, previous);
   MBSTRING s;
   while (current != MBSTRING::npos)
@@ -1844,7 +1844,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     MBSTRING s;
     appendP(s, esp_mail_str_314, true);
     s += ESP_MAIL_VERSION;
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     MBSTRING ninaFw = WiFi.firmwareVersion();
     appendP(s, esp_mail_str_329, false);
     s += ninaFw;
@@ -1929,7 +1929,7 @@ init:
 
     //connect in secure mode
     //do ssl handshake
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     if (!imap->tcpClient.connectSSL(imap->_sesson_cfg->certificate.verify))
       return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
 #else
@@ -4167,7 +4167,7 @@ void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
           tmp = (char *)newP(p2 - p1);
           strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
           char *stk = strP(esp_mail_str_131);
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
           MBSTRING content = tmp;
           std::vector<MBSTRING> tokens = std::vector<MBSTRING>();
           splitTk(content, tokens, stk);
@@ -5791,7 +5791,7 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
   {
     appendP(s, esp_mail_str_314, true);
     s += ESP_MAIL_VERSION;
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     MBSTRING ninaFw = WiFi.firmwareVersion();
     appendP(s, esp_mail_str_329, false);
     s += ninaFw;
@@ -5925,7 +5925,7 @@ init:
 
     //connect in secure mode
     //do ssl handshake
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     if (!smtp->tcpClient.connectSSL(smtp->_sesson_cfg->certificate.verify))
       return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 #else
@@ -6087,7 +6087,7 @@ bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
   {
     SMTP_Result status;
     status.completed = result;
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     unsigned long ts = WiFi.getTime();
     status.timestamp = ts;
 #else
@@ -6448,7 +6448,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   if (!dateHdr)
   {
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     unsigned long now = WiFi.getTime();
 #else
     time_t now = time(nullptr);
@@ -6688,7 +6688,7 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
   else
   {
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
     unsigned long now = WiFi.getTime();
 #else
     time_t now = time(nullptr);

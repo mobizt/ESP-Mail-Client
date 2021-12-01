@@ -17,7 +17,7 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WiFi_Spi_h
 #define WiFi_Spi_h
@@ -115,7 +115,8 @@ enum {
     APPLY_OTA_COMMAND	= 0x65,
 	RENAME_FILE			= 0x66,
 	DOWNLOAD_OTA		= 0x67,
-    GET_BUILD_CMD	    = 0x6f,
+	/* Secure Connection Upgradable Supports */
+	GET_BUILD_CMD	    = 0x6f,
 };
 
 

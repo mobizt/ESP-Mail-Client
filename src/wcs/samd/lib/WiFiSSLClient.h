@@ -17,7 +17,7 @@
   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WIFISSLCLIENT_H
 #define WIFISSLCLIENT_H
@@ -32,8 +32,10 @@ public:
 
 	virtual int connect(IPAddress ip, uint16_t port);
 	virtual int connect(const char* host, uint16_t port);
-  virtual int ns_connect(const char *host, uint16_t port);
-  virtual int ns_connectSSL(const char *host, uint16_t port, bool verify);
+	/* Secure Connection Upgradable Supports */
+	virtual int ns_connect(const char *host, uint16_t port);
+	/* Secure Connection Upgradable Supports */
+	virtual int ns_connectSSL(const char *host, uint16_t port, bool verify);
 };
 
 class WiFiBearSSLClient : public WiFiClient {

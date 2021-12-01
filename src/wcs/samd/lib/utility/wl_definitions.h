@@ -23,8 +23,7 @@
  *  Created on: Mar 6, 2011
  *      Author: dlafauci
  */
-
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WL_DEFINITIONS_H_
 #define WL_DEFINITIONS_H_

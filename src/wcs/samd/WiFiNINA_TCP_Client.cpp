@@ -1,10 +1,10 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.1
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.2
  *
  * 
- * November 16, 2021
+ * November 29, 2021
  * 
- * 
+ * Update WiFiNINA v1.8.13
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -27,7 +27,7 @@
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WiFiNINA_TCP_Client_CPP
 #define WiFiNINA_TCP_Client_CPP
@@ -54,14 +54,14 @@ WiFiNINA_TCP_Client::~WiFiNINA_TCP_Client()
     delete _wc;
   }
 #pragma GCC diagnostic pop
-  std::string().swap(_host);
+  MB_String().swap(_host);
 }
 
 int WiFiNINA_TCP_Client::firmwareBuildNumber()
 {
   if (_fwBuild < 0)
   {
-    std::string build = WiFi.getBuild();
+    MB_String build = WiFi.getBuild();
     _fwBuild = atoi(build.c_str());
     if (_fwBuild < 21060)
       _fwBuild = 0;

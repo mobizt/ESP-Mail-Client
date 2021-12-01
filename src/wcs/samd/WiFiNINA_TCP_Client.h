@@ -1,10 +1,10 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.1
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.2
  *
  * 
- * November 16, 2021
+ * November 29, 2021
  * 
- * 
+ * Update WiFiNINA v1.8.13
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -28,7 +28,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 
 #ifndef WiFiNINA_TCP_Client_H
 #define WiFiNINA_TCP_Client_H
@@ -38,8 +38,11 @@
 
 #include <Arduino.h>
 #include "lib/WiFiNINA.h"
+
+#if defined(ARDUINO_ARCH_SAMD)
 #include <string>
 #include <vector>
+#endif
 
 #include "extras/MB_String.h"
 
@@ -111,7 +114,7 @@ private:
   WiFiClient *_wc = nullptr;
   bool _secured = false;
   bool _verifyRootCA = false;
-  std::string _host = "";
+  MB_String _host;
   uint16_t _port = 0;
   int _sock = -1;
   int _fwBuild = -1;
