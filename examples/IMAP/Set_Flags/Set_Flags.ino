@@ -133,7 +133,7 @@ void setup()
     //config.fetch.set_seen = true;
 
     /* Search criteria */
-    config.search.criteria = "";
+    config.search.criteria.clear();
 
     /* Also search the unseen message */
     config.search.unseen_msg = true;
@@ -320,7 +320,10 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
         if (strlen(msg.cc))
             ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
         if (strlen(msg.date))
+        {
             ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+            ESP_MAIL_PRINTF("Timestamp: %d\n", (int)MailClient.Time.getTimestamp(msg.date));
+        }
         if (strlen(msg.subject))
             ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
         if (strlen(msg.reply_to))

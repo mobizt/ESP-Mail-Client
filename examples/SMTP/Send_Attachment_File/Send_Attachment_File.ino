@@ -300,7 +300,7 @@ void setup()
   String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 1 inline image and 1 attachment file.</span><br/><br/><img src=\"orange.png\" width=\"100\" height=\"100\">";
 #endif
 
-message.html.content = htmlMsg.c_str();
+message.html.content = htmlMsg;
 
   /** The HTML text message character set e.g.
    * us-ascii

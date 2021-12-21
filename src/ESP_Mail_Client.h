@@ -1,16 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "1.6.1"
+#define ESP_MAIL_VERSION "1.6.2"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  * 
- *   Version:   1.6.1
- *   Released:  December 1, 2021
+ *   Version:   1.6.2
+ *   Released:  December 21, 2021
  *
  *   Updates:
- * - Update WiFiNINA library v1.8.13 and NINA Firmware v1.4.8 for Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
+ * - Change from pointer to char array or string literal for inputs to MB_String.
+ * - Update time library. 
  * 
  * 
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -109,6 +110,211 @@ extern char *__brkval;
 #endif // __arm__
 
 #endif
+
+namespace ESP_MAIL
+{
+  template <bool, typename T = void>
+  struct enable_if
+  {
+  };
+  template <typename T>
+  struct enable_if<true, T>
+  {
+    typedef T type;
+  };
+  template <typename T, typename U>
+  struct is_same
+  {
+    static bool const value = false;
+  };
+  template <typename T>
+  struct is_same<T, T>
+  {
+    static bool const value = true;
+  };
+
+  template <typename T>
+  struct is_num_int8
+  {
+    static bool const value = ESP_MAIL::is_same<T, int8_t>::value || ESP_MAIL::is_same<T, signed char>::value;
+  };
+
+  template <typename T>
+  struct is_num_uint8
+  {
+    static bool const value = ESP_MAIL::is_same<T, uint8_t>::value || ESP_MAIL::is_same<T, unsigned char>::value;
+  };
+
+  template <typename T>
+  struct is_num_int16
+  {
+    static bool const value = ESP_MAIL::is_same<T, int16_t>::value || ESP_MAIL::is_same<T, signed short>::value;
+  };
+
+  template <typename T>
+  struct is_num_uint16
+  {
+    static bool const value = ESP_MAIL::is_same<T, uint16_t>::value || ESP_MAIL::is_same<T, unsigned short>::value;
+  };
+
+  template <typename T>
+  struct is_num_int32
+  {
+    static bool const value = ESP_MAIL::is_same<T, signed int>::value || ESP_MAIL::is_same<T, int>::value ||
+                              ESP_MAIL::is_same<T, int32_t>::value || ESP_MAIL::is_same<T, long>::value ||
+                              ESP_MAIL::is_same<T, signed long>::value;
+  };
+
+  template <typename T>
+  struct is_num_uint32
+  {
+    static bool const value = ESP_MAIL::is_same<T, unsigned int>::value || ESP_MAIL::is_same<T, uint32_t>::value ||
+                              ESP_MAIL::is_same<T, unsigned long>::value;
+  };
+
+  template <typename T>
+  struct is_num_int64
+  {
+    static bool const value = ESP_MAIL::is_same<T, int64_t>::value || ESP_MAIL::is_same<T, signed long long>::value;
+  };
+
+  template <typename T>
+  struct is_num_uint64
+  {
+    static bool const value = ESP_MAIL::is_same<T, uint64_t>::value || ESP_MAIL::is_same<T, unsigned long long>::value;
+  };
+
+  template <typename T>
+  struct is_num_neg_int
+  {
+    static bool const value = ESP_MAIL::is_num_int8<T>::value || ESP_MAIL::is_num_int16<T>::value ||
+                              ESP_MAIL::is_num_int32<T>::value || ESP_MAIL::is_num_int64<T>::value;
+  };
+
+  template <typename T>
+  struct is_num_pos_int
+  {
+    static bool const value = ESP_MAIL::is_num_uint8<T>::value || ESP_MAIL::is_num_uint16<T>::value ||
+                              ESP_MAIL::is_num_uint32<T>::value || ESP_MAIL::is_num_uint64<T>::value;
+  };
+
+  template <typename T>
+  struct is_num_int
+  {
+    static bool const value = ESP_MAIL::is_num_pos_int<T>::value || ESP_MAIL::is_num_neg_int<T>::value;
+  };
+
+  template <typename T>
+  struct is_num_float
+  {
+    static bool const value = ESP_MAIL::is_same<T, float>::value || ESP_MAIL::is_same<T, double>::value;
+  };
+
+  template <typename T>
+  struct is_bool
+  {
+    static bool const value = ESP_MAIL::is_same<T, bool>::value;
+  };
+
+  template <typename T>
+  struct cs_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, char *>::value;
+  };
+
+  template <typename T>
+  struct ccs_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, const char *>::value;
+  };
+
+  template <typename T>
+  struct as_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, String>::value;
+  };
+
+  template <typename T>
+  struct cas_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, const String>::value;
+  };
+
+  template <typename T>
+  struct ss_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, std::string>::value;
+  };
+
+  template <typename T>
+  struct css_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, const std::string>::value;
+  };
+
+  template <typename T>
+  struct ssh_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, StringSumHelper>::value;
+  };
+
+  template <typename T>
+  struct fs_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, const __FlashStringHelper *>::value;
+  };
+
+  template <typename T>
+  struct mbs_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, MBSTRING>::value;
+  };
+
+  template <typename T>
+  struct cmbs_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, const MBSTRING>::value;
+  };
+
+  template <typename T>
+  struct pgm_t
+  {
+    static bool const value = ESP_MAIL::is_same<T, PGM_P>::value;
+  };
+
+  template <typename T>
+  struct is_const_chars
+  {
+    static bool const value = cs_t<T>::value || ccs_t<T>::value;
+  };
+
+  template <typename T>
+  struct is_arduino_string
+  {
+    static bool const value = as_t<T>::value || cas_t<T>::value;
+  };
+
+  template <typename T>
+  struct is_std_string
+  {
+    static bool const value = ss_t<T>::value || css_t<T>::value;
+  };
+
+  template <typename T>
+  struct is_mb_string
+  {
+    static bool const value = mbs_t<T>::value || cmbs_t<T>::value;
+  };
+
+  template <typename T>
+  struct is_string
+  {
+    static bool const value = is_const_chars<T>::value || is_arduino_string<T>::value ||
+                              ssh_t<T>::value || fs_t<T>::value ||
+                              is_std_string<T>::value || is_mb_string<T>::value;
+  };
+
+};
 
 #include "extras/ESPTimeHelper/ESPTimeHelper.h"
 #if !defined(__AVR__)
@@ -241,7 +447,7 @@ struct esp_mail_content_transfer_encoding_t
 struct esp_mail_file_message_content_t
 {
   /* The file path include its name */
-  const char *name = "";
+  MBSTRING name;
 
   /** The type of file storages e.g.
    * esp_mail_file_storage_type_none,
@@ -267,7 +473,7 @@ struct esp_mail_smtp_embed_message_body_t
   bool enable = false;
 
   /* The name of embedded file */
-  const char *filename = "";
+  MBSTRING filename;
 
   /** The embedded type
    * esp_mail_smtp_embed_message_type_attachment or 0
@@ -283,7 +489,66 @@ struct esp_mail_plain_body_t
   struct esp_mail_smtp_embed_message_body_t embed;
 
   /* The PLAIN text content of the message */
-  const char *content = "";
+  MBSTRING content;
+
+  /* The blob that contins PLAIN text content of the message */
+  struct esp_mail_blob_message_content_t blob;
+
+  /* The file that contins PLAIN text content of the message */
+  struct esp_mail_file_message_content_t file;
+
+  /* The charset of the PLAIN text content of the message */
+  MBSTRING charSet = "UTF-8";
+
+  /* The content type of message */
+  MBSTRING content_type = "text/plain";
+
+  /* The option to encode the content for data transfer */
+  MBSTRING transfer_encoding = "7bit";
+
+  /* The option to send the PLAIN text with wrapping */
+  bool flowed = false;
+
+  /* The internal usage data */
+  struct esp_mail_internal_use_t _int;
+};
+
+struct esp_mail_html_body_t
+{
+  /* The option to embedded the content as a file */
+  struct esp_mail_smtp_embed_message_body_t embed;
+
+  /* The HTML content of the message */
+  MBSTRING content;
+
+  /* The blob that contins HTML content of the message */
+  struct esp_mail_blob_message_content_t blob;
+
+  /* The file that contins HTML content of the message */
+  struct esp_mail_file_message_content_t file;
+
+  /* The charset of the HTML content of the message */
+  MBSTRING charSet = "UTF-8";
+
+  /* The content type of message */
+  MBSTRING content_type = "text/html";
+
+  /* The option to encode the content for data transfer */
+  MBSTRING transfer_encoding = "7bit";
+
+  /* The internal usage data */
+  struct esp_mail_internal_use_t _int;
+};
+
+
+/* The PLAIN text body details of the message */
+struct esp_mail_imap_plain_body_t
+{
+  /* The option to embed this message content as a file */
+  struct esp_mail_smtp_embed_message_body_t embed;
+
+  /* The PLAIN text content of the message */
+  const char *content;
 
   /* The blob that contins PLAIN text content of the message */
   struct esp_mail_blob_message_content_t blob;
@@ -307,13 +572,13 @@ struct esp_mail_plain_body_t
   struct esp_mail_internal_use_t _int;
 };
 
-struct esp_mail_html_body_t
+struct esp_mail_imap_html_body_t
 {
   /* The option to embedded the content as a file */
   struct esp_mail_smtp_embed_message_body_t embed;
 
   /* The HTML content of the message */
-  const char *content = "";
+  const char *content= "";
 
   /* The blob that contins HTML content of the message */
   struct esp_mail_blob_message_content_t blob;
@@ -434,10 +699,10 @@ enum esp_mail_smtp_port
 struct esp_mail_smtp_msg_response_t
 {
   /* The author Email address to reply */
-  const char *reply_to = "";
+  MBSTRING reply_to;
 
   /* The sender Email address to return the message */
-  const char *return_path = "";
+  MBSTRING return_path;
 
   /** The Delivery Status Notifications e.g. esp_mail_smtp_notify_never,
    * esp_mail_smtp_notify_success,
@@ -464,7 +729,7 @@ struct esp_mail_attach_blob_t
 
 struct esp_mail_attach_file_t
 {
-  const char *path = "";
+  MBSTRING path;
   /** The file storage type e.g. esp_mail_file_storage_type_none,
    * esp_mail_file_storage_type_flash, and
    * esp_mail_file_storage_type_sd
@@ -475,22 +740,22 @@ struct esp_mail_attach_file_t
 struct esp_mail_attach_descr_t
 {
   /* The name of attachment */
-  const char *name = "";
+  MBSTRING name;
 
   /* The attachment file name */
-  const char *filename = "";
+  MBSTRING filename;
 
   /* The MIME type of attachment */
-  const char *mime = "";
+  MBSTRING mime;
 
   /* The transfer encoding of attachment e.g. base64 */
-  const char *transfer_encoding = "base64";
+  MBSTRING transfer_encoding = "base64";
 
   /* The content encoding of attachment e.g. base64 */
-  const char *content_encoding = "";
+  MBSTRING content_encoding;
 
   /* The content id of attachment file */
-  const char *content_id = "";
+  MBSTRING content_id;
 };
 
 struct esp_mail_attach_internal_t
@@ -522,16 +787,16 @@ struct esp_mail_attachment_t
 struct esp_mail_smtp_recipient_t
 {
   /* The recipient's name */
-  const char *name = "";
+  MBSTRING name;
 
   /* The recipient's Email address */
-  const char *email = "";
+  MBSTRING email;
 };
 
 struct esp_mail_smtp_recipient_address_t
 {
   /* The recipient's Email address */
-  const char *email = "";
+  MBSTRING email;
 };
 
 struct esp_mail_smtp_send_status_t
@@ -599,10 +864,10 @@ struct esp_mail_smtp_response_status_t
 struct esp_mail_email_info_t
 {
   /* The name of Email author*/
-  const char *name = "";
+  MBSTRING name;
 
   /* The Email address */
-  const char *email = "";
+  MBSTRING email;
 };
 
 #endif
@@ -1117,7 +1382,7 @@ struct esp_mail_imap_limit_config_t
 struct esp_mail_imap_storage_config_t
 {
   /* The path to save the downloaded file */
-  const char *saved_path = "/";
+  MBSTRING saved_path;
 
   /** The type of file storages e.g.
    * esp_mail_file_storage_type_none,
@@ -1130,7 +1395,7 @@ struct esp_mail_imap_storage_config_t
 struct esp_mail_imap_search_config_t
 {
   /* The search criteria */
-  const char *criteria = "";
+  MBSTRING criteria;
 
   /* The option to search the unseen message */
   bool unseen_msg = false;
@@ -1139,7 +1404,7 @@ struct esp_mail_imap_search_config_t
 struct esp_mail_imap_fetch_config_t
 {
   /* The UID of message to fetch */
-  const char *uid = "";
+  MBSTRING uid;
 
   /* Set the message flag as seen */
   bool set_seen = false;
@@ -1219,10 +1484,10 @@ struct esp_mail_imap_msg_item_t
   const char *flags = "";
 
   /* The PLAIN text content of the message */
-  struct esp_mail_plain_body_t text;
+  struct esp_mail_imap_plain_body_t text;
 
   /* The HTML content of the message */
-  struct esp_mail_html_body_t html;
+  struct esp_mail_imap_html_body_t html;
 
   /* rfc822 related */
 
@@ -1318,7 +1583,7 @@ struct esp_mail_sesson_cert_config_t
 struct esp_mail_sesson_sever_config_t
 {
   /* The hostName of the server */
-  const char *host_name = "";
+  MBSTRING host_name;
   /* The port on the server to connect to */
   uint16_t port = 0;
 };
@@ -1327,23 +1592,23 @@ struct esp_mail_sesson_sever_config_t
 struct esp_mail_sesson_login_config_t
 {
   /* The user Email address to log in */
-  const char *email = "";
+  MBSTRING email;
 
   /* The user password to log in */
-  const char *password = "";
+  MBSTRING password;
 
   /* The OAuth2.0 access token to log in */
-  const char *accessToken = "";
+  MBSTRING accessToken;
 
   /* The user domain or ip of client */
-  const char *user_domain = "";
+  MBSTRING user_domain;
 };
 
 /* The device time config */
 struct esp_mail_sesson_time_config_t
 {
   /* set the NTP servers (use comma to separate the servers) to let the library to set the time from NTP server */
-  const char *ntp_server = "";
+  MBSTRING ntp_server;
 
   /* the GMT offset or time zone */
   float gmt_offset = 0;
@@ -2042,14 +2307,14 @@ public:
   {
     att.blob.size = 0;
     att.blob.data = nullptr;
-    att.file.path = "";
+    att.file.path.clear();
     att.file.storage_type = esp_mail_file_storage_type_none;
-    att.descr.name = "";
-    att.descr.filename = "";
-    att.descr.transfer_encoding = "";
-    att.descr.content_encoding = "";
-    att.descr.mime = "";
-    att.descr.content_id = "";
+    att.descr.name.clear();
+    att.descr.filename.clear();
+    att.descr.transfer_encoding.clear();
+    att.descr.content_encoding.clear();
+    att.descr.mime.clear();
+    att.descr.content_id.clear();
     att._int.att_type = esp_mail_att_type_none;
     att._int.index = 0;
     att._int.msg_uid = 0;
@@ -2061,57 +2326,57 @@ public:
 
   void clear()
   {
-    sender.name = "";
-    sender.email = "";
-    subject = "";
-    text.charSet = "";
-    text.content = "";
-    text.content_type = "";
+    sender.name.clear();
+    sender.email.clear();
+    subject.clear();
+    text.charSet.clear();
+    text.content.clear();
+    text.content_type.clear();
     text.embed.enable = false;
-    html.charSet = "";
-    html.content = "";
-    html.content_type = "";
+    html.charSet.clear();
+    html.content.clear();
+    html.content_type.clear();
     html.embed.enable = false;
-    response.reply_to = "";
+    response.reply_to.clear();
     response.notify = esp_mail_smtp_notify::esp_mail_smtp_notify_never;
     priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
     for (size_t i = 0; i < _rcp.size(); i++)
     {
-      _rcp[i].name = "";
-      _rcp[i].email = "";
+      _rcp[i].name.clear();
+      _rcp[i].email.clear();
     }
 
     for (size_t i = 0; i < _cc.size(); i++)
-      _cc[i].email = "";
+      _cc[i].email.clear();
 
     for (size_t i = 0; i < _bcc.size(); i++)
-      _bcc[i].email = "";
+      _bcc[i].email.clear();
 
     for (size_t i = 0; i < _hdr.size(); i++)
       _hdr[i] = "";
 
     for (size_t i = 0; i < _att.size(); i++)
     {
-      _att[i].descr.filename = "";
+      _att[i].descr.filename.clear();
       _att[i].blob.data = nullptr;
-      _att[i].descr.mime = "";
-      _att[i].descr.name = "";
+      _att[i].descr.mime.clear();
+      _att[i].descr.name.clear();
       _att[i].blob.size = 0;
-      _att[i].descr.transfer_encoding = "";
-      _att[i].file.path = "";
+      _att[i].descr.transfer_encoding.clear();
+      _att[i].file.path.clear();
       _att[i].file.storage_type = esp_mail_file_storage_type_none;
     }
 
     for (size_t i = 0; i < _parallel.size(); i++)
     {
-      _parallel[i].descr.filename = "";
+      _parallel[i].descr.filename.clear();
       _parallel[i].blob.data = nullptr;
-      _parallel[i].descr.mime = "";
-      _parallel[i].descr.name = "";
+      _parallel[i].descr.mime.clear();
+      _parallel[i].descr.name.clear();
       _parallel[i].blob.size = 0;
-      _parallel[i].descr.transfer_encoding = "";
-      _parallel[i].file.path = "";
+      _parallel[i].descr.transfer_encoding.clear();
+      _parallel[i].file.path.clear();
       _parallel[i].file.storage_type = esp_mail_file_storage_type_none;
     }
     _rcp.clear();
@@ -2236,11 +2501,12 @@ public:
    * @param name The name of primary recipient
    * @param email The Email address of primary recipient
   */
-  void addRecipient(const char *name, const char *email)
+  template <typename T1 = const char *, typename T2 = const char *>
+  void addRecipient(T1 name, T2 email)
   {
     struct esp_mail_smtp_recipient_t rcp;
-    rcp.name = name;
-    rcp.email = email;
+    rcp.name = toString(name);
+    rcp.email = toString(email);
     _rcp.push_back(rcp);
   };
 
@@ -2248,10 +2514,11 @@ public:
    *
    * @param email The Email address of the secondary recipient
   */
-  void addCc(const char *email)
+  template <typename T = const char *>
+  void addCc(T email)
   {
     struct esp_mail_smtp_recipient_address_t cc;
-    cc.email = email;
+    cc.email = toString(email);
     _cc.push_back(cc);
   };
 
@@ -2259,10 +2526,11 @@ public:
    *
    * @param email The Email address of the tertiary recipient
   */
-  void addBcc(const char *email)
+  template <typename T = const char *>
+  void addBcc(T email)
   {
     struct esp_mail_smtp_recipient_address_t bcc;
-    bcc.email = email;
+    bcc.email = toString(email);
     _bcc.push_back(bcc);
   };
 
@@ -2270,13 +2538,14 @@ public:
    *
    * @param hdr The header name and value
   */
-  void addHeader(const char *hdr) { _hdr.push_back(hdr); };
+  template <typename T = const char *>
+  void addHeader(T hdr) { _hdr.push_back(toString(hdr)); };
 
   /* The message author config */
   struct esp_mail_email_info_t sender;
 
   /* The topic of message */
-  const char *subject = "";
+  MBSTRING subject;
 
   /* The message type */
   byte type = esp_mail_msg_type_none;
@@ -2300,22 +2569,22 @@ public:
   struct esp_mail_email_info_t from;
 
   /* The message identifier */
-  const char *messageID = "";
+  MBSTRING messageID;
 
   /* The keywords or phrases, separated by commas */
-  const char *keywords = "";
+  MBSTRING keywords;
 
   /* The comments about message */
-  const char *comments = "";
+  MBSTRING comments;
 
   /* The date of message */
-  const char *date = "";
+  MBSTRING date;
 
   /* The field that contains the parent's message ID of the message to which this one is a reply */
-  const char *in_reply_to = "";
+  MBSTRING in_reply_to;
 
   /* The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply */
-  const char *references = "";
+  MBSTRING references;
 
 private:
   friend class ESP_Mail_Client;
@@ -2326,6 +2595,20 @@ private:
   std::vector<SMTP_Attachment> _att = std::vector<SMTP_Attachment>();
   std::vector<SMTP_Attachment> _parallel = std::vector<SMTP_Attachment>();
   std::vector<SMTP_Message> _rfc822 = std::vector<SMTP_Message>();
+
+
+protected:
+  template <typename T>
+  auto toString(const T &val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_std_string<T>::value || ESP_MAIL::is_arduino_string<T>::value || ESP_MAIL::is_mb_string<T>::value || ESP_MAIL::is_same<T, StringSumHelper>::value, const char *>::type { return val.c_str(); }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_const_chars<T>::value, const char *>::type { return val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::fs_t<T>::value, const char *>::type { return (const char *)val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_same<T, std::nullptr_t>::value, const char *>::type { return ""; }
 };
 
 class SMTP_Status
@@ -2393,7 +2676,8 @@ public:
    * @param closeSession The option to close the IMAP session after set flag.
    * @return The boolean value indicates the success of operation.
   */
-  bool setFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+  template <typename T = const char *>
+  bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toString(flags), 0, closeSession); }
 
   /** Add the argument to the Flags for the specified message.
    *
@@ -2404,7 +2688,8 @@ public:
    * @param closeSession The option to close the IMAP session after add flag.
    * @return The boolean value indicates the success of operation.
   */
-  bool addFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+  template <typename T = const char *>
+  bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toString(flags), 1, closeSession); }
 
   /** Remove the argument from the Flags for the specified message.
    *
@@ -2415,7 +2700,8 @@ public:
    * @param closeSession The option to close the IMAP session after remove flag.
    * @return The boolean value indicates the success of operation.
   */
-  bool removeFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+  template <typename T = const char *>
+  bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toString(flags), 2, closeSession); }
 #endif
 
   /** Initialize the SD card with the SPI port.
@@ -2441,7 +2727,8 @@ public:
   * @param format_if_mount_failed Format SD_MMC card if mount failed.
   * @return The boolean value indicates the success of operation.
   */
-  bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false);
+  template <typename T = const char *>
+  bool sdMMCBegin(T mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false) { return mSdMMCBegin(mountpoint, mode1bit, format_if_mount_failed); }
 
   /** Get free Heap memory.
   *
@@ -2469,6 +2756,8 @@ private:
 #if defined(ESP8266)
   uint8_t _sdPin = SD_CS_PIN;
 #endif
+
+  bool mSdMMCBegin(const char *mountpoint, bool mode1bit, bool format_if_mount_failed);
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
@@ -2621,6 +2910,19 @@ private:
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
   bool mSetFlag(IMAPSession *imap, int msgUID, const char *flags, uint8_t action, bool closeSession);
 #endif
+
+protected:
+  template <typename T>
+  auto toString(const T &val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_std_string<T>::value || ESP_MAIL::is_arduino_string<T>::value || ESP_MAIL::is_mb_string<T>::value || ESP_MAIL::is_same<T, StringSumHelper>::value, const char *>::type { return val.c_str(); }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_const_chars<T>::value, const char *>::type { return val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::fs_t<T>::value, const char *>::type { return (const char *)val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_same<T, std::nullptr_t>::value, const char *>::type { return ""; }
 };
 
 #if defined(ENABLE_IMAP)
@@ -2678,7 +2980,8 @@ public:
    * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
    * with the same readOnly mode, is less than 5 seconds.
   */
-  bool selectFolder(const char *folderName, bool readOnly = true);
+  template <typename T = const char *>
+  bool selectFolder(T folderName, bool readOnly = true) { return mSelectFolder(toString(folderName), readOnly); }
 
   /** Open the mailbox folder to read or search the mesages.
    *
@@ -2691,28 +2994,32 @@ public:
    * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
    * with the same readOnly mode, is less than 5 seconds.
   */
-  bool openFolder(const char *folderName, bool readOnly = true);
+  template <typename T = const char *>
+  bool openFolder(T folderName, bool readOnly = true) { return mOpenFolder(toString(folderName), readOnly); }
 
   /** Close the mailbox folder that was opened.
    *
    * @param folderName The known mailbox folder name.
    * @return The boolean value which indicates the success of operation.
   */
-  bool closeFolder(const char *folderName);
+  template <typename T = const char *>
+  bool closeFolder(T folderName) { return mCloseFolder(toString(folderName)); }
 
   /** Create folder.
    *
    * @param folderName The name of folder to create.
    * @return The boolean value which indicates the success of operation.
   */
-  bool createFolder(const char *folderName);
+  template <typename T = const char *>
+  bool createFolder(T folderName) { return mCreateFolder(toString(folderName)); }
 
   /** Delete folder.
    *
    * @param folderName The name of folder to delete.
    * @return The boolean value which indicates the success of operation.
   */
-  bool deleteFolder(const char *folderName);
+  template <typename T = const char *>
+  bool deleteFolder(T folderName) { return mDeleteFolder(toString(folderName)); }
 
   /** Get UID number in selected or opened mailbox.
    *
@@ -2740,7 +3047,8 @@ public:
    * 
    * @note imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
   */
-  bool sendCustomCommand(const char *cmd, imapResponseCallback callback);
+  template <typename T = const char *>
+  bool sendCustomCommand(T cmd, imapResponseCallback callback) { return mSendCustomCommand(toString(cmd), callback); }
 
   /** Copy the messages to the defined mailbox folder.
    *
@@ -2830,6 +3138,12 @@ private:
   bool checkCapability();
   bool mListen(bool recon);
   bool mStopListen(bool recon);
+  bool mSendCustomCommand(const char *cmd, imapResponseCallback callback);
+  bool mDeleteFolder(const char *folderName);
+  bool mCreateFolder(const char *folderName);
+  bool mCloseFolder(const char *folderName);
+  bool mOpenFolder(const char *folderName, bool readOnly);
+  bool mSelectFolder(const char *folderName, bool readOnly);
 
   bool _tcpConnected = false;
   unsigned long _last_polling_error = 0;
@@ -2877,6 +3191,19 @@ private:
   TCP_CLIENT tcpClient;
 
   IMAP_Status _cbData;
+
+protected:
+  template <typename T>
+  auto toString(const T &val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_std_string<T>::value || ESP_MAIL::is_arduino_string<T>::value || ESP_MAIL::is_mb_string<T>::value || ESP_MAIL::is_same<T, StringSumHelper>::value, const char *>::type { return val.c_str(); }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_const_chars<T>::value, const char *>::type { return val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::fs_t<T>::value, const char *>::type { return (const char *)val; }
+
+  template <typename T>
+  auto toString(T val) -> typename ESP_MAIL::enable_if<ESP_MAIL::is_same<T, std::nullptr_t>::value, const char *>::type { return ""; }
 };
 
 #endif

@@ -1,7 +1,7 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.5
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.6
  *
- * November 23, 2021 
+ * December 21, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -39,7 +39,14 @@
 #include "extras/SDK_Version_Common.h"
 #elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
 #include "../../wcs/samd/lib/WiFiNINA.h"
+#endif
 
+#if defined(ESP8266) || defined(ESP32)
+#define FLASH_STR_MCR FPSTR
+#elif defined(ARDUINO_ARCH_SAMD)
+#define FLASH_STR_MCR PSTR
+#else
+#define FLASH_STR_MCR(s) (s)
 #endif
 
 #if defined(ESP_Mail_USE_PSRAM)
@@ -73,13 +80,13 @@ public:
   */
   int setTimestamp(time_t ts);
 
-  /** Provide the Unix time
+  /** Get the Unix time
    * 
    * @return uint32_t The value of current Unix time.
   */
   uint32_t getUnixTime();
 
-  /** Provide the timestamp from the year, month, date, hour, minute, 
+  /** Get the timestamp from the year, month, date, hour, minute, 
    * and second provided.
    * 
    * @param year The year.
@@ -92,25 +99,31 @@ public:
   */
   time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 
-  /** Provide the current year.
+  /** Get the timestamp from the time string.
+   * @param gmt Return the GMT time.
+   * @return timestamp of time string.
+  */
+  time_t getTimestamp(const char *timeString, bool gmt = false);
+
+  /** Get the current year.
    * 
    * @return int The value of current year.
   */
   int getYear();
 
-  /** Provide the current month.
+  /** Get the current month.
    * 
    * @return int The value of current month.
   */
   int getMonth();
 
-  /** Provide the current date.
+  /** Get the current date.
    * 
    * @return int The value of current date.
   */
   int getDay();
 
-  /** Provide the current day of week.
+  /** Get the current day of week.
    * 
    * @return int The value of current day of week.
    * 
@@ -118,37 +131,37 @@ public:
   */
   int getDayOfWeek();
 
-  /** Provide the current day of week in String.
+  /** Get the current day of week in String.
    * 
    * @return String The value of day of week.
   */
   String getDayOfWeekString();
 
-  /** Provide the current hour.
+  /** Get the current hour.
    * 
    * @return int The value of current hour (0 to 23).
   */
   int getHour();
 
-  /** Provide the current minute.
+  /** Get the current minute.
    * 
    * @return int The value of current minute.
   */
   int getMin();
 
-  /** Provide the current second.
+  /** Get the current second.
    * 
    * @return int The value of current second.
   */
   int getSec();
 
-  /** Provide the total days of current year.
+  /** Get the total days of current year.
    * 
    * @return int The value of total days of current year.
   */
   int getNumberOfDayThisYear();
 
-  /** Provide the total days of from January 1, 1970 to specific date.
+  /** Get the total days of from January 1, 1970 to specific date.
    * 
    * @param year The year from 1970.
    * @param mon The month from 1 to 12.
@@ -157,7 +170,7 @@ public:
   */
   int getTotalDays(int year, int month, int day);
 
-  /** Provide the day of week from specific date.
+  /** Get the day of week from specific date.
    * 
    * @param year The year from 1970.
    * @param mon The month from 1 to 12.
@@ -167,19 +180,19 @@ public:
   */
   int dayofWeek(int year, int month, int day);
 
-  /** Provide the second of current hour.
+  /** Get the second of current hour.
    * 
    * @return int The value of current second.
   */
   int getCurrentSecond();
 
-  /** Provide the current timestamp.
+  /** Get the current timestamp.
    * 
    * @return uint64_t The value of current timestamp.
   */
   uint64_t getCurrentTimestamp();
 
-  /** Provide the date and time from second counted from January 1, 1970.
+  /** Get the date and time from second counted from January 1, 1970.
    * 
    * @param sec The seconds from January 1, 1970 00.00.
    * @return tm The tm structured data.
@@ -190,7 +203,7 @@ public:
   */
   struct tm getTimeFromSec(int seconds);
 
-  /** Provide the current date time string that valid for Email.
+  /** Get the current date time string that valid for Email.
    * 
    * @return String The current date time string.
   */
@@ -213,6 +226,9 @@ private:
   void setSysTime();
   char *trimwhitespace(char *str);
   int compareVersion(uint8_t major1, uint8_t minor1, uint8_t patch1, uint8_t major2, uint8_t minor2, uint8_t patch2);
+  void *newP(size_t len);
+  size_t getReservedLen(size_t len);
+  void delP(void *ptr);
 
   bool _clockReady = false;
   const char *dow[7] = {"sunday", "monday", "tuesday", "wednesday", "thurseday", "friday", "saturday"};

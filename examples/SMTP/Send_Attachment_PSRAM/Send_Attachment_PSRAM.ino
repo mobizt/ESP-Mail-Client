@@ -145,7 +145,7 @@ void setup()
     message.addRecipient("Someone", "change_this@your_mail_dot_com");
 
     String textMsg = "This is simple plain text message with PSRAM attachment";
-    message.text.content = textMsg.c_str();
+    message.text.content = textMsg;
 
     /** The Plain text message character set e.g.
    * us-ascii

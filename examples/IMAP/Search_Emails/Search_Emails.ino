@@ -145,7 +145,7 @@ void setup()
     IMAP_Config config;
 
     /* Message UID to fetch or read */
-    config.fetch.uid = "";
+    config.fetch.uid.clear();
 
     /** Search criteria 
      * 
@@ -258,7 +258,7 @@ void setup()
         config.search.criteria = "UID SEARCH ALL"; // or "UID SEARCH NEW" for recent received messages
 
         /* No message UID provide for fetching */
-        config.fetch.uid = "";
+        config.fetch.uid.clear();
 
         /* Search the Email and close the session */
         MailClient.readMail(&imap);
@@ -369,7 +369,10 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
         if (strlen(msg.cc))
             ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
         if (strlen(msg.date))
+        {
             ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+            ESP_MAIL_PRINTF("Timestamp: %d\n", (int)MailClient.Time.getTimestamp(msg.date));
+        }
         if (strlen(msg.subject))
             ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
         if (strlen(msg.reply_to))

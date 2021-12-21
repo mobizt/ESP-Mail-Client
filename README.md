@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.6.1
+# Mail Client Arduino Library v1.6.2
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -149,7 +149,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21120).
 
 ```
-> C: ESP Mail Client v1.6.1, Fw v1.4.8+21120
+> C: ESP Mail Client v1.6.2, Fw v1.4.8+21120
 ```
 
 ## Library Instalation
@@ -301,7 +301,7 @@ The [**examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino**](examples
 Since v1.5.4, this library supports PSRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
 
 ```cpp
-#define ESP_Mail_USE_PSRAM
+#define ESP_MAIL_USE_PSRAM
 ```
 
 
@@ -340,34 +340,11 @@ See [Function Description](/src/README.md) for all available functions.
 
 The following examples showed the minimum usage which many options are not configured.
 
-The examples in the examples folder provide the full options usages.
-
-## Notes
-
-The string in the function's parameters or properties of structured data is the pointer to constant char or char array.
-
-You need to assign the string literal or char array or pointer to constant char to it.
-
-#### Ex.
-
-```cpp
-message.sender.name = "My Mail";
-message.sender.email = "sender or your Email address";
-```
-
-Or using String class
-
-```cpp
-String name = "John";
-String email = "john@mail.com";
-
-message.sender.name = name.c_str();
-message.sender.email = email.c_str();
-```
+The examples in the examples folder provided the full options usages.
 
 
 
-### Send the Email
+### Send Email
 
 
 ```C++
@@ -440,7 +417,7 @@ if (!MailClient.sendMail(&smtp, &message))
 ```
 
 
-### Read the Email
+### Read Email
 
 
 ```C++
@@ -469,7 +446,7 @@ IMAP_Config config;
 config.fetch.uid = "100";
 
 // Define the empty search criteria to disable the messsage search
-config.search.criteria = "";
+config.search.criteria.clear();
 
 // Set to enable the message content which will be stored in the IMAP_Config data
 config.enable.html = true;

@@ -995,7 +995,7 @@ This class is used as the callback parameter for retrieving the status while rea
 
 
 
-#### Provide the information of each process in the reading operation.
+#### Get the information of each process in the reading operation.
 
 return **`string`** The info for each process
 
@@ -1006,7 +1006,7 @@ const char *info();
 
 
 
-#### Provide the status of completion.
+#### Get the status of completion.
 
 return **`boolean`** The bool value indicates that all reading processes are finished
 
@@ -1039,7 +1039,7 @@ This class is used as the callback parameter for retrieving the status while sen
 
 
 
-#### Provide the information of each process in the sending operation.
+#### Get the information of each process in the sending operation.
 
 return **`string`** The info for each process
 
@@ -1050,7 +1050,7 @@ const char *info();
 
 
 
-#### Provide the status of completion.
+#### Get the status of completion.
 
 return **`boolean`** The bool value indicates that all sending processes are finished
 
@@ -1071,7 +1071,7 @@ void empty();
 
 
 
-#### Provide the number of complete sending message.
+#### Get the number of complete sending message.
 
 return **`number`** The number of message that was sent
 
@@ -1083,7 +1083,7 @@ size_t completedCount();
 
 
 
-#### Provide the number of failed sending message.
+#### Get the number of failed sending message.
 
 return **`number`** The number of message that was not sent
 
@@ -1104,7 +1104,7 @@ This class is used for retrieving the info about the result of sending the messa
 
 
 
-#### Provide the information of a message sending status.
+#### Get the information of a message sending status.
 
 param **`index`** The index number of a message sending status
 
@@ -1126,7 +1126,7 @@ SMTP_Result getItem(size_t index);
 
 
 
-#### Provide the amount of the result data.
+#### Get the amount of the result data.
 
 return **`number`** The number of result item
 
@@ -1148,7 +1148,7 @@ in the user Email mailbox.
 
 
 
-#### Provide the information of a folder in a folder collection.
+#### Get the information of a folder in a folder collection.
 
 param **`index`** The index number of folders
 
@@ -1168,7 +1168,7 @@ esp_mail_folder_info_item_t info(size_t index);
 
 
 
-#### Provide the number of folders in the collection.
+#### Get the number of folders in the collection.
 
 return **`number`** The number of folder in the collection
 
@@ -1191,7 +1191,7 @@ This class is used for retrieving the info about the sselected or opened mailbox
 
 
 
-#### Provide the numbers of flags in the user Email mailbox.
+#### Get the numbers of flags in the user Email mailbox.
 
 return **`number`** The numbers of flags
 
@@ -1203,7 +1203,7 @@ size_t flagCount();
 
 
 
-#### Provide the numbers of messages in this mailbox.
+#### Get the numbers of messages in this mailbox.
 
 return **`number`** The numbers of messages in the selected mailbox folder
 
@@ -1253,7 +1253,7 @@ struct IMAP_Polling_Status pollingStatus();
 
 
 
-#### Provide the predicted next message UID in the sselected folder.
+#### Get the predicted next message UID in the sselected folder.
 
 return **`number`** The number represents the next message UID number
 
@@ -1267,7 +1267,7 @@ size_t nextUID();
 
 
 
-#### Provide the numbers of messages from search result based on the search criteria.
+#### Get the numbers of messages from search result based on the search criteria.
 
 return **`number`** The total number of messsages from search
 
@@ -1279,7 +1279,7 @@ size_t searchCount();
 
 
 
-#### Provide the numbers of messages to be stored in the ressult.
+#### Get the numbers of messages to be stored in the ressult.
 
 return **`number`** The number of messsage stored from search
 
@@ -1291,7 +1291,7 @@ size_t availableMessages();
 
 
 
-#### Provide the flag argument at the specified index.
+#### Get the flag argument at the specified index.
 
 return **`index`** The index of flag in the flags list
 
@@ -1913,7 +1913,7 @@ The helper function to set and get the system time.
 
 
 
-#### Set the system time from the NTP server
+#### Set the system time from the NTP server.
 
 param **`gmtOffset`** The GMT time offset in hour.
 
@@ -1932,7 +1932,7 @@ bool setClock(float gmtOffset, float daylightOffset);
 
 
 
-#### Provide the Unix time
+#### Get the Unix time.
 
 return **`uint32_t`** The value of current Unix time.
 
@@ -1945,7 +1945,7 @@ uint32_t getUnixTime();
 
 
 
-#### Provide the timestamp from the year, month, date, hour, minute, and second provided
+#### Get the timestamp from the year, month, date, hour, minute, and second provided.
 
 param **`year`** The year.
 
@@ -1970,7 +1970,22 @@ time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 
 
 
-#### Provide the current year.
+#### Get the timestamp from the time string.
+
+param **`gmt`** Return GMT time.
+
+return **`timestamp`** of time string.
+
+```cpp
+time_t getTimestamp(const char* timeString, bool gmt = false);
+```
+
+
+
+
+
+
+#### Get the current year.
 
 return **`int`** The value of current year.
 
@@ -1983,7 +1998,7 @@ int getYear();
 
 
 
-#### Provide the current month.
+#### Get the current month.
 
 return **`int`** The value of current month.
 
@@ -1995,7 +2010,7 @@ int getMonth();
 
 
 
-#### Provide the current date.
+#### Get the current date.
 
 return **`int`** The value of current date.
 
@@ -2008,7 +2023,7 @@ int getDay();
 
 
 
-#### Provide the current day of week.
+#### Get the current day of week.
 
 return **`int`** The value of day of week.
 
@@ -2022,7 +2037,7 @@ int getDayOfWeek();
 
 
 
-#### Provide the current day of week in String.
+#### Get the current day of week in String.
 
 return **`String`** The value of day of week.
 
@@ -2037,7 +2052,7 @@ String getDayOfWeekString();
 
 
 
-#### Provide the current hour.
+#### Get the current hour.
 
 return **`int`** The value of current hour (0 to 23).
 
@@ -2050,7 +2065,7 @@ int getHour();
 
 
 
-#### Provide the current minute.
+#### Get the current minute.
 
 return **`int`** The value of current minute (0 to 59).
 
@@ -2063,7 +2078,7 @@ int getMin();
 
 
 
-#### Provide the current second.
+#### Get the current second.
 
 return **`int`** The value of current second (0 to 59).
 
@@ -2077,7 +2092,7 @@ int getSecond();
 
 
 
-#### Provide the total days of current year.
+#### Get the total days of current year.
 
 return **`int`** The value of total days of current year.
 
@@ -2090,7 +2105,7 @@ int getNumberOfDayThisYear();
 
 
 
-#### Provide the total days of from January 1, 1970 to specific date.
+#### Get the total days of from January 1, 1970 to specific date.
 
 param **`year`** The years from 1970.
 
@@ -2108,7 +2123,7 @@ int getTotalDays(int year, int month, int day);
 
 
 
-#### Provide the day of week from specific date.
+#### Get the day of week from specific date.
 
 param **`year`** The years.
 
@@ -2129,7 +2144,7 @@ int dayofWeek(int year, int month, int day);
 
 
 
-#### Provide the second of current hour.
+#### Get the second of current hour.
 
 return **`int`** The value of current second.
 
@@ -2141,7 +2156,7 @@ int getCurrentSecond();
 
 
 
-#### Provide the current timestamp.
+#### Get the current timestamp.
 
 return **`uint64_t`** The value of current timestamp.
 
@@ -2154,7 +2169,7 @@ uint64_t getCurrentTimestamp();
 
 
 
-#### Provide the date and time from second counted from January 1, 1970.
+#### Get the date and time from second counted from January 1, 1970.
 
 param **`sec`** The seconds from January 1, 1970 00.00.
 
@@ -2173,14 +2188,13 @@ struct tm getTimeFromSec(int secCount);
 
 
 
-#### Provide the current date time string that valid for Email
+#### Get the current date time string that valid for Email
 
 return **`String`** The current date time string.
 
 ```cpp
 String getDateTimeString();
 ```
-
 
 
 

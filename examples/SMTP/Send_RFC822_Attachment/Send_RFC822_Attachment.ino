@@ -162,8 +162,7 @@ void setup()
   rfc822.sender.email = "steve@example.com";
   
   //This date field will set by default if the device time was already set or set date field manually
-  String dt = MailClient.Time.getDateTimeString();
-  rfc822.date = dt.c_str();
+  rfc822.date = MailClient.Time.getDateTimeString();
 
   rfc822.subject = "Test rfc822 message";
   rfc822.comments = "This is comment";

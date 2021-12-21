@@ -1,7 +1,7 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.5
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.6
  *
- * November 23, 2021 
+ * December 21, 2021 
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -85,7 +85,7 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
         std::vector<MB_String> tk = std::vector<MB_String>();
         MB_String sv = servers;
 
-        splitTk(sv, tk, ",");
+        splitTk(sv, tk, (const char*)FLASH_STR_MCR(","));
 
         switch (tk.size())
         {
@@ -292,8 +292,7 @@ struct tm ESPTimeHelper::getTimeFromSec(int seconds)
 
 char *ESPTimeHelper::intStr(int value)
 {
-    char *buf = new char[36];
-    memset(buf, 0, 36);
+    char *buf = (char *)newP(36);
     itoa(value, buf, 10);
     return buf;
 }
@@ -301,67 +300,120 @@ char *ESPTimeHelper::intStr(int value)
 String ESPTimeHelper::getDateTimeString()
 {
     setSysTime();
-    std::string s;
+    MB_String s;
 
     s = sdow[timeinfo.tm_wday];
 
-    s += ", ";
+    s += FLASH_STR_MCR(", ");
     char *tmp = intStr(timeinfo.tm_mday);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
-    s += " ";
+    s += FLASH_STR_MCR(" ");
     s += months[timeinfo.tm_mon];
 
-    s += " ";
+    s += FLASH_STR_MCR(" ");
     tmp = intStr(timeinfo.tm_year + 1900);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
-    s += " ";
+    s += FLASH_STR_MCR(" ");
     if (timeinfo.tm_hour < 10)
-        s += "0";
+        s += FLASH_STR_MCR("0");
     tmp = intStr(timeinfo.tm_hour);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
-    s += ":";
+    s += FLASH_STR_MCR(":");
     if (timeinfo.tm_min < 10)
-        s += "0";
+        s += FLASH_STR_MCR("0");
     tmp = intStr(timeinfo.tm_min);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
-    s += ":";
+    s += FLASH_STR_MCR(":");
     if (timeinfo.tm_sec < 10)
-        s += "0";
+        s += FLASH_STR_MCR("0");
     tmp = intStr(timeinfo.tm_sec);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
     int p = 1;
     if (TZ < 0)
         p = -1;
-    int tz = TZ;
-    float dif = (p * (TZ - tz)) * 60.0;
-    if (TZ < 0)
-        s += " -";
-    else
-        s += " +";
 
-    if (tz < 10)
-        s += "0";
-    tmp = intStr(tz);
+    float dif = (p * (TZ * 10 - (int)TZ * 10)) * 60.0 / 10;
+
+    if (TZ < 0)
+        s += FLASH_STR_MCR(" -");
+    else
+        s += FLASH_STR_MCR(" +");
+
+    if ((int)TZ < 10)
+        s += FLASH_STR_MCR("0");
+    tmp = intStr((int)TZ);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
     if (dif < 10)
-        s += "0";
+        s += FLASH_STR_MCR("0");
     tmp = intStr((int)dif);
     s += tmp;
-    delete[] tmp;
+    delP(&tmp);
 
     return s.c_str();
+}
+
+time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
+{
+    time_t ts = 0;
+    std::vector<MB_String> tk = std::vector<MB_String>();
+    MB_String s1 = timeString;
+
+    splitTk(s1, tk, (const char *)FLASH_STR_MCR(" "));
+    int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
+
+    if (tk.size() == 6)
+    {
+        day = atoi(tk[1].c_str());
+        for (size_t i = 0; i < 12; i++)
+        {
+            if (strcmp(months[i], tk[2].c_str()) == 0)
+                mon = i;
+        }
+
+        year = atoi(tk[3].c_str());
+      
+        std::vector<MB_String> tk2 = std::vector<MB_String>();
+        splitTk(tk[4], tk2, (const char *)FLASH_STR_MCR(":"));
+        if (tk2.size() == 3)
+        {
+            hr = atoi(tk2[0].c_str());
+            mins = atoi(tk2[1].c_str());
+            sec = atoi(tk2[2].c_str());
+        }
+
+        ts = getTimestamp(year, mon + 1, day, hr, mins, sec);
+
+        if (tk[5].length() == 5 && gmt)
+        {
+            char tmp[6];
+            memset(tmp, 0, 6);
+            strncpy(tmp, tk[5].c_str() + 1, 2);
+            tz_h = atoi(tmp);
+
+            memset(tmp, 0, 6);
+            strncpy(tmp, tk[5].c_str() + 3, 2);
+            tz_m = atoi(tmp);
+
+            time_t tz = tz_h * 60 * 60 + tz_m * 60;
+            if (tk[5][0] == '+')
+                ts -= tz; //remove time zone offset
+            else
+                ts += tz;
+        }
+    }
+    return ts;
 }
 
 void ESPTimeHelper::setSysTime()
@@ -421,6 +473,56 @@ void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const ch
     s = str.substr(previous, current - previous);
     tk.push_back(s);
     MB_String().swap(s);
+}
+
+void *ESPTimeHelper::newP(size_t len)
+{
+    void *p;
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
+
+    if ((p = (void *)ps_malloc(getReservedLen(len))) == 0)
+        return NULL;
+
+#else
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+    ESP.setExternalHeap();
+#endif
+
+    bool nn = ((p = (void *)malloc(getReservedLen(len))) > 0);
+
+#if defined(ESP8266_USE_EXTERNAL_HEAP)
+    ESP.resetHeap();
+#endif
+
+    if (!nn)
+        return NULL;
+
+#endif
+    memset(p, 0, len);
+    return p;
+}
+
+size_t ESPTimeHelper::getReservedLen(size_t len)
+{
+    int blen = len + 1;
+
+    int newlen = (blen / 4) * 4;
+
+    if (newlen < blen)
+        newlen += 4;
+
+    return (size_t)newlen;
+}
+
+void ESPTimeHelper::delP(void *ptr)
+{
+    void **p = (void **)ptr;
+    if (*p)
+    {
+        free(*p);
+        *p = 0;
+    }
 }
 
 #endif //ESPTimeHelper_CPP
