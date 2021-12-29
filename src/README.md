@@ -1420,7 +1420,7 @@ This is only limit for data to be stored in the IMAPSession.
 
 The IMAP idle (polling) timeout in ms.
 
-##### [size_t] imap_idle_timeout - The maximum size of each attachment to download.
+##### [size_t] imap_idle_timeout - The IMAP idle timeout in ms.
 
 ```cpp
 esp_mail_imap_limit_config_t limit;
