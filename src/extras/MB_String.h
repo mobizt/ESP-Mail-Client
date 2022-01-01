@@ -352,7 +352,7 @@ public:
         if (bufLen > 0)
         {
             if (base == 10)
-                sprintf(buf, (const char*)FPSTR("%d"), value);
+                sprintf(buf, (const char *)MBSTRING_FLASH_MCR("%d"), value);
             else
                 itoa(value, buf, base);
         }
@@ -375,7 +375,7 @@ public:
         if (bufLen > 0)
         {
             if (base == 10)
-                sprintf(buf, (const char*)FPSTR("%ld"), value);
+                sprintf(buf, (const char *)MBSTRING_FLASH_MCR("%ld"), value);
             else
                 ltoa(value, buf, base);
         }
