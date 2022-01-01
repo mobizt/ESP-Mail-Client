@@ -9,7 +9,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -102,7 +102,7 @@ bool imapSetupOk = false;
 
 unsigned long helloSendingMillis = 0;
 
-String sendingSubject = "ESP Mail Hello Test!";
+String sendingSubject = F("ESP Mail Hello Test!");
 
 void setup()
 {
@@ -184,7 +184,7 @@ void setupIMAP()
         return;
 
     /* Open or select the mailbox folder to read or search the message */
-    if (!imap.selectFolder("INBOX"))
+    if (!imap.selectFolder(F("INBOX")))
         return;
 
     imapSetupOk = true;
@@ -202,10 +202,10 @@ bool setupHelloSMTP()
     hello_smtp_mail_app_session.server.port = HELLO_SMTP_PORT;
     hello_smtp_mail_app_session.login.email = HELLO_SMTP_AUTHOR_EMAIL;
     hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
-    hello_smtp_mail_app_session.login.user_domain = "mydomain.net";
+    hello_smtp_mail_app_session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    hello_smtp_mail_app_session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    hello_smtp_mail_app_session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     hello_smtp_mail_app_session.time.gmt_offset = 3;
     hello_smtp_mail_app_session.time.day_light_offset = 0;
 
@@ -228,7 +228,7 @@ bool setupReplySMTP()
     reply_smtp_mail_app_session.server.port = REPLY_SMTP_PORT;
     reply_smtp_mail_app_session.login.email = REPLY_SMTP_AUTHOR_EMAIL;
     reply_smtp_mail_app_session.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
-    reply_smtp_mail_app_session.login.user_domain = "mydomain.net";
+    reply_smtp_mail_app_session.login.user_domain = F("mydomain.net");
 
     /* Connect to server with the session config */
     if (!reply_smtp.connect(&reply_smtp_mail_app_session))
@@ -247,12 +247,12 @@ void sendHelloMessage()
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = HELLO_SMTP_AUTHOR_EMAIL;
     message.subject = sendingSubject.c_str();
-    message.addRecipient("Me", IMAP_AUTHOR_EMAIL);
+    message.addRecipient(F("Me"), IMAP_AUTHOR_EMAIL);
     message.response.reply_to = HELLO_SMTP_AUTHOR_EMAIL; //only email address, excluded < and >
-    message.text.content = "Hello Me!";
+    message.text.content = F("Hello Me!");
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&hello_smtp, &message))
@@ -269,11 +269,11 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = REPLY_SMTP_AUTHOR_EMAIL;
-    String reSubject = "RE: ";
+    String reSubject = F("RE: ");
     reSubject += subject;
-    message.subject = reSubject.c_str();
+    message.subject = reSubject;
     message.addRecipient("Me", reply_email);
 
     message.in_reply_to = msgID;
@@ -283,8 +283,8 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
         ref += " ";
     ref += msgID;
 
-    message.references = ref.c_str();
-    message.text.content = "Yeah!, it works.";
+    message.references = ref;
+    message.text.content = F("Yeah!, it works.");
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&reply_smtp, &message))
@@ -307,8 +307,7 @@ void printPollingStatus(IMAPSession &imap)
         imap.stopListen();
 
         //Get the UID of new message and fetch
-        String uid = String(imap.getUID(sFolder.pollingStatus().messageNum));
-        imap_config.fetch.uid = uid.c_str();
+        imap_config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
 
         //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
         //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag

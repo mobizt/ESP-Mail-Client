@@ -12,7 +12,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -273,10 +273,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -287,11 +287,11 @@ void setup()
   message.enable.chunking = true;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
 
-  message.subject = "Test sending Email with attachments and inline images from SD card and Flash";
-  message.addRecipient("user1", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending Email with attachments and inline images from SD card and Flash");
+  message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
 #if defined(ESP32) || defined(ESP8266)
@@ -308,7 +308,7 @@ message.html.content = htmlMsg;
    * utf-7
    * The default value is utf-8
   */
-  message.html.charSet = "utf-8";
+  message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -320,11 +320,11 @@ message.html.content = htmlMsg;
   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 #if defined(ESP32) || defined(ESP8266)
-  message.text.content = "This message contains 2 inline images and 2 attachment files.\r\nThe inline images were not shown in the plain text message.";
+  message.text.content = F("This message contains 2 inline images and 2 attachment files.\r\nThe inline images were not shown in the plain text message.");
 #elif defined(ARDUINO_ARCH_SAMD)
-  message.text.content = "This message contains 1 inline image and 1 attachment file.\r\nThe inline images were not shown in the plain text message.";
+  message.text.content = F("This message contains 1 inline image and 1 attachment file.\r\nThe inline images were not shown in the plain text message.");
 #endif
-  message.text.charSet = "utf-8";
+  message.text.charSet = F("utf-8");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /** The message priority
@@ -345,7 +345,7 @@ message.html.content = htmlMsg;
   //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <user1@gmail.com>");
+  message.addHeader(F("Message-ID: <user1@gmail.com>"));
 
   /* The attachment data item */
   SMTP_Attachment att[4];
@@ -355,9 +355,9 @@ message.html.content = htmlMsg;
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  att[attIndex].descr.filename = "orange.png";
-  att[attIndex].descr.mime = "image/png";
-  att[attIndex].file.path = "/orange.png";
+  att[attIndex].descr.filename = F("orange.png");
+  att[attIndex].descr.mime = F("image/png");
+  att[attIndex].file.path = F("/orange.png");
 
   /** The file storage type e.g. 
    * esp_mail_file_storage_type_none, 
@@ -384,9 +384,9 @@ message.html.content = htmlMsg;
   */
 
   attIndex++;
-  att[attIndex].descr.filename = "bin1.dat";
-  att[attIndex].descr.mime = "application/octet-stream"; //binary data
-  att[attIndex].file.path = "/bin1.dat";
+  att[attIndex].descr.filename = F("bin1.dat");
+  att[attIndex].descr.mime = F("application/octet-stream"); //binary data
+  att[attIndex].file.path = F("/bin1.dat");
   att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
@@ -400,9 +400,9 @@ message.html.content = htmlMsg;
    * transfer encoding and content encoding
   */
   attIndex++;
-  att[attIndex].descr.filename = "green.png";
-  att[attIndex].descr.mime = "image/png";
-  att[attIndex].file.path = "/green.png";
+  att[attIndex].descr.filename = F("green.png");
+  att[attIndex].descr.mime = F("image/png");
+  att[attIndex].file.path = F("/green.png");
   att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
   att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
@@ -413,9 +413,9 @@ message.html.content = htmlMsg;
    * transfer encoding and content encoding
   */
   attIndex++;
-  att[attIndex].descr.filename = "bin2.dat";
-  att[attIndex].descr.mime = "application/octet-stream";
-  att[attIndex].file.path = "/bin2.dat";
+  att[attIndex].descr.filename = F("bin2.dat");
+  att[attIndex].descr.mime = F("application/octet-stream");
+  att[attIndex].file.path = F("/bin2.dat");
   att[attIndex].file.storage_type = esp_mail_file_storage_type_flash;
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
   message.addAttachment(att[attIndex]);

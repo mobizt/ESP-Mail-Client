@@ -5,7 +5,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -153,7 +153,7 @@ void setup()
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
-    if (!imap.selectFolder("INBOX"))
+    if (!imap.selectFolder(F("INBOX")))
         return;
 
     /*  {Optional} */

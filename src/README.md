@@ -387,7 +387,7 @@ param **`dest`** The destination folder that the messages to copy to.
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool copyMessages(MessageList *toCopy, const char *dest);
+bool copyMessages(MessageList *toCopy, <string> dest);
 ```
 
 
@@ -2205,7 +2205,7 @@ String getDateTimeString();
 
 The MIT License (MIT)
 
-Copyright (c) 2021 K. Suwatchai (Mobizt)
+Copyright (c) 2022 K. Suwatchai (Mobizt)
 
 
 Permission is hereby granted, free of charge, to any person returning a copy of

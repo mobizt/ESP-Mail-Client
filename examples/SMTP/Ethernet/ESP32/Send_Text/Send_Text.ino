@@ -9,7 +9,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -238,10 +238,10 @@ void sendMail()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -249,13 +249,13 @@ void sendMail()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "Test sending plain text Email";
-  message.addRecipient("Someone", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending plain text Email");
+  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
   String textMsg = "This is simple plain text message";
-  message.text.content = textMsg.c_str();
+  message.text.content = textMsg;
 
   /** The Plain text message character set e.g.
    * us-ascii
@@ -263,7 +263,7 @@ void sendMail()
    * utf-7
    * The default value is utf-8
   */
-  message.text.charSet = "us-ascii";
+  message.text.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -293,7 +293,7 @@ void sendMail()
   message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+  message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))

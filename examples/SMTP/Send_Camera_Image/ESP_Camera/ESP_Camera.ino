@@ -13,7 +13,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -129,10 +129,10 @@ void setup()
     session.server.port = SMTP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-    session.login.user_domain = "mydomain.net";
+    session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
@@ -143,13 +143,13 @@ void setup()
     message.enable.chunking = true;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
 
-    message.subject = "Test sending camera image";
-    message.addRecipient("user1", "change_this@your_mail_dot_com");
+    message.subject = F("Test sending camera image");
+    message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
 
-    message.html.content = "<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"2048\" height=\"1536\">";
+    message.html.content = F("<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"2048\" height=\"1536\">");
 
     /** The content transfer encoding e.g.
      * enc_7bit or "7bit" (not encoded)
@@ -167,7 +167,7 @@ void setup()
      * utf-7
      * The default value is utf-8
     */
-    message.html.charSet = "utf-8";
+    message.html.charSet = F("utf-8");
 
     camera_fb_t *fb = esp_camera_fb_get();
 
@@ -177,13 +177,13 @@ void setup()
      * file name, MIME type, file path, file storage type,
      * transfer encoding and content encoding
     */
-    att.descr.filename = "camera.jpg";
-    att.descr.mime = "image/jpg";
+    att.descr.filename = F("camera.jpg");
+    att.descr.mime = F("image/jpg");
 
     att.blob.data = fb->buf;
     att.blob.size = fb->len;
 
-    att.descr.content_id = "image-001"; //The content id (cid) of camera.jpg image in the src tag
+    att.descr.content_id = F("image-001"); //The content id (cid) of camera.jpg image in the src tag
 
     /* Need to be base64 transfer encoding for inline image */
     att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;

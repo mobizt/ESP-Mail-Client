@@ -11,7 +11,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -104,10 +104,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -115,12 +115,12 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "Test sending message as embedded files";
-  message.addRecipient("Admin", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending message as embedded files");
+  message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
 
-  message.html.content = "<span style=\"color:#0055ff;\">This is html message</span>";
+  message.html.content = F("<span style=\"color:#0055ff;\">This is html message</span>");
 
   /** The Plain text message character set e.g.
    * us-ascii
@@ -128,7 +128,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-  message.html.charSet = "utf-8";
+  message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -144,7 +144,7 @@ void setup()
   message.html.embed.enable = true;
 
   /* The name of embedded file */
-  message.html.embed.filename = "test.html";
+  message.html.embed.filename = F("test.html");
 
   /** The embedded type 
    * esp_mail_smtp_embed_message_type_attachment or 0
@@ -154,11 +154,11 @@ void setup()
 
 
 
-  message.text.content = "This is simple plain text message";
-  message.text.charSet = "utf-8";
+  message.text.content = F("This is simple plain text message");
+  message.text.charSet = F("utf-8");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
   message.text.embed.enable = true;
-  message.text.embed.filename = "test.txt";
+  message.text.embed.filename = F("test.txt");
   message.text.embed.type = esp_mail_smtp_embed_message_type_inline;
 
 
@@ -172,7 +172,7 @@ void setup()
 
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+  message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
   
 
   /* Connect to server with the session config */

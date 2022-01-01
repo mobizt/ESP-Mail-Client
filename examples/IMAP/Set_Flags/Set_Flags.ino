@@ -5,7 +5,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -126,8 +126,7 @@ void setup()
     IMAP_Config config;
 
     /* Message UID to fetch or read e.g. 100 */
-    String uid = String(imap.getUID(imap.selectedFolder().msgCount()));
-    config.fetch.uid = uid.c_str();
+    config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
     /* Set seen flag */
     //config.fetch.set_seen = true;
@@ -139,7 +138,7 @@ void setup()
     config.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = "/email_data";
+    config.storage.saved_path = F("/email_data");
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
@@ -195,7 +194,7 @@ void setup()
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
-    if (!imap.selectFolder("INBOX"))
+    if (!imap.selectFolder(F("INBOX")))
         return;
 
     /*  {Optional} */
@@ -204,7 +203,7 @@ void setup()
     /** Set \Seen and \Answered to flags for message with UID 100
      * The seesion will keep open.
     */
-    if (MailClient.setFlag(&imap, 100, "\\Seen \\Answered", false))
+    if (MailClient.setFlag(&imap, 100, F("\\Seen \\Answered"), false))
         Serial.println("Setting FLAG success");
     else
         Serial.println("Error, setting FLAG");

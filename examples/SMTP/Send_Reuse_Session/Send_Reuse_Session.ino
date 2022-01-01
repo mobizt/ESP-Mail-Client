@@ -10,7 +10,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -103,10 +103,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -114,15 +114,15 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "First Email with session reusage";
-  message.addRecipient("Admin1", "change_this@your_mail_dot_com");
-  message.addRecipient("Admin2", "change_this@your_mail_dot_com");
-  message.addCc("change_this@your_mail_dot_com");
-  message.addBcc("change_this@your_mail_dot_com");
+  message.subject = F("First Email with session reusage");
+  message.addRecipient(F("Admin1"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Admin2"), F("change_this@your_mail_dot_com"));
+  message.addCc(F("change_this@your_mail_dot_com"));
+  message.addBcc(F("change_this@your_mail_dot_com"));
 
-  message.html.content = "<p>This is the <span style=\"color:#ff0000;\">first message</span>.</p>";
+  message.html.content = F("<p>This is the <span style=\"color:#ff0000;\">first message</span>.</p>");
 
   /** The HTML text message character set e.g.
    * us-ascii
@@ -130,7 +130,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-  message.html.charSet = "utf-8";
+  message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -148,8 +148,8 @@ void setup()
   */
   message.text.flowed = true;
 
-  message.text.content = "This is the first message";
-  message.text.charSet = "us-ascii";
+  message.text.content = F("This is the first message");
+  message.text.charSet = F("us-ascii");
 
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
@@ -171,7 +171,7 @@ void setup()
   //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <Admin1@gmail.com>");
+  message.addHeader(F("Message-ID: <Admin1@gmail.com>"));
 
   Serial.println();
   Serial.println("Sending first Email...");
@@ -199,24 +199,24 @@ void setup()
   //message.clearAttachments();
   //message.clearInlineimages();
 
-  message.subject = "Second Email with session reusage";
+  message.subject = F("Second Email with session reusage");
 
-  message.addRecipient("Admin3", "change_this@your_mail_dot_com");
-  message.addRecipient("Admin4", "change_this@your_mail_dot_com");
-  message.addCc("change_this@your_mail_dot_com");
-  message.addBcc("change_this@your_mail_dot_com");
+  message.addRecipient(F("Admin3"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Admin4"), F("change_this@your_mail_dot_com"));
+  message.addCc(F("change_this@your_mail_dot_com"));
+  message.addBcc(F("change_this@your_mail_dot_com"));
 
-  message.html.content = "<p>This is the <span style=\"color:#ff0000;\">second message</span>.</p>";
-  message.html.charSet = "us-ascii";
+  message.html.content = F("<p>This is the <span style=\"color:#ff0000;\">second message</span>.</p>");
+  message.html.charSet = F("us-ascii");
   
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
-  message.text.content = "This is the second message";
-  message.text.charSet = "UTF-8";
+  message.text.content = F("This is the second message");
+  message.text.charSet = F("UTF-8");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <Admin3@gmail.com>");
+  message.addHeader(F("Message-ID: <Admin3@gmail.com>"));
 
   Serial.println();
   Serial.println("Sending second Email...");

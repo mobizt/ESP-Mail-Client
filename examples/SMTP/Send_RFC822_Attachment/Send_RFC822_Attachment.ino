@@ -11,7 +11,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -107,10 +107,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -118,12 +118,12 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "Test sending Email with rfc822 attachment";
-  message.addRecipient("Someone", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending Email with rfc822 attachment");
+  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
-  message.text.content = "This is simple plain text message with rfc822 attachment";
+  message.text.content = F("This is simple plain text message with rfc822 attachment");
 
   /** The Plain text message character set e.g.
    * us-ascii
@@ -131,7 +131,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-  message.text.charSet = "us-ascii";
+  message.text.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -152,28 +152,28 @@ void setup()
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+  message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
   SMTP_Message rfc822;
-  rfc822.messageID = "1234@local.machine.example";
-  rfc822.from.name = "rob";
-  rfc822.from.email = "rob@example.com";
-  rfc822.sender.name = "steve";
-  rfc822.sender.email = "steve@example.com";
+  rfc822.messageID = F("1234@local.machine.example");
+  rfc822.from.name = F("rob");
+  rfc822.from.email = F("rob@example.com");
+  rfc822.sender.name = F("steve");
+  rfc822.sender.email = F("steve@example.com");
   
   //This date field will set by default if the device time was already set or set date field manually
   rfc822.date = MailClient.Time.getDateTimeString();
 
-  rfc822.subject = "Test rfc822 message";
-  rfc822.comments = "This is comment";
-  rfc822.addRecipient("joe", "joe@example.com");
-  rfc822.response.reply_to = "rob@example.com";
-  rfc822.text.charSet = "utf-8";
-  rfc822.text.content = "This is rfc822 text message";
+  rfc822.subject = F("Test rfc822 message");
+  rfc822.comments = F("This is comment");
+  rfc822.addRecipient(F("joe"), F("joe@example.com"));
+  rfc822.response.reply_to = F("rob@example.com");
+  rfc822.text.charSet = F("utf-8");
+  rfc822.text.content = F("This is rfc822 text message");
   rfc822.text.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
-  rfc822.html.charSet = "utf-8";
-  rfc822.html.content = "This is rfc822 html message";
+  rfc822.html.charSet = F("utf-8");
+  rfc822.html.content = F("This is rfc822 html message");
   rfc822.html.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* The attachment data item */
@@ -184,8 +184,8 @@ void setup()
    * file name, MIME type, BLOB data, BLOB data size,
    * and transfer encoding
   */
-  att[attIndex].descr.filename = "firebase_logo.png";
-  att[attIndex].descr.mime = "image/png";
+  att[attIndex].descr.filename = F("firebase_logo.png");
+  att[attIndex].descr.mime = F("image/png");
   att[attIndex].blob.data = firebase_png;
   att[attIndex].blob.size = sizeof(firebase_png);
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
@@ -211,8 +211,8 @@ void setup()
    * The default transfer encoding is base64.
   */
   attIndex++;
-  att[attIndex].descr.filename = "test.dat";
-  att[attIndex].descr.mime = "application/octet-stream";
+  att[attIndex].descr.filename = F("test.dat");
+  att[attIndex].descr.mime = F("application/octet-stream");
   att[attIndex].blob.data = a;
   att[attIndex].blob.size = 512;
 

@@ -11,7 +11,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -137,10 +137,10 @@ void setup()
     session.server.port = SMTP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-    session.login.user_domain = "mydomain.net";
+    session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
@@ -148,10 +148,10 @@ void setup()
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
-    message.subject = "Test sending flowed plain text Email";
-    message.addRecipient("Someone", "change_this@your_mail_dot_com");
+    message.subject = F("Test sending flowed plain text Email");
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
     /** The option to add soft line break to to the message for
      * the long text message > 78 characters (rfc 3676)
@@ -162,7 +162,7 @@ void setup()
     /** if the option message.text.flowed is true,
      * the following plain text message will be wrapped.
     */
-    message.text.content = "The text below is the long quoted text which breaks into several lines.\r\n\r\n>> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n\r\nThis is the normal short text.\r\n\r\nAnother long text, abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz.";
+    message.text.content = F("The text below is the long quoted text which breaks into several lines.\r\n\r\n>> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n\r\nThis is the normal short text.\r\n\r\nAnother long text, abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz.");
 
     /** The Plain text message character set e.g.
      * us-ascii
@@ -170,7 +170,7 @@ void setup()
      * utf-7
      * The default value is utf-8
     */
-    message.text.charSet = "us-ascii";
+    message.text.charSet = F("us-ascii");
 
     /** The content transfer encoding e.g.
      * enc_7bit or "7bit" (not encoded)
@@ -200,7 +200,7 @@ void setup()
     //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
     /* Set the custom message header */
-    message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+    message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
     /* Connect to server with the session config */
     if (!smtp.connect(&session))

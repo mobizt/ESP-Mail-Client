@@ -7,7 +7,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -165,13 +165,13 @@ void setup()
      * 
      * 
     */
-    config.search.criteria = "UID SEARCH ALL";
+    config.search.criteria = F("UID SEARCH ALL");
 
     /* Also search the unseen message */
     config.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = "/email_data";
+    config.storage.saved_path = F("/email_data");
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
@@ -232,7 +232,7 @@ void setup()
     printAllMailboxesInfo(imap);
 
     /* Open or select the mailbox folder to read or search the message */
-    if (!imap.selectFolder("INBOX"))
+    if (!imap.selectFolder(F("INBOX")))
         return;
 
     /*  {Optional} */
@@ -249,13 +249,13 @@ void setup()
     /** Open or select other mailbox folder 
      * The folder that previousely opened will be closed
     */
-    if (imap.selectFolder("Junk"))
+    if (imap.selectFolder(F("Junk")))
     {
         /*  {Optional} */
         printSelectedMailboxInfo(imap.selectedFolder());
 
         /* Config to search all messages in the opened mailboax (Search mode) */
-        config.search.criteria = "UID SEARCH ALL"; // or "UID SEARCH NEW" for recent received messages
+        config.search.criteria = F("UID SEARCH ALL"); // or "UID SEARCH NEW" for recent received messages
 
         /* No message UID provide for fetching */
         config.fetch.uid.clear();

@@ -14,7 +14,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -112,10 +112,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -126,13 +126,13 @@ void setup()
   message.enable.chunking = true;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
 
-  message.subject = "Test sending Email with parallel attachments";
-  message.addRecipient("user1", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending Email with parallel attachments");
+  message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
 
-  message.html.content = "<span style=\"color:#ff0000;\">This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).";
+  message.html.content = F("<span style=\"color:#ff0000;\">This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).");
 
   /** The HTML text message character set e.g.
    * us-ascii
@@ -140,7 +140,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-  message.html.charSet = "utf-8";
+  message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -152,8 +152,8 @@ void setup()
   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
-  message.text.content = "This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).";
-  message.text.charSet = "us-ascii";
+  message.text.content = F("This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).");
+  message.text.charSet = F("us-ascii");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
   /** The message priority
@@ -174,7 +174,7 @@ void setup()
   //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <user1@gmail.com>");
+  message.addHeader(F("Message-ID: <user1@gmail.com>"));
 
   /* The attachment data item */
   SMTP_Attachment att;
@@ -183,8 +183,8 @@ void setup()
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
   */
-  att.descr.filename = "haun.png";
-  att.descr.mime = "image/png";
+  att.descr.filename = F("haun.png");
+  att.descr.mime = F("image/png");
   att.blob.data = shaun_png;
   att.blob.size = sizeof(shaun_png);
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
@@ -195,8 +195,8 @@ void setup()
    * transfer encoding and content encoding
   */
   message.resetAttachItem(att); //Clear the attach item data to reuse
-  att.descr.filename = "mu_law.wav";
-  att.descr.mime = "audio/basic";
+  att.descr.filename = F("mu_law.wav");
+  att.descr.mime = F("audio/basic");
   att.blob.data = mu_law_wave;
   att.blob.size = sizeof(mu_law_wave);
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;

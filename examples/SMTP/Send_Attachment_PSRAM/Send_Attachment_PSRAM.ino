@@ -9,7 +9,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -128,10 +128,10 @@ void setup()
     session.server.port = SMTP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-    session.login.user_domain = "mydomain.net";
+    session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
@@ -139,12 +139,12 @@ void setup()
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
-    message.subject = "Test sending plain text Email with PSRAM attachment";
-    message.addRecipient("Someone", "change_this@your_mail_dot_com");
+    message.subject = F("Test sending plain text Email with PSRAM attachment");
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
-    String textMsg = "This is simple plain text message with PSRAM attachment";
+    String textMsg = F("This is simple plain text message with PSRAM attachment");
     message.text.content = textMsg;
 
     /** The Plain text message character set e.g.
@@ -153,7 +153,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-    message.text.charSet = "us-ascii";
+    message.text.charSet = F("us-ascii");
 
     /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -190,7 +190,7 @@ void setup()
     //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
     /* Set the custom message header */
-    message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+    message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
 
     //For Root CA certificate verification (ESP8266 and ESP32 only)
@@ -215,8 +215,8 @@ void setup()
     {
         memset(data, 0xff, dlen);
 
-        att[attIndex].descr.filename = "data.dat";
-        att[attIndex].descr.mime = "application/octet-stream";
+        att[attIndex].descr.filename = F("data.dat");
+        att[attIndex].descr.mime = F("application/octet-stream");
         att[attIndex].blob.data = data;
         att[attIndex].blob.size = dlen;
         att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;

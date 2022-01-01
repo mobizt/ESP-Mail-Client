@@ -11,7 +11,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -137,10 +137,10 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  session.login.user_domain = "mydomain.net";
+  session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
@@ -148,13 +148,13 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = "ESP Mail";
+  message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
-  message.subject = "Test sending html Email";
-  message.addRecipient("Admin", "change_this@your_mail_dot_com");
+  message.subject = F("Test sending html Email");
+  message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
 
-  String htmlMsg = "<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>";
-  message.html.content = htmlMsg.c_str();
+  String htmlMsg = F("<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>");
+  message.html.content = htmlMsg;
 
   /** The html text message character set e.g.
    * us-ascii
@@ -162,7 +162,7 @@ void setup()
    * utf-7
    * The default value is utf-8
   */
-  message.html.charSet = "us-ascii";
+  message.html.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
    * enc_7bit or "7bit" (not encoded)
@@ -192,7 +192,7 @@ void setup()
   //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
-  message.addHeader("Message-ID: <abcde.fghij@gmail.com>");
+  message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))

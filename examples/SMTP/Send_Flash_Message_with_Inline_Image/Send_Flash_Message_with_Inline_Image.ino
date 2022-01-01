@@ -12,7 +12,7 @@
  * 
  * Github: https://github.com/mobizt/ESP-Mail-Client
  * 
- * Copyright (c) 2021 mobizt
+ * Copyright (c) 2022 mobizt
  *
 */
 
@@ -149,10 +149,10 @@ void setup()
     session.server.port = SMTP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-    session.login.user_domain = "mydomain.net";
+    session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
@@ -163,11 +163,11 @@ void setup()
     message.enable.chunking = true;
 
     /* Set the message headers */
-    message.sender.name = "ESP Mail";
+    message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
 
-    message.subject = "Test sending base64 inline image stored in flash memory";
-    message.addRecipient("user1", "change_this@your_mail_dot_com");
+    message.subject = F("Test sending base64 inline image stored in flash memory");
+    message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
 
     /* Two alternative content versions are sending in this example e.g. plain text and html */
 
@@ -195,14 +195,14 @@ void setup()
      * utf-7
      * The default value is utf-8
     */
-    message.html.charSet = "utf-8";
+    message.html.charSet = F("utf-8");
 
-    message.text.content = "This message contains inline image.\r\nThe inline image was not shown in the plain text message.";
-    message.text.charSet = "utf-8";
+    message.text.content = F("This message contains inline image.\r\nThe inline image was not shown in the plain text message.");
+    message.text.charSet = F("utf-8");
     message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
 
     /* Set the custom message header */
-    message.addHeader("Message-ID: <user1@gmail.com>");
+    message.addHeader(F("Message-ID: <user1@gmail.com>"));
 
     /* The attachment data item */
     SMTP_Attachment att;
@@ -210,11 +210,11 @@ void setup()
      * file name, MIME type, file path, file storage type,
      * transfer encoding and content encoding
     */
-    att.descr.filename = "base64Img.jpg";
-    att.descr.mime = "image/jpg";
+    att.descr.filename = F("base64Img.jpg");
+    att.descr.mime = F("image/jpg");
 
 #if defined(ESP32) || defined(ESP8266)
-    att.file.path = "/base64Img.jpg";
+    att.file.path = F("/base64Img.jpg");
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
      * esp_mail_file_storage_type_flash, and
@@ -226,7 +226,7 @@ void setup()
     att.blob.size = sizeof(base64Img);
 #endif
 
-    att.descr.content_id = "image-001"; //The content id (cid) of orange image in the src tag
+    att.descr.content_id = F("image-001"); //The content id (cid) of orange image in the src tag
 
     /* Need to be base64 transfer encoding for inline image */
     att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
