@@ -99,39 +99,6 @@ void setup()
   /* Declare the session config data */
   ESP_Mail_Session session;
 
-  /** ########################################################
-   * Some properties of SMTPSession data and parameters pass to 
-   * SMTP_Message class accept the pointer to constant char
-   * i.e. const char*. 
-   * 
-   * You may assign a string literal to that properties or function 
-   * like below example.
-   *   
-   * session.login.user_domain = "mydomain.net";
-   * session.login.user_domain = String("mydomain.net").c_str();
-   * 
-   * or
-   * 
-   * String doman = "mydomain.net";
-   * session.login.user_domain = domain.c_str();
-   * 
-   * And
-   * 
-   * String name = "Jack " + String("dawson");
-   * String email = "jack_dawson" + String(123) + "@mail.com";
-   * 
-   * message.addRecipient(name.c_str(), email.c_str());
-   * 
-   * message.addHeader(String("Message-ID: <abcde.fghij@gmail.com>").c_str());
-   * 
-   * or
-   * 
-   * String header = "Message-ID: <abcde.fghij@gmail.com>";
-   * message.addHeader(header.c_str());
-   * 
-   * ###########################################################
-  */
-
   /* Set the session config */
   session.server.host_name = SMTP_HOST;
   session.server.port = SMTP_PORT;
@@ -153,7 +120,7 @@ void setup()
   message.subject = F("Test sending html Email");
   message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
 
-  String htmlMsg = F("<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>");
+  String htmlMsg = "<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>";
   message.html.content = htmlMsg;
 
   /** The html text message character set e.g.

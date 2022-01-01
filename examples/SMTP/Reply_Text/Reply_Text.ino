@@ -102,7 +102,7 @@ bool imapSetupOk = false;
 
 unsigned long helloSendingMillis = 0;
 
-String sendingSubject = F("ESP Mail Hello Test!");
+String sendingSubject = "ESP Mail Hello Test!";
 
 void setup()
 {
@@ -271,10 +271,10 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
     /* Set the message headers */
     message.sender.name = F("ESP Mail");
     message.sender.email = REPLY_SMTP_AUTHOR_EMAIL;
-    String reSubject = F("RE: ");
+    String reSubject = "RE: ";
     reSubject += subject;
     message.subject = reSubject;
-    message.addRecipient("Me", reply_email);
+    message.addRecipient(F("Me"), reply_email);
 
     message.in_reply_to = msgID;
 

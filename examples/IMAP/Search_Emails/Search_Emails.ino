@@ -120,21 +120,6 @@ void setup()
      * Which pin 15 is the CS pin of SD card adapter
     */
 
-    /** ########################################################
-     * Some properties of IMAP_Config and ESP_Mail_Session data
-     * accept the pointer to constant char i.e. const char*. 
-     * 
-     * You may assign a string literal to that properties like 
-     * below example.
-     *   
-     * config.search.criteria = String("UID SEARCH ALL").c_str();
-     * 
-     * String folder = "INBOX";
-     * imap.selectFolder(folder.c_str());
-     * 
-     * ###########################################################
-    */
-
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
     session.server.port = IMAP_PORT;
