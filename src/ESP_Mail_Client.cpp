@@ -436,21 +436,6 @@ void *ESP_Mail_Client::newP(size_t len)
   return p;
 }
 
-char *ESP_Mail_Client::newS(char *p, size_t len)
-{
-  delP(&p);
-  p = (char *)newP(len);
-  return p;
-}
-
-char *ESP_Mail_Client::newS(char *p, size_t len, char *d)
-{
-  delP(&p);
-  p = (char *)newP(len);
-  strcpy(p, d);
-  return p;
-}
-
 bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive)
 {
   if (ofs < 0)

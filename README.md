@@ -63,9 +63,9 @@ This following devices are supported.
  * W5100 SPI Ethernet module
  * W5500 SPI Ethernet module
 
- Note: Arduino UNO WiFi Rev.2 (AVR Platform) is not supported.
+Note: Arduino UNO WiFi Rev.2 (AVR Platform) is not supported.
 
-
+Boards that based on other MCUs e.g. STM32 (Atmel's ARM), Teensy (NXP's ARM) and RP2040, are not supported and have no plan to buid it.
 
 
 
