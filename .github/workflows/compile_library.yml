@@ -26,7 +26,6 @@ jobs:
           - "lolin32"
           - "mkrwifi1010"
           - "bluepill_f103c8_128k"
-          - "nanorp2040connect"
           - "mkr1000USB"
           - "teensy36"
           - "teensy41"
@@ -58,3 +57,5 @@ jobs:
 
     - name: Run PlatformIO
       run: pio ci --board=${{ matrix.board }} src
+      env: 
+      lib_ldf_mode = chain+

@@ -544,8 +544,14 @@ To use external Clients, the following macro should be defined in [**ESP_Mail_FS
 
 ```cpp
 #define ENABLE_CUSTOM_CLIENT
-
 ```
+
+For Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong WiFi compilation, please set the lib_ldf_mode in platformio.ini as this.
+
+```ini
+lib_ldf_mode = chain+
+```
+
 
 In your sketch, you need to pass the Client's object pointer to the IMAPSession or SMTPSession constructor.
 
