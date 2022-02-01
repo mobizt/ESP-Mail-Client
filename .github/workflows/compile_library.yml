@@ -58,5 +58,5 @@ jobs:
     - name: Run PlatformIO
       run: pio ci --board=${{ matrix.board }} src
       env: 
-      lib_ldf_mode = chain+
-      
+      lib_ldf_mode: chain+
+
