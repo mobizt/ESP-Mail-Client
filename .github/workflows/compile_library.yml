@@ -25,6 +25,11 @@ jobs:
           - "esp32dev"
           - "lolin32"
           - "mkrwifi1010"
+          - "bluepill_f103c8_128k"
+          - "nanorp2040connect"
+          - "mkr1000USB"
+          - "teensy36"
+          - "teensy41"
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip
