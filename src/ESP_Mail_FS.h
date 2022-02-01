@@ -81,6 +81,6 @@ static SdFat sd_fat_fs;   //should declare as static here
 //Enable SMTP class
 #define ENABLE_SMTP //comment this line to disable or exclude it
 
-#define ENABLE_CUSTOM_CLIENT
+//#define ENABLE_CUSTOM_CLIENT
 
 #endif
