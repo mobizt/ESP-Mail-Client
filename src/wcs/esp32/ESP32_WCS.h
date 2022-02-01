@@ -1,11 +1,11 @@
 
 /*
- *ESP32 WiFi Client Secure v1.0.2
+ *ESP32 WiFi Client Secure v1.0.3
  * 
- * November 16, 2021 
+ * January 24, 2022 
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -53,32 +53,8 @@
 
 #include "Arduino.h"
 #include "IPAddress.h"
-#include <WiFi.h>
-#include "ESP_Mail_FS.h"
 #include "ESP32_SSL_Client.h"
-
-#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
-#include <esp32-hal-psram.h>
-#endif
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#if defined(ESP_Mail_DEFAULT_FLASH_FS)
-#define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#endif
-
-#if defined(ESP_MAIL_DEFAULT_SD_FS)
-#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
-#endif
-#define ESP_MAIL_USE_PSRAM ESP_Mail_USE_PSRAM
-
-#if defined(ESP_Mail_USE_PSRAM)
-#define MB_STRING_USE_PSRAM
-#endif
-
-#include "extras/MB_String.h"
-
-#define MBSTRING MB_String
+#include <WiFiClient.h>
 
 typedef void (*DebugMsgCallback)(const char *msg);
 
@@ -171,8 +147,8 @@ private:
     bool _secured = true;
     bool _withCert = false;
     bool _withKey = false;
-    MBSTRING _host;
-    MBSTRING _rxBuf;
+    MB_String _host;
+    MB_String _rxBuf;
     int _port;
 
     int ns_available();

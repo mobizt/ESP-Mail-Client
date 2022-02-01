@@ -17,7 +17,8 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
+
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
 #ifndef WiFi_Spi_h
 #define WiFi_Spi_h

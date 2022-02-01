@@ -1,5 +1,5 @@
 /**
- * This example will search all Emails in the opened mailbox folder.
+ * This example shows how to search all messages in the opened mailbox folder.
  * 
  * Created by K. Suwatchai (Mobizt)
  * 
@@ -11,9 +11,8 @@
  *
 */
 
-/** To receive Email using Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
  * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- * 
 */
 
 /** For ESP8266, with BearSSL WiFi Client 
@@ -27,10 +26,15 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#endif
-#include <ESP_Mail_Client.h>
+#else
 
-//To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
+//other Client defined here
+//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+//See the example Custom_Client.ino for how to use.
+
+#endif
+
+#include <ESP_Mail_Client.h>
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -391,9 +395,12 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
             if (msg.rfc822.size() > 0)
             {
-                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                ESP_MAIL_PRINTF("\r\nRFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
                 printMessages(msg.rfc822, headerOnly);
             }
+
+            if (msg.attachments.size() > 0)
+                printAttacements(msg.attachments);
         }
 
         Serial.println();

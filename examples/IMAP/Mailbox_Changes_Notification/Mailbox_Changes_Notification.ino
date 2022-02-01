@@ -1,5 +1,5 @@
 /**
- * This example showed how to get mailbox changes notification in realtime for the selected or opened mailbox.
+ * This example shows how to get notification in realtime when incoming message arrived and other mailbox changes.
  * 
  * Email: suwatchai@outlook.com
  * 
@@ -9,9 +9,8 @@
  *
 */
 
-/** To receive Email using Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
  * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- * 
 */
 
 /** For ESP8266, with BearSSL WiFi Client 
@@ -25,7 +24,14 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
+#else
+
+//other Client defined here
+//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+//See the example Custom_Client.ino for how to use.
+
 #endif
+
 #include <ESP_Mail_Client.h>
 
 //To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
@@ -129,6 +135,15 @@ void setup()
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
+
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    session.time.gmt_offset = 3;
+    session.time.day_light_offset = 0;
+    
+    /** Assign custom internet connection handler function 
+     * in case of lost internet connection. 
+    */
+    //session.network_connection_handler = connectWiFi;
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))

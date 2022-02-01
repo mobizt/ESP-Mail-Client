@@ -1,13 +1,13 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.2
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.4
  *
  * 
- * November 29, 2021
+ * February 1, 2022
  * 
- * Update WiFiNINA v1.8.13
+ * Add support Arduino Nano RP2040 Connect
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -28,46 +28,23 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
 #ifndef WiFiNINA_TCP_Client_H
 #define WiFiNINA_TCP_Client_H
-
-#include "ESP_Mail_FS.h"
 
 
 #include <Arduino.h>
 #include "lib/WiFiNINA.h"
 
-#if defined(ARDUINO_ARCH_SAMD)
+#if !defined(__AVR__)
 #include <string>
-#include <vector>
 #endif
 
-#include "extras/MB_String.h"
+#include "./ESP_Mail_Error.h"
+#include "./wcs/base/TCP_Client_Base.h"
 
-#define MBSTRING MB_String
-
-#if defined(ESP_Mail_DEFAULT_FLASH_FS)
-#define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#endif
-
-#if defined(ESP_MAIL_DEFAULT_SD_FS)
-#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
-#endif
-
-#define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
-#define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)
-#define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
-
-enum esp_mail_file_storage_type
-{
-  esp_mail_file_storage_type_none,
-  esp_mail_file_storage_type_flash,
-  esp_mail_file_storage_type_sd
-};
-
-class WiFiNINA_TCP_Client
+class WiFiNINA_TCP_Client : public TCP_Client_Base
 {
   friend class ESP_Mail_Client;
 
@@ -75,50 +52,69 @@ public:
   WiFiNINA_TCP_Client();
   ~WiFiNINA_TCP_Client();
 
-  /**
-    * Initialization of new TCP connection.
-    * \param host - Host name without protocols.
-    * \param port - Server's port.
-    * \return True by default.
-    * If no certificate string provided, use (const char*)NULL to CAcert param 
-    */
-  bool begin(const char *host, uint16_t port);
+  void setCACert(const char *caCert);
 
-  /**
-    * Check the TCP connection status.
-    * \return True if connected.
-    */
-  bool connected();
+  void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
 
-  /**
-    * Establish TCP connection when required and send data.
-    * \param data - The data to send.
-    * \return TCP status code, Return zero if new TCP connection and data sent.
-    */
-  int send(const char *data);
+  void setTimeout(uint32_t timeoutSec);
 
-  /**
-    * Get the WiFi client pointer.
-    * \return WiFi client pointer.
-    */
-  WiFiSSLClient *stream(void);
+  void ethDNSWorkAround();
 
-  bool connect(bool secured, bool verify);
-  bool connectSSL(bool verify);
+  bool networkReady();
+
+  void networkReconnect();
+
+  void networkDisconnect();
+
+  unsigned long getTime();
+
+  String fwVersion();
+
   int firmwareBuildNumber();
 
-private:
-  
+  esp_mail_client_type type();
 
-  WiFiSSLClient *_wcs = nullptr;
-  WiFiClient *_wc = nullptr;
-  bool _secured = false;
-  bool _verifyRootCA = false;
-  MB_String _host;
-  uint16_t _port = 0;
-  int _sock = -1;
-  int _fwBuild = -1;
-  unsigned long tcpTimeout = 5000;
+  bool isInitialized();
+
+  int hostByName(const char *name, IPAddress &ip);
+
+  bool begin(const char *host, uint16_t port);
+
+  bool connect(bool secured, bool verify);
+
+  bool connectSSL(bool verify);
+
+  void stop();
+
+  bool connected();
+
+  int write(uint8_t *data, int len);
+
+  int send(const char *data);
+
+  int print(const char *data);
+
+  int print(int data);
+
+  int println(const char *data);
+
+  int println(int data);
+
+  int available();
+
+  int read();
+
+  int readBytes(uint8_t *buf, int len);
+
+  int readBytes(char *buf, int len);
+
+private:
+  WiFiSSLClient *wcs = nullptr;
+  WiFiClient *wc = nullptr;
+  bool secured = false;
+  bool verifyRootCA = false;
+  int sock = -1;
+  int fwBuild = -1;
 };
 
 #endif

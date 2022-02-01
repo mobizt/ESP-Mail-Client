@@ -1,9 +1,9 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.1
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.3
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -37,14 +37,14 @@
 
 #include "ESP_Mail_FS.h"
 
-#define ESP_MAIL_USE_PSRAM ESP_Mail_USE_PSRAM
-#if defined(ESP_Mail_USE_PSRAM)
+#define _ESP_MAIL_USE_PSRAM_ ESP_MAIL_USE_PSRAM
+#if defined(ESP_MAIL_USE_PSRAM)
 #define MB_STRING_USE_PSRAM
 #endif
 
 #include "extras/MB_String.h"
 
-#define MBSTRING MB_String
+#define MB_String MB_String
 
 #ifdef DEBUG_ESP_SSL
 #if defined(DEBUG_ESP_PORT)
@@ -91,8 +91,6 @@ public:
   size_t peekBytes(uint8_t *buffer, size_t length);
 #endif
 
- 
-
   void setTA(bool hasTA);
   void setSecure(bool secure);
   void setVerify(bool verify);
@@ -114,7 +112,7 @@ private:
   uint8_t ns_connected();
 
   bool _secured = false;
-  MBSTRING _host_name;
+  MB_String _host_name;
   bool _has_ta = false;
   bool _base_use_insecure = false;
 };

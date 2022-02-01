@@ -175,6 +175,33 @@ This class used for controlling IMAP transports and retrieving the data from the
 
 
 
+#### Assign custom Client from Arduino Clients.
+
+param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
+
+```cpp
+void setClient(Client *client);
+```
+
+
+
+#### Assign the callback function to handle the server connection for custom Client.
+
+param **`connectionCB`** The function that handles the server connection.
+
+```cpp
+void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+```
+
+
+#### Assign the callback function to handle the server upgrade connection for custom Client.
+
+param **`upgradeCB`** The function that handles existing connection upgrade.
+
+```cpp
+void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+```
+
 
 
 #### Begin the IMAP server connection.
@@ -533,6 +560,34 @@ This class is similar to the IMAP session class, used for controlling SMTP trans
 and retrieving the data from the SMTP server.
 
 
+
+
+#### Assign custom Client from Arduino Clients.
+
+param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
+
+```cpp
+void setClient(Client *client);
+```
+
+
+
+#### Assign the callback function to handle the server connection for custom Client.
+
+param **`connectionCB`** The function that handles the server connection.
+
+```cpp
+void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+```
+
+
+#### Assign the callback function to handle the server upgrade connection for custom Client.
+
+param **`upgradeCB`** The function that handles existing connection upgrade.
+
+```cpp
+void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+```
 
 
 
@@ -1418,9 +1473,17 @@ This is only limit for data to be stored in the IMAPSession.
 
 ##### [size_t] attachment_size - The maximum size of each attachment to download.
 
-The IMAP idle (polling) timeout in ms.
+The IMAP idle (polling) timeout in ms (1 min to 29 min). Default is 10 min.
 
 ##### [size_t] imap_idle_timeout - The IMAP idle timeout in ms.
+
+The IMAP idle (polling) host check interval in ms (30 sec to imap_idle_timeout) 
+for internet availability checking to ensure the connection is active. 
+ 
+Default is 1 min.
+
+##### [size_t] imap_idle_host_check_interval - The IMAP idle host check interval in ms.
+
 
 ```cpp
 esp_mail_imap_limit_config_t limit;

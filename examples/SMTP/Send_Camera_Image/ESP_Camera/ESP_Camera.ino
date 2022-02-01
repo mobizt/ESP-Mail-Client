@@ -1,7 +1,7 @@
 
 
 /**
- * This example will send the Email with inline image from ESP32 camera module.
+ * This example shows how to send Email with inline image from ESP32 camera module.
  * 
  * The ESP32 board used in this example is ESP32 PSRAM Timer Camera X (OV3660).
  * 
@@ -17,10 +17,15 @@
  *
 */
 
-//To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
+ * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
+*/
 
 #include <Arduino.h>
+#if defined(ESP32)
 #include <WiFi.h>
+#endif
+
 #include <ESP_Mail_Client.h>
 
 #include "esp_camera.h"
@@ -234,17 +239,12 @@ void smtpCallback(SMTP_Status status)
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
             ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
+            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
+            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 
-        //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
-        //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
-
-        //Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
-        //a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
-
-        //smtp.sendingResult.clear();
+        //You need to clear sending result as the memory usage will grow up.
+        smtp.sendingResult.clear();
     }
 }

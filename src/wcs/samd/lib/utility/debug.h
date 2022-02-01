@@ -24,7 +24,7 @@
 // 
 //********************************************/
 
-#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
 #ifndef Debug_H
 #define Debug_H

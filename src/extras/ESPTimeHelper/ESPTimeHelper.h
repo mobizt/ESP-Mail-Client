@@ -27,35 +27,33 @@
 
 #ifndef ESPTimeHelper_H
 #define ESPTimeHelper_H
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD)
+
+#if !defined(__AVR__)
 #include <vector>
 #endif
+
 #include <time.h>
 #include <Arduino.h>
-#if defined(ESP32)
-#include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include "extras/SDK_Version_Common.h"
-#elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
-#include "../../wcs/samd/lib/WiFiNINA.h"
-#endif
-
-#if defined(ESP8266) || defined(ESP32)
-#define FLASH_STR_MCR FPSTR
-#elif defined(ARDUINO_ARCH_SAMD)
-#define FLASH_STR_MCR PSTR
-#else
-#define FLASH_STR_MCR(s) (s)
-#endif
+#include "./ESP_Mail_FS.h"
 
 #if defined(ESP_Mail_USE_PSRAM)
 #define MB_STRING_USE_PSRAM
 #endif
 
 #include "../MB_String.h"
+#include "../MB_List.h"
+
+#if defined(ESP32)
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#include "extras/SDK_Version_Common.h"
+#elif defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
+#include "../../wcs/samd/lib/WiFiNINA.h"
+#endif
 
 #define ESP_TIME_DEFAULT_TS 1618971013
+
 
 class ESPTimeHelper
 {
@@ -221,7 +219,7 @@ public:
 
 private:
   int totalDays(int y, int m, int d);
-  void splitTk(MB_String &str, std::vector<MB_String> &tk, const char *delim);
+  void splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim);
   char *intStr(int value);
   void setSysTime();
   char *trimwhitespace(char *str);

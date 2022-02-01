@@ -1,5 +1,5 @@
 /**
- * This example will set the argument to the flags and read the message.
+ * This example shows how to set the argument to the flags and read the message.
  * 
  * Email: suwatchai@outlook.com
  * 
@@ -9,9 +9,8 @@
  *
 */
 
-/** To receive Email using Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
  * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- * 
 */
 
 /** For ESP8266, with BearSSL WiFi Client 
@@ -25,7 +24,14 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
+#else
+
+//other Client defined here
+//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+//See the example Custom_Client.ino for how to use.
+
 #endif
+
 #include <ESP_Mail_Client.h>
 
 #define WIFI_SSID "<ssid>"
@@ -125,8 +131,6 @@ void setup()
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 
-    /* Message UID to fetch or read e.g. 100 */
-    config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
     /* Set seen flag */
     //config.fetch.set_seen = true;
@@ -200,10 +204,15 @@ void setup()
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-    /** Set \Seen and \Answered to flags for message with UID 100
+
+
+    /* Message UID to fetch or read e.g. 100 */
+    int uid = imap.getUID(imap.selectedFolder().msgCount());
+
+    /** Set \Seen and \Answered to flags for message with UID
      * The seesion will keep open.
     */
-    if (MailClient.setFlag(&imap, 100, F("\\Seen \\Answered"), false))
+    if (MailClient.setFlag(&imap, uid, F("\\Seen \\Answered"), false))
         Serial.println("Setting FLAG success");
     else
         Serial.println("Error, setting FLAG");
@@ -213,6 +222,8 @@ void setup()
 
     /* Remove \Seen and \Answered from flags for message with UID 100 */
     //MailClient.removeFlag(imap, 100, "\\Seen \\Answered", false);
+
+    config.fetch.uid = uid;
 
     /* Read or search the Email and close the session */
     MailClient.readMail(&imap);

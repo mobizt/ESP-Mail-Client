@@ -11,9 +11,8 @@
  *
 */
 
-/** To receive Email using Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
  * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- * 
 */
 
 /** For ESP8266, with BearSSL WiFi Client 
@@ -27,7 +26,14 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
+#else
+
+//other Client defined here
+//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+//See the example Custom_Client.ino for how to use.
+
 #endif
+
 #include <ESP_Mail_Client.h>
 
 //To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
@@ -311,6 +317,13 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
 void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
 
+    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and 
+     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename 
+     * (> 13 characters) is not support in the SD.h library.
+     * To show how its original file name, use imap.fileList().
+    */
+    //Serial.println(imap.fileList());
+
     for (size_t i = 0; i < msgItems.size(); i++)
     {
 
@@ -378,9 +391,12 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
             if (msg.rfc822.size() > 0)
             {
-                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                ESP_MAIL_PRINTF("\r\nRFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
                 printMessages(msg.rfc822, headerOnly);
             }
+
+            if (msg.attachments.size() > 0)
+                printAttacements(msg.attachments);
         }
 
         Serial.println();

@@ -1,7 +1,7 @@
 
 
 /**
- * This example will send the Email in plain text version using ESP32 and LAN8720 Ethernet module.
+ * This example shows how to send Email using ESP32 and LAN8720 Ethernet module.
  * 
  * Created by K. Suwatchai (Mobizt)
  * 
@@ -45,7 +45,9 @@
  * 
 */
 
-//In case of Gmail, to send the Email via port 465 (SSL), less secure app option should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
+/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
+ * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
+*/
 
 #include <WiFi.h>
 #include <ESP_Mail_Client.h>
@@ -200,39 +202,6 @@ void sendMail()
   /* Declare the session config data */
   ESP_Mail_Session session;
 
-  /** ########################################################
-   * Some properties of SMTPSession data and parameters pass to 
-   * SMTP_Message class accept the pointer to constant char
-   * i.e. const char*. 
-   * 
-   * You may assign a string literal to that properties or function 
-   * like below example.
-   *   
-   * session.login.user_domain = "mydomain.net";
-   * session.login.user_domain = String("mydomain.net").c_str();
-   * 
-   * or
-   * 
-   * String doman = "mydomain.net";
-   * session.login.user_domain = domain.c_str();
-   * 
-   * And
-   * 
-   * String name = "Jack " + String("dawson");
-   * String email = "jack_dawson" + String(123) + "@mail.com";
-   * 
-   * message.addRecipient(name.c_str(), email.c_str());
-   * 
-   * message.addHeader(String("Message-ID: <abcde.fghij@gmail.com>").c_str());
-   * 
-   * or
-   * 
-   * String header = "Message-ID: <abcde.fghij@gmail.com>";
-   * message.addHeader(header.c_str());
-   * 
-   * ###########################################################
-  */
-
   /* Set the session config */
   session.server.host_name = SMTP_HOST;
   session.server.port = SMTP_PORT;
@@ -348,17 +317,12 @@ void smtpCallback(SMTP_Status status)
       ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
       ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
       ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
-      ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
+      ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
+      ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
-    //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
-
-    //Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
-    //a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
-
-    //smtp.sendingResult.clear();
+    //You need to clear sending result as the memory usage will grow up.
+    smtp.sendingResult.clear();
   }
 }

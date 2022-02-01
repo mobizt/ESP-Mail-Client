@@ -1,6 +1,7 @@
 /**
- * This example will repeatedly fetch or read the Email via the loop function
- * using the predict next message UID as the starting count down message UID.
+ * This example shows how to read Email repeatedly.
+ * 
+ * To get the incoming mail notification, see Mailbox_Changes_Notification.ino.
  * 
  * Created by K. Suwatchai (Mobizt)
  * 
@@ -12,9 +13,8 @@
  *
 */
 
-/** To receive Email using Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
  * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- * 
 */
 
 /** For ESP8266, with BearSSL WiFi Client 
@@ -23,15 +23,27 @@
  * allocation error.
 */
 
+/** Assign SD card type and FS used in src/ESP_Mail_FS.h and 
+ * change the config for that card interfaces in src/addons/SDHelper.h
+*/
+
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
+#else
+
+//other Client defined here
+//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+//See the example Custom_Client.ino for how to use.
+
 #endif
+
 #include <ESP_Mail_Client.h>
 
-//To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
+//Provide the SD card interfaces setting and mounting
+#include <extras/SDHelper.h>
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -108,6 +120,11 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
+#if defined(ESP_MAIL_DEFAULT_SD_FS) //defined in src/ESP_Mail_FS.h
+    //Mount SD card.
+    SD_Card_Mounting(); //See src/addons/SDHelper.h
+#endif
+
     /** Enable the debug via Serial port 
      * none debug or 0
      * basic debug or 1
@@ -152,7 +169,7 @@ void setup()
      * esp_mail_file_storage_type_flash, and 
      * esp_mail_file_storage_type_sd 
     */
-    config.storage.type = esp_mail_file_storage_type_flash;
+    config.storage.type = esp_mail_file_storage_type_sd;
 
     /** Set to download heades, text and html messaeges, 
      * attachments and inline images respectively.
@@ -331,6 +348,12 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
 
 void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
+    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and 
+     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename 
+     * (> 13 characters) is not support in the SD.h library.
+     * To show how its original file name, use imap.fileList().
+    */
+    //Serial.println(imap.fileList());
 
     for (size_t i = 0; i < msgItems.size(); i++)
     {
@@ -399,9 +422,12 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
             if (msg.rfc822.size() > 0)
             {
-                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                ESP_MAIL_PRINTF("\r\nRFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
                 printMessages(msg.rfc822, headerOnly);
             }
+
+            if (msg.attachments.size() > 0)
+                printAttacements(msg.attachments);
         }
 
         Serial.println();

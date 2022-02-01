@@ -15,6 +15,29 @@
 #endif
 #endif
 
+#if defined __has_include
+
+#if __has_include(<LwipIntfDev.h>)
+#include <LwipIntfDev.h>
+#endif
+
+#if __has_include(<ENC28J60lwIP.h>)
+#define INC_ENC28J60_LWIP
+#include <ENC28J60lwIP.h>
+#endif
+
+#if __has_include(<W5100lwIP.h>)
+#define INC_W5100_LWIP
+#include <W5100lwIP.h>
+#endif
+
+#if __has_include(<W5500lwIP.h>)
+#define INC_W5500_LWIP
+#include <W5500lwIP.h>
+#endif
+
+#endif
+
 #endif
 
 #endif

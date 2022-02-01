@@ -1,7 +1,7 @@
 
 
 /**
- * This example will send the Email with inline images from OV2640 camera.
+ * This example shows how to send Email with inline images from OV2640 camera.
  * 
  * The html and text version messages will be sent.
  * 
@@ -20,10 +20,11 @@
 //The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
 
 #include <Arduino.h>
+#if defined(ESP32)
 #include <WiFi.h>
-#include <ESP_Mail_Client.h>
+#endif
 
-//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+#include <ESP_Mail_Client.h>
 
 //The OV2640 library
 #if defined(ESP32)

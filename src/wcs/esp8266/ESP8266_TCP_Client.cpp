@@ -1,11 +1,11 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.1
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.3
  * 
- * November 16, 2021 
+ * February 1, 2022
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -39,103 +39,24 @@ ESP8266_TCP_Client::ESP8266_TCP_Client()
 
 ESP8266_TCP_Client::~ESP8266_TCP_Client()
 {
-  if (_wcs)
+  if (wcs)
   {
-    _wcs->stop();
-    _wcs.reset(nullptr);
-    _wcs.release();
+    wcs->stop();
+    wcs.reset(nullptr);
+    wcs.release();
   }
 
 #ifndef USING_AXTLS
   if (x509)
     delete x509;
 #endif
-
-  MBSTRING().swap(_host);
-  MBSTRING().swap(_caCertFile);
-  _cacert.reset(new char);
-  _cacert = nullptr;
-}
-
-bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
-{
-  if (strcmp(_host.c_str(), host) != 0)
-    mflnChecked = false;
-
-  _host = host;
-  _port = port;
-
-  //probe for fragmentation support at the specified size
-  if (!mflnChecked)
-  {
-    fragmentable = WiFiClientSecure::probeMaxFragmentLength(_host.c_str(), _port, chunkSize);
-    if (fragmentable)
-    {
-      _bsslRxSize = chunkSize;
-      _bsslTxSize = chunkSize;
-      _wcs->setBufferSizes(_bsslRxSize, _bsslTxSize);
-    }
-    mflnChecked = true;
-  }
-
-  if (!fragmentable)
-    _wcs->setBufferSizes(maxRXBufSize / rxBufDivider, maxTXBufSize / txBufDivider);
-
-  return true;
-}
-
-bool ESP8266_TCP_Client::connected()
-{
-  if (_wcs)
-    return _wcs->connected();
-  return false;
-}
-
-int ESP8266_TCP_Client::send(const char *data)
-{
-  if (!connect(_wcs->isSecure(), _wcs->isVerify()))
-  {
-    return TCP_CLIENT_ERROR_CONNECTION_REFUSED;
-  }
-
-  if (_wcs->write((const uint8_t *)data, strlen(data)) != strlen(data))
-  {
-    return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
-  }
-
-  return strlen(data);
-}
-
-ESP8266_WCS *ESP8266_TCP_Client::stream(void)
-{
-  if (connected())
-    return _wcs.get();
-  return nullptr;
-}
-
-bool ESP8266_TCP_Client::connect(bool secured, bool verify)
-{
-  _wcs->setSecure(secured);
-  _wcs->setVerify(verify);
-
-  if (connected())
-  {
-    while (_wcs->available() > 0)
-      _wcs->read();
-    return true;
-  }
-
-  if (!_wcs->connect(_host.c_str(), _port))
-    return false;
-
-  return connected();
 }
 
 void ESP8266_TCP_Client::setCACert(const char *caCert)
 {
 
 #ifndef USING_AXTLS
-  _wcs->setBufferSizes(_bsslRxSize, _bsslTxSize);
+  wcs->setBufferSizes(bsslRxSize, bsslTxSize);
 #endif
 
   if (caCert)
@@ -144,72 +65,339 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
     if (x509)
       delete x509;
     x509 = new X509List(caCert);
-    _wcs->setTrustAnchors(x509);
-    _wcs->setTA(true);
+    wcs->setTrustAnchors(x509);
+    wcs->setTA(true);
 #else
-    _wcs->setCACert_P(caCert, strlen_P(caCert));
+    wcs->setCACert_P(caCert, strlen_P(caCert));
 #endif
-    _certType = 1;
+    baseSetCertType(esp_mail_cert_type_data);
   }
   else
   {
 #ifndef USING_AXTLS
-    _wcs->setInsecure();
+    wcs->setInsecure();
 #endif
-    _certType = 0;
-    _wcs->setTA(false);
+    baseSetCertType(esp_mail_cert_type_none);
+    wcs->setTA(false);
   }
 
-  _wcs->setNoDelay(true);
+  wcs->setNoDelay(true);
 }
 
-void ESP8266_TCP_Client::setCertFile(const char *caCertFile, esp_mail_file_storage_type storageType, uint8_t sdPin)
+void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
 {
 
 #ifndef USING_AXTLS
-  _sdPin = sdPin;
-  _wcs->setBufferSizes(_bsslRxSize, _bsslTxSize);
+  wcs->setBufferSizes(bsslRxSize, bsslTxSize);
+#endif
 
-  if (_clockReady && strlen(caCertFile) > 0)
+  if (!mbfs)
+    return;
+
+  if (clockReady && strlen(certFile) > 0)
   {
-
-    fs::File f;
-    if (storageType == esp_mail_file_storage_type_flash)
+    MB_String filename = certFile;
+    if (filename.length() > 0)
     {
-#if defined(ESP_MAIL_FLASH_FS)
-      ESP_MAIL_FLASH_FS.begin();
-      if (ESP_MAIL_FLASH_FS.exists(caCertFile))
-        f = ESP_MAIL_FLASH_FS.open(caCertFile, "r");
-#endif
-    }
-    else if (storageType == esp_mail_file_storage_type_sd)
-    {
-#if defined(ESP_MAIL_SD_FS)
-      ESP_MAIL_SD_FS.begin(_sdPin);
-      if (ESP_MAIL_SD_FS.exists(caCertFile))
-        f = ESP_MAIL_SD_FS.open(caCertFile, FILE_READ);
-#endif
+      if (filename[0] != '/')
+        filename.prepend('/');
     }
 
-    if (f)
+    int len = mbfs->open(filename, storageType, mb_fs_open_mode_read);
+    if (len > -1)
     {
-      size_t len = f.size();
-      uint8_t *der = new uint8_t[len];
-      if (f.available())
-        f.read(der, len);
-      f.close();
+      uint8_t *der = (uint8_t *)mbfs->newP(len);
+      if (mbfs->available(storageType))
+        mbfs->read(storageType, der, len);
+      mbfs->close(storageType);
+
       if (x509)
         delete x509;
       x509 = new X509List(der, len);
-      _wcs->setTrustAnchors(x509);
-      _wcs->setTA(true);
-      delete[] der;
+      wcs->setTrustAnchors(x509);
+      wcs->setTA(true);
+      mbfs->delP(&der);
+
+      baseSetCertType(esp_mail_cert_type_file);
     }
-    _certType = 2;
+  }
+  wcs->setNoDelay(true);
+}
+
+void ESP8266_TCP_Client::setTimeout(uint32_t timeoutSec)
+{
+  if (wcs)
+    wcs->setTimeout(timeoutSec * 1000);
+
+  baseSetTimeout(timeoutSec);
+}
+
+bool ESP8266_TCP_Client::ethLinkUp()
+{
+  if (!session)
+    return false;
+
+  bool ret = false;
+#if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
+
+#if defined(INC_ENC28J60_LWIP)
+  if (session->spi_ethernet_module.enc28j60)
+  {
+    ret = session->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
+    goto ex;
+  }
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5100)
+  {
+    ret = session->spi_ethernet_module.w5100->status() == WL_CONNECTED;
+    goto ex;
+  }
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5500)
+  {
+    ret = session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
+    goto ex;
   }
 #endif
 
-  _wcs->setNoDelay(true);
+  return ret;
+
+ex:
+  //workaround for ESP8266 Ethernet
+  delayMicroseconds(0);
+#endif
+
+  return ret;
+}
+
+void ESP8266_TCP_Client::ethDNSWorkAround()
+{
+
+  if (!session)
+    return;
+
+#if defined(ESP8266_CORE_SDK_V3_X_X)
+
+#if defined(INC_ENC28J60_LWIP)
+  if (session->spi_ethernet_module.enc28j60)
+    goto ex;
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5100)
+    goto ex;
+#endif
+#if defined(INC_W5100_LWIP)
+  if (session->spi_ethernet_module.w5500)
+    goto ex;
+#endif
+
+  return;
+
+ex:
+  WiFiClient client;
+  client.connect(session->server.host_name.c_str(), session->server.port);
+  client.stop();
+#endif
+}
+
+bool ESP8266_TCP_Client::networkReady()
+{
+  return WiFi.status() == WL_CONNECTED || ethLinkUp();
+}
+
+void ESP8266_TCP_Client::networkReconnect()
+{
+  WiFi.reconnect();
+}
+
+void ESP8266_TCP_Client::networkDisconnect()
+{
+  WiFi.disconnect();
+}
+
+unsigned long ESP8266_TCP_Client::getTime()
+{
+  now = time(nullptr);
+  return (unsigned long)now;
+}
+
+String ESP8266_TCP_Client::fwVersion()
+{
+  return String();
+}
+
+esp_mail_client_type ESP8266_TCP_Client::type()
+{
+  return esp_mail_client_type_internal;
+}
+
+bool ESP8266_TCP_Client::isInitialized() { return true; }
+
+int ESP8266_TCP_Client::hostByName(const char *name, IPAddress &ip)
+{
+  return WiFi.hostByName(name, ip);
+}
+
+bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
+{
+  if (strcmp(this->host.c_str(), host) != 0)
+    mflnChecked = false;
+
+  this->host = host;
+  this->port = port;
+
+  //probe for fragmentation support at the specified size
+  if (!mflnChecked)
+  {
+    fragmentable = WiFiClientSecure::probeMaxFragmentLength(this->host.c_str(), this->port, _chunkSize);
+    if (fragmentable)
+    {
+      bsslRxSize = _chunkSize;
+      bsslTxSize = _chunkSize;
+      wcs->setBufferSizes(bsslRxSize, bsslTxSize);
+    }
+    mflnChecked = true;
+  }
+
+  if (!fragmentable)
+    wcs->setBufferSizes(maxRXBufSize / rxBufDivider, maxTXBufSize / txBufDivider);
+
+  return true;
+}
+
+bool ESP8266_TCP_Client::connect(bool secured, bool verify)
+{
+  wcs->setSecure(secured);
+  wcs->setVerify(verify);
+
+  if (connected())
+  {
+    while (wcs->available() > 0)
+      wcs->read();
+    return true;
+  }
+
+  if (!wcs->connect(host.c_str(), port))
+    return false;
+
+  return connected();
+}
+
+bool ESP8266_TCP_Client::connectSSL(bool verify)
+{
+  if (!wcs)
+    return false;
+  return wcs->connectSSL(verify);
+}
+
+void ESP8266_TCP_Client::stop()
+{
+  if (connected())
+    return wcs->stop();
+}
+
+bool ESP8266_TCP_Client::connected()
+{
+  if (wcs)
+    return wcs->connected();
+  return false;
+}
+
+int ESP8266_TCP_Client::write(uint8_t *data, int len)
+{
+  if (!data)
+    return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+  if (len == 0)
+    return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+  if (!connect(wcs->isSecure(), wcs->isVerify()))
+    return TCP_CLIENT_ERROR_CONNECTION_REFUSED;
+
+  int toSend = _chunkSize;
+  int sent = 0;
+  while (sent < len)
+  {
+    if (sent + toSend > len)
+      toSend = len - sent;
+
+    if ((int)wcs->write(data + sent, toSend) != toSend)
+      return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+    sent += toSend;
+  }
+
+  return len;
+}
+
+int ESP8266_TCP_Client::send(const char *data)
+{
+  return write((uint8_t *)data, strlen(data));
+}
+
+int ESP8266_TCP_Client::print(int data)
+{
+  char *buf = (char *)mbfs->newP(64);
+  sprintf(buf, (const char *)FPSTR("%d"), data);
+  int ret = send(buf);
+  mbfs->delP(&buf);
+  return ret;
+}
+
+int ESP8266_TCP_Client::print(const char *data)
+{
+  return send(data);
+}
+
+int ESP8266_TCP_Client::println(const char *data)
+{
+  int len = send(data);
+  if (len < 0)
+    return len;
+  int sz = send((const char *)FPSTR("\r\n"));
+  if (sz < 0)
+    return sz;
+  return len + sz;
+}
+
+int ESP8266_TCP_Client::println(int data)
+{
+  char *buf = (char *)mbfs->newP(64);
+  sprintf(buf, (const char *)FPSTR("%d\r\n"), data);
+  int ret = send(buf);
+  mbfs->delP(&buf);
+  return ret;
+}
+
+int ESP8266_TCP_Client::available()
+{
+  if (!wcs)
+    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
+
+  return wcs->available();
+}
+
+int ESP8266_TCP_Client::read()
+{
+  if (!wcs)
+    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
+
+  return wcs->read();
+}
+
+int ESP8266_TCP_Client::readBytes(uint8_t *buf, int len)
+{
+  if (!wcs)
+    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
+
+  return wcs->readBytes(buf, len);
+}
+
+int ESP8266_TCP_Client::readBytes(char *buf, int len)
+{
+  return readBytes((uint8_t *)buf, len);
 }
 
 #endif /* ESP8266 */

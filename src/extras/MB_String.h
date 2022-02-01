@@ -1,10 +1,13 @@
 
 /**
- * Mobizt's SRAM/PSRAM supported String, version 1.2.0
+ * Mobizt's SRAM/PSRAM supported String, version 1.2.1
  * 
- * Created January 1, 2022
+ * Created January 18, 2022
  * 
  * Changes Log
+ * 
+ * v1.2.1
+ * - Add flash string manipulation functions.
  * 
  * v1.2.0
  * - Add supports bool, integer and float manipulation.
@@ -26,7 +29,7 @@
  * - Initial release
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -51,12 +54,15 @@
 #define MB_String_H
 
 #include <Arduino.h>
+#if !defined(__AVR__)
 #include <string>
 #include <strings.h>
+#include <algorithm>
+#endif
 
 #define MB_STRING_MAJOR 1
 #define MB_STRING_MINOR 2
-#define MB_STRING_PATCH 0
+#define MB_STRING_PATCH 1
 
 #if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
 #include <umm_malloc/umm_malloc.h>
@@ -66,11 +72,9 @@
 
 #if defined(ESP8266) || defined(ESP32)
 #define MBSTRING_FLASH_MCR FPSTR
-#elif defined(ARDUINO_ARCH_SAMD)
+#elif defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 #define MBSTRING_FLASH_MCR PSTR
-#elif defined(ARDUINO_ARCH_STM32F1) || defined(ARDUINO_ARCH_STM32F4)
-#define MBSTRING_FLASH_MCR(s) (s)
-#elif defined(TEENSYDUINO)
+#else
 #define MBSTRING_FLASH_MCR(s) (s)
 #endif
 
@@ -81,6 +85,48 @@ class MB_String;
 
 namespace mb_string
 {
+    enum mb_string_sub_type
+    {
+        mb_string_sub_type_none,
+        mb_string_sub_type_bool,
+        mb_string_sub_type_float,
+        mb_string_sub_type_double,
+        mb_string_sub_type_int8,
+        mb_string_sub_type_uint8,
+        mb_string_sub_type_int16,
+        mb_string_sub_type_uint16,
+        mb_string_sub_type_int32,
+        mb_string_sub_type_uint32,
+        mb_string_sub_type_int64,
+        mb_string_sub_type_uint64,
+        mb_string_sub_type_cstring,
+        mb_string_sub_type_chars,
+        mb_string_sub_type_mb_string,
+        mb_string_sub_type_arduino_string,
+        mb_string_sub_type_std_string,
+        mb_string_sub_type_fptr
+    };
+
+    typedef struct mb_string_ptr_t
+    {
+
+    public:
+        mb_string_ptr_t(uint32_t addr = 0, mb_string_sub_type type = mb_string_sub_type_cstring, int precision = -1)
+        {
+            _addr = addr;
+            _type = type;
+            _precision = precision;
+        }
+        int precision() { return _precision; }
+        mb_string_sub_type type() { return _type; }
+        uint32_t address() { return _addr; }
+
+    private:
+        mb_string_sub_type _type = mb_string_sub_type_none;
+        int _precision = -1;
+        uint32_t _addr = 0;
+
+    } MB_StringPtr;
 
     template <bool, typename T = void>
     struct enable_if
@@ -212,13 +258,21 @@ namespace mb_string
     template <typename T>
     struct ss_t
     {
+#if !defined(__AVR__)
         static bool const value = is_same<T, std::string>::value;
+#else
+        static bool const value = false;
+#endif
     };
 
     template <typename T>
     struct css_t
     {
+#if !defined(__AVR__)
         static bool const value = is_same<T, const std::string>::value;
+#else
+        static bool const value = false;
+#endif
     };
 
     template <typename T>
@@ -294,6 +348,88 @@ namespace mb_string
                                   is_arduino_string_sum_helper<T>::value || is_arduino_flash_string_helper<T>::value ||
                                   is_std_string<T>::value || is_mb_string<T>::value;
     };
+
+    template <typename T>
+    uint32_t toAddr(T &v) { return reinterpret_cast<uint32_t>(&v); }
+
+    template <typename T>
+    auto addrTo(int address) -> typename enable_if<!is_same<T, nullptr_t>::value, T>::type { return reinterpret_cast<T>(address); }
+
+    template <typename T>
+    auto getSubType(T val) -> typename enable_if<is_num_int<T>::value || is_num_float<T>::value || is_same<T, bool>::value || is_const_chars<T>::value || is_arduino_flash_string_helper<T>::value || is_arduino_string<T>::value || is_std_string<T>::value || is_mb_string<T>::value || is_same<T, StringSumHelper>::value, mb_string_sub_type>::type
+    {
+        if (is_num_uint64<T>::value)
+            return mb_string_sub_type_uint64;
+        else if (is_num_int64<T>::value)
+            return mb_string_sub_type_int64;
+        else if (is_num_uint32<T>::value)
+            return mb_string_sub_type_uint32;
+        else if (is_num_int32<T>::value)
+            return mb_string_sub_type_int32;
+        else if (is_num_uint16<T>::value)
+            return mb_string_sub_type_uint16;
+        else if (is_num_int16<T>::value)
+            return mb_string_sub_type_int16;
+        else if (is_num_uint8<T>::value)
+            return mb_string_sub_type_uint8;
+        else if (is_num_int8<T>::value)
+            return mb_string_sub_type_int8;
+        else if (is_same<T, bool>::value)
+            return mb_string_sub_type_bool;
+        else if (is_same<T, float>::value)
+            return mb_string_sub_type_float;
+        else if (is_same<T, double>::value)
+            return mb_string_sub_type_double;
+        else if (is_arduino_string<T>::value)
+            return mb_string_sub_type_arduino_string;
+        else if (is_std_string<T>::value || is_same<T, StringSumHelper>::value)
+            return mb_string_sub_type_std_string;
+        else if (is_mb_string<T>::value)
+            return mb_string_sub_type_mb_string;
+        else if (is_arduino_flash_string_helper<T>::value)
+            return mb_string_sub_type_fptr;
+        else if (ccs_t<T>::value)
+            return mb_string_sub_type_cstring;
+        else if (cs_t<T>::value)
+            return mb_string_sub_type_chars;
+
+        return mb_string_sub_type_int8;
+    }
+
+    template <typename T>
+    auto getSubType(T *val) -> typename enable_if<is_num_int<T>::value || is_num_float<T>::value || is_same<T, bool>::value || is_const_chars<T>::value || is_arduino_flash_string_helper<T>::value || is_arduino_string<T>::value || is_std_string<T>::value || is_mb_string<T>::value || is_same<T, StringSumHelper>::value, mb_string_sub_type>::type
+    {
+        return getSubType(*val);
+    }
+
+    template <typename T>
+    auto toStringPtr(const T &val) -> typename enable_if<is_std_string<T>::value || is_arduino_string<T>::value || is_mb_string<T>::value || is_same<T, StringSumHelper>::value, MB_StringPtr>::type
+    {
+        return MB_StringPtr(reinterpret_cast<uint32_t>(&val), getSubType(val));
+    }
+
+    template <typename T>
+    auto toStringPtr(T val) -> typename enable_if<is_const_chars<T>::value, MB_StringPtr>::type { return MB_StringPtr(reinterpret_cast<uint32_t>(val), getSubType(val)); }
+
+    template <typename T>
+    auto toStringPtr(T &val) -> typename enable_if<is_arduino_flash_string_helper<T>::value, MB_StringPtr>::type { return MB_StringPtr(reinterpret_cast<uint32_t>(val), getSubType(val)); }
+
+#if !defined(__AVR__)
+    template <typename T>
+    auto toStringPtr(T val) -> typename enable_if<is_same<T, std::nullptr_t>::value, MB_StringPtr>::type
+    {
+        return MB_StringPtr();
+    }
+#endif
+
+    template <typename T>
+    auto toStringPtr(T val) -> typename enable_if<is_same<T, MB_StringPtr>::value, MB_StringPtr>::type
+    {
+        return val;
+    }
+
+    template <typename T>
+    auto toStringPtr(T &val, int precision = -1) -> typename enable_if<is_num_int<T>::value || is_num_float<T>::value || is_same<T, bool>::value, MB_StringPtr>::type { return MB_StringPtr(reinterpret_cast<uint32_t>(&val), getSubType(val), precision); }
 }
 
 using namespace mb_string;
@@ -330,6 +466,11 @@ public:
         *this = str;
     }
 
+    MB_String(MB_StringPtr value)
+    {
+        *this = value;
+    }
+
     MB_String(bool value)
     {
         appendNum(value);
@@ -360,16 +501,16 @@ public:
 
     MB_String(unsigned int value, unsigned char base = 10)
     {
-         int len =1 + 8 * sizeof(unsigned int);
-         reserve(len);
+        int len = 1 + 8 * sizeof(unsigned int);
+        reserve(len);
 
-         if (bufLen > 0)
-             utoa(value, buf, base);
+        if (bufLen > 0)
+            utoa(value, buf, base);
     }
 
     MB_String(long value, unsigned char base = 10)
     {
-        int len =2 + 8 * sizeof(long);
+        int len = 2 + 8 * sizeof(long);
         reserve(len);
 
         if (bufLen > 0)
@@ -383,11 +524,11 @@ public:
 
     MB_String(unsigned long value, unsigned char base = 10)
     {
-         int len =1 + 8 * sizeof(unsigned long);
-         reserve(len);
+        int len = 1 + 8 * sizeof(unsigned long);
+        reserve(len);
 
-         if (bufLen > 0)
-             ultoa(value, buf, base);
+        if (bufLen > 0)
+            ultoa(value, buf, base);
     }
 
     MB_String(float value, unsigned char decimalPlaces = 2)
@@ -403,7 +544,7 @@ public:
         if (bufLen > 0)
             dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
     }
-
+#if !defined(__AVR__)
     MB_String &operator=(const std::string &rhs)
     {
         if (rhs.length() > 0)
@@ -413,7 +554,7 @@ public:
 
         return *this;
     }
-
+#endif
     MB_String &operator=(const String &rhs)
     {
 
@@ -428,32 +569,16 @@ public:
     MB_String &operator=(const __FlashStringHelper *str)
     {
         if (str)
-        {
-            int len = strlen_P((PGM_P)str);
+            appendF(str, true);
 
-            clear();
-            reserve(len);
-
-            if (bufLen > 0)
-                memcpy_P(buf, (PGM_P)str, len + 1);
-        }
         return *this;
     }
 
     MB_String &operator+=(const __FlashStringHelper *str)
     {
         if (str)
-        {
-            int len = strlen_P((PGM_P)str);
-            if (len > 0)
-            {
-                unsigned int newlen = length() + len;
-                reserve(newlen);
+            appendF(str);
 
-                if (bufLen > 0)
-                    memcpy_P(buf + length(), (PGM_P)str, len + 1);
-            }
-        }
         return *this;
     }
 
@@ -476,13 +601,13 @@ public:
     {
         return !equals(cstr);
     }
-
+#if !defined(__AVR__)
     MB_String &operator+=(const std::string &rhs)
     {
         concat(rhs.c_str());
         return (*this);
     }
-
+#endif
     MB_String &operator+=(const String &rhs)
     {
         concat(rhs.c_str());
@@ -534,6 +659,18 @@ public:
         return (*this);
     }
 
+    MB_String &operator=(MB_StringPtr ptr)
+    {
+        setPtr(ptr);
+        return (*this);
+    }
+
+    MB_String &operator+=(MB_StringPtr ptr)
+    {
+        appendPtr(ptr);
+        return (*this);
+    }
+
     template <typename T = int>
     auto operator=(T value) -> typename enable_if<is_num_int<T>::value || is_num_float<T>::value || is_bool<T>::value, MB_String &>::type
     {
@@ -564,6 +701,71 @@ public:
         return (*this);
     }
 
+    MB_String &appendF(const __FlashStringHelper *pstr, bool clear = false)
+    {
+        if (clear)
+            this->clear();
+
+        int len = strlen_P((PGM_P)pstr);
+        if (len > 0)
+        {
+            unsigned int newlen = length() + len;
+            reserve(newlen);
+
+            if (bufLen > 0)
+                memcpy_P(buf + length(), (PGM_P)pstr, len + 1);
+        }
+
+        return (*this);
+    }
+
+    MB_String &setPtr(MB_StringPtr src)
+    {
+        clear();
+        appendPtr(src);
+        return (*this);
+    };
+
+    MB_String &appendPtr(MB_StringPtr src)
+    {
+        if (src.type() == mb_string_sub_type_fptr)
+            appendF(addrTo<const __FlashStringHelper *>(src.address()));
+        else if (src.type() == mb_string_sub_type_cstring || src.type() == mb_string_sub_type_chars)
+            *this += addrTo<const char *>(src.address());
+        else if (src.type() == mb_string_sub_type_arduino_string)
+            *this += *addrTo<String *>(src.address());
+#if !defined(__AVR__)
+        else if (src.type() == mb_string_sub_type_std_string)
+            *this += *addrTo<std::string *>(src.address());
+#endif
+        else if (src.type() == mb_string_sub_type_mb_string)
+            *this += *addrTo<MB_String *>(src.address());
+        else if (src.type() == mb_string_sub_type_uint64)
+            appendNum(*addrTo<uint64_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_int64)
+            appendNum(*addrTo<int64_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_uint32)
+            appendNum(*addrTo<uint32_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_int32)
+            appendNum(*addrTo<int32_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_uint16)
+            appendNum(*addrTo<uint16_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_int16)
+            appendNum(*addrTo<int16_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_uint8)
+            appendNum(*addrTo<uint8_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_int8)
+            appendNum(*addrTo<int8_t *>(src.address()));
+        else if (src.type() == mb_string_sub_type_bool)
+            appendNum(*addrTo<bool *>(src.address()));
+        else if (src.type() == mb_string_sub_type_float)
+            appendNum(*addrTo<float *>(src.address()), src.precision());
+        else if (src.type() == mb_string_sub_type_double)
+            appendNum(*addrTo<double *>(src.address()), src.precision());
+
+        return (*this);
+    };
+
     template <typename T = int>
     auto appendNum(T value, int precision = 0) -> typename enable_if<is_num_int<T>::value || is_bool<T>::value, MB_String &>::type
     {
@@ -572,9 +774,21 @@ public:
         if (is_bool<T>::value)
             s = boolStr(value);
         else if (is_num_neg_int<T>::value)
+        {
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+            s = int32Str(value);
+#else
             s = int64Str(value);
+#endif
+        }
         else if (is_num_pos_int<T>::value)
+        {
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+            s = uint32Str(value);
+#else
             s = uint64Str(value);
+#endif
+        }
 
         if (s)
         {
@@ -1259,6 +1473,24 @@ private:
         return t;
     }
 
+#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
+    char *int32Str(signed long value)
+    {
+        char *t = (char *)newP(64);
+        sprintf(t, (const char *)MBSTRING_FLASH_MCR("%ld"), value);
+        return t;
+    }
+
+    char *uint32Str(unsigned long value)
+    {
+        char *t = (char *)newP(64);
+        sprintf(t, (const char *)MBSTRING_FLASH_MCR("%lu"), value);
+        return t;
+    }
+
+#endif
+
     char *int64Str(signed long long value)
     {
         char *t = (char *)newP(64);
@@ -1345,7 +1577,8 @@ private:
         ESP.setExternalHeap();
 #endif
 
-        bool nn = ((p = (void *)malloc(newLen)) > 0);
+        p = (void *)malloc(newLen);
+        bool nn = p ? true : false;
 
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
         ESP.resetHeap();
@@ -1437,6 +1670,27 @@ private:
         concat(cstr, strlen(cstr));
     }
 
+    void move(MB_String &rhs)
+    {
+        if (buf)
+        {
+            if (bufLen >= rhs.bufLen)
+            {
+                strcpy(buf, rhs.buf);
+                bufLen = rhs.bufLen;
+                rhs.bufLen = 0;
+                return;
+            }
+            else
+            {
+                free(buf);
+            }
+        }
+        buf = rhs.buf;
+        bufLen = rhs.bufLen;
+        rhs.buf = NULL;
+    }
+
     void allocate(size_t len, bool shrink)
     {
 
@@ -1473,13 +1727,12 @@ private:
             }
             else
             {
-                bool nn = false;
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-                nn = ((buf = (char *)ps_malloc(len)) > 0);
+                buf = (char *)ps_malloc(len);
 #else
-                nn = ((buf = (char *)malloc(len)) > 0);
+                buf = (char *)malloc(len);
 #endif
-                if (nn)
+                if (buf)
                 {
                     buf[0] = '\0';
                     bufLen = len;
@@ -1661,6 +1914,104 @@ private:
         return strcmp(buf, cstr) == 0;
     }
 
+    char *ultoa(unsigned long value, char *str, int radix)
+    {
+        const char *format = nullptr;
+
+        switch (radix)
+        {
+        case 8:
+            format = "%o";
+            break;
+        case 10:
+            format = "%ul";
+            break;
+        case 16:
+            format = "%x";
+            break;
+        }
+
+        if (format == nullptr)
+            return str;
+
+        int size = sprintf(str, format, value);
+        return &str[size];
+    }
+
+#if (!defined(ESP32) && !defined(ESP8266) && !defined(ARDUINO_ARCH_STM32) && !defined(ARDUINO_ARCH_SAMD)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+    char *ltoa(long value, char *str, int radix)
+    {
+        const char *format = nullptr;
+
+        switch (radix)
+        {
+        case 8:
+            format = "%o";
+            break;
+        case 10:
+            format = "%l";
+            break;
+        case 16:
+            format = "%x";
+            break;
+        }
+
+        if (format == nullptr)
+            return str;
+
+        int size = sprintf(str, format, value);
+        return &str[size];
+    }
+
+    char *utoa(unsigned int value, char *str, int radix)
+    {
+        const char *format = nullptr;
+
+        switch (radix)
+        {
+        case 8:
+            format = "%o";
+            break;
+        case 10:
+            format = "%u";
+            break;
+        case 16:
+            format = "%x";
+            break;
+        }
+
+        if (format == nullptr)
+            return str;
+
+        int size = sprintf(str, format, value);
+        return &str[size];
+    }
+
+    char *itoa(int value, char *str, int radix)
+    {
+        const char *format = nullptr;
+
+        switch (radix)
+        {
+        case 8:
+            format = "%o";
+            break;
+        case 10:
+            format = "%d";
+            break;
+        case 16:
+            format = "%x";
+            break;
+        }
+
+        if (format == nullptr)
+            return str;
+
+        int size = sprintf(str, format, value);
+        return &str[size];
+    }
+#endif
+
     char *buf = NULL;
     size_t bufLen = 0;
 };
@@ -1673,6 +2024,8 @@ inline MB_String operator+(const MB_String &lhs, const MB_String &rhs)
     res += rhs;
     return res;
 }
+
+#if !defined(__AVR__)
 
 inline MB_String operator+(MB_String &&lhs, const MB_String &rhs)
 {
@@ -1700,8 +2053,9 @@ inline MB_String operator+(char lhs, MB_String &rhs)
 
 inline MB_String operator+(MB_String &&lhs, char rhs)
 {
-    Serial.println(rhs);
     return std::move(lhs.insert(0, rhs));
 }
+
+#endif
 
 #endif

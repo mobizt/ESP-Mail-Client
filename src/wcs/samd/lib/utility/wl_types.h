@@ -23,7 +23,8 @@
  *  Created on: Jul 30, 2010
  *      Author: dlafauci
  */
-#if defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__)
+
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
 #ifndef	_WL_TYPES_H_
 #define	_WL_TYPES_H_

@@ -1,11 +1,11 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.1
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.3
  * 
- * November 16, 2021
+ * February 1, 2022
  * 
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  * 
  * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -31,136 +31,106 @@
 
 #ifdef ESP8266
 
-//ARDUINO_ESP8266_GIT_VER
-//2.6.2 0xbc204a9b
-//2.6.1 0x482516e3
-//2.6.0 0x643ec203
-//2.5.2 0x8b899c12
-//2.5.1 0xac02aff5
-//2.5.0 0x951aeffa
-//2.5.0-beta3 0x21db8fc9
-//2.5.0-beta2 0x0fd86a07
-//2.5.0-beta1 0x9c1e03a1
-//2.4.2 0xbb28d4a3
-//2.4.1 0x614f7c32
-//2.4.0 0x4ceabea9
-//2.4.0-rc2 0x0c897c37
-//2.4.0-rc1 0xf6d232f1
-
 #include <Arduino.h>
 #include <core_version.h>
 #include <time.h>
 #include <string>
-
 #include "extras/SDK_Version_Common.h"
 
 #ifndef ARDUINO_ESP8266_GIT_VER
 #error Your ESP8266 Arduino Core SDK is outdated, please update. From Arduino IDE go to Boards Manager and search 'esp8266' then select the latest version.
 #endif
 
+#include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-
-#if ARDUINO_ESP8266_GIT_VER != 0xf6d232f1 && ARDUINO_ESP8266_GIT_VER != 0x0c897c37 && ARDUINO_ESP8266_GIT_VER != 0x4ceabea9 && ARDUINO_ESP8266_GIT_VER != 0x614f7c32 && ARDUINO_ESP8266_GIT_VER != 0xbb28d4a3
 #include "ESP8266_WCS.h"
-#define ESP_MAIL_SSL_CLIENT ESP8266_WCS
-#else
-#error Please update the ESP8266 Arduino Core SDK to latest version.
-#endif
+#include "./wcs/base/TCP_Client_Base.h"
 
-#if defined __has_include
+#define ESP8266_TCP_CLIENT
 
-#if __has_include(<LwipIntfDev.h>)
-#include <LwipIntfDev.h>
-#endif
-
-#if __has_include(<ENC28J60lwIP.h>)
-#define INC_ENC28J60_LWIP
-#include <ENC28J60lwIP.h>
-#endif
-
-#if __has_include(<W5100lwIP.h>)
-#define INC_W5100_LWIP
-#include <W5100lwIP.h>
-#endif
-
-#if __has_include(<W5500lwIP.h>)
-#define INC_W5500_LWIP
-#include <W5500lwIP.h>
-#endif
-
-#endif
-
-#define FS_NO_GLOBALS
-#include <FS.h>
-#if defined(ESP_MAIL_DEFAULT_SD_FS)
-#if ESP_MAIL_DEFAULT_SD_FS == SD
-#include <SD.h>
-#endif
-#endif
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#if defined(ESP_Mail_DEFAULT_FLASH_FS)
-#define ESP_MAIL_FLASH_FS ESP_Mail_DEFAULT_FLASH_FS
-#endif
-#if defined(ESP_MAIL_DEFAULT_SD_FS)
-#define ESP_MAIL_SD_FS ESP_MAIL_DEFAULT_SD_FS
-#endif
-#define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
-#define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)
-#define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
-
-enum esp_mail_file_storage_type
-{
-  esp_mail_file_storage_type_none,
-  esp_mail_file_storage_type_flash,
-  esp_mail_file_storage_type_sd
-};
-
-class ESP8266_TCP_Client
+class ESP8266_TCP_Client : public TCP_Client_Base
 {
 
 public:
+
   ESP8266_TCP_Client();
   ~ESP8266_TCP_Client();
 
+  void setCACert(const char *caCert);
+
+  void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
+
+  void setTimeout(uint32_t timeoutSec);
+
+  bool ethLinkUp();
+
+  void ethDNSWorkAround();
+
+  bool networkReady();
+
+  void networkReconnect();
+
+  void networkDisconnect();
+
+  unsigned long getTime();
+
+  String fwVersion();
+
+  esp_mail_client_type type();
+
+  bool isInitialized();
+
+  int hostByName(const char *name, IPAddress &ip);
+
   bool begin(const char *host, uint16_t port);
 
-  bool connected(void);
+  bool connect(bool secured, bool verify);
+
+  bool connectSSL(bool verify);
+
+  void stop();
+
+  bool connected();
+
+  int write(uint8_t *data, int len);
 
   int send(const char *data);
 
-  ESP8266_WCS *stream(void);
+  int print(const char *data);
 
-  void setCACert(const char *caCert);
-  void setCertFile(const char *caCertFile, esp_mail_file_storage_type storageType, uint8_t sdPin);
-  bool connect(bool secured, bool verify);
+  int print(int data);
 
-  int _certType = -1;
-  MBSTRING _caCertFile = "";
-  esp_mail_file_storage_type _caCertFileStoreageType = esp_mail_file_storage_type::esp_mail_file_storage_type_none;
-  uint16_t tcpTimeout = 40000;
+  int println(const char *data);
 
-  uint8_t _sdPin = 15;
-  bool _clockReady = false;
-  uint16_t _bsslRxSize = 1024;
-  uint16_t _bsslTxSize = 1024;
+  int println(int data);
+
+  int available();
+
+  int read();
+
+  int readBytes(uint8_t *buf, int len);
+
+  int readBytes(char *buf, int len);
+
+  uint8_t sdPin = 15;
+  uint16_t bsslRxSize = 1024;
+  uint16_t bsslTxSize = 1024;
   bool fragmentable = false;
-  int chunkSize = 1024;
+  int _chunkSize = 1024;
   int maxRXBufSize = 16384; //SSL full supported 16 kB
   int maxTXBufSize = 16384;
   bool mflnChecked = false;
-  int rxBufDivider = maxRXBufSize / chunkSize;
-  int txBufDivider = maxRXBufSize / chunkSize;
-
+  int rxBufDivider = maxRXBufSize / _chunkSize;
+  int txBufDivider = maxRXBufSize / _chunkSize;
 
 private:
-  std::unique_ptr<ESP_MAIL_SSL_CLIENT> _wcs = std::unique_ptr<ESP_MAIL_SSL_CLIENT>(new ESP_MAIL_SSL_CLIENT());
-  std::unique_ptr<char> _cacert;
-  MBSTRING _host = "";
-  uint16_t _port = 0;
+  std::unique_ptr<ESP8266_WCS> wcs = std::unique_ptr<ESP8266_WCS>(new ESP8266_WCS());
+
 #ifndef USING_AXTLS
   X509List *x509 = nullptr;
 #endif
+
+  
 };
 
 #endif /* ESP8266 */

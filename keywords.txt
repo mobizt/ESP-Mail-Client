@@ -108,8 +108,9 @@ folderChanged   KEYWORD2
 sendCustomCommand   KEYWORD2
 getFlags    KEYWORD2
 getUID  KEYWORD2
-
-
+setClient   KEYWORD2
+connectionRequestCallback   KEYWORD2
+connectionUpgradeRequestCallback    KEYWORD2
 
 #######################################
 # Struct (KEYWORD3)

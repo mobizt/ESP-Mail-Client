@@ -29,7 +29,10 @@
 #define ESPTimeHelper_CPP
 
 #include "ESPTimeHelper.h"
+
+#if !defined(__AVR__)
 #include <string>
+#endif
 
 ESPTimeHelper::ESPTimeHelper()
 {
@@ -47,6 +50,7 @@ int ESPTimeHelper::setTimestamp(time_t ts)
     struct timeval tm = {ts, 0}; //sec, us
     return settimeofday((const timeval *)&tm, 0);
 #else
+    now = ts;
     return 0;
 #endif
 }
@@ -66,26 +70,31 @@ time_t ESPTimeHelper::getTimestamp(int year, int mon, int date, int hour, int mi
 
 bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *servers)
 {
-    bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
+
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+    
     TZ = gmtOffset;
     DST_MN = daylightOffset;
     now = time(nullptr);
-#if defined(ARDUINO_ARCH_SAMD)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+    bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
     unsigned long ts = WiFi.getTime();
     if (ts > 0)
     {
+        
         now = ts;
         if (newConfig)
             now += TZ * 3600;
     }
-#else
+#elif defined(ESP32) || defined(ESP8266)
+    bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
     if (now < ESP_TIME_DEFAULT_TS || newConfig)
     {
 
-        std::vector<MB_String> tk = std::vector<MB_String>();
+        MB_VECTOR<MB_String> tk;
         MB_String sv = servers;
 
-        splitTk(sv, tk, (const char*)FLASH_STR_MCR(","));
+        splitTk(sv, tk, (const char *)MBSTRING_FLASH_MCR(","));
 
         switch (tk.size())
         {
@@ -140,6 +149,10 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
         _sv3.clear();
     }
 
+#else
+    _clockReady = now > ESP_TIME_DEFAULT_TS;
+#endif
+
     return _clockReady;
 }
 
@@ -167,9 +180,11 @@ char *ESPTimeHelper::trimwhitespace(char *str)
 
 bool ESPTimeHelper::clockReady()
 {
-    time_t now = time(nullptr);
-    _clockReady = now > ESP_TIME_DEFAULT_TS;
 
+#if !defined(__arm__)
+    time_t now = time(nullptr);
+#endif
+    _clockReady = now > ESP_TIME_DEFAULT_TS;
     if (_clockReady)
     {
         _sv1.clear();
@@ -266,6 +281,7 @@ int ESPTimeHelper::getCurrentSecond()
 }
 uint64_t ESPTimeHelper::getCurrentTimestamp()
 {
+    setSysTime();
     return now;
 }
 struct tm ESPTimeHelper::getTimeFromSec(int seconds)
@@ -293,7 +309,7 @@ struct tm ESPTimeHelper::getTimeFromSec(int seconds)
 char *ESPTimeHelper::intStr(int value)
 {
     char *buf = (char *)newP(36);
-    itoa(value, buf, 10);
+    sprintf(buf, (const char*)MBSTRING_FLASH_MCR("%d"), value);
     return buf;
 }
 
@@ -304,36 +320,36 @@ String ESPTimeHelper::getDateTimeString()
 
     s = sdow[timeinfo.tm_wday];
 
-    s += FLASH_STR_MCR(", ");
+    s += MBSTRING_FLASH_MCR(", ");
     char *tmp = intStr(timeinfo.tm_mday);
     s += tmp;
     delP(&tmp);
 
-    s += FLASH_STR_MCR(" ");
+    s += MBSTRING_FLASH_MCR(" ");
     s += months[timeinfo.tm_mon];
 
-    s += FLASH_STR_MCR(" ");
+    s += MBSTRING_FLASH_MCR(" ");
     tmp = intStr(timeinfo.tm_year + 1900);
     s += tmp;
     delP(&tmp);
 
-    s += FLASH_STR_MCR(" ");
+    s += MBSTRING_FLASH_MCR(" ");
     if (timeinfo.tm_hour < 10)
-        s += FLASH_STR_MCR("0");
+        s += MBSTRING_FLASH_MCR("0");
     tmp = intStr(timeinfo.tm_hour);
     s += tmp;
     delP(&tmp);
 
-    s += FLASH_STR_MCR(":");
+    s += MBSTRING_FLASH_MCR(":");
     if (timeinfo.tm_min < 10)
-        s += FLASH_STR_MCR("0");
+        s += MBSTRING_FLASH_MCR("0");
     tmp = intStr(timeinfo.tm_min);
     s += tmp;
     delP(&tmp);
 
-    s += FLASH_STR_MCR(":");
+    s += MBSTRING_FLASH_MCR(":");
     if (timeinfo.tm_sec < 10)
-        s += FLASH_STR_MCR("0");
+        s += MBSTRING_FLASH_MCR("0");
     tmp = intStr(timeinfo.tm_sec);
     s += tmp;
     delP(&tmp);
@@ -345,18 +361,18 @@ String ESPTimeHelper::getDateTimeString()
     float dif = (p * (TZ * 10 - (int)TZ * 10)) * 60.0 / 10;
 
     if (TZ < 0)
-        s += FLASH_STR_MCR(" -");
+        s += MBSTRING_FLASH_MCR(" -");
     else
-        s += FLASH_STR_MCR(" +");
+        s += MBSTRING_FLASH_MCR(" +");
 
     if ((int)TZ < 10)
-        s += FLASH_STR_MCR("0");
+        s += MBSTRING_FLASH_MCR("0");
     tmp = intStr((int)TZ);
     s += tmp;
     delP(&tmp);
 
     if (dif < 10)
-        s += FLASH_STR_MCR("0");
+        s += MBSTRING_FLASH_MCR("0");
     tmp = intStr((int)dif);
     s += tmp;
     delP(&tmp);
@@ -367,10 +383,10 @@ String ESPTimeHelper::getDateTimeString()
 time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
 {
     time_t ts = 0;
-    std::vector<MB_String> tk = std::vector<MB_String>();
+    MB_VECTOR<MB_String> tk;
     MB_String s1 = timeString;
 
-    splitTk(s1, tk, (const char *)FLASH_STR_MCR(" "));
+    splitTk(s1, tk, (const char *)MBSTRING_FLASH_MCR(" "));
     int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
 
     if (tk.size() == 6)
@@ -383,9 +399,9 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
         }
 
         year = atoi(tk[3].c_str());
-      
-        std::vector<MB_String> tk2 = std::vector<MB_String>();
-        splitTk(tk[4], tk2, (const char *)FLASH_STR_MCR(":"));
+
+        MB_VECTOR<MB_String> tk2;
+        splitTk(tk[4], tk2, (const char *)MBSTRING_FLASH_MCR(":"));
         if (tk2.size() == 3)
         {
             hr = atoi(tk2[0].c_str());
@@ -423,7 +439,7 @@ void ESPTimeHelper::setSysTime()
 #elif defined(ESP8266)
     now = time(nullptr);
     localtime_r(&now, &timeinfo);
-#elif defined(ARDUINO_ARCH_SAMD)
+#elif (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
     unsigned long ts = WiFi.getTime();
     if (ts > 0)
         now = ts + TZ * 3600;
@@ -451,9 +467,9 @@ int ESPTimeHelper::compareVersion(uint8_t major1, uint8_t minor1, uint8_t patch1
     return 0;
 }
 
-void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const char *delim)
+void ESPTimeHelper::splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim)
 {
-    std::size_t current, previous = 0;
+    size_t current, previous = 0;
     current = str.find(delim, previous);
     MB_String s;
     while (current != MB_String::npos)
@@ -462,7 +478,7 @@ void ESPTimeHelper::splitTk(MB_String &str, std::vector<MB_String> &tk, const ch
         s = str.substr(previous, current - previous);
 
 #if defined(MB_STRING_MAJOR) && defined(MB_STRING_MINOR) && defined(MB_STRING_PATCH)
-        if (compareVersion(MB_STRING_MAJOR, 1, MB_STRING_MINOR, 0,  MB_STRING_PATCH, 1) >=0)
+        if (compareVersion(MB_STRING_MAJOR, 1, MB_STRING_MINOR, 0, MB_STRING_PATCH, 1) >= 0)
             s.trim();
 #endif
 
@@ -488,8 +504,9 @@ void *ESPTimeHelper::newP(size_t len)
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
     ESP.setExternalHeap();
 #endif
+    p = (void *)malloc(getReservedLen(len));
 
-    bool nn = ((p = (void *)malloc(getReservedLen(len))) > 0);
+    bool nn = p ? true : false;
 
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
     ESP.resetHeap();

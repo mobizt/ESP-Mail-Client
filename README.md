@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v1.6.4
+# Mail Client Arduino Library v2.0.0
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -13,16 +13,15 @@ The library was tested and work well with ESP32s, ESP8266s, SAMD21s based module
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
 
-This library has built-in WiFi client and aim to be complete Email client that can send and read Email with no restrictions and no indirect Email proxy (Email sending server) services needed.
+This library has built-in WiFi client and aim to be complete Email client that can send and read Email with no restrictions and no indirect Email proxy (Email sending server) services needed. 
 
-Other serial Mobile network modem (GSM/3G/4G) and SPI/I2C Ethernet board which GSM or Ethernet Plain/SSL TCP client libraries are available, are not compattible to integrate to use with this library because network upgradable was not supported in those libraries. 
 
-This library supports sending and receiving Email via Ethernet in ESP32 and ESP8266 devices using Ethernet module through secure (SSL/TLS) and non-secure ports.
+External Arduino Client can be used which this allows other devices (with minimum 80k flash space) to work with this library.
 
 
 ![ESP Mail](/media/images/esp-mail-client.svg)
 
-Copyright (c) 2021 K. Suwatchai (Mobizt).
+Copyright (c) 2022 K. Suwatchai (Mobizt).
 
 
 
@@ -39,7 +38,7 @@ Copyright (c) 2021 K. Suwatchai (Mobizt).
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support full debuging.
-* Support flash memory (ESP32 and ESP8266), SD and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+* Support flash memory (ESP32 and ESP8266), SD, SdFat and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
 * Customizable configurations (see the examples for the usages)
 
@@ -63,10 +62,18 @@ This following devices are supported.
  * W5100 SPI Ethernet module
  * W5500 SPI Ethernet module
 
-Note: Arduino UNO WiFi Rev.2 (AVR Platform) is not supported.
 
-Boards that based on other MCUs e.g. STM32 (Atmel's ARM), Teensy (NXP's ARM) and RP2040, are not supported and have no plan to buid it.
+## Custom Client for other Arduino Devices.
 
+Since the new version library allows you to use custom (external) Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
+
+With external Clients, you needed to set the callback functions to hanle the the server connection and connection upgrade tasks.
+
+Some SMTP port e.g. 587 requires the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
+
+This connection upgrade process is not generally available from Clients, if possible, you need to modify the Clients source code and make it available.
+
+See the [Usage](https://github.com/mobizt/ESP-Mail-Client#usage) section for how to use external Clients.
 
 
 ## Tested Devices
@@ -84,11 +91,18 @@ This following devices were tested.
  * LAN8720 Ethernet PHY
  * ENC28J60 SPI Ethernet module
 
+ Custom (External) Client tested
+
+ * ESP32
+ * ESP8266
+ * Arduino MKR WiFi 1010
+ * Arduino MKR 1000
 
 
 
 
-## Prerequisites
+
+## Prerequisites (for built-in Client)
 
 ### ESP32 and ESP8266
 
@@ -149,7 +163,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21120).
 
 ```
-> C: ESP Mail Client v1.6.4, Fw v1.4.8+21120
+> C: ESP Mail Client v2.0.0, Fw v1.4.8+21120
 ```
 
 ## Library Instalation
@@ -165,26 +179,73 @@ Go to menu **Files** -> **Examples** -> **ESP-Mail-Client-master** and choose on
 
 
 
+## Memory Options for ESP8266
 
-## IDE Configuaration for ESP8266 MMU - Adjust the Ratio of ICACHE to IRAM
+This section that mention about the memory settings is optional.
+
+When you update the ESP8266 Arduino Core SDK to v3.0.0, the memory can be configurable from IDE.
+
+You can choose the Heap memory between internal and external memory chip from IDE e.g. Arduino IDE and PlatformIO on VSCode or Atom IDE.
 
 ### Arduino IDE
 
-When you update the ESP8266 Arduino Core SDK to v3.0.0, the memory can be configurable from Arduino IDE board settings.
 
-By default MMU **option 1** was selected, the free Heap can be low and may not suitable for the SSL client usage in this library.
-
-To increase the Heap, choose the MMU **option 3**, 16KB cache + 48KB IRAM and 2nd Heap (shared).
+For ESP8266 devices that don't have external SRAM/PSRAM chip installed, choose the MMU **option 3**, 16KB cache + 48KB IRAM and 2nd Heap (shared).
 
 ![Arduino IDE config](/media/images/ArduinoIDE.png)
 
-To use external Heap from 1 Mbit SRAM 23LC1024, choose the MMU **option 5**, 128K External 23LC1024.
+For ESP8266 devices that have external 23LC1024 SRAM chip installed, choose the MMU **option 5**, 128K External 23LC1024.
 
 ![MMU VM 128K](/media/images/ESP8266_VM.png)
 
-To use external Heap from PSRAM, choose the MMU **option 6**, 1M External 64 MBit PSRAM.
+For ESP8266 devices that have external ESP-PSRAM64 chip installed, choose the MMU **option 6**, 1M External 64 MBit PSRAM.
 
-The connection between SRAM/PSRAM and ESP8266
+
+### PlatformIO IDE
+
+The MMU options can be selected from build_flags in your project's platformio.ini file
+
+For ESP8266 devices that don't not have external SRAM/PSRAM chip installed, add build flag as below.
+
+```ini
+[env:d1_mini]
+platform = espressif8266
+build_flags = -D PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
+board = d1_mini
+framework = arduino
+monitor_speed = 115200
+```
+
+
+For ESP8266 devices that have external 23LC1024 SRAM chip installed, add build flag as below.
+
+```ini
+[env:d1_mini]
+platform = espressif8266
+;128K External 23LC1024
+build_flags = -D PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_128K
+board = d1_mini
+framework = arduino
+monitor_speed = 115200
+```
+
+
+For ESP8266 devices that have external ESP-PSRAM64 chip installed, add build flag as below.
+
+```ini
+[env:d1_mini]
+platform = espressif8266
+;1M External 64 MBit PSRAM
+build_flags = -D PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_1024K
+board = d1_mini
+framework = arduino
+monitor_speed = 115200
+```
+
+
+### ESP8266 and SRAM/PSRAM Chip connection
+
+Most ESP8266 modules don't have the built-in SRAM/PSRAM on board. External memory chip connection can be done via SPI port as below.
 
 ```
 23LC1024/ESP-PSRAM64                ESP8266
@@ -198,111 +259,49 @@ Vcc (Pin 8)                         3V3
 Vcc (Pin 4)                         GND
 ```
 
-More about MMU settings.
-https://arduino-esp8266.readthedocs.io/en/latest/mmu.html
+Once the external Heap memory was selected in IDE, to allow the library to use the external memory, you can set it in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) by define this macro.
 
-### PlatformIO IDE
-
-By default the balanced ratio (32KB cache + 32KB IRAM) configuration is used.
-
-To increase the heap, **PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED** build flag should be assigned in platformio.ini.
-
-```ini
-[env:d1_mini]
-platform = espressif8266
-build_flags = -D PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED
-board = d1_mini
-framework = arduino
-monitor_speed = 115200
-```
-
-And to use external Heap from 1 Mbit SRAM 23LC1024 and 64 Mbit PSRAM, **PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_128K** and **PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_1024K** build flags should be assigned respectively.
-
-The supportedd MMU build flags in PlatformIO.
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48**
-
-   16KB cache + 48KB IRAM (IRAM)
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM48_SECHEAP_SHARED**
-
-   16KB cache + 48KB IRAM and 2nd Heap (shared)
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_CACHE16_IRAM32_SECHEAP_NOTSHARED**
-
-   16KB cache + 32KB IRAM + 16KB 2nd Heap (not shared)
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_128K**
-
-   128K External 23LC1024
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_EXTERNAL_1024K**
-
-   1M External 64 MBit PSRAM
-
-- **PIO_FRAMEWORK_ARDUINO_MMU_CUSTOM**
-
-   Disables default configuration and expects user-specified flags
-
-
-To use PSRAM/SRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
 
 ```cpp
-#define ESP_Mail_USE_PSRAM
+#define ESP_MAIL_USE_PSRAM
 ```
 
-   
-### Test code for MMU
-
-```cpp
-
-#include <Arduino.h>
-#include <umm_malloc/umm_heap_select.h>
-
-void setup() 
-{
-  Serial.begin(115200);
-  HeapSelectIram ephemeral;
-  Serial.printf("IRAM free: %6d bytes\r\n", ESP.getFreeHeap());
-  {
-    HeapSelectDram ephemeral;
-    Serial.printf("DRAM free: %6d bytes\r\n", ESP.getFreeHeap());
-  }
-
-  ESP.setExternalHeap();
-  Serial.printf("External free: %d\n", ESP.getFreeHeap());
-  ESP.resetHeap();
-}
-
-void loop() {
-  // put your main code here, to run repeatedly:
-}
-
-```
+This macro was defined by default when you installed or update the library.
 
 
-## Use PSRAM on ESP32
 
+## Memory Options for ESP32
 
-To enable PSRAM in ESP32 module with PSRAM chip, in Arduino IDE
+This section that mention about the memory settings is optional.
+
+In ESP32 module that has PSRAM installed, you can enable it and set the library to use this external memory instead.
+
+### Arduino IDE
+
+To enable PSRAM in ESP32 module.
 
 ![Enable PSRAM in ESP32](/media/images/ESP32-PSRAM.png)
 
 
-In PlatformIO in VSCode IDE, add the following build_flags in your project's platformio.ini file
+### PlatformIO IDE
+
+
+In PlatformIO on VSCode or Atom IDE, add the following build_flags in your project's platformio.ini file.
 
 ```ini
 build_flags = -DBOARD_HAS_PSRAM -mfix-esp32-psram-cache-issue
 ```
 
-The [**examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino**](examples/SMTP/Send_Attachment_PSRAM/Send_Attachment_PSRAM.ino) showed how to send the attachment stored in PSRAM. 
-
-
-Since v1.5.4, this library supports PSRAM for internal memory allocation which you can config to use it via [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) with this macro.
+As in ESP8266, once the external Heap memory was enabled in IDE, to allow the library to use the external memory, you can set it in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) by define this macro.
 
 ```cpp
 #define ESP_MAIL_USE_PSRAM
 ```
+
+
+
+
+
 
 
 ## Exclude unused classes to save memory 
@@ -353,65 +352,84 @@ The examples in the examples folder provided the full options usages.
 #include <ESP_Mail_Client.h>
 
 
-// Define the SMTP Session object which used for SMTP transsport
+// Define the global used SMTP Session object which used for SMTP transsport
 SMTPSession smtp;
 
-// Define the session config data which used to store the TCP session configuration
+// Define the global used session config data which used to store the TCP session configuration
 ESP_Mail_Session session;
 
-// Set the session config
-session.server.host_name = "smtp.office365.com"; //for outlook.com
-session.server.port = 587;
-session.login.email = "your Email address"; //set to empty for no SMTP Authentication
-session.login.password = "your Email password"; //set to empty for no SMTP Authentication
-session.login.user_domain = "client domain or ip e.g. mydomain.com";
+void setup()
+{
 
-// Set the NTP config time
-session.time.ntp_server = "pool.ntp.org,time.nist.gov";
-session.time.gmt_offset = 3;
-session.time.day_light_offset = 0;
+  Serial.begin(115200);
 
-// Define the SMTP_Message class variable to handle to message being transport
-SMTP_Message message;
+  WiFi.begin("<ssid>", "<password>");
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
 
-// Set the message headers
-message.sender.name = "My Mail";
-message.sender.email = "sender or your Email address";
-message.subject = "Test sending Email";
-message.addRecipient("name1", "email1");
-message.addRecipient("name2", "email2");
+  // Set the session config
+  session.server.host_name = "smtp.office365.com"; //for outlook.com
+  session.server.port = 587;
+  session.login.email = "your Email address"; //set to empty for no SMTP Authentication
+  session.login.password = "your Email password"; //set to empty for no SMTP Authentication
+  session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
-message.addCc("email3");
-message.addBcc("email4");
+  // Set the NTP config time
+  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.gmt_offset = 3;
+  session.time.day_light_offset = 0;
 
-// Set the message content
-message.text.content = "This is simple plain text message";
+  // Define the SMTP_Message class variable to handle to message being transport
+  SMTP_Message message;
 
-//Base64 data of image
-const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
+  // Set the message headers
+  message.sender.name = "My Mail";
+  message.sender.email = "sender or your Email address";
+  message.subject = "Test sending Email";
+  message.addRecipient("name1", "email1");
+  message.addRecipient("name2", "email2");
 
-// Define the attachment data
-SMTP_Attachment att;
+  message.addCc("email3");
+  message.addBcc("email4");
 
-// Set the attatchment info
-att.descr.filename = "green.png";
-att.descr.mime = "image/png";
-att.blob.data = (uint8_t *)greenImg;
-att.blob.size = strlen(greenImg);
-// Set the transfer encoding to base64
-att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-// We set the content encoding to match the above greenImage data
-att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+  // Set the message content
+  message.text.content = "This is simple plain text message";
 
-// Add attachment to the message
-message.addAttachment(att);
+  //Base64 data of image
+  const char *greenImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RAQ0AMAgAoJviyWxtAtNYwzmoQGT/eqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
 
-// Connect to server with the session config
-smtp.connect(&session);
+  // Define the attachment data
+  SMTP_Attachment att;
 
-// Start sending Email and close the session
-if (!MailClient.sendMail(&smtp, &message))
-  Serial.println("Error sending Email, " + smtp.errorReason());
+  // Set the attatchment info
+  att.descr.filename = "green.png";
+  att.descr.mime = "image/png";
+  att.blob.data = (uint8_t *)greenImg;
+  att.blob.size = strlen(greenImg);
+  // Set the transfer encoding to base64
+  att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
+  // We set the content encoding to match the above greenImage data
+  att.descr.content_encoding = Content_Transfer_Encoding::enc_base64;
+
+  // Add attachment to the message
+  message.addAttachment(att);
+
+  // Connect to server with the session config
+  smtp.connect(&session);
+
+  // Start sending Email and close the session
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
+
+}
 
 
 ```
@@ -426,83 +444,215 @@ if (!MailClient.sendMail(&smtp, &message))
 #include <ESP_Mail_Client.h>
 
 
-// Define the IMAP Session object which used for IMAP transsport
+// Define the global used IMAP Session object which used for IMAP transsport
 IMAP_Config config;
 
 
-// Define the session config data which used to store the TCP session configuration
+// Define the global used session config data which used to store the TCP session configuration
 ESP_Mail_Session session;
 
-// Set the session config
-session.server.host_name = "outlook.office365.com"; //for outlook.com
-session.server.port = 993;
-session.login.email = "your Email address";
-session.login.password = "your Email password";
 
-// Define the config class variable for searching or fetching operation and store the messsagess data
-IMAP_Config config;
-
-// Define the message UID which required to fetch or read the message
-config.fetch.uid = "100";
-
-// Define the empty search criteria to disable the messsage search
-config.search.criteria.clear();
-
-// Set to enable the message content which will be stored in the IMAP_Config data
-config.enable.html = true;
-config.enable.text = true;
-
-
-// Connect to the server with the defined session and options
-imap.connect(&session, &config);
-
-// Open or select the mailbox folder to read the message
-imap.selectFolder("INBOX");
-
-
-// Read the Email and close the session
-MailClient.readMail(&imap);
-
-
-// Get the message(s) list
-IMAP_MSG_List msgList = imap.data();
-
-for (size_t i = 0; i < msgList.msgItems.size(); i++)
+void setup()
 {
-  // Iterate to get each message data through the message item data
-  IMAP_MSG_Item msg = msgList.msgItems[i];
 
-  Serial.println("################################");
-  ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
-  ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
-  ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
-  ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
-  ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
-  ESP_MAIL_PRINTF("From: %s\n", msg.from);
-  ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
-  ESP_MAIL_PRINTF("To: %s\n", msg.to);
-  ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
-  ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
-  ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
-  ESP_MAIL_PRINTF("Date: %s\n", msg.date);
-  ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
-  ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
+  Serial.begin(115200);
 
-  // If the message body is available
-  if (!imap.headerOnly())
+  WiFi.begin("<ssid>", "<password>");
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
   {
-    ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
-    ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
-    ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-    ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
-    ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
-    ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+    Serial.print(".");
+    delay(300);
   }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  // Set the session config
+  session.server.host_name = "outlook.office365.com"; //for outlook.com
+  session.server.port = 993;
+  session.login.email = "your Email address";
+  session.login.password = "your Email password";
+
+  // Define the config class variable for searching or fetching operation and store the messsagess data
+  IMAP_Config config;
+
+  // Define the message UID which required to fetch or read the message
+  config.fetch.uid = "100";
+
+  // Define the empty search criteria to disable the messsage search
+  config.search.criteria.clear();
+
+  // Set to enable the message content which will be stored in the IMAP_Config data
+  config.enable.html = true;
+  config.enable.text = true;
+
+
+  // Connect to the server with the defined session and options
+  imap.connect(&session, &config);
+
+  // Open or select the mailbox folder to read the message
+  imap.selectFolder("INBOX");
+
+
+  // Read the Email and close the session
+  MailClient.readMail(&imap);
+
+
+  // Get the message(s) list
+  IMAP_MSG_List msgList = imap.data();
+
+  for (size_t i = 0; i < msgList.msgItems.size(); i++)
+  {
+    // Iterate to get each message data through the message item data
+    IMAP_MSG_Item msg = msgList.msgItems[i];
+
+    Serial.println("################################");
+    ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
+    ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
+    ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
+    ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
+    ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
+    ESP_MAIL_PRINTF("From: %s\n", msg.from);
+    ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
+    ESP_MAIL_PRINTF("To: %s\n", msg.to);
+    ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
+    ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
+    ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
+    ESP_MAIL_PRINTF("Date: %s\n", msg.date);
+    ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
+    ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
+
+    // If the message body is available
+    if (!imap.headerOnly())
+    {
+      ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
+      ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
+      ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
+      ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
+      ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
+      ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+    }
+  }
+
 }
 
 ```
 
+To use external Clients, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
+```cpp
+#define ENABLE_CUSTOM_CLIENT
+
+```
+
+In your sketch, you need to pass the Client's object pointer to the IMAPSession or SMTPSession constructor.
+
+The below example will use Arduino MKR 1000 and set WiFi101 for Client.
+
+The examle will send message using Gmail, then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
+
+```cpp
+
+#include <WiFi101.h>
+
+//Define the global used Client object
+WiFiSSLClient client;
+
+//Define the global used smtp object 
+SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
+
+// Define the global used session config data which used to store the TCP session configuration
+ESP_Mail_Session session;
+
+//Define the callback function to handle server connection
+void connectionRequestCallback(const char *host, int port)
+{
+    
+    Serial.print("> U: Connecting to server via custom Client... ");
+    if (!client.connect(host, port))
+    {
+        Serial.println("failed.");
+        return;
+    }
+    Serial.println("success.");
+}
+
+//Define the callback function to handle server connection upgrade.
+void connectionUpgradeRequestCallback()
+{
+    Serial.println("> U: Upgrad the connection...");
+
+    //Connection upgrade code here...
+    //Required for SMTP on port 587. 
+
+}
+
+
+void setup()
+{
+
+  Serial.begin(115200);
+
+  WiFi.begin("<ssid>", "<password>");
+  Serial.print("Connecting to Wi-Fi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    Serial.print(".");
+    delay(300);
+  }
+  Serial.println();
+  Serial.print("Connected with IP: ");
+  Serial.println(WiFi.localIP());
+  Serial.println();
+
+  // Set the session config
+  session.server.host_name = "smtp.gmail.com"; //for outlook.com
+  session.server.port = 465;
+  session.login.email = "your Email address"; //set to empty for no SMTP Authentication
+  session.login.password = "your Email password"; //set to empty for no SMTP Authentication
+  session.login.user_domain = "client domain or ip e.g. mydomain.com";
+
+  // Set the NTP config time
+  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  session.time.gmt_offset = 3;
+  session.time.day_light_offset = 0;
+
+  // Define the SMTP_Message class variable to handle to message being transport
+  SMTP_Message message;
+
+  // Set the message headers
+  message.sender.name = "My Mail";
+  message.sender.email = "sender or your Email address";
+  message.subject = "Test sending Email";
+  message.addRecipient("name1", "email1");
+  message.addRecipient("name2", "email2");
+
+  message.addCc("email3");
+  message.addBcc("email4");
+
+  // Set the message content
+  message.text.content = "This is simple plain text message";
+  
+  //Set the callback functions to hadle connect to server and upgrade the connection.
+  smtp.connectionRequestCallback(connectionRequestCallback);
+  smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+
+
+  // Connect to the server with the defined session and options
+  imap.connect(&session, &config);
+
+
+  // Start sending Email and close the session
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
+
+
+}
+
+
+```
 
 ## License
 

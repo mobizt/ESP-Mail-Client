@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.3.
+ * ESP32 TCP Client Library v1.0.5.
  * 
- * November 16, 2021 
+ * February 1, 2022
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -34,87 +34,88 @@
 
 #ifdef ESP32
 
+#define ESP32_TCP_CLIENT
+
 #include <Arduino.h>
 #include <WiFiClient.h>
-#include <FS.h>
-#include <SPIFFS.h>
-#if defined(ESP_MAIL_DEFAULT_SD_FS)
-#if ESP_MAIL_DEFAULT_SD_FS == SD
-#include <SD.h>
-#endif
-#endif
+#include <ETH.h>
 #include "ESP32_WCS.h"
+#include "./wcs/base/TCP_Client_Base.h"
 
-
-
-#define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
-#define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)
-#define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
-
-enum esp_mail_file_storage_type
+extern "C"
 {
-  esp_mail_file_storage_type_none,
-  esp_mail_file_storage_type_flash,
-  esp_mail_file_storage_type_sd
-};
+#include <esp_err.h>
+#include <esp_wifi.h>
+}
 
-class ESP32_TCP_Client
+class ESP32_TCP_Client : public TCP_Client_Base
 {
 public:
   ESP32_TCP_Client();
   ~ESP32_TCP_Client();
 
-  /**
-    * Initialization of new TCP connection.
-    * \param host - Host name without protocols.
-    * \param port - Server's port.
-    * \return True by default.
-    * If no certificate string provided, use (const char*)NULL to CAcert param 
-    */
-  bool begin(const char *host, uint16_t port);
-
-  /**
-    * Check the TCP connection status.
-    * \return True if connected.
-    */
-  bool connected();
-
-  /**
-    * Establish TCP connection when required and send data.
-    * \param data - The data to send.
-    * \return TCP status code, Return zero if new TCP connection and data sent.
-    */
-  int send(const char *data);
-
-  /**
-    * Get the WiFi client pointer.
-    * \return WiFi client pointer.
-    */
-  ESP32_WCS *stream(void);
-
-  /**
-   * Set insecure mode
-  */
-  void setInsecure();
-
-
-  int tcpTimeout = 40000;
-  bool connect(void);
-  bool connect(bool secured, bool verify);
   void setCACert(const char *caCert);
-  void setCertFile(const char *caCertFile, esp_mail_file_storage_type storageType);
+
+  void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
+
   void setDebugCallback(DebugMsgCallback cb);
 
-  int _certType = -1;
-  MBSTRING _caCertFile;
-  esp_mail_file_storage_type _caCertFileStoreageType = esp_mail_file_storage_type::esp_mail_file_storage_type_none;
+  void setTimeout(uint32_t timeoutSec);
 
-protected:
-  DebugMsgCallback _debugCallback = NULL;
-  std::unique_ptr<ESP32_WCS> _wcs = std::unique_ptr<ESP32_WCS>(new ESP32_WCS());
+  void setInsecure();
 
-  MBSTRING _host;
-  uint16_t _port = 0;
+  bool ethLinkUp();
+
+  void ethDNSWorkAround();
+
+  bool networkReady();
+
+  void networkReconnect();
+
+  void networkDisconnect();
+
+  unsigned long getTime();
+
+  String fwVersion();
+
+  esp_mail_client_type type();
+
+  bool isInitialized();
+
+  int hostByName(const char *name, IPAddress &ip);
+
+  bool connect(bool secured, bool verify);
+
+  bool connectSSL(bool verify);
+
+  void stop();
+
+  bool connected();
+
+  int write(uint8_t *data, int len);
+
+  int send(const char *data);
+
+  int print(const char *data);
+
+  int print(int data);
+
+  int println(const char *data);
+
+  int println(int data);
+
+  int available();
+
+  int read();
+
+  int readBytes(uint8_t *buf, int len);
+
+  int readBytes(char *buf, int len);
+
+private:
+  DebugMsgCallback debugCallback = NULL;
+  std::unique_ptr<ESP32_WCS> wcs = std::unique_ptr<ESP32_WCS>(new ESP32_WCS());
+  char *cert_buf = NULL;
 };
 
 #endif //ESP32
