@@ -29,7 +29,7 @@
 #define TCP_CLIENT_BASE_H
 
 #include <Arduino.h>
-#include ".\common.h"
+#include "./common.h"
 #include <IPAddress.h>
 #include <Client.h>
 
