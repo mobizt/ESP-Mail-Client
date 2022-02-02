@@ -88,6 +88,7 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
                 fs::File file = mbfs->getFlashFile();
                 wcs->loadCACert(file, len);
                 mbfs->close(storageType);
+                baseSetCertType(esp_mail_cert_type_file);
             }
             else if (storageType == mb_fs_mem_storage_type_sd)
             {

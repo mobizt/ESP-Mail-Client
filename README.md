@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v2.0.0
+# Mail Client Arduino Library v2.0.1
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -78,7 +78,7 @@ See the [Usage](https://github.com/mobizt/ESP-Mail-Client#usage) section for how
 
 ## Tested Devices
 
-This following devices were tested.
+### This following devices were tested.
 
  * Sparkfun ESP32 Thing
  * NodeMCU-32
@@ -91,15 +91,16 @@ This following devices were tested.
  * LAN8720 Ethernet PHY
  * ENC28J60 SPI Ethernet module
 
- Custom (External) Client tested
+### Supposted Devices with flash size > 80k, using custom Clients.
 
  * ESP32
  * ESP8266
- * Arduino MKR WiFi 1010
- * Arduino MKR 1000
-
-
-
+ * Arduino SAMD
+ * Arduino STM32
+ * Arduino AVR
+ * Teensy 3.1 to 4.1
+ * Arduino Nano RP2040 Connect
+ * Raspberry Pi Pico 
 
 
 ## Prerequisites (for built-in Client)
@@ -163,7 +164,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21120).
 
 ```
-> C: ESP Mail Client v2.0.0, Fw v1.4.8+21120
+> C: ESP Mail Client v2.0.1, Fw v1.4.8+21120
 ```
 
 ## Library Instalation

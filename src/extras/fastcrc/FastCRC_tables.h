@@ -32,9 +32,7 @@
 #include "inttypes.h"
 
 #ifdef __AVR__
-#include <avr/pgmspace.h>
-#elif !defined(ARDUINO_ARCH_SAMD) && !defined(__AVR_ATmega4809__) &&  !defined(ARDUINO_NANO_RP2040_CONNECT)
-#include <pgmspace.h>	
+#include <avr/pgmspace.h>	
 #endif
 
 const uint8_t crc_table_crc7[256] PROGMEM = {

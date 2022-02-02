@@ -35,6 +35,12 @@
 #define MB_VECTOR MB_List
 #endif
 
+#if defined(__AVR__)
+#define MB_LIST_NULL NULL
+#else
+#define MB_LIST_NULL nullptr
+#endif
+
 template <class eType>
 class MB_List
 {
@@ -99,7 +105,7 @@ public:
     {
         if (e)
             delete[] e;
-        e = nullptr;
+        e = MB_LIST_NULL;
         eSize = 0;
     }
 

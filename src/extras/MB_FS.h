@@ -1,9 +1,9 @@
 /**
- * The MB_FS, file wrapper class v1.0.0.
+ * The MB_FS, file wrapper class v1.0.1.
  * 
  * This wrapper class is for SD and Flash file interfaces which support SdFat in ESP32 (//https://github.com/greiman/SdFat)
  * 
- *  Created January 18, 2022
+ *  Created February 1, 2022
  * 
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
