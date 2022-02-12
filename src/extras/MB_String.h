@@ -1,10 +1,13 @@
 
 /**
- * Mobizt's SRAM/PSRAM supported String, version 1.2.2
+ * Mobizt's SRAM/PSRAM supported String, version 1.2.3
  * 
- * Created February 2, 2022
+ * Created February 11, 2022
  * 
  * Changes Log
+ * 
+ * v1.2.3
+ * - Fixed flash string F and PSTR handle
  * 
  * v1.2.2
  * - Add supports more MCUs.
@@ -65,7 +68,7 @@
 
 #define MB_STRING_MAJOR 1
 #define MB_STRING_MINOR 2
-#define MB_STRING_PATCH 2
+#define MB_STRING_PATCH 3
 
 #if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
 #include <umm_malloc/umm_malloc.h>
@@ -469,7 +472,7 @@ public:
     MB_String(const char *cstr)
     {
         if (cstr)
-            copy(cstr, strlen(cstr));
+            copy(cstr, strlen_P(cstr));
     }
 
     MB_String(const MB_String &value)
@@ -651,12 +654,12 @@ public:
 
     MB_String &operator+=(const char *cstr)
     {
-        size_t len = strlen(cstr);
+        size_t len = strlen_P(cstr);
         size_t slen = length();
 
         if (_reserve(slen + len, false))
         {
-            strcat(buf, cstr);
+            strcat_P(buf, (PGM_P)cstr);
             *(buf + slen + len) = '\0';
         }
 
@@ -846,7 +849,7 @@ public:
     MB_String &operator=(const char *cstr)
     {
         if (cstr)
-            copy(cstr, strlen(cstr));
+            copy(cstr, strlen_P(cstr));
         else
             clear();
 
@@ -1771,8 +1774,8 @@ private:
             clear();
             return *this;
         }
-
-        memmove(buf, cstr, length);
+        
+        memcpy_P(buf, (PGM_P)cstr, length);
         buf[length] = '\0';
 
         return *this;

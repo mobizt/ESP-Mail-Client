@@ -1,5 +1,5 @@
 /**
- * Created January 22, 2022
+ * Created February 12, 2022
  */
 
 #ifndef ESP_CLIENTS_H
@@ -7,12 +7,19 @@
 
 #include "./ESP_Mail_FS.h"
 
-#if defined(ENABLE_CUSTOM_CLIENT)
+#ifdef ENABLE_CUSTOM_CLIENT
+#define ESP_MAIL_ENABLE_CUSTOM_CLIENT
+#endif
 
+#if !defined(ESP32) && !defined(ESP8266) && !(defined(MB_MCU_ATMEL_ARM) && !defined(ARDUINO_SAMD_MKR1000) || defined(MB_MCU_RP2040)) && !defined(MB_MCU_RP2040)
+#ifndef ESP_MAIL_ENABLE_CUSTOM_CLIENT
+#define ESP_MAIL_ENABLE_CUSTOM_CLIENT
+#endif
+#endif
+
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT)
 #include "custom/Custom_Client.h"
 #define TCP_CLIENT Custom_Client
-
-
 #else
 
 #if defined(ESP32)

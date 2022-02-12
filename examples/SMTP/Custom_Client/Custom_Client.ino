@@ -13,27 +13,23 @@
  *
 */
 
-/** To use custom Client, define the following macro in src/ESP_Mail_FS.h
-    #define ENABLE_CUSTOM_CLIENT
-*/
-
+/** This example shows how to send E-mail with external Client.
+ * This example used SAMD21 device and WiFiNINA as the client.
+ * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
+ */
 
 /** For Gmail, to send the Email via port 465 (SSL), less secure app option 
  * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
 */
 
 #include <Arduino.h>
-#if defined(ESP32)
-#include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
+
+
+#if defined(ARDUINO_ARCH_SAMD)
+#include <WiFiNINA.h>
 #endif
+
 #include <ESP_Mail_Client.h>
-
-//We use WiFiClientSecure class in ESP8266 and ESP32 core for the demonstation.
-//Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient and be used.
-#include <WiFiClientSecure.h>
-
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -58,7 +54,7 @@
 #define AUTHOR_PASSWORD "<password>"
 
 /* Define the Client object */
-WiFiClientSecure client;
+WiFiSSLClient client;
 
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
@@ -66,12 +62,43 @@ SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&cl
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
+void networkConnection()
+{
+    // Reset the network connection
+    WiFi.disconnect();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(300);
+        if (millis() - ms >= 5000)
+        {
+            Serial.println(" failed!");
+            return;
+        }
+    }
+    Serial.println();
+    Serial.print("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+}
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+    // Set the network status
+    smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
+}
 
 //Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
-    //skip certificate verification
-    client.setInsecure();
+    // You may need to set the system timestamp in case of custom client
+    // time is used to set the date header while sending email.
+    smtp.setSytemTime(WiFi.getTime());
 
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
@@ -106,34 +133,17 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
 #endif
 
     Serial.println();
 
-    Serial.print("Connecting to AP");
-
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print(".");
-        delay(200);
-    }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
+    networkConnection();
 
     /** Enable the debug via Serial port
-   * none debug or 0
-   * basic debug or 1
-   * 
-   * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+     * none debug or 0
+     * basic debug or 1
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+    */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -220,9 +230,14 @@ void setup()
 
     //The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
-    //Set the callback functions to hadle connect to server and upgrade the connection.
+    //Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
+
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnection);
+
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
     /* Connect to server with the session config */
     if (!smtp.connect(&session))

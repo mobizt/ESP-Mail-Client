@@ -1,8 +1,8 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.3
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.4
  * 
- * February 1, 2022
+ * February 12, 2022
  * 
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -71,8 +71,6 @@ public:
   void networkReconnect();
 
   void networkDisconnect();
-
-  unsigned long getTime();
 
   String fwVersion();
 

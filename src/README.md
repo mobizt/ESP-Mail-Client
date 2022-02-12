@@ -204,6 +204,37 @@ void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB
 
 
 
+#### Assign the callback function to handle the network connection for custom Client.
+
+param **`networkConnectionCB`** The function that handles the network connection.
+
+```cpp
+void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+```
+
+
+#### Assign the callback function to handle the network connection status acknowledgement.
+
+param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
+
+```cpp
+void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+```
+
+
+
+#### Set system time with timestamp.
+
+param **`ts`** timestamp in seconds from midnight Jan 1, 1970.
+
+This function allows the internal time setting by timestamp i.e. timestamp from external RTC. 
+
+```cpp
+void setSystemTime(time_t ts);
+```
+
+
+
 #### Begin the IMAP server connection.
 
 param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
@@ -589,6 +620,35 @@ param **`upgradeCB`** The function that handles existing connection upgrade.
 void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
 ```
 
+
+#### Assign the callback function to handle the network connection for custom Client.
+
+param **`networkConnectionCB`** The function that handles the network connection.
+
+```cpp
+void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+```
+
+
+#### Assign the callback function to handle the network connection status acknowledgement.
+
+param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
+
+```cpp
+void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+```
+
+
+
+#### Set system time with timestamp.
+
+param **`ts`** timestamp in seconds from midnight Jan 1, 1970.
+
+This function allows the internal time setting by timestamp i.e. timestamp from external RTC. 
+
+```cpp
+void setSystemTime(time_t ts);
+```
 
 
 

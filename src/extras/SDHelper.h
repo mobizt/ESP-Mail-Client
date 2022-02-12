@@ -53,8 +53,7 @@ SPIClass spi;
 
 #endif
 
-
-bool SD_Card_Mounting()
+__attribute__((__used__)) static bool SD_Card_Mounting()
 {
 
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)

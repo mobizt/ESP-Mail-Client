@@ -9,25 +9,22 @@
  *
 */
 
-/** To use custom Client, define the following macro in src/ESP_Mail_FS.h
-    #define ENABLE_CUSTOM_CLIENT
-*/
+/** This example shows how to read E-mail with external Client.
+ * This example used SAMD21 device and WiFiNINA as the client.
+ * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
+ */
 
 /** For Gmail, to send the Email via port 465 (SSL), less secure app option 
  * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
 */
 
 #include <Arduino.h>
-#if defined(ESP32)
-#include <WiFi.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#endif
-#include <ESP_Mail_Client.h>
 
-//We use WiFiClientSecure class in ESP8266 and ESP32 core for the demonstation.
-//Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient and be used.
-#include <WiFiClientSecure.h>
+#if defined(ARDUINO_ARCH_SAMD)
+#include <WiFiNINA.h>
+#endif
+
+#include <ESP_Mail_Client.h>
 
 //To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
 
@@ -63,16 +60,48 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly);
 void printAttacements(std::vector<IMAP_Attach_Item> &atts);
 
 /* Define the Client object */
-WiFiClientSecure client;
+WiFiSSLClient client;
 
 /* The IMAP Session object used for Email reading */
 IMAPSession imap(&client); // or assign the Client later with imap.setClient(&client);
 
+
+void networkConnection()
+{
+    // Reset the network connection
+    WiFi.disconnect();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(300);
+        if (millis() - ms >= 5000)
+        {
+            Serial.println(" failed!");
+            return;
+        }
+    }
+    Serial.println();
+    Serial.print("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+}
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+    // Set the network status
+    imap.setNetworkStatus(WiFi.status() == WL_CONNECTED);
+}
+
 //Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
-    //skip certificate verification
-    client.setInsecure();
+    // You may need to set the system timestamp in case of custom client
+    imap.setSytemTime(WiFi.getTime());
 
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
@@ -93,27 +122,11 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
 #endif
 
     Serial.println();
 
-    Serial.print("Connecting to AP");
-
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print(".");
-        delay(200);
-    }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
+    networkConnection();
 
     /** Enable the debug via Serial port 
      * none debug or 0
@@ -210,8 +223,12 @@ void setup()
     */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
-    //Set the callback functions to hadle connect to server and upgrade the connection.
+    // Set the callback functions to hadle the required tasks.
     imap.connectionRequestCallback(connectionRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnection);
+
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))

@@ -1845,5 +1845,6 @@ esp_mail_debug_line(const char *msg, bool newline)
 
 typedef void (*ConnectionRequestCallback)(const char *, int);
 typedef void (*ConnectionUpgradeRequestCallback)(void);
-
+typedef void (*NetworkConnectionRequestCallback)(void);
+typedef void (*NetworkStatusRequestCallback)(void);
 #endif

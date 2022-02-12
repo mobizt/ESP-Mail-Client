@@ -1,17 +1,17 @@
 /**
- * The custom TCP Client Class v1.0.0.
- * 
- * February 1, 2022
- * 
+ * The custom TCP Client Class v1.0.1.
+ *
+ * February 12, 2022
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
+ *
  * TCPClient Arduino library for ESP32
  *
  * Copyright (c) 2015 Markus Sattler. All rights reserved.
  * This file is part of the TCPClient for Arduino.
- * Port to ESP32 by Evandro Luis Copercini (2017), 
- * changed fingerprints to CA verification. 	
+ * Port to ESP32 by Evandro Luis Copercini (2017),
+ * changed fingerprints to CA verification.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,12 +27,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
-*/
+ */
 
 #ifndef CUSTOM_TCP_CLIENT_H
 #define CUSTOM_TCP_CLIENT_H
 
-//This file was included in wcs/clients.h
+// This file was included in wcs/clients.h
 
 #include <Arduino.h>
 #include "./wcs/base/TCP_Client_Base.h"
@@ -62,23 +62,20 @@ public:
 
     bool networkReady()
     {
-        return true;
+        if (network_status_cb)
+            network_status_cb();
+        return networkStatus;
     }
 
     void networkReconnect()
     {
+        if (network_connection_cb)
+            network_connection_cb();
     }
 
     void networkDisconnect()
     {
-    }
 
-    unsigned long getTime()
-    {
-#if defined(MB_MCU_ESP) || defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
-        now = time(nullptr);
-#endif
-        return (unsigned long)now;
     }
 
     String fwVersion()
@@ -105,7 +102,7 @@ public:
 
     int hostByName(const char *name, IPAddress &ip)
     {
-        //return WiFi.hostByName(name, ip);
+        // return WiFi.hostByName(name, ip);
         return 1;
     }
 
@@ -258,10 +255,28 @@ public:
         this->connection_upgrade_cb = upgradeCB;
     }
 
+    void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
+    {
+        this->network_connection_cb = networkConnectionCB;
+    }
+
+    void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
+    {
+        this->network_status_cb = networkStatusCB;
+    }
+
+    void setNetworkStatus(bool status)
+    {
+        networkStatus = status;
+    }
+
 private:
     Client *wcs = nullptr;
     ConnectionRequestCallback connection_cb = NULL;
     ConnectionUpgradeRequestCallback connection_upgrade_cb = NULL;
+    NetworkConnectionRequestCallback network_connection_cb = NULL;
+    NetworkStatusRequestCallback network_status_cb = NULL;
+    volatile bool networkStatus = false;
 };
 
 #endif

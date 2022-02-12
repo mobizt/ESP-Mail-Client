@@ -1,29 +1,29 @@
 /*
- * TCP Client Base class, version 1.0.0
- * 
- * February 1, 2022
- * 
+ * TCP Client Base class, version 1.0.1
+ *
+ * February 12, 2022
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
- * 
+ *
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #ifndef TCP_CLIENT_BASE_H
 #define TCP_CLIENT_BASE_H
@@ -71,17 +71,37 @@ public:
 
     virtual void disconnect(){};
 
-    virtual unsigned long getTime()
+    virtual time_t getTime()
     {
+        time_t tm = now;
+
 #if defined(MB_MCU_ESP) || defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
-        now = time(nullptr);
+        if (tm < ESP_MAIL_CLIENT_VALID_TS)
+            tm = time(nullptr);
+#else
+        tm += millis() / 1000;
 #endif
-        return (unsigned long)now;
+
+        return tm;
     }
 
-    virtual void setTime(unsigned long ts)
+    virtual bool setSystemTime(time_t ts)
     {
-        now = ts;
+#if defined(ESP8266) || defined(ESP32)
+
+        if (setTimestamp(ts) == 0)
+        {
+            this->now = time(nullptr);
+            return true;
+        }
+
+#else
+        if (ts > ESP_MAIL_CLIENT_VALID_TS)
+            this->now = ts - (millis() / 1000);
+
+#endif
+
+        return false;
     }
 
     virtual String fwVersion()
@@ -133,6 +153,15 @@ public:
     void baseSetCertType(esp_mail_cert_type type) { certType = type; }
 
     void baseSetTimeout(uint32_t timeoutSec) { tmo = timeoutSec * 1000; }
+
+    int setTimestamp(time_t ts)
+    {
+#if defined(ESP32) || defined(ESP8266)
+        struct timeval tm = {ts, 0}; // sec, us
+        return settimeofday((const timeval *)&tm, 0);
+#endif
+        return -1;
+    }
 
 private:
     void setMBFS(MB_FS *mbfs) { this->mbfs = mbfs; }

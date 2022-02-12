@@ -1,20 +1,19 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "2.0.1"
+#define ESP_MAIL_VERSION "2.0.2"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
- * 
- *   Version:   2.0.1
- *   Released:  February 2, 2022
+ *
+ *   Version:   2.0.2
+ *   Released:  February 12, 2022
  *
  *   Updates:
- * - Add supports more MCUs.
- * - Fixed STM32 compilation error.
- * 
- * 
- * 
+ * - Update custom client features.
+ * - Fixed flash string issue.
+ *
+ *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
  * The MIT License (MIT)
@@ -44,7 +43,7 @@
  * WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #include <Arduino.h>
 #include "extras/RFC2047.h"
@@ -156,12 +155,12 @@ public:
   /* Get the order of message in number of message in this mailbox that reoved */
   /**
    * The IMAP_Polling_Status has the properties e.g. type, messageNum, and argument.
-   * 
+   *
    * The type property is the type of status e.g.imap_polling_status_type_undefined, imap_polling_status_type_new_message,
    * imap_polling_status_type_remove_message, and imap_polling_status_type_fetch_message.
-   * 
+   *
    * The messageNum property is message number or order from the total number of message that added, fetched or deleted.
-   * 
+   *
    * The argument property is the argument of commands e.g. FETCH
    */
   IMAP_Polling_Status pollingStatus() { return _polling_status; };
@@ -363,7 +362,7 @@ public:
   }
 
   /** Clear all the inline images
-  */
+   */
   void clearInlineimages()
   {
     for (int i = (int)_att.size() - 1; i >= 0; i--)
@@ -387,7 +386,7 @@ public:
   };
 
   /** Clear all rfc822 message attachment
-  */
+   */
   void clearRFC822Messages()
   {
     for (int i = (int)_rfc822.size() - 1; i >= 0; i--)
@@ -398,25 +397,25 @@ public:
   };
 
   /** Clear the primary recipient mailboxes
-  */
+   */
   void clearRecipients() { _rcp.clear(); };
 
   /** Clear the Carbon-copy recipient mailboxes
-  */
+   */
   void clearCc() { _cc.clear(); };
 
   /** Clear the Blind-carbon-copy recipient mailboxes
-  */
+   */
   void clearBcc() { _bcc.clear(); };
 
   /** Clear the custom message headers
-  */
+   */
   void clearHeader() { _hdr.clear(); };
 
   /** Add attachment to the message
    *
    * @param att The SMTP_Attachment data item
-  */
+   */
   void addAttachment(SMTP_Attachment &att)
   {
     att._int.att_type = esp_mail_att_type_attachment;
@@ -428,7 +427,7 @@ public:
   /** Add parallel attachment to the message
    *
    * @param att The SMTP_Attachment data item
-  */
+   */
   void addParallelAttachment(SMTP_Attachment &att)
   {
     att._int.att_type = esp_mail_att_type_attachment;
@@ -440,7 +439,7 @@ public:
   /** Add inline image to the message
    *
    * @param att The SMTP_Attachment data item
-  */
+   */
   void addInlineImage(SMTP_Attachment &att)
   {
     att._int.flash_blob = true;
@@ -468,14 +467,14 @@ public:
   /** Add rfc822 message to the message
    *
    * @param msg The RFC822_Message class object
-  */
+   */
   void addMessage(SMTP_Message &msg) { _rfc822.push_back(msg); }
 
   /** Add the primary recipient mailbox to the message
    *
    * @param name The name of primary recipient
    * @param email The Email address of primary recipient
-  */
+   */
   template <typename T1 = const char *, typename T2 = const char *>
   void addRecipient(T1 name, T2 email)
   {
@@ -488,7 +487,7 @@ public:
   /** Add Carbon-copy recipient mailbox
    *
    * @param email The Email address of the secondary recipient
-  */
+   */
   template <typename T = const char *>
   void addCc(T email)
   {
@@ -500,7 +499,7 @@ public:
   /** Add Blind-carbon-copy recipient mailbox
    *
    * @param email The Email address of the tertiary recipient
-  */
+   */
   template <typename T = const char *>
   void addBcc(T email)
   {
@@ -512,7 +511,7 @@ public:
   /** Add the custom header to the message
    *
    * @param hdr The header name and value
-  */
+   */
   template <typename T = const char *>
   void addHeader(T hdr)
   {
@@ -623,7 +622,7 @@ public:
    * body, and attachments.
    * @param closeSession The option to Close the SMTP session after sent.
    * @return The boolean value indicates the success of operation.
-  */
+   */
   bool sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 #endif
 
@@ -647,7 +646,7 @@ public:
    * @param flags The flag list to set.
    * @param closeSession The option to close the IMAP session after set flag.
    * @return The boolean value indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 0, closeSession); }
 
@@ -659,7 +658,7 @@ public:
    * @param flags The flag list to set.
    * @param closeSession The option to close the IMAP session after add flag.
    * @return The boolean value indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 1, closeSession); }
 
@@ -671,7 +670,7 @@ public:
    * @param flags The flag list to remove.
    * @param closeSession The option to close the IMAP session after remove flag.
    * @return The boolean value indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 2, closeSession); }
 #endif
@@ -679,47 +678,47 @@ public:
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
   /** SD card config with GPIO pins.
-   * 
+   *
    * @param ss SPI Chip/Slave Select pin.
    * @param sck SPI Clock pin.
    * @param miso SPI MISO pin.
    * @param mosi SPI MOSI pin.
    * @return Boolean type status indicates the success of the operation.
-  */
+   */
   bool sdBegin(int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
 
 #if defined(ESP8266)
 
   /** SD card config with SD FS configurations (ESP8266 only).
-   * 
+   *
    * @param ss SPI Chip/Slave Select pin.
    * @param sdFSConfig The pointer to SDFSConfig object (ESP8266 only).
    * @return Boolean type status indicates the success of the operation.
-  */
+   */
   bool sdBegin(SDFSConfig *sdFSConfig);
 
 #endif
 
 #if defined(ESP32)
   /** SD card config with chip select and SPI configuration (ESP32 only).
-   * 
+   *
    * @param ss SPI Chip/Slave Select pin.
    * @param spiConfig The pointer to SPIClass object for SPI configuartion (ESP32 only).
    * @return Boolean type status indicates the success of the operation.
-  */
+   */
   bool sdBegin(int8_t ss, SPIClass *spiConfig = nullptr);
 #endif
 
 #if defined(MBFS_ESP32_SDFAT_ENABLED) || defined(MBFS_SDFAT_ENABLED)
   /** SD card config with SdFat SPI and pins configurations (ESP32 with SdFat included only).
-   * 
+   *
    * @param sdFatSPIConfig The pointer to SdSpiConfig object for SdFat SPI configuration.
    * @param ss SPI Chip/Slave Select pin.
    * @param sck SPI Clock pin.
    * @param miso SPI MISO pin.
    * @param mosi SPI MOSI pin.
    * @return Boolean type status indicates the success of the operation.
-  */
+   */
   bool sdBegin(SdSpiConfig *sdFatSPIConfig, int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
 #endif
 
@@ -727,20 +726,21 @@ public:
 
 #if defined(ESP32) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD_MMC)
   /** Initialize the SD_MMC card (ESP32 only).
-  *
-  * @param mountpoint The mounting point.
-  * @param mode1bit Allow 1 bit data line (SPI mode).
-  * @param format_if_mount_failed Format SD_MMC card if mount failed.
-  * @return The boolean value indicates the success of operation.
- */
+   *
+   * @param mountpoint The mounting point.
+   * @param mode1bit Allow 1 bit data line (SPI mode).
+   * @param format_if_mount_failed Format SD_MMC card if mount failed.
+   * @return The boolean value indicates the success of operation.
+   */
   bool sdMMCBegin(const char *mountpoint = "/sdcard", bool mode1bit = false, bool format_if_mount_failed = false);
 #endif
 
   /** Get free Heap memory.
-  *
-  * @return Free memory amount in byte.
-  */
+   *
+   * @return Free memory amount in byte.
+   */
   int getFreeHeap();
+
 
   ESPTimeHelper Time;
 
@@ -750,6 +750,7 @@ private:
 
   MB_FS *mbfs = nullptr;
   bool _clockReady = false;
+  time_t ts = 0;
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
@@ -842,11 +843,12 @@ private:
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status_code respCode, int errCode);
   void uploadReport(const char *filename, int &lastProgress, int progress);
   MB_FS *getMBFS();
+  int setTimestamp(time_t ts);
 #endif
 
 #if defined(ENABLE_IMAP)
 
-  RFC2047_Decoder RFC2047Decoder;
+      RFC2047_Decoder RFC2047Decoder;
   int readLine(IMAPSession *imap, char *buf, int bufLen, bool crlf, int &count);
   bool multipartMember(const MB_String &part, const MB_String &check);
   int decodeChar(const char *s);
@@ -919,20 +921,38 @@ public:
   /** Assign custom Client from Arduino Clients.
    *
    * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
-  */
+   */
   void setClient(Client *client);
 
   /** Assign the callback function to handle the server connection for custom Client.
    *
    * @param connectionCB The function that handles the server connection.
-  */
+   */
   void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 
   /** Assign the callback function to handle the server upgrade connection for custom Client.
    *
    * @param upgradeCB The function that handles existing connection upgrade.
-  */
+   */
   void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+
+  /** Assign the callback function to handle the network connection for custom Client.
+   *
+   * @param networkConnectionCB The function that handles the network connection.
+   */
+  void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+
+  /** Assign the callback function to handle the network connection status acknowledgement.
+   *
+   * @param networkStatusCB The function that handle the network connection status acknowledgement.
+   */
+  void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+
+  /** Set the network status acknowledgement.
+   *
+   * @param status The network status.
+   */
+  void setNetworkStatus(bool status);
 
   /** Begin the IMAP server connection.
    *
@@ -941,13 +961,13 @@ public:
    * @param config The pointer to IMAP_Config structured data that keeps the
    * operation options.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 
   /** Close the IMAP session.
    *
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool closeSession();
 
   /** Set to enable the debug.
@@ -957,7 +977,7 @@ public:
    * level = 1, basic debug
    * level = 2, full debug 1
    * level = 333, full debug 2
-  */
+   */
   void debug(int level);
 
   /** Get the list of all the mailbox folders since the TCP session was opened
@@ -967,7 +987,7 @@ public:
    * the
    * FolderInfo structured data.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool getFolders(FoldersCollection &folders);
 
   /** Select or open the mailbox folder to search or fetch the message inside.
@@ -977,10 +997,10 @@ public:
    * option to false when you wish
    * to modify the Flags using the setFlag, addFlag and removeFlag functions.
    * @return The boolean value which indicates the success of operation.
-   * 
-   * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
+   *
+   * @note: the function will exit immediately and return true if the time since previous success folder selection (open)
    * with the same readOnly mode, is less than 5 seconds.
-  */
+   */
   template <typename T = const char *>
   bool selectFolder(T folderName, bool readOnly = true) { return mSelectFolder(toStringPtr(folderName), readOnly); }
 
@@ -991,10 +1011,10 @@ public:
    * option to false when you wish
    * to modify the flags using the setFlag, addFlag and removeFlag functions.
    * @return The boolean value which indicates the success of operation.
-   * 
-   * @note: the function will exit immediately and return true if the time since previous success folder selection (open) 
+   *
+   * @note: the function will exit immediately and return true if the time since previous success folder selection (open)
    * with the same readOnly mode, is less than 5 seconds.
-  */
+   */
   template <typename T = const char *>
   bool openFolder(T folderName, bool readOnly = true) { return mOpenFolder(toStringPtr(folderName), readOnly); }
 
@@ -1002,7 +1022,7 @@ public:
    *
    * @param folderName The known mailbox folder name.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool closeFolder(T folderName) { return mCloseFolder(toStringPtr(folderName)); }
 
@@ -1010,7 +1030,7 @@ public:
    *
    * @param folderName The name of folder to create.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool createFolder(T folderName) { return mCreateFolder(toStringPtr(folderName)); }
 
@@ -1018,7 +1038,7 @@ public:
    *
    * @param folderName The name of folder to delete.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool deleteFolder(T folderName) { return mDeleteFolder(toStringPtr(folderName)); }
 
@@ -1026,18 +1046,18 @@ public:
    *
    * @param msgNum The message number or order in the total message numbers.
    * @return UID number in selected or opened mailbox.
-   * 
+   *
    * @note Returns 0 when fail to get UID.
-  */
+   */
   int getUID(int msgNum);
 
   /** Get message flags in selected or opened mailbox.
    *
    * @param msgNum The message number or order in the total message numbers.
    * @return Message flags in selected or opened mailbox.
-   * 
+   *
    * @note Returns empty string when fail to get flags.
-  */
+   */
   const char *getFlags(int msgNum);
 
   /** Send the custom IMAP command and get the result via callback.
@@ -1045,9 +1065,9 @@ public:
    * @param cmd The command string.
    * @param callback The function that accepts the pointer to const char (const char*) as parameter.
    * @return he boolean value which indicates the success of operation.
-   * 
+   *
    * @note imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
-  */
+   */
   template <typename T = const char *>
   bool sendCustomCommand(T cmd, imapResponseCallback callback) { return mSendCustomCommand(toStringPtr(cmd), callback); }
 
@@ -1057,7 +1077,7 @@ public:
    * list of messages to copy.
    * @param dest The destination folder that the messages to copy to.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   template <typename T = const char *>
   bool copyMessages(MessageList *toCopy, T dest) { return mCopyMessages(toCopy, toStringPtr(dest)); }
 
@@ -1067,22 +1087,22 @@ public:
    * list of messages to delete.
    * @param expunge The boolean option to expunge all messages.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool deleteMessages(MessageList *toDelete, bool expunge = false);
 
   /** Listen for the selected or open mailbox for updates.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool listen() { return mListen(false); };
 
   /** Stop listen for the mailbox for updates.
    * @return The boolean value which indicates the success of operation.
-  */
+   */
   bool stopListen() { return mStopListen(false); };
 
   /** Check for the selected or open mailbox updates.
    * @return The boolean value which indicates the changes status of mailbox.
-  */
+   */
   bool folderChanged();
 
   /** Assign the callback function that returns the operating status when
@@ -1090,12 +1110,12 @@ public:
    *
    * @param imapCallback The function that accepts the imapStatusCallback as
    * parameter.
-  */
+   */
   void callback(imapStatusCallback imapCallback);
 
   /** Determine if no message body contained in the search result and only the
    * message header is available.
-  */
+   */
   bool headerOnly();
 
   /** Get the message list from search or fetch the Emails
@@ -1104,7 +1124,7 @@ public:
    * contents,
    * attachments, inline images, embedded rfc822 messages details for each
    * message.
-  */
+   */
   IMAP_MSG_List data();
 
   /** Get the details of the selected or opned mailbox folder
@@ -1112,25 +1132,31 @@ public:
    * @return The SelectedFolderInfo class which contains the info about flags,
    * total messages, next UID,
    * search count and the available messages count.
-  */
+   */
   SelectedFolderInfo selectedFolder();
 
   /** Get the error details when readingg the Emails
    *
    * @return The string of error details.
-  */
+   */
   String errorReason();
 
   /** Clear all the cache data stored in the IMAP session object.
-  */
+   */
   void empty();
 
-  /** Get the JSON string of file name list of files that stored in SD card. 
+  /** Get the JSON string of file name list of files that stored in SD card.
    *
    * @return The JSON string of filenames.
    * @note This will available only when standard SD library was used and file storage is SD.
-  */
+   */
   String fileList();
+
+  /** Set the current timestamp.
+   *
+   * @param ts The current timestamp.
+   */
+  void setSystemTime(time_t ts);
 
   friend class ESP_Mail_Client;
   friend class foldderList;
@@ -1257,32 +1283,50 @@ public:
   /** Assign custom Client from Arduino Clients.
    *
    * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
-  */
+   */
   void setClient(Client *client);
 
   /** Assign the callback function to handle the server connection for custom Client.
    *
    * @param connectionCB The function that handles the server connection.
-  */
+   */
   void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 
   /** Assign the callback function to handle the server upgrade connection for custom Client.
    *
    * @param upgradeCB The function that handles existing connection upgrade.
-  */
+   */
   void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+
+  /** Assign the callback function to handle the network connection for custom Client.
+   *
+   * @param networkConnectionCB The function that handles the network connection.
+   */
+  void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+
+  /** Assign the callback function to handle the network connection status acknowledgement.
+   *
+   * @param networkStatusCB The function that handle the network connection status acknowledgement.
+   */
+  void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+
+  /** Set the network status acknowledgement.
+   *
+   * @param status The network status.
+   */
+  void setNetworkStatus(bool status);
 
   /** Begin the SMTP server connection.
    *
    * @param session The pointer to ESP_Mail_Session structured data that keeps
    * the server and log in details.
    * @return The boolean value indicates the success of operation.
-  */
+   */
   bool connect(ESP_Mail_Session *session);
 
   /** Close the SMTP session.
    *
-  */
+   */
   bool closeSession();
 
   /** Set to enable the debug.
@@ -1292,21 +1336,27 @@ public:
    * level = 1, basic debug
    * level = 2, full debug 1
    * level = 333, full debug 2
-  */
+   */
   void debug(int level);
 
   /** Get the error details when sending the Email
    *
    * @return The string of error details.
-  */
+   */
   String errorReason();
 
   /** Set the Email sending status callback function.
    *
    * @param smtpCallback The callback function that accept the
    * smtpStatusCallback param.
-  */
+   */
   void callback(smtpStatusCallback smtpCallback);
+
+  /** Set the current timestamp.
+   *
+   * @param ts The current timestamp.
+   */
+  void setSystemTime(time_t ts);
 
   SendingResult sendingResult;
 

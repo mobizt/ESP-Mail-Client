@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.5.
+ * ESP32 TCP Client Library v1.0.6.
  * 
- * February 1, 2022
+ * February 12, 2022
  * 
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -73,8 +73,6 @@ public:
   void networkReconnect();
 
   void networkDisconnect();
-
-  unsigned long getTime();
 
   String fwVersion();
 

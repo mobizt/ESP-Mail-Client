@@ -1,8 +1,8 @@
 /**
  * 
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.3
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.4
  * 
- * February 1, 2022
+ * February 12, 2022
  * 
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -215,12 +215,6 @@ void ESP8266_TCP_Client::networkReconnect()
 void ESP8266_TCP_Client::networkDisconnect()
 {
   WiFi.disconnect();
-}
-
-unsigned long ESP8266_TCP_Client::getTime()
-{
-  now = time(nullptr);
-  return (unsigned long)now;
 }
 
 String ESP8266_TCP_Client::fwVersion()

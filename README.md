@@ -1,4 +1,4 @@
-# Mail Client Arduino Library v2.0.1
+# Mail Client Arduino Library v2.0.2
 
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
@@ -8,7 +8,7 @@ The first, complete and secure Arduino EMail Client library for Espressif's ESP3
 
 This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
 
-The library was tested and work well with ESP32s, ESP8266s, SAMD21s based modules.
+The library was tested and works well with ESP32s, ESP8266s, SAMD21s based modules.
 
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
@@ -65,7 +65,7 @@ This following devices are supported.
 
 ## Custom Client for other Arduino Devices.
 
-Since the new version library allows you to use custom (external) Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
+Since version 2.0.0, library allows you to use custom (external) Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
 
 With external Clients, you needed to set the callback functions to hanle the the server connection and connection upgrade tasks.
 
@@ -164,7 +164,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21120).
 
 ```
-> C: ESP Mail Client v2.0.1, Fw v1.4.8+21120
+> C: ESP Mail Client v2.0.2, Fw v1.4.8+21120
 ```
 
 ## Library Instalation
