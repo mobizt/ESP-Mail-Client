@@ -96,7 +96,7 @@ void WiFiNINA_TCP_Client::networkDisconnect()
   WiFi.disconnect();
 }
 
-unsigned long WiFiNINA_TCP_Client::getTime()
+time_t WiFiNINA_TCP_Client::getTime()
 {
   now = WiFi.getTime();
   return now;

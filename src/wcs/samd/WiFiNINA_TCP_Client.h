@@ -66,7 +66,7 @@ public:
 
   void networkDisconnect();
 
-  unsigned long getTime();
+  time_t getTime();
 
   String fwVersion();
 

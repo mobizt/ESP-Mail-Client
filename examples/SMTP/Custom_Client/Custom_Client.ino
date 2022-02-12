@@ -144,7 +144,7 @@ void setup()
      * basic debug or 1
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
-    smtp.debug(1);
+    smtp.debug(333);
 
     /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);
@@ -174,7 +174,7 @@ void setup()
     message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
     String textMsg = "This is simple plain text message";
-    message.text.content = textMsg;
+    message.text.content = "hiiiiii";
 
     /** The Plain text message character set e.g.
    * us-ascii

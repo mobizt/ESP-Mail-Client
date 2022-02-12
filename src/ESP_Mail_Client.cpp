@@ -1,12 +1,13 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.0.2
+ *   Version:   2.0.3
  *   Released:  February 12, 2022
  *
  *   Updates:
  * - Update custom client features.
  * - Fixed flash string issue.
+ * - Fixed blob and nonCopyContent message sending issue.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -5924,10 +5925,10 @@ bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
 bool ESP_Mail_Client::sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession)
 {
 
-  if (msg->html.content.length() > 0 || msg->html.blob.size > 0 || msg->html.file.name.length() > 0)
+  if (msg->html.content.length() > 0 || strlen(msg->html.nonCopyContent) > 0 || msg->html.blob.size > 0 || msg->html.file.name.length() > 0)
     msg->type |= esp_mail_msg_type_html;
 
-  if (msg->text.content.length() > 0 || msg->text.blob.size > 0 || msg->text.file.name.length() > 0)
+  if (msg->text.content.length() > 0 || strlen(msg->text.nonCopyContent) > 0 || msg->text.blob.size > 0 || msg->text.file.name.length() > 0)
     msg->type |= esp_mail_msg_type_plain;
 
   for (size_t i = 0; i < msg->_rfc822.size(); i++)
@@ -6993,7 +6994,7 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
   if (att->file.path.length() > 0)
   {
     if (att->file.path[0] != '/')
-      filepath=esp_mail_str_202;
+      filepath = esp_mail_str_202;
     filepath += att->file.path;
   }
 
@@ -7005,7 +7006,7 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
     {
       filepath.clear();
       if (att->descr.filename[0] != '/')
-        filepath=esp_mail_str_202;
+        filepath = esp_mail_str_202;
       filepath += att->descr.filename;
     }
 
@@ -7022,7 +7023,7 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
       smtp->_smtpStatus.statusCode = sz;
       smtp->_smtpStatus.text.clear();
 
-      MB_String e=esp_mail_str_185;
+      MB_String e = esp_mail_str_185;
       e += smtp->errorReason().c_str();
       esp_mail_debug_line(e.c_str(), true);
     }
@@ -7057,7 +7058,7 @@ bool ESP_Mail_Client::openFileRead2(SMTPSession *smtp, SMTP_Message *msg, const 
   if (strlen(path) > 0)
   {
     if (path[0] != '/')
-      filepath=esp_mail_str_202;
+      filepath = esp_mail_str_202;
     filepath += path;
   }
 
@@ -7072,7 +7073,7 @@ bool ESP_Mail_Client::openFileRead2(SMTPSession *smtp, SMTP_Message *msg, const 
       smtp->_smtpStatus.statusCode = sz;
       smtp->_smtpStatus.text.clear();
 
-      MB_String e=esp_mail_str_185;
+      MB_String e = esp_mail_str_185;
       e += smtp->errorReason().c_str();
       esp_mail_debug_line(e.c_str(), true);
     }
@@ -7099,7 +7100,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
 
   if (smtp->_debug)
   {
-    MB_String e=esp_mail_str_185;
+    MB_String e = esp_mail_str_185;
     if (storageType == esp_mail_file_storage_type_flash)
       e += esp_mail_str_348;
     else if (storageType == esp_mail_file_storage_type_sd)
@@ -7117,7 +7118,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
   if (imap->_debug)
   {
-    MB_String e=esp_mail_str_185;
+    MB_String e = esp_mail_str_185;
     if (storageType == esp_mail_file_storage_type_flash)
       e += esp_mail_str_348;
     else if (storageType == esp_mail_file_storage_type_sd)
@@ -7144,13 +7145,12 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
       debugInfoP(esp_mail_str_271);
   }
 
-  
   MB_String buf;
   MB_String related = getBoundary(15);
   int cnt = 0;
   SMTP_Attachment *att = nullptr;
 
-  MB_String s=esp_mail_str_33;
+  MB_String s = esp_mail_str_33;
   s += boundary;
   s += esp_mail_str_34;
 
@@ -7177,7 +7177,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
       att = &msg->_att[i];
       if (att->_int.att_type == esp_mail_att_type_inline)
       {
-        s=esp_mail_str_261;
+        s = esp_mail_str_261;
         s += att->descr.filename;
 
         if (smtp->_sendCallback)
@@ -7249,7 +7249,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
     }
   }
 
-  s=esp_mail_str_34;
+  s = esp_mail_str_34;
   s += esp_mail_str_33;
   s += related;
   s += esp_mail_str_33;
@@ -7306,7 +7306,7 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
 
   int len = 0;
 
-  MB_String s1=v;
+  MB_String s1 = v;
 
   if (newline)
   {
@@ -7620,11 +7620,12 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   header += esp_mail_str_34;
 
+
   bool rawBlob = (msg->text.blob.size > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.blob.size > 0 && type == esp_mail_msg_type_html);
   bool rawFile = (msg->text.file.name.length() > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.file.name.length() > 0 && type == esp_mail_msg_type_html);
   bool rawContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && msg->text.content.length() > 0) || (type == esp_mail_msg_type_html && msg->html.content.length() > 0);
   bool nonCopyContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && strlen(msg->text.nonCopyContent) > 0) || (type == esp_mail_msg_type_html && strlen(msg->html.nonCopyContent) > 0);
-
+ 
   if (rawBlob || rawFile || nonCopyContent)
   {
     if (!bdat(smtp, msg, header.length(), false))
@@ -7668,7 +7669,7 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   smtp->_lastProgress = -1;
 
-  if (msg->text.blob.size == 0 && msg->html.blob.size == 0)
+  if (msg->text.blob.size == 0 && msg->html.blob.size == 0 && strlen(msg->text.nonCopyContent) == 0 && strlen(msg->html.nonCopyContent) == 0)
     return true;
 
   bool ret = true;
@@ -7710,11 +7711,12 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   if (base64)
   {
-    MB_String s1=esp_mail_str_325;
+    MB_String s1 = esp_mail_str_325;
     return sendBase64(smtp, msg, (const unsigned char *)raw, len, true, s1.c_str(), smtp->_sendCallback != NULL);
   }
 
   int available = len;
+  int sz = len;
   uint8_t *buf = (uint8_t *)newP(bufLen + 1);
   while (available)
   {
@@ -7740,8 +7742,8 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
     available = len;
     if (smtp->_sendCallback)
     {
-      MB_String s1=esp_mail_str_325;
-      uploadReport(s1.c_str(), smtp->_lastProgress, 100 * pos / len);
+      MB_String s1 = esp_mail_str_325;
+      uploadReport(s1.c_str(), smtp->_lastProgress, 100 * pos / sz);
     }
   }
   delP(&buf);
@@ -7770,7 +7772,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
     {
       if (strcmp(msg->text.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
       {
-        MB_String s1=esp_mail_str_326;
+        MB_String s1 = esp_mail_str_326;
         return sendBase64Stream(smtp, msg, msg->text.file.type, s1.c_str(), smtp->_sendCallback != NULL);
       }
     }
@@ -7809,7 +7811,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
         if (smtp->_sendCallback)
         {
-          MB_String s1=esp_mail_str_326;
+          MB_String s1 = esp_mail_str_326;
           uploadReport(s1.c_str(), smtp->_lastProgress, 100 * writeLen / fileSize);
         }
         writeLen += chunkSize;
@@ -7817,7 +7819,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
       delP(&buf);
       if (smtp->_sendCallback)
       {
-        MB_String s1=esp_mail_str_326;
+        MB_String s1 = esp_mail_str_326;
         uploadReport(s1.c_str(), smtp->_lastProgress, 100);
       }
 
@@ -7834,7 +7836,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
     {
       if (strcmp(msg->html.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
       {
-        MB_String s1=esp_mail_str_326;
+        MB_String s1 = esp_mail_str_326;
         return sendBase64Stream(smtp, msg, msg->html.file.type, s1.c_str(), smtp->_sendCallback != NULL);
       }
     }
@@ -7873,7 +7875,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
         if (smtp->_sendCallback)
         {
-          MB_String s1=esp_mail_str_326;
+          MB_String s1 = esp_mail_str_326;
           uploadReport(s1.c_str(), smtp->_lastProgress, 100 * writeLen / fileSize);
         }
         writeLen += chunkSize;
@@ -7883,7 +7885,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
       if (smtp->_sendCallback)
       {
-        MB_String s1=esp_mail_str_326;
+        MB_String s1 = esp_mail_str_326;
         uploadReport(s1.c_str(), smtp->_lastProgress, 100);
       }
 
@@ -7937,11 +7939,11 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
         if (found != MB_String::npos)
           filename = filename.substr(found + 1);
 
-        fnd=esp_mail_str_136;
+        fnd = esp_mail_str_136;
         fnd += filename;
         fnd += esp_mail_str_136;
 
-        rep=esp_mail_str_136;
+        rep = esp_mail_str_136;
         rep += esp_mail_str_302;
         if (att->descr.content_id.length() > 0)
           rep += att->descr.content_id;
@@ -8130,7 +8132,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
         return false;
     }
 
-    s=esp_mail_str_33;
+    s = esp_mail_str_33;
     s += alt;
     s += esp_mail_str_33;
     s += esp_mail_str_34;
@@ -8307,7 +8309,7 @@ void ESP_Mail_Client::getRFC822PartHeader(SMTPSession *smtp, MB_String &header, 
 
 void ESP_Mail_Client::smtpCBP(SMTPSession *smtp, PGM_P info, bool success)
 {
-  MB_String s= info;
+  MB_String s = info;
   smtpCB(smtp, s.c_str(), success);
 }
 
@@ -8752,7 +8754,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
 
           if (smtp->_debug && strlen(response) >= minResLen)
           {
-            s=esp_mail_str_260;
+            s = esp_mail_str_260;
             if (smtp->_smtpStatus.respCode != esp_mail_smtp_status_code_334)
               s += response;
             else
@@ -8891,7 +8893,7 @@ void ESP_Mail_Client::uploadReport(const char *filename, int &lastProgress, int 
     progress = 100;
   if (lastProgress != progress && (progress == 0 || progress == 100 || lastProgress + ESP_MAIL_PROGRESS_REPORT_STEP <= progress))
   {
-    MB_String s=esp_mail_str_160;
+    MB_String s = esp_mail_str_160;
     s += MBSTRING_FLASH_MCR("\"");
     s += filename;
     s += MBSTRING_FLASH_MCR("\"");
@@ -8906,7 +8908,7 @@ void ESP_Mail_Client::uploadReport(const char *filename, int &lastProgress, int 
 
 MB_String ESP_Mail_Client::getBoundary(size_t len)
 {
-  MB_String tmp=boundary_table;
+  MB_String tmp = boundary_table;
   char *buf = (char *)newP(len);
   if (len)
   {
@@ -9223,7 +9225,7 @@ String SMTPSession::errorReason()
 
   if (_smtpStatus.text.length() > 0 && ret.length() == 0)
   {
-    ret=esp_mail_str_312;
+    ret = esp_mail_str_312;
     ret += _smtpStatus.respCode;
     ret += esp_mail_str_313;
     ret += _smtpStatus.text;
