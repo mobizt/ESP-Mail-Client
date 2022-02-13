@@ -541,7 +541,13 @@ void setup()
 
 ```
 
-To use external Clients, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+### Use external Arduino Clients interfaces
+
+
+By default, the built-in Clients will be used when you compile the library for devices e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module and custom (external) Client will be used for other Arduino compatible devices 
+
+You can change from built-in Clients to external Clients in case of ESP32, ESP8266 and SAMD21 with NINA-W102 by define the following macro in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
 ```cpp
 #define ENABLE_CUSTOM_CLIENT
