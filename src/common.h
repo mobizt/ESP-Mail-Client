@@ -1,5 +1,8 @@
+#pragma once
+
 #ifndef ESP_MAIL_CLIENT_COMMON_H
 #define ESP_MAIL_CLIENT_COMMON_H
+
 
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Error.h"

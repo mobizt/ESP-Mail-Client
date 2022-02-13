@@ -1,5 +1,8 @@
+#pragma once
+
 #ifndef MB_MCU_H
 #define MB_MCU_H
+
 
 #if defined(ESP8266) || defined(ESP32)
 #define MB_MCU_ESP 1

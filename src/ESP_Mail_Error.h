@@ -1,9 +1,11 @@
 /**
  * Created January 22, 2022
  */
+#pragma once
 
 #ifndef ESP_MAIL_ERROR_H
 #define ESP_MAIL_ERROR_H
+
 
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
 #define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)

@@ -1,7 +1,9 @@
+#pragma once
 
 /* Convert specific definitions to MB_FS definitions */
 #ifndef MB_FS_INTERFACES_H
 #define MB_FS_INTERFACES_H
+
 
 #include <Arduino.h>
 

@@ -1,5 +1,9 @@
+#pragma once
+
 #ifndef ESP_Mail_CONFIG_H
 #define ESP_Mail_CONFIG_H
+
+
 #include <Arduino.h>
 #include "extras/MB_MCU.h"
 

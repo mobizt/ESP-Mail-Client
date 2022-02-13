@@ -1,5 +1,9 @@
+#pragma once
+
 #ifndef MIMEInfo_H
 #define MIMEInfo_H
+
+
 #include <Arduino.h>
 
 enum esp_mail_file_extension

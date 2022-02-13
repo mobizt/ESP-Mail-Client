@@ -1,7 +1,7 @@
+#pragma once
 
 #ifndef RFC2047_H
 #define RFC2047_H
-
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
