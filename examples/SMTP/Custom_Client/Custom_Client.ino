@@ -98,7 +98,7 @@ void connectionRequestCallback(const char *host, int port)
 {
     // You may need to set the system timestamp in case of custom client
     // time is used to set the date header while sending email.
-    smtp.setSytemTime(WiFi.getTime());
+    smtp.setSystemTime(WiFi.getTime());
 
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
@@ -159,11 +159,7 @@ void setup()
     session.login.password = AUTHOR_PASSWORD;
     session.login.user_domain = F("mydomain.net");
 
-    /* Set the NTP config time */
-    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    session.time.gmt_offset = 3;
-    session.time.day_light_offset = 0;
-
+    
     /* Declare the message class */
     SMTP_Message message;
 

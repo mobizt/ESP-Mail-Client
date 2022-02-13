@@ -579,10 +579,44 @@ SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&cl
 // Define the global used session config data which used to store the TCP session configuration
 ESP_Mail_Session session;
 
+void networkConnection()
+{
+    // Reset the network connection
+    WiFi.disconnect();
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(300);
+        if (millis() - ms >= 5000)
+        {
+            Serial.println(" failed!");
+            return;
+        }
+    }
+    Serial.println();
+    Serial.print("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+}
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+    // Set the network status
+    smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
+}
+
 //Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
-    
+    // You may need to set the system timestamp in case of custom client
+    // time is used to set the date header while sending email.
+    smtp.setSystemTime(WiFi.getTime());
+
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
     {
@@ -593,13 +627,19 @@ void connectionRequestCallback(const char *host, int port)
 }
 
 //Define the callback function to handle server connection upgrade.
+//This required when connect to port 587 which requires TLS
 void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
 
-    //Connection upgrade code here...
-    //Required for SMTP on port 587. 
+    //Required for SMTP on port 587.
 
+    //Connection upgrade code here...
+
+    //The most client library does not allow user to upgrade the existing connection to secure mode since it
+    //was connected to server in non-secure mode.
+
+    //You may need to edit the clients sources to make this.
 }
 
 
@@ -608,17 +648,7 @@ void setup()
 
   Serial.begin(115200);
 
-  WiFi.begin("<ssid>", "<password>");
-  Serial.print("Connecting to Wi-Fi");
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    Serial.print(".");
-    delay(300);
-  }
-  Serial.println();
-  Serial.print("Connected with IP: ");
-  Serial.println(WiFi.localIP());
-  Serial.println();
+  networkConnection();
 
   // Set the session config
   session.server.host_name = "smtp.gmail.com"; //for outlook.com
@@ -627,10 +657,6 @@ void setup()
   session.login.password = "your Email password"; //set to empty for no SMTP Authentication
   session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
-  // Set the NTP config time
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
-  session.time.gmt_offset = 3;
-  session.time.day_light_offset = 0;
 
   // Define the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
@@ -648,9 +674,14 @@ void setup()
   // Set the message content
   message.text.content = "This is simple plain text message";
   
-  //Set the callback functions to hadle connect to server and upgrade the connection.
+  //Set the callback functions to hadle the required tasks.
   smtp.connectionRequestCallback(connectionRequestCallback);
+
   smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+
+  smtp.networkConnectionRequestCallback(networkConnection);
+
+  smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
 
   // Connect to the server with the defined session and options

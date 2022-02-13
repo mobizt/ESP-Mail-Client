@@ -101,7 +101,7 @@ void networkStatusRequestCallback()
 void connectionRequestCallback(const char *host, int port)
 {
     // You may need to set the system timestamp in case of custom client
-    imap.setSytemTime(WiFi.getTime());
+    imap.setSystemTime(WiFi.getTime());
 
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
@@ -226,9 +226,9 @@ void setup()
     // Set the callback functions to hadle the required tasks.
     imap.connectionRequestCallback(connectionRequestCallback);
 
-    smtp.networkConnectionRequestCallback(networkConnection);
+    imap.networkConnectionRequestCallback(networkConnection);
 
-    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+    imap.networkStatusRequestCallback(networkStatusRequestCallback);
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
