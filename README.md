@@ -73,7 +73,7 @@ Some SMTP port e.g. 587 requires the TLS then the external Clients should be abl
 
 This connection upgrade process is not generally available from Clients, if possible, you need to modify the Clients source code and make it available.
 
-See the [Usage](https://github.com/mobizt/ESP-Mail-Client#usage) section for how to use external Clients.
+See the [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section for how to use external Clients.
 
 
 ## Tested Devices
