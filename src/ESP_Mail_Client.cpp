@@ -400,9 +400,10 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   olen = (count + extra_pad) / 4 * 3;
 
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-
-  pos = out = (unsigned char *)ps_malloc(olen);
-
+  if (ESP.getPsramSize() > 0)
+    pos = out = (unsigned char *)ps_malloc(olen);
+  else
+    pos = out = (unsigned char *)malloc(olen);
 #else
 
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
@@ -7637,12 +7638,11 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   header += esp_mail_str_34;
 
-
   bool rawBlob = (msg->text.blob.size > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.blob.size > 0 && type == esp_mail_msg_type_html);
   bool rawFile = (msg->text.file.name.length() > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.file.name.length() > 0 && type == esp_mail_msg_type_html);
   bool rawContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && msg->text.content.length() > 0) || (type == esp_mail_msg_type_html && msg->html.content.length() > 0);
   bool nonCopyContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && strlen(msg->text.nonCopyContent) > 0) || (type == esp_mail_msg_type_html && strlen(msg->html.nonCopyContent) > 0);
- 
+
   if (rawBlob || rawFile || nonCopyContent)
   {
     if (!bdat(smtp, msg, header.length(), false))
