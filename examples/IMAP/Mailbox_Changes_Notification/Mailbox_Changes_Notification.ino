@@ -79,20 +79,9 @@ ESP_Mail_Session session;
 /* Setup the configuration for searching or fetching operation and its result */
 IMAP_Config config;
 
-void setup()
+void connectWiFi()
 {
-
-    Serial.begin(115200);
-
-#if defined(ARDUINO_ARCH_SAMD)
-    while (!Serial)
-        ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
-#endif
-
-    Serial.println();
+    WiFi.disconnect();
 
     Serial.print("Connecting to AP");
 
@@ -108,13 +97,31 @@ void setup()
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
+}
 
-    /** Enable the debug via Serial port 
+void setup()
+{
+
+    Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+    while (!Serial)
+        ;
+    Serial.println();
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
+    Serial.println();
+
+    connectWiFi();
+
+    /** Enable the debug via Serial port
      * none debug or 0
      * basic debug or 1
-     * 
+     *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Set the callback function to get the reading results */
@@ -140,10 +147,10 @@ void setup()
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
     
-    /** Assign custom internet connection handler function 
-     * in case of lost internet connection. 
+    /** Assign internet connection handler function 
+     * in case of lost internet connection for re-listening the mailbox. 
     */
-    //session.network_connection_handler = connectWiFi;
+    session.network_connection_handler = connectWiFi;
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))

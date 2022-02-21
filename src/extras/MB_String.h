@@ -5,9 +5,9 @@
  * Created February 20, 2022
  *
  * Changes Log
- * 
+ *
  * v1.2.4
- * - Check PSRAM availability before allocating the memory 
+ * - Check PSRAM availability before allocating the memory
  *
  * v1.2.3
  * - Fixed flash string F and PSTR handle
@@ -1595,10 +1595,12 @@ private:
         void *p;
         size_t newLen = getReservedLen(len);
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
+
         if (ESP.getPsramSize() > 0)
             p = (void *)ps_malloc(newLen);
         else
             p = (void *)malloc(newLen);
+
         if (!p)
             return NULL;
 

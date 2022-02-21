@@ -36,7 +36,7 @@
 #include <Arduino.h>
 #include "./ESP_Mail_FS.h"
 
-#if defined(ESP_Mail_USE_PSRAM)
+#if defined(ESP_MAIL_USE_PSRAM)
 #define MB_STRING_USE_PSRAM
 #endif
 

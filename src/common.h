@@ -1810,6 +1810,7 @@ static const char esp_mail_str_345[] PROGMEM = "connection refused";
 static const char esp_mail_str_346[] PROGMEM = "Client is not yet initialized";
 static const char esp_mail_str_347[] PROGMEM = "/header.json";
 static const char esp_mail_str_352[] PROGMEM = "Custom Client is not yet enabled";
+static const char esp_mail_str_353[] PROGMEM = "! W: PSRAM was enabled but not detected.";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
@@ -1818,6 +1819,8 @@ static const char esp_mail_str_349[] PROGMEM = "SD Storage is not ready.";
 static const char esp_mail_str_350[] PROGMEM = "File is still opened.";
 static const char esp_mail_str_351[] PROGMEM = "File not found.";
 #endif
+
+
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
