@@ -1,8 +1,7 @@
 #pragma once
 
-#ifndef ESP_MAIL_CLIENT_COMMON_H
-#define ESP_MAIL_CLIENT_COMMON_H
-
+#ifndef ESP_MAIL_CONST_H
+#define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Error.h"
@@ -116,7 +115,7 @@ struct esp_mail_content_transfer_encoding_t
     static constexpr const char *enc_8bit = "8bit";
 
     /* The binary transfer encoding for extended-US-ASCII characters with no line
-   * length limit*/
+     * length limit*/
     static constexpr const char *enc_binary = "binary";
 };
 
@@ -126,10 +125,10 @@ struct esp_mail_file_message_content_t
     MB_String name;
 
     /** The type of file storages e.g.
-   * esp_mail_file_storage_type_none,
-   * esp_mail_file_storage_type_flash, and
-   * esp_mail_file_storage_type_sd
-  */
+     * esp_mail_file_storage_type_none,
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     esp_mail_file_storage_type type = esp_mail_file_storage_type_flash;
 };
 
@@ -152,9 +151,9 @@ struct esp_mail_smtp_embed_message_body_t
     MB_String filename;
 
     /** The embedded type
-   * esp_mail_smtp_embed_message_type_attachment or 0
-   * esp_mail_smtp_embed_message_type_inline or 1
-  */
+     * esp_mail_smtp_embed_message_type_attachment or 0
+     * esp_mail_smtp_embed_message_type_inline or 1
+     */
     esp_mail_smtp_embed_message_type type = esp_mail_smtp_embed_message_type_attachment;
 };
 
@@ -317,8 +316,8 @@ enum esp_mail_smtp_status_code
 
     /* Positive Intermediate */
     esp_mail_smtp_status_code_334 = 334, //(Server challenge - the text part
-                                         //contains the Base64 - encoded
-                                         //challenge)[RFC 4954]
+                                         // contains the Base64 - encoded
+                                         // challenge)[RFC 4954]
     esp_mail_smtp_status_code_354 = 354, // Start mail input
 
     /* Transient Negative Completion */
@@ -384,10 +383,10 @@ struct esp_mail_smtp_msg_response_t
     MB_String return_path;
 
     /** The Delivery Status Notifications e.g. esp_mail_smtp_notify_never,
-   * esp_mail_smtp_notify_success,
-   * esp_mail_smtp_notify_failure, and
-   * esp_mail_smtp_notify_delay
-  */
+     * esp_mail_smtp_notify_success,
+     * esp_mail_smtp_notify_failure, and
+     * esp_mail_smtp_notify_delay
+     */
     int notify = esp_mail_smtp_notify::esp_mail_smtp_notify_never;
 };
 
@@ -410,9 +409,9 @@ struct esp_mail_attach_file_t
 {
     MB_String path;
     /** The file storage type e.g. esp_mail_file_storage_type_none,
-   * esp_mail_file_storage_type_flash, and
-   * esp_mail_file_storage_type_sd
-  */
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     esp_mail_file_storage_type storage_type = esp_mail_file_storage_type_none;
 };
 
@@ -690,7 +689,7 @@ struct esp_mail_imap_capability_t
 {
     bool imap4 = false;
     bool imap4rev1 = false;
-    //rfc2177
+    // rfc2177
     bool idle = false;
 };
 
@@ -717,62 +716,62 @@ struct esp_mail_imap_rfc822_msg_header_item_t
 struct esp_mail_imap_descrete_media_type_t
 {
     /** textual information with subtypes
-   * "plain"
-   * "enriched" (rfc 1896 revised from richtext in rfc 1341)
-   *
-   * unrecognized subtypes and charset should be interpreted as
-   * application/octet-stream
-   *
-   * parameters:
-   * "charset" (rfc 2045) default is us-ascii
-   * for character set includes 8-bit characters
-   * and such characters are used in the body, Content-Transfer-Encoding
-   * header field and a corresponding encoding on the data are required
-   *
-   * ISO-8859-X where "X" is to be replaced, as
-   * necessary, for the parts of ISO-8859 [ISO-8859].
-  */
+     * "plain"
+     * "enriched" (rfc 1896 revised from richtext in rfc 1341)
+     *
+     * unrecognized subtypes and charset should be interpreted as
+     * application/octet-stream
+     *
+     * parameters:
+     * "charset" (rfc 2045) default is us-ascii
+     * for character set includes 8-bit characters
+     * and such characters are used in the body, Content-Transfer-Encoding
+     * header field and a corresponding encoding on the data are required
+     *
+     * ISO-8859-X where "X" is to be replaced, as
+     * necessary, for the parts of ISO-8859 [ISO-8859].
+     */
     static constexpr const char *text = "text";
 
     /** image data with subtypes (rfc 2048)
-   * "jpeg"
-   * "gif"
-   *
-   * unrecognized subtypes should be interpreted as application/octet-stream
-  */
+     * "jpeg"
+     * "gif"
+     *
+     * unrecognized subtypes should be interpreted as application/octet-stream
+     */
     static constexpr const char *image = "image";
 
     /** audio data with initial subtype
-   * "baic" -- for single channel audio encoded using 8bit ISDN mu-law [PCM]
-   * at a sample rate of 8000 Hz.
-   *
-   * Unrecognized subtypes of "audio" should at a miniumum be treated as
-   * "application/octet-stream"
-  */
+     * "baic" -- for single channel audio encoded using 8bit ISDN mu-law [PCM]
+     * at a sample rate of 8000 Hz.
+     *
+     * Unrecognized subtypes of "audio" should at a miniumum be treated as
+     * "application/octet-stream"
+     */
     static constexpr const char *audio = "audio";
 
     /** video data with initial subtype
-   * "mpeg"
-   *
-   * Unrecognized subtypes of "video" should at a minumum be treated as
-   * "application/octet-stream"
-  */
+     * "mpeg"
+     *
+     * Unrecognized subtypes of "video" should at a minumum be treated as
+     * "application/octet-stream"
+     */
     static constexpr const char *video = "video";
 
     /** some other kind of data, typically either
-   * uninterpreted binary data or information to be
-   * processed by an application with subtypes
-   *
-   * "octet-stream" -- uninterpreted binary data
-   * "PostScript" -- for the transport of PostScript material
-   *
-   * Other expected uses include spreadsheets, data for mail-based
-   * scheduling systems, and languages for "active" (computational)
-   * messaging, and word processing formats that are not directly readable.
-   *
-   * The octet-stream subtype parameters:
-   * TYPE, PADDING, NAME
-  */
+     * uninterpreted binary data or information to be
+     * processed by an application with subtypes
+     *
+     * "octet-stream" -- uninterpreted binary data
+     * "PostScript" -- for the transport of PostScript material
+     *
+     * Other expected uses include spreadsheets, data for mail-based
+     * scheduling systems, and languages for "active" (computational)
+     * messaging, and word processing formats that are not directly readable.
+     *
+     * The octet-stream subtype parameters:
+     * TYPE, PADDING, NAME
+     */
     static constexpr const char *application = "application";
 };
 
@@ -786,37 +785,37 @@ struct esp_mail_imap_descrete_media_type_t
  * text as per RFC 2047) and data within the body parts can be encoded
  * on a part-by-part basis, with Content-Transfer-Encoding fields for
  * each appropriate body part.
-*/
+ */
 struct esp_mail_imap_composite_media_type_t
 {
     /** data consisting of multiple entities of independent data types
-   * The Content-Type field for multipart entities requires one parameter,
-   * "boundary".
-   * The boundary delimiter line is then defined as a line
-   * consisting entirely of two hyphen characters ("-", decimal value 45)
-   * followed by the boundary parameter value from the Content-Type header
-   * field, optional linear whitespace, and a terminating CRLF.
-   *
-   * NOTE: The CRLF preceding the boundary delimiter line is conceptually
-   * attached to the boundary so that it is possible to have a part that
-   * does not end with a CRLF (line  break).  Body parts that must be
-   * considered to end with line breaks, therefore, must have two CRLFs
-   * preceding the boundary delimiter line, the first of which is part of
-   * the preceding body part, and the second of which is part of the
-   * encapsulation boundary.
-   *
-   * Boundary delimiters must not appear within the encapsulated material,
-   * and must be no longer than 70 characters, not counting the two
-   * leading hyphens.
-   *
-   * The boundary delimiter line following the last body part is a
-   * distinguished delimiter that indicates that no further body parts
-   * will follow.  Such a delimiter line is identical to the previous
-   * delimiter lines, with the addition of two more hyphens after the
-   * boundary parameter value.
-   *
-   * See rfc2049 Appendix A for a Complex Multipart Example
-  */
+     * The Content-Type field for multipart entities requires one parameter,
+     * "boundary".
+     * The boundary delimiter line is then defined as a line
+     * consisting entirely of two hyphen characters ("-", decimal value 45)
+     * followed by the boundary parameter value from the Content-Type header
+     * field, optional linear whitespace, and a terminating CRLF.
+     *
+     * NOTE: The CRLF preceding the boundary delimiter line is conceptually
+     * attached to the boundary so that it is possible to have a part that
+     * does not end with a CRLF (line  break).  Body parts that must be
+     * considered to end with line breaks, therefore, must have two CRLFs
+     * preceding the boundary delimiter line, the first of which is part of
+     * the preceding body part, and the second of which is part of the
+     * encapsulation boundary.
+     *
+     * Boundary delimiters must not appear within the encapsulated material,
+     * and must be no longer than 70 characters, not counting the two
+     * leading hyphens.
+     *
+     * The boundary delimiter line following the last body part is a
+     * distinguished delimiter that indicates that no further body parts
+     * will follow.  Such a delimiter line is identical to the previous
+     * delimiter lines, with the addition of two more hyphens after the
+     * boundary parameter value.
+     *
+     * See rfc2049 Appendix A for a Complex Multipart Example
+     */
     static constexpr const char *multipart = "multipart";
 
     /* an encapsulated message */
@@ -843,11 +842,11 @@ struct esp_mail_imap_multipart_sub_type_t
     static constexpr const char *parallel = "parallel";
 
     /* multipart entities in which each part has a default type of
-   * "message/rfc822" */
+     * "message/rfc822" */
     static constexpr const char *digest = "digest";
 
     /* for compound objects consisting of several inter-related body parts (rfc
-   * 2387) */
+     * 2387) */
     static constexpr const char *related = "related";
 
     /* rfc 3462 */
@@ -858,11 +857,11 @@ struct esp_mail_imap_multipart_sub_type_t
 struct esp_mail_imap_message_sub_type_t
 {
     /* body contains  an encapsulated message, with the syntax of an RFC 822
-   * message. */
+     * message. */
     static constexpr const char *rfc822 = "rfc822";
 
     /* to allow large objects to be delivered as several separate pieces of mail
-   */
+     */
     static constexpr const char *Partial = "Partial";
 
     /* the actual body data are not included, but merely referenced */
@@ -876,35 +875,35 @@ struct esp_mail_imap_message_sub_type_t
  * Parameters:
  * "filename", "creation-date","modification-date",
  * "read-date", * "size"
-*/
+ */
 struct esp_mail_imap_content_disposition_type_t
 {
     /** if it is intended to be displayed automatically
-   * upon display of the message.
-  */
+     * upon display of the message.
+     */
     static constexpr const char *inline_ = "inline";
 
     /** to indicate that they are separate from the main body
-   * of the mail message, and that their display should not
-   * be automatic, but contingent upon some further action of the user.
-  */
+     * of the mail message, and that their display should not
+     * be automatic, but contingent upon some further action of the user.
+     */
     static constexpr const char *attachment = "attachment";
 };
 
 /* IMAP polling status */
 typedef struct esp_mail_imap_polling_status_t
 {
-    /** The type of status e.g. imap_polling_status_type_undefined, imap_polling_status_type_new_message, 
-   * imap_polling_status_type_fetch_message and imap_polling_status_type_remove_message.
-  */
+    /** The type of status e.g. imap_polling_status_type_undefined, imap_polling_status_type_new_message,
+     * imap_polling_status_type_fetch_message and imap_polling_status_type_remove_message.
+     */
     esp_mail_imap_polling_status_type type = imap_polling_status_type_undefined;
 
     /** Message number or order from the total number of message that added, fetched or deleted.
-  */
+     */
     size_t messageNum = 0;
 
     /** Argument of commands e.g. FETCH
-  */
+     */
     MB_String argument;
 } IMAP_Polling_Status;
 
@@ -1050,8 +1049,8 @@ struct esp_mail_imap_limit_config_t
     size_t search = 10;
 
     /** The maximum size of the memory buffer to store the message content.
-   * This is only limit for data to be stored in the IMAPSession.
-  */
+     * This is only limit for data to be stored in the IMAPSession.
+     */
     size_t msg_size = 1024;
 
     /* The maximum size of each attachment to download */
@@ -1060,10 +1059,10 @@ struct esp_mail_imap_limit_config_t
     /* The IMAP idle timeout in ms (1 min to 29 min). Default is 10 min */
     size_t imap_idle_timeout = 10 * 60 * 1000;
 
-    /** The IMAP idle host check interval in ms (30 sec to imap_idle_timeout) 
-   * for internet availability checking to ensure the connection is active. 
-   * Default is 1 min.
-  */
+    /** The IMAP idle host check interval in ms (30 sec to imap_idle_timeout)
+     * for internet availability checking to ensure the connection is active.
+     * Default is 1 min.
+     */
     size_t imap_idle_host_check_interval = 60 * 1000;
 };
 
@@ -1073,10 +1072,10 @@ struct esp_mail_imap_storage_config_t
     MB_String saved_path;
 
     /** The type of file storages e.g.
-   * esp_mail_file_storage_type_none,
-   * esp_mail_file_storage_type_flash, and
-   * esp_mail_file_storage_type_sd
-  */
+     * esp_mail_file_storage_type_none,
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     esp_mail_file_storage_type type = esp_mail_file_storage_type_flash;
 };
 
@@ -1141,21 +1140,21 @@ struct esp_mail_imap_msg_item_t
     const char *from = "";
 
     /* The charset of the mailbox of message author */
-    //deprecated
+    // deprecated
     const char *fromCharset = "";
 
     /* The primary recipient mailbox (RFC 4021) */
     const char *to = "";
 
     /* The charset of the primary recipient mailbox */
-    //deprecated
+    // deprecated
     const char *toCharset = "";
 
     /* The Carbon-copy recipient mailboxes (RFC 4021) */
     const char *cc = "";
 
     /* The charset of the Carbon-copy recipient mailbox header */
-    //deprecated
+    // deprecated
     const char *ccCharset = "";
 
     /* The message date and time (RFC 4021) */
@@ -1165,7 +1164,7 @@ struct esp_mail_imap_msg_item_t
     const char *subject = "";
 
     /* The topic of message charset */
-    //deprecated
+    // deprecated
     const char *subjectCharset = "";
 
     /* The message flags */
@@ -1183,7 +1182,7 @@ struct esp_mail_imap_msg_item_t
     const char *sender;
 
     /* The charset of the sender Email */
-    //deprecated
+    // deprecated
     const char *senderCharset = "";
 
     /* The keywords or phrases, separated by commas */
@@ -1205,7 +1204,7 @@ struct esp_mail_imap_msg_item_t
     const char *reply_to;
 
     /* The charset of the Blind carbon-copy recipient mailbox header */
-    //deprecated
+    // deprecated
     const char *bccCharset = "";
 
     /* The error description from fetching the message */
@@ -1356,7 +1355,7 @@ struct esp_mail_session_config_t
  * enc_base64 or "base64"
  * enc_binary or "binary"
  * enc_8bit or "8bit"
-*/
+ */
 typedef struct esp_mail_content_transfer_encoding_t Content_Transfer_Encoding;
 
 /* The session configuations */
@@ -1718,7 +1717,7 @@ static const char esp_mail_imap_response_13[] PROGMEM = "AUTH=XOAUTH2";
 static const char esp_mail_imap_response_14[] PROGMEM = "STARTTLS";
 static const char esp_mail_imap_response_15[] PROGMEM = "CRAM-MD5";
 static const char esp_mail_imap_response_16[] PROGMEM = "DIGEST-MD5";
-static const char esp_mail_imap_response_17[] PROGMEM = "IDLE"; //rfc2177
+static const char esp_mail_imap_response_17[] PROGMEM = "IDLE"; // rfc2177
 static const char esp_mail_imap_response_18[] PROGMEM = "IMAP4";
 static const char esp_mail_imap_response_19[] PROGMEM = "IMAP4rev1";
 
@@ -1819,8 +1818,6 @@ static const char esp_mail_str_349[] PROGMEM = "SD Storage is not ready.";
 static const char esp_mail_str_350[] PROGMEM = "File is still opened.";
 static const char esp_mail_str_351[] PROGMEM = "File not found.";
 #endif
-
-
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 

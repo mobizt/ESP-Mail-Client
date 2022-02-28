@@ -1,14 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.0.4
- *   Released:  February 21, 2022
+ *   Version:   2.1.0
+ *   Released:  February 28, 2022
  *
  *   Updates:
- * - Fixed ESP32 PSRAM compile guards.
- * - Fixed memory allocation error when PSRAM was enabled but not detected.
- * - Update examples.
- * - Update string class.
+ * - Change files structure.
+ * - Fixed Arduino IDE compile error.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -233,7 +231,7 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginH, PGM_P endH, int beg
 }
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-void ESP_Mail_Client::setSecure(TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
+void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
 {
 
   client.setMBFS(mbfs);
@@ -400,10 +398,9 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   olen = (count + extra_pad) / 4 * 3;
 
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-  if (ESP.getPsramSize() > 0)
-    pos = out = (unsigned char *)ps_malloc(olen);
-  else
-    pos = out = (unsigned char *)malloc(olen);
+
+  pos = out = (unsigned char *)ps_malloc(olen);
+
 #else
 
 #if defined(ESP8266_USE_EXTERNAL_HEAP)
@@ -7638,11 +7635,12 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   header += esp_mail_str_34;
 
+
   bool rawBlob = (msg->text.blob.size > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.blob.size > 0 && type == esp_mail_msg_type_html);
   bool rawFile = (msg->text.file.name.length() > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.file.name.length() > 0 && type == esp_mail_msg_type_html);
   bool rawContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && msg->text.content.length() > 0) || (type == esp_mail_msg_type_html && msg->html.content.length() > 0);
   bool nonCopyContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && strlen(msg->text.nonCopyContent) > 0) || (type == esp_mail_msg_type_html && strlen(msg->html.nonCopyContent) > 0);
-
+ 
   if (rawBlob || rawFile || nonCopyContent)
   {
     if (!bdat(smtp, msg, header.length(), false))

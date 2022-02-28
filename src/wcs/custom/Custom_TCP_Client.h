@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.1.
+ * The custom TCP Client Class v1.0.2.
  *
- * February 12, 2022
+ * February 28, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -37,12 +37,12 @@
 #include <Arduino.h>
 #include "./wcs/base/TCP_Client_Base.h"
 
-class Custom_Client : public TCP_Client_Base
+class Custom_TCP_Client : public TCP_Client_Base
 {
 
 public:
-    Custom_Client(){};
-    ~Custom_Client()
+    Custom_TCP_Client(){};
+    ~Custom_TCP_Client()
     {
         if (wcs)
             wcs->stop();

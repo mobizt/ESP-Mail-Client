@@ -1,19 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "2.0.4"
+#define ESP_MAIL_VERSION "2.1.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.0.4
- *   Released:  February 21, 2022
+ *   Version:   2.1.0
+ *   Released:  February 28, 2022
  *
  *   Updates:
- * - Fixed ESP32 PSRAM compile guards.
- * - Fixed memory allocation error when PSRAM was enabled but not detected.
- * - Update examples.
- * - Update string class.
+ * - Change files structure.
+ * - Fixed Arduino IDE compile error.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -86,14 +84,14 @@
 #define ESP_MAIL_MIN_MEM 3000
 #define UPLOAD_CHUNKS_NUM 5
 
-#include "extras/print/printf.h"
+#include "extras/print/printf_alt.h"
 
-extern "C" __attribute__((weak)) void _putchar(char c)
+extern "C" __attribute__((weak)) void _putchar_alt(char c)
 {
   ESP_MAIL_DEFAULT_DEBUG_PORT.print(c);
 }
 
-#define ESP_MAIL_PRINTF printf
+#define ESP_MAIL_PRINTF printf_alt
 
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
@@ -104,7 +102,7 @@ extern char *__brkval;
 
 #endif
 
-#include "wcs/clients.h"
+#include "wcs/ESP_TCP_Clients.h"
 
 using namespace mb_string;
 
@@ -113,8 +111,6 @@ class SMTPSession;
 class SMTP_Status;
 class DownloadProgress;
 class MessageData;
-
-#include "common.h"
 
 #if defined(ENABLE_IMAP)
 
@@ -765,7 +761,7 @@ private:
   void createDirs(MB_String dirs);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  void setSecure(TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert);
+  void setSecure(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert);
 #endif
 
   size_t getReservedLen(size_t len);
@@ -1228,7 +1224,7 @@ private:
   std::shared_ptr<const char> _caCert = nullptr;
 #endif
 
-  TCP_CLIENT client;
+  ESP_MAIL_TCP_CLIENT client;
 
   IMAP_Status _cbData;
 };
@@ -1391,7 +1387,7 @@ private:
   std::shared_ptr<const char> _caCert = nullptr;
 #endif
 
-  TCP_CLIENT client;
+  ESP_MAIL_TCP_CLIENT client;
 };
 
 #endif

@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 1.0.1
+ * TCP Client Base class, version 1.0.2
  *
- * February 12, 2022
+ * February 28, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -29,7 +29,7 @@
 #define TCP_CLIENT_BASE_H
 
 #include <Arduino.h>
-#include "./common.h"
+#include "ESP_Mail_Const.h"
 #include <IPAddress.h>
 #include <Client.h>
 
