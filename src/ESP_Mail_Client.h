@@ -1,17 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "2.1.0"
+#define ESP_MAIL_VERSION "2.1.1"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.0
+ *   Version:   2.1.1
  *   Released:  February 28, 2022
  *
  *   Updates:
- * - Change files structure.
- * - Fixed Arduino IDE compile error.
+ * - Update printf functions.
+ * - Fixed Arduino IDE compiler warning.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -84,14 +84,15 @@
 #define ESP_MAIL_MIN_MEM 3000
 #define UPLOAD_CHUNKS_NUM 5
 
-#include "extras/print/printf_alt.h"
+#include "extras/mb_print/mb_print.h"
 
-extern "C" __attribute__((weak)) void _putchar_alt(char c)
+extern "C" __attribute__((weak)) void
+mb_print_putchar(char c)
 {
   ESP_MAIL_DEFAULT_DEBUG_PORT.print(c);
 }
 
-#define ESP_MAIL_PRINTF printf_alt
+#define ESP_MAIL_PRINTF mb_print_printf
 
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
