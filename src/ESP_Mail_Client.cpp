@@ -674,7 +674,10 @@ void ESP_Mail_Client::decodeHeader(MB_String &headerField)
   {
     p2 = headerField.find("?", p1 + 2);
     if (p2 != MB_String::npos)
+    {
       headerEnc = headerField.substr(p1 + 2, p2 - p1 - 2);
+      headerEnc.toLowerCase();
+    }
   }
 
   int bufSize = 512;
