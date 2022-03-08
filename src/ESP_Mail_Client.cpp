@@ -676,7 +676,6 @@ void ESP_Mail_Client::decodeHeader(MB_String &headerField)
     if (p2 != MB_String::npos)
     {
       headerEnc = headerField.substr(p1 + 2, p2 - p1 - 2);
-      headerEnc.toLowerCase();
     }
   }
 
@@ -711,9 +710,9 @@ esp_mail_char_decoding_scheme ESP_Mail_Client::getEncodingFromCharset(const char
 {
   esp_mail_char_decoding_scheme scheme = esp_mail_char_decoding_scheme_default;
 
-  if (strposP(enc, esp_mail_str_237, 0) > -1 || strposP(enc, esp_mail_str_231, 0) > -1 || strposP(enc, esp_mail_str_226, 0) > -1)
+  if (strposP(enc, esp_mail_str_237, 0, false) > -1 || strposP(enc, esp_mail_str_231, 0, false) > -1 || strposP(enc, esp_mail_str_226, 0, false) > -1)
     scheme = esp_mail_char_decoding_scheme_tis620;
-  else if (strposP(enc, esp_mail_str_227, 0) > -1)
+  else if (strposP(enc, esp_mail_str_227, 0, false) > -1)
     scheme = esp_mail_char_decoding_scheme_iso8859_1;
 
   return scheme;
