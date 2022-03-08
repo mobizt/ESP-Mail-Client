@@ -1131,7 +1131,7 @@ public:
         if (_reserve(len, true))
             buf[len] = '\0';
     }
-
+    
     MB_String &replace(size_t pos, size_t len, const char *replace)
     {
         size_t repLen = strlen(replace);
