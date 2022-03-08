@@ -1132,6 +1132,11 @@ public:
             buf[len] = '\0';
     }
 
+    void toLowerCase()
+    {
+	    strlwr(buf);
+    }
+    
     MB_String &replace(size_t pos, size_t len, const char *replace)
     {
         size_t repLen = strlen(replace);
