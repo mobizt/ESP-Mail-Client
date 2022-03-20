@@ -62,17 +62,17 @@ This following devices are supported.
  * W5500 SPI Ethernet module
 
 
-## Custom Client for other Arduino Devices.
+## Support other Arduino devices using external Clients.
 
-Since version 2.0.0, library allows you to use custom (external) Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
+Since version 2.0.0, library allows you to use custom (external) Arduino Clients interfaces e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
 
 With external Clients, you needed to set the callback functions to hanle the the server connection and connection upgrade tasks.
 
 Some SMTP port e.g. 587 requires the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
 
-This connection upgrade process is not generally available from Clients, if possible, you need to modify the Clients source code and make it available.
+This connection upgrade process is generally not available from Clients, if possible, you need to modify the Clients to make it available.
 
-See the [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section for how to use external Clients.
+See [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section for how to use external Clients.
 
 
 ## Tested Devices
@@ -102,7 +102,9 @@ See the [Use external Arduino Clients interfaces](#use-external-arduino-clients-
  * Raspberry Pi Pico 
 
 
-## Prerequisites (for built-in Client)
+## Prerequisites
+
+This section is for the built-in Client to update the Core SDK or install the firmware for full functionality supports.
 
 ### ESP32 and ESP8266
 
@@ -114,11 +116,13 @@ The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
 ### SAMD21
 
-For Atmel's SAMD21 based boards, [custom built WiFiNINA firmware](https://github.com/mobizt/nina-fw) is needed to be installed instead of official Arduino WiFiNINA firmware.
+For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) is needed to be installed instead of official Arduino WiFiNINA firmware.
 
-#### Comparison between custom built and official WiFiNINA firmwares.
+This requirement is optional and has the beneits over the standard Arduino firmware.
 
-| Options | Custom Built Firmware | Arduino Official Firmware |
+#### Comparison between custom build and official WiFiNINA firmwares.
+
+| Options | Custom build Firmware | Arduino Official Firmware |
 | ------------- | ------------- | ------------- |
 | Plain connection via port 25, 143  | Yes  | Yes  |
 | Secure (SSL) connection via port 465, 993  | Yes  | Yes  |
@@ -129,10 +133,10 @@ For Atmel's SAMD21 based boards, [custom built WiFiNINA firmware](https://github
 *Require root certificate of Email server which is available in Arduino IDE's WiFi101 /WiFiNINA Firmware Updater tool.
 
 
-### Install Custom Built WiFiNINA Firmware
+### Install Custom Build WiFiNINA Firmware
 
 
-To install custom built WiFiNINA firmware, please follow the following instructions.
+To install custom build WiFiNINA firmware, please follow the following instructions.
 
 1. Install flash tool, esptool.py from [here](https://github.com/espressif/esptool). To instal esptool python script, you will need either [Python 2.7 or Python 3.4 or newer](https://www.python.org/downloads/) installed on your system.
 
@@ -160,7 +164,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 ![esptool command](/media/images/esptool.png)
 
 
-If the custom built WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by built number (+21120).
+If the custom build WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by build number (+21120).
 
 ```
 > C: ESP Mail Client v2.1.1, Fw v1.4.8+21120
@@ -181,7 +185,7 @@ Go to menu **Files** -> **Examples** -> **ESP-Mail-Client-master** and choose on
 
 ## Memory Options for ESP8266
 
-This section that mention about the memory settings is optional.
+This section is optional for memory settings in IDE.
 
 When you update the ESP8266 Arduino Core SDK to v3.0.0, the memory can be configurable from IDE.
 
@@ -272,7 +276,7 @@ This macro was defined by default when you installed or update the library.
 
 ## Memory Options for ESP32
 
-This section that mention about the memory settings is optional.
+This section is optional for memory settings in IDE.
 
 In ESP32 module that has PSRAM installed, you can enable it and set the library to use this external memory instead.
 
@@ -332,19 +336,18 @@ In ESP8266 and ESP32, when no attachments require for uploading and downloading,
 ## Usage
 
 
-See [Full Examples](/examples) for complete usages.
+See [examples folder](/examples) for all usage examples.
 
-See [Function Description](/src/README.md) for all available functions.
+See [src/README.md](/src/README.md) for the function description.
 
 
 The following examples showed the minimum usage which many options are not configured.
-
-The examples in the examples folder provided the full options usages.
 
 
 
 ### Send Email
 
+The following code will send email with image attachment.
 
 ```C++
 
@@ -376,10 +379,10 @@ void setup()
   Serial.println();
 
   // Set the session config
-  session.server.host_name = "smtp.office365.com"; //for outlook.com
+  session.server.host_name = "smtp.office365.com"; // for outlook.com
   session.server.port = 587;
-  session.login.email = "your Email address"; //set to empty for no SMTP Authentication
-  session.login.password = "your Email password"; //set to empty for no SMTP Authentication
+  session.login.email = "your Email address"; // set to empty for no SMTP Authentication
+  session.login.password = "your Email password"; // set to empty for no SMTP Authentication
   session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
   // Set the NTP config time
@@ -441,6 +444,7 @@ void setup()
 
 ### Read Email
 
+The following code will read the latest email.
 
 ```C++
 
@@ -550,6 +554,11 @@ void setup()
 ```
 
 
+### Get Incoming Message Notification and Reading
+
+See examples/IMAP/Mailbox_Changes_Notification.ino
+
+
 ### Use external Arduino Clients interfaces
 
 
@@ -578,10 +587,10 @@ The examle will send message using Gmail, then you need to add Gmail server ceti
 
 #include <WiFi101.h>
 
-//Define the global used Client object
+// Define the global used Client object
 WiFiSSLClient client;
 
-//Define the global used smtp object 
+// Define the global used smtp object 
 SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
 
 // Define the global used session config data which used to store the TCP session configuration
@@ -618,7 +627,7 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-//Define the callback function to handle server connection
+// Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
     // You may need to set the system timestamp in case of custom client
@@ -634,20 +643,20 @@ void connectionRequestCallback(const char *host, int port)
     Serial.println("success.");
 }
 
-//Define the callback function to handle server connection upgrade.
-//This required when connect to port 587 which requires TLS
+// Define the callback function to handle server connection upgrade.
+// This required when connect to port 587 which requires TLS
 void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
 
-    //Required for SMTP on port 587.
+    // Required for SMTP on port 587.
 
-    //Connection upgrade code here...
+    // Connection upgrade code here...
 
-    //The most client library does not allow user to upgrade the existing connection to secure mode since it
-    //was connected to server in non-secure mode.
+    // The most client library does not allow user to upgrade the existing connection 
+    // to secure mode since it was connected to server in non-secure mode.
 
-    //You may need to edit the clients sources to make this.
+    // You may need to edit the clients sources to make this.
 }
 
 
@@ -682,7 +691,7 @@ void setup()
   // Set the message content
   message.text.content = "This is simple plain text message";
   
-  //Set the callback functions to hadle the required tasks.
+  // Set the callback functions to hadle the required tasks.
   smtp.connectionRequestCallback(connectionRequestCallback);
 
   smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
