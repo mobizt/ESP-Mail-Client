@@ -556,7 +556,7 @@ void setup()
 
 ### Get Incoming Message Notification and Reading
 
-See examples/IMAP/Mailbox_Changes_Notification.ino
+See [Mailbox_Changes_Notification.ino](/examples/IMAP/Mailbox_Changes_Notification.ino) in examples folder.
 
 
 ### Use external Arduino Clients interfaces
