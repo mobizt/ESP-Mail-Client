@@ -492,8 +492,9 @@ void setup()
 
 
   // Define the message UID (number) which required to fetch or read the message
-  //In this case we will get the UID from the max message number (lastest message)
-  //then imap.getUID and imap.selectedFolder().msgCount() should be called after calling select or open the folder (mailbox).
+  // In this case we will get the UID from the max message number (lastest message)
+  // then imap.getUID and imap.selectedFolder().msgCount() should be called after 
+  // calling select or open the folder (mailbox).
   config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
   // Define the empty search criteria to disable the messsage search
