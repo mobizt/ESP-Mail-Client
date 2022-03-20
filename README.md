@@ -2,8 +2,7 @@
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-
-The first, complete and secure Arduino EMail Client library for Espressif's ESP32 and ESP8266, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module to send and read Email through the SMTP and IMAP servers.
+⚡️Arduino Mail Client Library to send, read and get incoming mail notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
 
 This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
 
@@ -12,7 +11,7 @@ The library was tested and works well with ESP32s, ESP8266s, SAMD21s based modul
 This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
 
 
-This library has built-in WiFi client and aim to be complete Email client that can send and read Email with no restrictions and no indirect Email proxy (Email sending server) services needed. 
+This library has built-in WiFi client and aim to be full functionality Email client that can send, read and get Email notification without other indirect Email proxy services needed. 
 
 
 External Arduino Client can be used which this allows other devices (with minimum 80k flash space) to work with this library.
