@@ -478,12 +478,7 @@ void setup()
   // Define the config class variable for searching or fetching operation and store the messsagess data
   IMAP_Config config;
 
-  // Define the message UID which required to fetch or read the message
-  config.fetch.uid = "100";
-
-  // Define the empty search criteria to disable the messsage search
-  config.search.criteria.clear();
-
+  
   // Set to enable the message content which will be stored in the IMAP_Config data
   config.enable.html = true;
   config.enable.text = true;
@@ -494,6 +489,15 @@ void setup()
 
   // Open or select the mailbox folder to read the message
   imap.selectFolder("INBOX");
+
+
+  // Define the message UID (number) which required to fetch or read the message
+  //In this case we will get the UID from the max message number (lastest message)
+  //then imap.getUID and imap.selectedFolder().msgCount() should be called after calling select or open the folder (mailbox).
+  config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
+
+  // Define the empty search criteria to disable the messsage search
+  config.search.criteria.clear();
 
 
   // Read the Email and close the session
@@ -650,7 +654,7 @@ void setup()
   networkConnection();
 
   // Set the session config
-  session.server.host_name = "smtp.gmail.com"; //for outlook.com
+  session.server.host_name = "smtp.gmail.com"; //for gmail.com
   session.server.port = 465;
   session.login.email = "your Email address"; //set to empty for no SMTP Authentication
   session.login.password = "your Email password"; //set to empty for no SMTP Authentication
