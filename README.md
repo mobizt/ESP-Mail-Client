@@ -1,8 +1,8 @@
-# Mail Client Arduino Library v2.1.1
+# E-Mail Client Arduino Library v2.1.1
 
 [![Join the chat at https://gitter.im/mobizt/ESP_Mail_Client](https://badges.gitter.im/mobizt/ESP_Mail_Client.svg)](https://gitter.im/mobizt/ESP_Mail_Client?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-⚡️Arduino Mail Client Library to send, read and get incoming mail notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
+⚡️Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
 
 This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
 
