@@ -67,7 +67,7 @@ Since version 2.0.0, library allows you to use custom (external) Arduino Clients
 
 With external Clients, you needed to set the callback functions to hanle the the server connection and connection upgrade tasks.
 
-Some SMTP port e.g. 587 requires the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
+Some ports e.g. 587 for SMTP and 143 for IMAP require the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
 
 This connection upgrade process is generally not available from Clients, if possible, you need to modify the Clients to make it available.
 
