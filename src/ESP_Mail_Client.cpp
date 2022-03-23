@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.1
- *   Released:  February 28, 2022
+ *   Version:   2.1.2
+ *   Released:  March 24, 2022
  *
  *   Updates:
- * - Update printf functions.
- * - Fixed Arduino IDE compiler warning.
+ * - Fixed IMAP STARTTLS command issue #160.
+ * - Fixed IMAP greeting issue.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -1636,6 +1636,24 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 
   imap->client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 
+  // wait for greeting
+  unsigned long dataMs = millis();
+  while (imap->client.connected() && imap->client.available() == 0 && millis() - dataMs < 2000)
+  {
+    delay(0);
+  }
+
+  int chunkBufSize = imap->client.available();
+
+  if (chunkBufSize > 0)
+  {
+    char *buf = (char *)newP(chunkBufSize + 1);
+    imap->client.readBytes(buf, chunkBufSize);
+    if (imap->_debugLevel > esp_mail_debug_level_1)
+      esp_mail_debug((const char *)buf);
+    delP(&buf);
+  }
+
   if (imap->_readCallback)
     imapCBP(imap, esp_mail_str_54, false);
 
@@ -1664,7 +1682,12 @@ init:
       esp_mail_debug(s.c_str());
     }
 
-    imapSendP(imap, esp_mail_str_311, false);
+    s = esp_mail_str_27;
+    s += esp_mail_str_131;
+    s += esp_mail_str_311;
+
+    imapSend(imap, s.c_str(), false);
+
     imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_starttls;
     if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
       return false;
@@ -7637,12 +7660,11 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
   header += esp_mail_str_34;
 
-
   bool rawBlob = (msg->text.blob.size > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.blob.size > 0 && type == esp_mail_msg_type_html);
   bool rawFile = (msg->text.file.name.length() > 0 && (type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched)) || (msg->html.file.name.length() > 0 && type == esp_mail_msg_type_html);
   bool rawContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && msg->text.content.length() > 0) || (type == esp_mail_msg_type_html && msg->html.content.length() > 0);
   bool nonCopyContent = ((type == esp_mail_msg_type_plain || type == esp_mail_msg_type_enriched) && strlen(msg->text.nonCopyContent) > 0) || (type == esp_mail_msg_type_html && strlen(msg->html.nonCopyContent) > 0);
- 
+
   if (rawBlob || rawFile || nonCopyContent)
   {
     if (!bdat(smtp, msg, header.length(), false))
