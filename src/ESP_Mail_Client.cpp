@@ -1860,135 +1860,54 @@ void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error)
 
 size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
 {
+  int sent = 0;
+  
   if (!reconnect(imap))
   {
     closeTCPSession(imap);
-    return 0;
+    return sent;
   }
 
   if (!connected(imap))
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
+    return sent;
   }
 
   if (!imap->_tcpConnected)
   {
     errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
+    return sent;
   }
 
-  int len = 0;
 
   MB_String s = v;
 
-  if (newline)
+  int toSend = newline ? s.length() + 2 : s.length();
+
+  if (imap->_debugLevel > esp_mail_debug_level_2)
+    esp_mail_debug_line(s.c_str(), newline);
+    
+  sent = newline ? imap->client.println(s.c_str()) : imap->client.print(s.c_str());
+
+  if(sent != toSend)
   {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(s.c_str());
-    len = imap->client.println(s.c_str());
-  }
-  else
-  {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(s.c_str(), false);
-    len = imap->client.print(s.c_str());
+    errorStatusCB(imap, sent);
+    sent = 0;
   }
 
-  if (len != (int)s.length() && len != (int)s.length() + 2)
-  {
-    errorStatusCB(imap, len);
-    len = 0;
-  }
-
-  return len;
+  return sent;
 }
 
 size_t ESP_Mail_Client::imapSend(IMAPSession *imap, const char *data, bool newline)
 {
-  if (!reconnect(imap))
-  {
-    closeTCPSession(imap);
-    return 0;
-  }
-
-  if (!connected(imap))
-  {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
-  }
-
-  if (!imap->_tcpConnected)
-  {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
-  }
-
-  int len = 0;
-
-  if (newline)
-  {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(data);
-    len = imap->client.println(data);
-  }
-  else
-  {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(data, false);
-    len = imap->client.print(data);
-  }
-
-  if (len != (int)strlen(data) && len != (int)strlen(data) + 2)
-  {
-    errorStatusCB(imap, len);
-    len = 0;
-  }
-  return len;
+  return imapSendP(imap, data, newline);
 }
 
 size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
 {
-  if (!reconnect(imap))
-  {
-    closeTCPSession(imap);
-    return 0;
-  }
-
-  if (!connected(imap))
-  {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
-  }
-
-  if (!imap->_tcpConnected)
-  {
-    errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
-  }
-
-  int len = 0;
-
-  if (newline)
-  {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(num2Str(data, 0));
-    len = imap->client.println(data);
-  }
-  else
-  {
-    if (imap->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(num2Str(data, 0), false);
-    len = imap->client.print(data);
-  }
-
-  if (len != (int)strlen(num2Str(data, 0)) && len != (int)strlen(num2Str(data, 0)) + 2)
-  {
-    errorStatusCB(imap, len);
-    len = 0;
-  }
-
-  return len;
+  MB_String s = data;
+  return imapSendP(imap, s.c_str(), newline);
 }
 
 bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flag, uint8_t action, bool closeSession)
@@ -5727,7 +5646,7 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 
 init:
 
-  // Sending greeting hello response
+  // Sending greeting helo response
   if (smtp->_sendCallback)
   {
     smtpCB(smtp, "");
@@ -5737,6 +5656,7 @@ init:
   if (smtp->_debug)
     debugInfoP(esp_mail_str_239);
 
+  // ESMTP (rfc2821) support? send EHLO first
   s = esp_mail_str_6;
   if (smtp->_sesson_cfg->login.user_domain.length() > 0)
     s += smtp->_sesson_cfg->login.user_domain;
@@ -5750,6 +5670,7 @@ init:
 
   if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, 0))
   {
+    // just SMTP (rfc821), send HELO
     s = esp_mail_str_5;
     if (smtp->_sesson_cfg->login.user_domain.length() > 0)
       s += smtp->_sesson_cfg->login.user_domain;
@@ -7326,136 +7247,53 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
 
 size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
 {
+  int sent = 0;
+
   if (!reconnect(smtp))
   {
     closeTCPSession(smtp);
-    return 0;
+    return sent;
   }
 
   if (!connected(smtp))
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
+    return sent;
   }
 
   if (!smtp->_tcpConnected)
   {
     errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
+    return sent;
   }
 
-  int len = 0;
+  MB_String s = v;
 
-  MB_String s1 = v;
+  int toSend = newline ? s.length() + 2 : s.length();
 
-  if (newline)
+  if (smtp->_debugLevel > esp_mail_debug_level_2)
+    esp_mail_debug_line(s.c_str(), newline);
+
+  sent = newline ? smtp->client.println(s.c_str()) : smtp->client.print(s.c_str());
+
+  if (sent != toSend)
   {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(s1.c_str());
-    len = smtp->client.println(s1.c_str());
-  }
-  else
-  {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(s1.c_str(), false);
-    len = smtp->client.print(s1.c_str());
+    errorStatusCB(smtp, sent);
+    sent = 0;
   }
 
-  if (len != (int)s1.length() && len != (int)s1.length() + 2)
-  {
-    errorStatusCB(smtp, len);
-    len = 0;
-  }
-
-  return len;
+  return sent;
 }
 
 size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, const char *data, bool newline)
 {
-  if (!reconnect(smtp))
-  {
-    closeTCPSession(smtp);
-    return 0;
-  }
-
-  if (!connected(smtp))
-  {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
-  }
-
-  if (!smtp->_tcpConnected)
-  {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
-  }
-
-  int len = 0;
-
-  if (newline)
-  {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(data);
-    len = smtp->client.println(data);
-  }
-  else
-  {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(data, false);
-    len = smtp->client.print(data);
-  }
-
-  if (len != (int)strlen(data) && len != (int)strlen(data) + 2)
-  {
-    errorStatusCB(smtp, len);
-    len = 0;
-  }
-
-  return len;
+  return smtpSendP(smtp, data, newline);
 }
 
 size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
 {
-  if (!reconnect(smtp))
-  {
-    closeTCPSession(smtp);
-    return 0;
-  }
-
-  if (!connected(smtp))
-  {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-    return 0;
-  }
-
-  if (!smtp->_tcpConnected)
-  {
-    errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-    return 0;
-  }
-
-  int len = 0;
-
-  if (newline)
-  {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug(num2Str(data, 0));
-    len = smtp->client.println(data);
-  }
-  else
-  {
-    if (smtp->_debugLevel > esp_mail_debug_level_2)
-      esp_mail_debug_line(num2Str(data, 0), false);
-    len = smtp->client.print(data);
-  }
-
-  if (len != (int)strlen(num2Str(data, 0)) && len != (int)strlen(num2Str(data, 0)) + 2)
-  {
-    errorStatusCB(smtp, len);
-    len = 0;
-  }
-
-  return len;
+  MB_String s = data;
+  return smtpSendP(smtp, s.c_str(), newline);
 }
 
 size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
@@ -7478,17 +7316,15 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
     return 0;
   }
 
-  size_t len = 0;
+  size_t sent = smtp->client.write(data, size);
 
-  len = smtp->client.write(data, size);
-
-  if (len != size)
+  if (sent != size)
   {
-    errorStatusCB(smtp, len);
-    len = 0;
+    errorStatusCB(smtp, sent);
+    sent = 0;
   }
 
-  return len;
+  return sent;
 }
 
 bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
