@@ -2923,6 +2923,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
       imap->_mbif._polling_status.type = imap_polling_status_type_undefined;
       imap->_mbif._idleTimeMs = 0;
       imap->_nextUID.clear();
+      imap->_unseenMsgIndex.clear();
     }
 
     if (imap->_imap_cmd == esp_mail_imap_cmd_search)
@@ -3864,6 +3865,24 @@ void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
         strncpy(tmp, buf + p1 + strlen_P(esp_mail_str_200), p2 - p1 - strlen_P(esp_mail_str_200));
         imap->_nextUID = tmp;
         imap->_mbif._nextUID = atoi(tmp);
+        delP(&tmp);
+      }
+      return;
+    }
+  }
+
+  if (imap->_unseenMsgIndex.length() == 0)
+  {
+    p1 = strposP(buf, esp_mail_str_354, 0);
+    if (p1 != -1)
+    {
+      p2 = strposP(buf, esp_mail_str_219, p1 + strlen_P(esp_mail_str_354));
+      if (p2 != -1)
+      {
+        tmp = (char *)newP(p2 - p1 - strlen_P(esp_mail_str_354) + 1);
+        strncpy(tmp, buf + p1 + strlen_P(esp_mail_str_354), p2 - p1 - strlen_P(esp_mail_str_354));
+        imap->_unseenMsgIndex = tmp;
+        imap->_mbif._unseenMsgIndex = atoi(tmp);
         delP(&tmp);
       }
       return;
@@ -5299,8 +5318,6 @@ const char *IMAPSession::getFlags(int msgNum)
 
 bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback)
 {
-  if (_currentFolder.length() == 0)
-    return false;
 
   _customCmdResCallback = callback;
 

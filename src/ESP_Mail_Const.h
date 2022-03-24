@@ -1698,6 +1698,7 @@ static const char esp_mail_str_339[] PROGMEM = "> C: polling established";
 static const char esp_mail_str_340[] PROGMEM = "Mailbox listening stopped";
 static const char esp_mail_str_341[] PROGMEM = "> C: mailbox listening stopped";
 static const char esp_mail_str_342[] PROGMEM = " FETCH (UID ";
+static const char esp_mail_str_354[] PROGMEM = " [UNSEEN ";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "$ OK ";

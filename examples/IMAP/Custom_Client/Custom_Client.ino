@@ -305,6 +305,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
     /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
+    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
 }

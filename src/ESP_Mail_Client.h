@@ -160,6 +160,9 @@ public:
   /* Get the predict next message UID */
   size_t nextUID() { return _nextUID; };
 
+  /* Get the index of first unseen message */
+  size_t unseenIndex() { return _unseenMsgIndex; };
+
   /* Get the numbers of messages from search result based on the search criteria
    */
   size_t searchCount() { return _searchCount; };
@@ -190,6 +193,7 @@ private:
   size_t _msgCount = 0;
   size_t _recentCount = 0;
   size_t _nextUID = 0;
+  size_t _unseenMsgIndex = 0;
   size_t _searchCount = 0;
   size_t _availableItems = 0;
   unsigned long _idleTimeMs = 0;
@@ -1194,6 +1198,7 @@ private:
   bool _mailboxOpened = false;
   unsigned long _lastSameFolderOpenMillis = 0;
   MB_String _nextUID;
+  MB_String _unseenMsgIndex;
   MB_String _flags_tmp;
   MB_String _sdFileList;
 
