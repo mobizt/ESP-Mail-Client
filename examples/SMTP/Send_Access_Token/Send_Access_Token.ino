@@ -110,12 +110,13 @@ void setup()
   Serial.println();
 
   /** Enable the debug via Serial port
-   * none debug or 0
-   * basic debug or 1
-   * 
+   * esp_mail_debug_level_0 or 0 for no debugging
+   * esp_mail_debug_level_1 or 1 for basic level debugging
+   * esp_mail_debug_level_2 or 2 for all level debugging
+   *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
   */
-  smtp.debug(1);
+  smtp.debug(esp_mail_debug_level_1);
 
   /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);

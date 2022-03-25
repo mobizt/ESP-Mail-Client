@@ -80,8 +80,8 @@ enum esp_mail_debug_level
 {
     esp_mail_debug_level_0 = 0,
     esp_mail_debug_level_1,
-    esp_mail_debug_level_2 = 222,
-    esp_mail_debug_level_3 = 333
+    esp_mail_debug_level_2,
+    esp_mail_debug_level_3
 };
 
 enum esp_mail_msg_part_xencoding
