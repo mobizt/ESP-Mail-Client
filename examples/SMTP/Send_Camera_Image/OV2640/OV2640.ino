@@ -92,13 +92,12 @@ void setup()
     initCam();
 
     /** Enable the debug via Serial port
-     * esp_mail_debug_level_0 or 0 for no debugging
-     * esp_mail_debug_level_1 or 1 for basic level debugging
-     * esp_mail_debug_level_2 or 2 for all level debugging
+     * 0 for no debugging
+     * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
     */
-    smtp.debug(esp_mail_debug_level_1);
+    smtp.debug(1);
 
     /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);

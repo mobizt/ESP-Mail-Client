@@ -1649,7 +1649,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   {
     char *buf = (char *)newP(chunkBufSize + 1);
     imap->client.readBytes(buf, chunkBufSize);
-    if (imap->_debugLevel > esp_mail_debug_level_1)
+    if (imap->_debugLevel > esp_mail_debug_level_basic)
       esp_mail_debug((const char *)buf);
     delP(&buf);
   }
@@ -1861,7 +1861,7 @@ void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error)
 size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
 {
   int sent = 0;
-  
+
   if (!reconnect(imap))
   {
     closeTCPSession(imap);
@@ -1880,17 +1880,16 @@ size_t ESP_Mail_Client::imapSendP(IMAPSession *imap, PGM_P v, bool newline)
     return sent;
   }
 
-
   MB_String s = v;
 
   int toSend = newline ? s.length() + 2 : s.length();
 
-  if (imap->_debugLevel > esp_mail_debug_level_2)
+  if (imap->_debugLevel > esp_mail_debug_level_maintener)
     esp_mail_debug_line(s.c_str(), newline);
-    
+
   sent = newline ? imap->client.println(s.c_str()) : imap->client.print(s.c_str());
 
-  if(sent != toSend)
+  if (sent != toSend)
   {
     errorStatusCB(imap, sent);
     sent = 0;
@@ -2972,7 +2971,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         if (readLen)
         {
 
-          if (imap->_debugLevel > esp_mail_debug_level_1)
+          if (imap->_debugLevel > esp_mail_debug_level_basic)
           {
             if (imap->_imap_cmd != esp_mail_imap_cmd_search && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_text && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_attachment && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_inline)
               esp_mail_debug((const char *)response);
@@ -2984,7 +2983,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
           if (imapResp != esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
           {
 
-            if (imap->_debugLevel > esp_mail_debug_level_1)
+            if (imap->_debugLevel > esp_mail_debug_level_basic)
             {
               if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
                 esp_mail_debug((const char *)response);
@@ -3681,7 +3680,7 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
     if (readLen > 0)
     {
 
-      if (imap->_debugLevel > esp_mail_debug_level_1)
+      if (imap->_debugLevel > esp_mail_debug_level_basic)
         esp_mail_debug((const char *)buf);
 
       char *tmp = nullptr;
@@ -4488,16 +4487,14 @@ bool IMAPSession::connect(ESP_Mail_Session *session, IMAP_Config *config)
 
 void IMAPSession::debug(int level)
 {
-  if (level > esp_mail_debug_level_0)
+  if (level > esp_mail_debug_level_none)
   {
-    if (level > esp_mail_debug_level_3)
-      level = esp_mail_debug_level_1;
     _debugLevel = level;
     _debug = true;
   }
   else
   {
-    _debugLevel = esp_mail_debug_level_0;
+    _debugLevel = esp_mail_debug_level_none;
     _debug = false;
   }
 }
@@ -7288,7 +7285,7 @@ size_t ESP_Mail_Client::smtpSendP(SMTPSession *smtp, PGM_P v, bool newline)
 
   int toSend = newline ? s.length() + 2 : s.length();
 
-  if (smtp->_debugLevel > esp_mail_debug_level_2)
+  if (smtp->_debugLevel > esp_mail_debug_level_maintener)
     esp_mail_debug_line(s.c_str(), newline);
 
   sent = newline ? smtp->client.println(s.c_str()) : smtp->client.print(s.c_str());
@@ -8624,7 +8621,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
                 strcpy(response, r.c_str());
               }
 
-              if (smtp->_debugLevel > esp_mail_debug_level_1)
+              if (smtp->_debugLevel > esp_mail_debug_level_basic)
                 esp_mail_debug((const char *)response);
             }
 
@@ -8999,16 +8996,14 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
 
 void SMTPSession::debug(int level)
 {
-  if (level > esp_mail_debug_level_0)
+  if (level > esp_mail_debug_level_none)
   {
-    if (level > esp_mail_debug_level_3)
-      level = esp_mail_debug_level_1;
     _debugLevel = level;
     _debug = true;
   }
   else
   {
-    _debugLevel = esp_mail_debug_level_0;
+    _debugLevel = esp_mail_debug_level_none;
     _debug = false;
   }
 }
