@@ -63,6 +63,16 @@ IMAPSession imap;
 
 void customCommandCallback(const char *res)
 {
+    // The server responses will included tagged and/or untagged data.
+
+    // Tagged data is the status which begins with command identifier (tag) i.e. "A01" in this case.
+    // Tagged status responses included OK, NO, BAD, PREAUTH and BYE.
+
+    // Untagged data is the information or result of the request which begins with *
+
+    // When you send multiple commands with different tag simultaneously, 
+    // tag will be used as command identifier. 
+
     Serial.print("< S: ");
     Serial.println(res);
 }
@@ -131,6 +141,11 @@ void setup()
     /* Send custom command to fetch message no.1 for UID */
     Serial.println("Send custom command to fetch message no.1 for UID");
     Serial.println("---------------------");
+
+    // A01 is command identifier or tag which can be any string.
+    // Any command that required the mailbox access,
+    // the mailbox should be selected or opened before sending the command.
+    // Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol.
 
     imap.sendCustomCommand(F("A01 FETCH 1 UID"), customCommandCallback);
 }

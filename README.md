@@ -555,7 +555,16 @@ void setup()
 
 ### Get Incoming Message Notification and Reading
 
-See [Mailbox_Changes_Notification.ino](/examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino) in examples folder.
+See [Mailbox_Changes_Notification.ino](/examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino) for the example.
+
+
+### Sending Custom IMAP commands
+
+Can't find what you want from exising IMAP functions, sending custom command was supported.
+
+Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol commands.
+
+See [Custom_Command.ino](/examples/IMAP/Custom_Command/Custom_Command.ino) for the example.
 
 
 ### Use external Arduino Clients interfaces
