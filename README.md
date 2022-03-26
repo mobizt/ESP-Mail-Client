@@ -1,7 +1,9 @@
 ![ESP Mail](/media/images/esp-mail-client.svg)
 
 
-![Compile](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_library.yml/badge.svg) ![Examples](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_examples.yml/badge.svg) [![arduino-library-badge](https://www.ardu-badge.com/badge/ESP%20Mail%20Client.svg?)](https://www.ardu-badge.com/ESP%20Mail%20Client) ![PlatformIO](https://badges.registry.platformio.org/packages/mobizt/library/ESP%20Mail%20Client.svg)
+![Compile](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_library.yml/badge.svg) ![Examples](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_examples.yml/badge.svg) 
+
+[![arduino-library-badge](https://www.ardu-badge.com/badge/ESP%20Mail%20Client.svg?)](https://www.ardu-badge.com/ESP%20Mail%20Client) ![PlatformIO](https://badges.registry.platformio.org/packages/mobizt/library/ESP%20Mail%20Client.svg)
 
 
 Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
