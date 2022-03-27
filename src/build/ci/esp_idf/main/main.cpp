@@ -3,12 +3,3 @@
 SMTPSession smtp;
 
 
-extern "C" void app_main()
-{
-    
-    ESP_Mail_Session session;
-
-    SMTP_Message message;
-
-   
-}
