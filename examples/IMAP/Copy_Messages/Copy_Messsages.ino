@@ -9,10 +9,6 @@
  *
 */
 
-/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
- * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
-*/
-
 /** For ESP8266, with BearSSL WiFi Client 
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory 
@@ -26,7 +22,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
+//Other Client defined here
 //To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 //See the example Custom_Client.ino for how to use.
 
@@ -38,6 +34,20 @@
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
+
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+ * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
+ *
+ * Some Gmail user still not able to sign in using account password even above options were set up,
+ * for this case, use "App Password" to sign in instead.
+ * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
+*/
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"

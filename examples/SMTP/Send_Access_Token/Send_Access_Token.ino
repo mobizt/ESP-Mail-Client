@@ -24,7 +24,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
+//Other Client defined here
 //To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 //See the example Custom_Client.ino for how to use.
 

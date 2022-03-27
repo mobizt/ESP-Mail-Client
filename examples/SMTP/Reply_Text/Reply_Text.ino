@@ -18,9 +18,6 @@
 //The account 1 will poll the mailbox for incoming message, when new message received with matched subject 
 //and sent from account 1, the account 1 will send a reply messsage to account 2.
 
-/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
- * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
-*/
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -29,7 +26,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
+//Other Client defined here
 //To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 //See the example Custom_Client.ino for how to use.
 
@@ -40,6 +37,19 @@
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
+/** For Gmail, to send Email via port 465 (SSL), less secure app option
+ * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
+ *
+ * Some Gmail user still not able to sign in using account password even above option was set up,
+ * for this case, use "App Password" to sign in instead.
+ * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
+*/
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<imap host for account 1>"
@@ -58,8 +68,6 @@
 */
 #define REPLY_SMTP_PORT 587
 #define REPLY_SMTP_HOST "<smtp host for account 1>"
-
-
 
 
 #define HELLO_SMTP_AUTHOR_EMAIL "<email for account 2>"

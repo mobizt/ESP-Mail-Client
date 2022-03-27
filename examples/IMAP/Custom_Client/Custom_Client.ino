@@ -12,10 +12,6 @@
 /** This example shows how to read E-mail with external Client.
  * This example used SAMD21 device and WiFiNINA as the client.
  * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
- */
-
-/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
- * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
 */
 
 #include <Arduino.h>
@@ -30,6 +26,20 @@
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
+
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+ * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
+ *
+ * Some Gmail user still not able to sign in using account password even above options were set up,
+ * for this case, use "App Password" to sign in instead.
+ * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
+*/
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"

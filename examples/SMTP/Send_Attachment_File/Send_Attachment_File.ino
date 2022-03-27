@@ -13,10 +13,6 @@
  *
 */
 
-/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
- * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
-*/
-
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and 
  * change the config for that card interfaces in src/addons/SDHelper.h
 */
@@ -29,7 +25,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
+//Other Client defined here
 //To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 //See the example Custom_Client.ino for how to use.
 
@@ -45,12 +41,21 @@
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
-/** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com
- * For yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+/** For Gmail, to send Email via port 465 (SSL), less secure app option
+ * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
+ *
+ * Some Gmail user still not able to sign in using account password even above option was set up,
+ * for this case, use "App Password" to sign in instead.
+ * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
  * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
- * and use the app password as password with your yahoo mail account to login.
- * The google app password signin is also available https://support.google.com/mail/answer/185833?hl=en
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
 */
+
+/** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
 /** The smtp port e.g. 

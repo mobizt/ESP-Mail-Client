@@ -9,11 +9,6 @@
  *
 */
 
-/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
- * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
-*/
-
-
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and 
  * change the config for that card interfaces in src/addons/SDHelper.h
 */
@@ -25,7 +20,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
+//Other Client defined here
 //To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 //See the example Custom_Client.ino for how to use.
 
@@ -38,6 +33,20 @@
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
+
+/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
+ * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
+ *
+ * Some Gmail user still not able to sign in using account password even above options were set up,
+ * for this case, use "App Password" to sign in instead.
+ * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
+*/
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
@@ -140,15 +149,6 @@ void setup()
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 
-    /* Set seen flag */
-    //config.fetch.set_seen = true;
-
-    /* Search criteria */
-    config.search.criteria.clear();
-
-    /* Also search the unseen message */
-    config.search.unseen_msg = true;
-
     /* Set the storage to save the downloaded files and attachments */
     config.storage.saved_path = F("/email_data");
 
@@ -221,6 +221,16 @@ void setup()
      * In this case we will get the UID from the max message number (lastest message) 
     */
     config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
+
+    /* Set seen flag */
+
+    // The message with "Seen" flagged means the message was already read or seen by user.
+    // The default value of this option is set to false.
+    // If you want to set the message flag as "Seen", set this option to true.
+    // If this option is false, the message flag was unchanged.
+    // To set or remove flag from message, see Set_Flags.ino example.
+
+    // config.fetch.set_seen = true;
 
     /* Read or search the Email and close the session */
 
