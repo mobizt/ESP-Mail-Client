@@ -80,5 +80,5 @@ jobs:
       - name: Build example
         run: |
           source esp-idf/export.sh
-          cd buid/ci/esp_idf
+          cd build/ci/esp_idf
           idf.py build
