@@ -170,13 +170,45 @@ If the custom build WiFiNINA firmware was installed, the debug message will show
 ## Library Instalation
 
 
-Click on **Clone or download** dropdown at the top of repository, select **Download ZIP** and save file on your computer.
+### Using Library Manager
+
+At Arduino IDE, go to menu **Sketch** -> **Include Library** -> **Manage Libraries...**
+
+In Library Manager Window, search **"ESP Mail Client"** in the search form then select **"ESP Mail Client"**. 
+
+Click **"Install"** button.
+
+
+
+For PlatformIO IDE.
+
+Go to **PIO Home** -> **Libraries** -> **Registry** then search **ESP Mail Client**.
+
+
+If you ever installed this library in Global storage in PlatformIO version prior to v2.0.0 and you have updated the PlatformIO to v2.0.0 and later, the global library installation was not available, the sources files of old library version still be able to search by the library dependency finder (LDF), you needed to remove the library from folder **C:\Users\\<UserName\>\\.platformio\lib** to prevent unexpected behavior when compile and run.
+
+
+
+### Manual installation
+
+
+Click on **Code** dropdown at the top of repository, select **Download ZIP** and save file on your computer.
 
 From Arduino IDE, goto menu **Sketch** -> **Include Library** -> **Add .ZIP Library...** and choose **ESP-Mail-Client-master.zip** that previously downloaded.
 
-Go to menu **Files** -> **Examples** -> **ESP-Mail-Client-master** and choose one from examples
+Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
+
+Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
 
 
+
+### Important Note for Manual Installation in Arduino IDE
+
+Folder renaming to **ESP_Mail_Client** was required for making the library can be updated via Library Manager without problems.
+
+Without folder renaming, when you update the library via Library Manager, library will be updated to the another folder named  **ESP-Mail-Client-master** which leads to compilation error when there are two different versions of library found in the libraries folder and can cause the conflicts when file structures and functions changed in the newer version. 
+
+In this case, you need to delete **ESP-Mail-Client-master** folder from libraries folder.
 
 
 
@@ -587,7 +619,7 @@ In your sketch, you need to pass the Client's object pointer to the IMAPSession 
 
 The below example will use Arduino MKR 1000 and set WiFi101 for Client.
 
-The examle will send message using Gmail, then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
+The example will send message using Gmail, then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
 
 ```cpp
 
