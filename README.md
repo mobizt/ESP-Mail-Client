@@ -12,8 +12,6 @@ This library allows sending and reading Email with various attachments supported
 
 The library was tested and works well with ESP32s, ESP8266s, SAMD21s based modules.
 
-This library was developed to replace the deprecated ESP32 Mail Client library with more options and features, better reliability and also conforms to the RFC standards.
-
 
 This library has built-in WiFi client and aim to be full functionality Email client that can send, read and get Email notification without other indirect Email proxy services needed. 
 
@@ -164,7 +162,7 @@ The flash (upload) result shows in the command prompt window will look similar t
 If the custom build WiFiNINA firmware was installed, the debug message will show the library version with WiFiNINA firmware version which followed by build number (+21120).
 
 ```
-> C: ESP Mail Client v2.1.2, Fw v1.4.8+21120
+> C: ESP Mail Client v2.x.x, Fw v1.4.8+21120
 ```
 
 ## Library Instalation

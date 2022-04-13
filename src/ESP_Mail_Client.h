@@ -1,17 +1,17 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "2.1.2"
+#define ESP_MAIL_VERSION "2.1.3"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.2
- *   Released:  March 24, 2022
+ *   Version:   2.1.3
+ *   Released:  April 13, 2022
  *
  *   Updates:
- * - Fixed IMAP STARTTLS command issue #160.
- * - Fixed IMAP greeting issue.
+ * - Fixed SMTP AUTH LOGIN issue in ESP8266.
+ * - Update examples.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -1329,10 +1329,8 @@ public:
   /** Set to enable the debug.
    *
    * @param level The level to enable the debug message
-   * level = 0, no debug
-   * level = 1, basic debug
-   * level = 2, full debug 1
-   * level = 333, full debug 2
+   * level = 0, no debugging
+   * level = 1, basic level debugging
    */
   void debug(int level);
 

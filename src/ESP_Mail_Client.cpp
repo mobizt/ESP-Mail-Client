@@ -1,12 +1,12 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.2
- *   Released:  March 24, 2022
+ *   Version:   2.1.3
+ *   Released:  April 13, 2022
  *
  *   Updates:
- * - Fixed IMAP STARTTLS command issue #160.
- * - Fixed IMAP greeting issue.
+ * - Fixed SMTP AUTH LOGIN issue in ESP8266.
+ * - Update examples.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -8649,13 +8649,11 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status
             else
             {
               // base64 response
-              size_t olen;
+              size_t olen = 0;
               char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
               if (decoded && olen > 0)
               {
-                olen += s.length();
-                s += decoded;
-                s[olen] = 0;
+                s.append(decoded, olen);
                 delP(&decoded);
               }
             }
@@ -9140,7 +9138,7 @@ bool SMTPSession::closeSession()
   bool ret = true;
 
 /* Sign out */
-#if defined(ESP32)
+#if !defined(ESP8266)
   /**
    * The strange behavior in ESP8266 SSL client, BearSSLWiFiClientSecure
    * The client disposed without memory released after the server close

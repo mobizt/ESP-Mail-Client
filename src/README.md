@@ -266,13 +266,9 @@ bool closeSession();
 
 param **`level`** The level to enable the debug message
 
-level = 0, no debug
+level = 0, no debugging
 
-level = 1, basic debug
-
-level = 2, full debug 1
-
-level = 333, full debug 2
+level = 1, basic level debugging
 
 ```cpp
 void debug(int level);
