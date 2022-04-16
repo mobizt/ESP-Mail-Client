@@ -103,7 +103,7 @@ This section is for the built-in Client to update the Core SDK or install the fi
 
 ### Third party SD library must be removed
 
-In Arduino IDE, the all third party SD libraries installed in libraries folder **MUST BE UNINSTALL**.
+In Arduino IDE, all third party SD libraries installed in libraries folder **MUST BE UNINSTALL**.
 
 The Core SD library was used instead of third party SD libraries.
 
