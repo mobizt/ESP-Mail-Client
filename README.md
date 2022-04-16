@@ -101,6 +101,12 @@ See [Use external Arduino Clients interfaces](#use-external-arduino-clients-inte
 
 This section is for the built-in Client to update the Core SDK or install the firmware for full functionality supports.
 
+### Third party SD library must be removed
+
+In Arduino IDE, the all third party SD libraries installed in libraries folder **MUST BE UNINSTALL**.
+
+The Core SD library was used instead of third party SD libraries.
+
 ### ESP32 and ESP8266
 
 For Espressif's ESP32 and ESP8266 based boards, this library requires Arduino's ESP32 or ESP8266 Core SDK to be installed.
