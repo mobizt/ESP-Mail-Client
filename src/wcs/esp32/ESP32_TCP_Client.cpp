@@ -62,7 +62,6 @@ void ESP32_TCP_Client::setCACert(const char *caCert)
         setInsecure();
         baseSetCertType(esp_mail_cert_type_none);
     }
-    //wcs->setNoDelay(true);
 }
 
 void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
@@ -116,8 +115,6 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
             }
         }
     }
-
-    //wcs->setNoDelay(true);
 }
 
 void ESP32_TCP_Client::setDebugCallback(DebugMsgCallback cb)
