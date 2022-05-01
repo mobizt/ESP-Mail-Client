@@ -1,12 +1,11 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.3
- *   Released:  April 13, 2022
+ *   Version:   2.1.4
+ *   Released:  May 1, 2022
  *
  *   Updates:
- * - Fixed SMTP AUTH LOGIN issue in ESP8266.
- * - Update examples.
+ * - Add support NTP time synching timed out debug.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -101,10 +100,7 @@ int ESP_Mail_Client::getFreeHeap()
 
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, bool wait)
 {
-#if defined(ESP_MAIL_DEFAULT_DEBUG_PORT)
-  if (wait)
-    ESP_MAIL_DEFAULT_DEBUG_PORT.println(F("Acquiring time from NTP server...\n"));
-#endif
+
   Time.setClock(gmt_offset, day_light_offset, ntp_server);
   if (wait)
   {
@@ -238,14 +234,12 @@ void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *s
 
   client.setSession(session);
 
-  MailClient.setTime(session->time.gmt_offset, session->time.day_light_offset, session->time.ntp_server.c_str(), false);
-
   if (client.getCertType() == esp_mail_cert_type_undefined)
   {
 
-    if (!MailClient._clockReady && (strlen(session->certificate.cert_file) > 0 || caCert != nullptr))
+    if (strlen(session->certificate.cert_file) > 0 || caCert != nullptr)
     {
-      client.clockReady = MailClient._clockReady;
+      client.clockReady = _clockReady;
     }
 
     if (strlen(session->certificate.cert_file) == 0)
@@ -1592,16 +1586,14 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
   else
     secureMode = !imap->_sesson_cfg->secure.startTLS;
 
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  setSecure(imap->client, imap->_sesson_cfg, imap->_caCert);
-#endif
-
   if (imap->_readCallback)
     imapCBP(imap, esp_mail_str_50, false);
 
+  MB_String s;
+
   if (imap->_debug)
   {
-    MB_String s = esp_mail_str_314;
+    s = esp_mail_str_314;
     s += ESP_MAIL_VERSION;
     s += imap->client.fwVersion();
     esp_mail_debug(s.c_str());
@@ -1613,7 +1605,29 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
       esp_mail_debug(s.c_str());
     }
 #endif
+  }
 
+  bool sslValidTime = false;
+
+#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
+  sslValidTime = strlen(imap->_sesson_cfg->certificate.cert_file) > 0 || imap->_caCert != nullptr;
+#endif
+
+  if (imap->_sesson_cfg->time.ntp_server.length() > 0 || sslValidTime)
+  {
+    s = esp_mail_str_355;
+    esp_mail_debug(s.c_str());
+    setTime(imap->_sesson_cfg->time.gmt_offset, imap->_sesson_cfg->time.day_light_offset, imap->_sesson_cfg->time.ntp_server.c_str(), true);
+    if (!Time.clockReady())
+      errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+  }
+
+#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
+  setSecure(imap->client, imap->_sesson_cfg, imap->_caCert);
+#endif
+
+  if (imap->_debug)
+  {
     debugInfoP(esp_mail_str_225);
     s = esp_mail_str_261;
     s += esp_mail_str_211;
@@ -4467,12 +4481,6 @@ bool IMAPSession::connect(ESP_Mail_Session *session, IMAP_Config *config)
   _sesson_cfg = session;
   _config = config;
 
-  if (session)
-  {
-    if (session->time.ntp_server.length() > 0)
-      MailClient.setTime(session->time.gmt_offset, session->time.day_light_offset, session->time.ntp_server.c_str(), true);
-  }
-
 #if defined(ESP32) || defined(ESP8266)
 
   _caCert = nullptr;
@@ -4556,6 +4564,10 @@ String IMAPSession::errorReason()
     break;
   case TCP_CLIENT_ERROR_NOT_INITIALIZED:
     ret += esp_mail_str_346;
+    break;
+
+  case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
+    ret += esp_mail_str_356;
     break;
 
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
@@ -5593,10 +5605,6 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
       ssl = true;
   }
 
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  setSecure(smtp->client, smtp->_sesson_cfg, smtp->_caCert);
-#endif
-
   // Server connection attempt: no status code
   if (smtp->_sendCallback)
     smtpCBP(smtp, esp_mail_str_120);
@@ -5615,7 +5623,29 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
       esp_mail_debug(s.c_str());
     }
 #endif
+  }
 
+  bool sslValidTime = false;
+
+#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
+  sslValidTime = strlen(smtp->_sesson_cfg->certificate.cert_file) > 0 || smtp->_caCert != nullptr;
+#endif
+
+  if (smtp->_sesson_cfg->time.ntp_server.length() > 0 || sslValidTime)
+  {
+    s = esp_mail_str_355;
+    esp_mail_debug(s.c_str());
+    setTime(smtp->_sesson_cfg->time.gmt_offset, smtp->_sesson_cfg->time.day_light_offset, smtp->_sesson_cfg->time.ntp_server.c_str(), true);
+    if (!Time.clockReady())
+      errorStatusCB(smtp, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+  }
+
+#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
+  setSecure(smtp->client, smtp->_sesson_cfg, smtp->_caCert);
+#endif
+
+  if (smtp->_debug)
+  {
     debugInfoP(esp_mail_str_236);
     s = esp_mail_str_261;
     s += esp_mail_str_211;
@@ -8976,12 +9006,6 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
   if (_tcpConnected)
     MailClient.closeTCPSession(this);
 
-  if (config)
-  {
-    if (config->time.ntp_server.length() > 0)
-      MailClient.setTime(config->time.gmt_offset, config->time.day_light_offset, config->time.ntp_server.c_str(), true);
-  }
-
   _sesson_cfg = config;
 #if defined(ESP32) || defined(ESP8266)
   _caCert = nullptr;
@@ -9078,6 +9102,11 @@ String SMTPSession::errorReason()
   case TCP_CLIENT_ERROR_NOT_INITIALIZED:
     ret += esp_mail_str_346;
     break;
+
+  case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
+    ret += esp_mail_str_356;
+    break;
+
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_str_352;
     break;

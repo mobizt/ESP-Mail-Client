@@ -1,29 +1,29 @@
 /*
- * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.6
+ * ESP8266/ESP32 Internet Time Helper Arduino Library v 1.0.7
  *
- * December 21, 2021 
- * 
+ * May 1, 2022
+ *
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
- * 
- * 
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
+ *
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #ifndef ESPTimeHelper_CPP
 #define ESPTimeHelper_CPP
@@ -47,7 +47,7 @@ uint32_t ESPTimeHelper::getUnixTime()
 int ESPTimeHelper::setTimestamp(time_t ts)
 {
 #if defined(ESP32) || defined(ESP8266)
-    struct timeval tm = {ts, 0}; //sec, us
+    struct timeval tm = {ts, 0}; // sec, us
     return settimeofday((const timeval *)&tm, 0);
 #else
     now = ts;
@@ -72,7 +72,7 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
 {
 
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
-    
+
     TZ = gmtOffset;
     DST_MN = daylightOffset;
     now = time(nullptr);
@@ -81,7 +81,7 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
     unsigned long ts = WiFi.getTime();
     if (ts > 0)
     {
-        
+
         now = ts;
         if (newConfig)
             now += TZ * 3600;
@@ -102,14 +102,12 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
 
             _sv1 = tk[0];
             configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str());
-
             break;
         case 2:
 
             _sv1 = tk[0];
             _sv2 = tk[1];
             configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str());
-
             break;
         case 3:
 
@@ -117,12 +115,10 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
             _sv2 = tk[1];
             _sv3 = tk[2];
             configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
-
             break;
         default:
 
             configTime((TZ)*3600, (DST_MN)*60, "pool.ntp.org", "time.nist.gov");
-
             break;
         }
 
@@ -130,13 +126,13 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
         uint64_t tmp = now;
         tmp = tmp * 1000;
         msec_time_diff = tmp - millis();
+    }
 
 #if defined(ESP32)
-        getLocalTime(&timeinfo);
+    getLocalTime(&timeinfo);
 #elif defined(ESP8266)
-        gmtime_r(&now, &timeinfo);
+    gmtime_r(&now, &timeinfo);
 #endif
-    }
 
 #endif
 
@@ -309,7 +305,7 @@ struct tm ESPTimeHelper::getTimeFromSec(int seconds)
 char *ESPTimeHelper::intStr(int value)
 {
     char *buf = (char *)newP(36);
-    sprintf(buf, (const char*)MBSTRING_FLASH_MCR("%d"), value);
+    sprintf(buf, (const char *)MBSTRING_FLASH_MCR("%d"), value);
     return buf;
 }
 
@@ -424,7 +420,7 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
 
             time_t tz = tz_h * 60 * 60 + tz_m * 60;
             if (tk[5][0] == '+')
-                ts -= tz; //remove time zone offset
+                ts -= tz; // remove time zone offset
             else
                 ts += tz;
         }
@@ -481,13 +477,21 @@ void ESPTimeHelper::splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char
         if (compareVersion(MB_STRING_MAJOR, 1, MB_STRING_MINOR, 0, MB_STRING_PATCH, 1) >= 0)
             s.trim();
 #endif
-
-        tk.push_back(s);
+        if (s.length() > 0)
+            tk.push_back(s);
         previous = current + strlen(delim);
         current = str.find(delim, previous);
     }
+
     s = str.substr(previous, current - previous);
-    tk.push_back(s);
+
+#if defined(MB_STRING_MAJOR) && defined(MB_STRING_MINOR) && defined(MB_STRING_PATCH)
+    if (compareVersion(MB_STRING_MAJOR, 1, MB_STRING_MINOR, 0, MB_STRING_PATCH, 1) >= 0)
+        s.trim();
+#endif
+
+    if (s.length() > 0)
+        tk.push_back(s);
     MB_String().swap(s);
 }
 
@@ -542,4 +546,4 @@ void ESPTimeHelper::delP(void *ptr)
     }
 }
 
-#endif //ESPTimeHelper_CPP
+#endif // ESPTimeHelper_CPP

@@ -1,5 +1,5 @@
 /**
- * Created January 22, 2022
+ * Created May 1, 2022
  */
 #pragma once
 
@@ -57,6 +57,7 @@
 #define MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP -32
 #define MAIL_CLIENT_ERROR_OUT_OF_MEMORY -33
 #define MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED -34
+#define MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT -35
 #endif
 
 #endif
