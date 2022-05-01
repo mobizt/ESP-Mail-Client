@@ -373,8 +373,14 @@ See [examples folder](/examples) for all usage examples.
 
 See [src/README.md](/src/README.md) for the function description.
 
+The usefull blogs that described how to send and read E-mail in detail can be found here.
 
-The following examples showed the minimum usage which many options are not configured.
+[ESP32 Send Emails using an SMTP Server: HTML, Text, and Attachments (Arduino IDE) by Rui and Sara from randomnerdtutorials.com](https://randomnerdtutorials.com/esp32-send-email-smtp-server-arduino-ide/)
+
+[Receiving Emails with ESP32 using IMAP server by Alina Mybeth from theengineeringprojects.com](https://www.theengineeringprojects.com/2022/01/receiving-emails-with-esp32-using-imap-server.html)
+
+
+The following code snippet showed the minimum usage of the library.
 
 
 
