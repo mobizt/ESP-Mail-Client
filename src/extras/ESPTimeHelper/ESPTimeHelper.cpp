@@ -376,6 +376,8 @@ String ESPTimeHelper::getDateTimeString()
     return s.c_str();
 }
 
+// Convert time string to timestamp
+// Mon, 02 May 2022 00:30:00 +0000 (UTC)
 time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
 {
     time_t ts = 0;
@@ -385,7 +387,8 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
     splitTk(s1, tk, (const char *)MBSTRING_FLASH_MCR(" "));
     int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
 
-    if (tk.size() == 6)
+    // some server may include UTC
+    if (tk.size() >= 6) 
     {
         day = atoi(tk[1].c_str());
         for (size_t i = 0; i < 12; i++)

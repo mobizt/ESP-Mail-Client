@@ -2119,6 +2119,24 @@ struct esp_mail_message_header_t *ESP_Mail_Client::cHeader(IMAPSession *imap)
   return &imap->_headers[cIdx(imap)];
 }
 
+bool ESP_Mail_Client::getHeader(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state)
+{
+  if (strcmpP(buf, 0, beginH, caseSensitive))
+  {
+    headerState = state;
+    char *tmp = subStr(buf, beginH, NULL, 0, -1, caseSensitive);
+    if (tmp)
+    {
+      setHeader(imap, tmp, header, headerState);
+      delP(&tmp);
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive)
 {
   char *tmp = nullptr;
@@ -2147,117 +2165,57 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
     if (octetCount > header.header_data_len + 2)
       return;
 
-    if (strcmpP(buf, 0, esp_mail_str_10, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_from;
-      tmp = subStr(buf, esp_mail_str_10, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_150, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_sender;
-      tmp = subStr(buf, esp_mail_str_150, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_11, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_to;
-      tmp = subStr(buf, esp_mail_str_11, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_12, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_cc;
-      tmp = subStr(buf, esp_mail_str_12, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_24, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_subject;
-      tmp = subStr(buf, esp_mail_str_24, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_46, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_return_path;
-      tmp = subStr(buf, esp_mail_str_46, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_184, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_reply_to;
-      tmp = subStr(buf, esp_mail_str_184, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_109, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_in_reply_to;
-      tmp = subStr(buf, esp_mail_str_109, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_107, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_references;
-      tmp = subStr(buf, esp_mail_str_107, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_134, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_comments;
-      tmp = subStr(buf, esp_mail_str_134, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_145, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_keywords;
-      tmp = subStr(buf, esp_mail_str_145, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
+    chunkIdx++;
+
+    if (getHeader(imap, buf, esp_mail_str_10, caseSensitive, header, headerState, esp_mail_imap_state_from))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_150, caseSensitive, header, headerState, esp_mail_imap_state_sender))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_11, caseSensitive, header, headerState, esp_mail_imap_state_to))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_12, caseSensitive, header, headerState, esp_mail_imap_state_cc))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_24, caseSensitive, header, headerState, esp_mail_imap_state_subject))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_46, caseSensitive, header, headerState, esp_mail_imap_state_return_path))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_184, caseSensitive, header, headerState, esp_mail_imap_state_reply_to))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_109, caseSensitive, header, headerState, esp_mail_imap_state_in_reply_to))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_107, caseSensitive, header, headerState, esp_mail_imap_state_references))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_134, caseSensitive, header, headerState, esp_mail_imap_state_comments))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_145, caseSensitive, header, headerState, esp_mail_imap_state_keywords))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_172, caseSensitive, header, headerState, esp_mail_imap_state_content_transfer_encoding))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_190, caseSensitive, header, headerState, esp_mail_imap_state_accept_language))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_191, caseSensitive, header, headerState, esp_mail_imap_state_content_language))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_99, caseSensitive, header, headerState, esp_mail_imap_state_date))
+      return;
+
+    if (getHeader(imap, buf, esp_mail_str_101, caseSensitive, header, headerState, esp_mail_imap_state_msg_id))
+      return;
+
+    if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
     {
       headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_type;
       tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, caseSensitive);
@@ -2270,57 +2228,6 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
         delP(&tmp);
       }
     }
-    else if (strcmpP(buf, 0, esp_mail_str_172, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_transfer_encoding;
-      tmp = subStr(buf, esp_mail_str_172, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_190, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_accept_language;
-      tmp = subStr(buf, esp_mail_str_190, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_191, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_language;
-      tmp = subStr(buf, esp_mail_str_191, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_99, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_date;
-      tmp = subStr(buf, esp_mail_str_99, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_101, caseSensitive))
-    {
-      headerState = esp_mail_imap_header_state::esp_mail_imap_state_msg_id;
-      tmp = subStr(buf, esp_mail_str_101, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        setHeader(imap, tmp, header, headerState);
-        delP(&tmp);
-      }
-    }
-    chunkIdx++;
   }
 }
 
@@ -2398,6 +2305,22 @@ void ESP_Mail_Client::setHeader(IMAPSession *imap, char *buf, struct esp_mail_me
   }
 }
 
+bool ESP_Mail_Client::getHeader(char *buf, PGM_P beginH, MB_String &out, bool caseSensitive)
+{
+  if (strcmpP(buf, 0, beginH, caseSensitive))
+  {
+    char *tmp = subStr(buf, beginH, NULL, 0, -1, caseSensitive);
+    if (tmp)
+    {
+      out = tmp;
+      delP(&tmp);
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, bool caseSensitive)
 {
   char *tmp = nullptr;
@@ -2418,6 +2341,113 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
   }
   else
   {
+    chunkIdx++;
+
+    if (strcmpP(buf, 0, esp_mail_str_175, caseSensitive))
+    {
+      tmp = subStr(buf, esp_mail_str_175, esp_mail_str_97, 0, 0, caseSensitive);
+      if (tmp)
+      {
+
+        // don't count altenative part text and html as embedded contents
+        if (cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
+        {
+          part.content_disposition = tmp;
+          if (caseSensitive)
+          {
+            if (strcmp(tmp, esp_mail_imap_content_disposition_type_t::attachment) == 0)
+              part.attach_type = esp_mail_att_type_attachment;
+            else if (strcmp(tmp, esp_mail_imap_content_disposition_type_t::inline_) == 0)
+              part.attach_type = esp_mail_att_type_inline;
+          }
+          else
+          {
+            if (strcasecmp(tmp, esp_mail_imap_content_disposition_type_t::attachment) == 0)
+              part.attach_type = esp_mail_att_type_attachment;
+            else if (strcasecmp(tmp, esp_mail_imap_content_disposition_type_t::inline_) == 0)
+              part.attach_type = esp_mail_att_type_inline;
+          }
+        }
+
+        delP(&tmp);
+      }
+    }
+
+    if (part.content_disposition.length() > 0)
+    {
+      tmp = subStr(buf, esp_mail_str_176, esp_mail_str_136, 0, caseSensitive);
+      if (tmp)
+      {
+        MB_String s = tmp;
+        decodeHeader(s);
+        part.filename = s;
+        delP(&tmp);
+      }
+      else
+      {
+        tmp = subStr(buf, esp_mail_str_177, NULL, 0, -1, caseSensitive);
+        if (tmp)
+        {
+          MB_String s = tmp;
+          decodeHeader(s);
+          part.filename = s;
+          delP(&tmp);
+        }
+      }
+
+      tmp = subStr(buf, esp_mail_str_178, esp_mail_str_97, 0, 0, caseSensitive);
+      if (tmp)
+      {
+        part.attach_data_size = atoi(tmp);
+        delP(&tmp);
+        cHeader(imap)->total_attach_data_size += part.attach_data_size;
+        part.sizeProp = true;
+      }
+      else
+      {
+        tmp = subStr(buf, esp_mail_str_178, NULL, 0, -1, caseSensitive);
+        if (tmp)
+        {
+          part.attach_data_size = atoi(tmp);
+          delP(&tmp);
+          cHeader(imap)->total_attach_data_size += part.attach_data_size;
+          part.sizeProp = true;
+        }
+      }
+
+      tmp = subStr(buf, esp_mail_str_179, esp_mail_str_136, 0, 0, caseSensitive);
+      if (tmp)
+      {
+        part.creation_date = tmp;
+        delP(&tmp);
+      }
+      else
+      {
+        tmp = subStr(buf, esp_mail_str_180, NULL, 0, -1, caseSensitive);
+        if (tmp)
+        {
+          part.creation_date = tmp;
+          delP(&tmp);
+        }
+      }
+
+      tmp = subStr(buf, esp_mail_str_181, esp_mail_str_136, 0, 0, caseSensitive);
+      if (tmp)
+      {
+        part.modification_date = tmp;
+        delP(&tmp);
+      }
+      else
+      {
+        tmp = subStr(buf, esp_mail_str_182, NULL, 0, -1, caseSensitive);
+        if (tmp)
+        {
+          part.modification_date = tmp;
+          delP(&tmp);
+        }
+      }
+    }
+
     if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
     {
       tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, caseSensitive);
@@ -2541,8 +2571,11 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
           }
         }
       }
+
+      return;
     }
-    else if (strcmpP(buf, 0, esp_mail_str_172, caseSensitive))
+
+    if (strcmpP(buf, 0, esp_mail_str_172, caseSensitive))
     {
       tmp = subStr(buf, esp_mail_str_172, NULL, 0, -1, caseSensitive);
       if (tmp)
@@ -2558,238 +2591,49 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, char *buf, int &chunkI
 
         delP(&tmp);
       }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_174, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_174, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.descr = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_175, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_175, esp_mail_str_97, 0, 0, caseSensitive);
-      if (tmp)
-      {
-
-        // don't count altenative part text and html as embedded contents
-        if (cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
-        {
-          part.content_disposition = tmp;
-          if (caseSensitive)
-          {
-            if (strcmp(tmp, esp_mail_imap_content_disposition_type_t::attachment) == 0)
-              part.attach_type = esp_mail_att_type_attachment;
-            else if (strcmp(tmp, esp_mail_imap_content_disposition_type_t::inline_) == 0)
-              part.attach_type = esp_mail_att_type_inline;
-          }
-          else
-          {
-            if (strcasecmp(tmp, esp_mail_imap_content_disposition_type_t::attachment) == 0)
-              part.attach_type = esp_mail_att_type_attachment;
-            else if (strcasecmp(tmp, esp_mail_imap_content_disposition_type_t::inline_) == 0)
-              part.attach_type = esp_mail_att_type_inline;
-          }
-        }
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_150, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_150, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.sender = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_10, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_10, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.from = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_11, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_11, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.to = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_12, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_12, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.cc = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_184, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_184, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.reply_to = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_134, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_134, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.comments = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_24, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_24, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.subject = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_101, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_101, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.messageID = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_46, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_46, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.return_path = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_99, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_99, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.date = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_145, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_145, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.keywords = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_109, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_109, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.in_reply_to = tmp;
-        delP(&tmp);
-      }
-    }
-    else if (strcmpP(buf, 0, esp_mail_str_107, caseSensitive))
-    {
-      tmp = subStr(buf, esp_mail_str_107, NULL, 0, -1, caseSensitive);
-      if (tmp)
-      {
-        part.rfc822_header.references = tmp;
-        delP(&tmp);
-      }
+      return;
     }
 
-    if (part.content_disposition.length() > 0)
-    {
-      tmp = subStr(buf, esp_mail_str_176, esp_mail_str_136, 0, caseSensitive);
-      if (tmp)
-      {
-        MB_String s = tmp;
-        decodeHeader(s);
-        part.filename = s;
-        delP(&tmp);
-      }
-      else
-      {
-        tmp = subStr(buf, esp_mail_str_177, NULL, 0, -1, caseSensitive);
-        if (tmp)
-        {
-          MB_String s = tmp;
-          decodeHeader(s);
-          part.filename = s;
-          delP(&tmp);
-        }
-      }
+    if (getHeader(buf, esp_mail_str_174, part.descr, caseSensitive))
+      return;
 
-      tmp = subStr(buf, esp_mail_str_178, esp_mail_str_97, 0, 0, caseSensitive);
-      if (tmp)
-      {
-        part.attach_data_size = atoi(tmp);
-        delP(&tmp);
-        cHeader(imap)->total_attach_data_size += part.attach_data_size;
-        part.sizeProp = true;
-      }
-      else
-      {
-        tmp = subStr(buf, esp_mail_str_178, NULL, 0, -1, caseSensitive);
-        if (tmp)
-        {
-          part.attach_data_size = atoi(tmp);
-          delP(&tmp);
-          cHeader(imap)->total_attach_data_size += part.attach_data_size;
-          part.sizeProp = true;
-        }
-      }
+    if (getHeader(buf, esp_mail_str_150, part.rfc822_header.sender, caseSensitive))
+      return;
 
-      tmp = subStr(buf, esp_mail_str_179, esp_mail_str_136, 0, 0, caseSensitive);
-      if (tmp)
-      {
-        part.creation_date = tmp;
-        delP(&tmp);
-      }
-      else
-      {
-        tmp = subStr(buf, esp_mail_str_180, NULL, 0, -1, caseSensitive);
-        if (tmp)
-        {
-          part.creation_date = tmp;
-          delP(&tmp);
-        }
-      }
+    if (getHeader(buf, esp_mail_str_10, part.rfc822_header.from, caseSensitive))
+      return;
 
-      tmp = subStr(buf, esp_mail_str_181, esp_mail_str_136, 0, 0, caseSensitive);
-      if (tmp)
-      {
-        part.modification_date = tmp;
-        delP(&tmp);
-      }
-      else
-      {
-        tmp = subStr(buf, esp_mail_str_182, NULL, 0, -1, caseSensitive);
-        if (tmp)
-        {
-          part.modification_date = tmp;
-          delP(&tmp);
-        }
-      }
-    }
+    if (getHeader(buf, esp_mail_str_11, part.rfc822_header.to, caseSensitive))
+      return;
 
-    chunkIdx++;
+    if (getHeader(buf, esp_mail_str_12, part.rfc822_header.cc, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_184, part.rfc822_header.reply_to, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_134, part.rfc822_header.comments, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_24, part.rfc822_header.subject, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_101, part.rfc822_header.messageID, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_46, part.rfc822_header.return_path, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_99, part.rfc822_header.date, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_145, part.rfc822_header.keywords, caseSensitive))
+      return;
+
+    if (getHeader(buf, esp_mail_str_109, part.rfc822_header.in_reply_to, caseSensitive))
+      return;
+
+    getHeader(buf, esp_mail_str_107, part.rfc822_header.references, caseSensitive);
   }
 }
 

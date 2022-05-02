@@ -870,6 +870,8 @@ private:
   void imapCB(IMAPSession *imap, const char *info, bool success);
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
   int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
+  bool getHeader(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
+  bool getHeader(char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
   void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, bool caseSensitive = true);
