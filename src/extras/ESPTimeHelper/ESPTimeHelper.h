@@ -97,10 +97,10 @@ public:
   */
   time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 
-  /** Get the timestamp from the time string.
+  /** Get the timestamp from the RFC 2822 time string.
    * @param gmt Return the GMT time.
    * @return timestamp of time string.
-  */
+   */
   time_t getTimestamp(const char *timeString, bool gmt = false);
 
   /** Get the current year.

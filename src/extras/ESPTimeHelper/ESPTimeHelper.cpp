@@ -376,8 +376,8 @@ String ESPTimeHelper::getDateTimeString()
     return s.c_str();
 }
 
-// Convert time string to timestamp
-// Mon, 02 May 2022 00:30:00 +0000 (UTC)
+// Get the timestamp from the RFC 2822 time string.
+// e.g. Mon, 02 May 2022 00:30:00 +0000
 time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
 {
     time_t ts = 0;
@@ -387,8 +387,8 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
     splitTk(s1, tk, (const char *)MBSTRING_FLASH_MCR(" "));
     int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
 
-    // some server may include UTC
-    if (tk.size() >= 6) 
+    // some response may include (UTC) and (ICT)
+    if (tk.size() >= 6)
     {
         day = atoi(tk[1].c_str());
         for (size_t i = 0; i < 12; i++)
@@ -396,6 +396,10 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
             if (strcmp(months[i], tk[2].c_str()) == 0)
                 mon = i;
         }
+
+        // RFC 822 year to RFC 2822
+        if (tk[3].length() == 2)
+            tk[3].prepend((const char *)MBSTRING_FLASH_MCR("20"));
 
         year = atoi(tk[3].c_str());
 
