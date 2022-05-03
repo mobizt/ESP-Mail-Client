@@ -6114,7 +6114,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       s += esp_mail_str_34;
       if (getHeader(msg->_hdr[k].c_str(), esp_mail_str_99, dt, false))
       {
-        smtp->ts = Time.getTimestamp(dt.c_str());
+        smtp->ts = Time.getTimestamp(dt.c_str(), true);
         dateHdr = smtp->ts > 0;
       }
     }
@@ -6123,7 +6123,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   if (!dateHdr && msg->date.length() > 0)
   {
     dt = msg->date;
-    smtp->ts = Time.getTimestamp(msg->date.c_str());
+    smtp->ts = Time.getTimestamp(msg->date.c_str(), true);
     dateHdr = smtp->ts > 0;
   }
 
