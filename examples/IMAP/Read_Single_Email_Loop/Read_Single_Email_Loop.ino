@@ -1,27 +1,27 @@
 /**
  * This example shows how to read Email repeatedly.
- * 
+ *
  * To get the incoming mail notification, see Mailbox_Changes_Notification.ino.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For ESP8266, with BearSSL WiFi Client 
+/** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
- * may cause your device out of memory reset in case the memory 
+ * may cause your device out of memory reset in case the memory
  * allocation error.
-*/
+ */
 
-/** Assign SD card type and FS used in src/ESP_Mail_FS.h and 
+/** Assign SD card type and FS used in src/ESP_Mail_FS.h and
  * change the config for that card interfaces in src/addons/SDHelper.h
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -30,15 +30,15 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-//Provide the SD card interfaces setting and mounting
+// Provide the SD card interfaces setting and mounting
 #include <extras/SDHelper.h>
 
 #define WIFI_SSID "<ssid>"
@@ -56,15 +56,15 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
 
-/** The imap port e.g. 
+/** The imap port e.g.
  * 143  or esp_mail_imap_port_143
  * 993 or esp_mail_imap_port_993
-*/
+ */
 #define IMAP_PORT 993
 
 /* The log in credentials */
@@ -130,9 +130,9 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-#if defined(ESP_MAIL_DEFAULT_SD_FS) //defined in src/ESP_Mail_FS.h
-    //Mount SD card.
-    SD_Card_Mounting(); //See src/addons/SDHelper.h
+#if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
+    // Mount SD card.
+    SD_Card_Mounting(); // See src/addons/SDHelper.h
 #endif
 
     /** Enable the debug via Serial port
@@ -140,7 +140,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Set the callback function to get the reading results */
@@ -154,7 +154,7 @@ void setup()
      * And for ESP8266, assign the CS pins of SPI port
      * MailClient.sdBegin(15)
      * Which pin 15 is the CS pin of SD card adapter
-    */
+     */
 
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
@@ -176,26 +176,26 @@ void setup()
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and 
-     * esp_mail_file_storage_type_sd 
-    */
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     config.storage.type = esp_mail_file_storage_type_sd;
 
-    /** Set to download heades, text and html messaeges, 
+    /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
-    */
+     */
     config.download.header = false;
     config.download.text = false;
     config.download.html = false;
     config.download.attachment = false;
     config.download.inlineImg = false;
 
-    /** Set to enable the results i.e. html and text messaeges 
+    /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
      * by the option config.limit.msg_size.
      * The whole message can be download through config.download.text
      * or config.download.html which not depends on these enable options.
-    */
+     */
     config.enable.html = true;
     config.enable.text = true;
 
@@ -207,21 +207,21 @@ void setup()
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    //config.enable.header_case_sensitive = true;
+    // config.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 
-    /** Set the maximum size of message stored in 
+    /** Set the maximum size of message stored in
      * IMAPSession object in byte
-    */
+     */
     config.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
-     * that can be downloaded in byte. 
-     * The file which its size is largger than this limit may be saved 
+     * that can be downloaded in byte.
+     * The file which its size is largger than this limit may be saved
      * as truncated file.
-    */
+     */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to server with the session and config */
@@ -242,11 +242,11 @@ void setup()
 
     /* Start fetch from last message */
     msgNum = totalMessage;
-    sign = -1; //count down
+    sign = -1; // count down
 
     /* To start fetch from first message */
-    //msgNum = 1;
-    //sign = 1;// count up
+    // msgNum = 1;
+    // sign = 1;// count up
 }
 
 void loop()
@@ -267,8 +267,8 @@ void loop()
         }
 
         int uid = imap.getUID(msgNum);
-        
-        //UID must be greater than 0
+
+        // UID must be greater than 0
         if (uid > 0)
         {
 
@@ -276,15 +276,15 @@ void loop()
             config.fetch.uid = uid;
 
             /* Set seen flag */
-            //config.fetch.set_seen = true;
+            // config.fetch.set_seen = true;
 
             /** Read or search the Email and keep the TCP session to open
              * The second parameter is for close the session.
-            */
+             */
 
-            //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
-            //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
-            //to message, see the Set_Flags.ino example.
+            // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
+            // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
+            // to message, see the Set_Flags.ino example.
             MailClient.readMail(&imap, false);
 
             /* Clear all stored data in IMAPSession object */
@@ -351,7 +351,7 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
          * esp_mail_att_type_none or 0
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
-        */
+         */
         ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
     }
     Serial.println();
@@ -359,12 +359,12 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
 
 void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
-    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and 
-     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename 
+    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and
+     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename
      * (> 13 characters) is not support in the SD.h library.
      * To show how its original file name, use imap.fileList().
-    */
-    //Serial.println(imap.fileList());
+     */
+    // Serial.println(imap.fileList());
 
     for (size_t i = 0; i < msgItems.size(); i++)
     {
@@ -379,8 +379,8 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        //The attachment may not detect in search because the multipart/mixed
-        //was not found in Content-Type header field.
+        // The attachment may not detect in search because the multipart/mixed
+        // was not found in Content-Type header field.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))

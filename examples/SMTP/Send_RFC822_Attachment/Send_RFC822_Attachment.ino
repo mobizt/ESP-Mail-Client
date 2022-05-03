@@ -2,17 +2,16 @@
 
 /**
  * This example shows how to send Email with message attachment
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
-
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -21,14 +20,13 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
-
 
 /* This is for attachment data */
 #include "image.h"
@@ -48,16 +46,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -105,7 +103,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -142,7 +140,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.text.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
@@ -152,7 +150,7 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
   /** The message priority
@@ -160,7 +158,7 @@ void setup()
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
   /* Set the custom message header */
@@ -172,8 +170,8 @@ void setup()
   rfc822.from.email = F("rob@example.com");
   rfc822.sender.name = F("steve");
   rfc822.sender.email = F("steve@example.com");
-  
-  //This date field will set by default if the device time was already set or set date field manually
+
+  // This date field will set by default if the device time was already set or set date field manually
   rfc822.date = MailClient.Time.getDateTimeString();
 
   rfc822.subject = F("Test rfc822 message");
@@ -192,10 +190,10 @@ void setup()
   SMTP_Attachment att[2];
   int attIndex = 0;
 
-  /** Set the attachment info e.g. 
+  /** Set the attachment info e.g.
    * file name, MIME type, BLOB data, BLOB data size,
    * and transfer encoding
-  */
+   */
   att[attIndex].descr.filename = F("firebase_logo.png");
   att[attIndex].descr.mime = F("image/png");
   att[attIndex].blob.data = firebase_png;
@@ -204,7 +202,7 @@ void setup()
 
   /* Add the attachment to the rfc822 message */
 #if defined(ESP32) || defined(ESP8266)
-  rfc822.addAttachment(att[attIndex]); //Required more stack and may fail on SAMD
+  rfc822.addAttachment(att[attIndex]); // Required more stack and may fail on SAMD
 #endif
   /* Prepare other attachment data  */
   uint8_t *a = new uint8_t[512];
@@ -218,10 +216,10 @@ void setup()
       j = 0;
   }
 
-  /** Set the attachment info e.g. 
+  /** Set the attachment info e.g.
    * file name, MIME type, BLOB data, BLOB data size.
    * The default transfer encoding is base64.
-  */
+   */
   attIndex++;
   att[attIndex].descr.filename = F("test.dat");
   att[attIndex].descr.mime = F("application/octet-stream");
@@ -242,8 +240,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -282,7 +280,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

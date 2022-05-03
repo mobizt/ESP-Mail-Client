@@ -1,19 +1,19 @@
 /**
  * This example shows how to copy messages from the mailbox to other folder.
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For ESP8266, with BearSSL WiFi Client 
+/** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
- * may cause your device out of memory reset in case the memory 
+ * may cause your device out of memory reset in case the memory
  * allocation error.
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -22,15 +22,15 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-//To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
+// To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -47,15 +47,15 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
 
-/** The imap port e.g. 
+/** The imap port e.g.
  * 143  or esp_mail_imap_port_143
  * 993 or esp_mail_imap_port_993
-*/
+ */
 #define IMAP_PORT 993
 
 /* The log in credentials */
@@ -70,7 +70,6 @@ void printSelectedMailboxInfo(IMAPSession &imap);
 
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
-
 
 void setup()
 {
@@ -107,7 +106,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Declare the session config data */
@@ -118,7 +117,6 @@ void setup()
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
-
 
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
@@ -141,23 +139,22 @@ void setup()
     toCopy.add(3);
     toCopy.add(4);
 
-    //imap.createFolder("test");
+    // imap.createFolder("test");
 
     /* Copy all messages in the list to the folder "test" */
     if (imap.copyMessages(&toCopy, F("test")))
         Serial.println("Messages copied");
 
     /* Delete all messages in the list from the opened folder (move to trash) */
-    //imap.deleteMessages(&toCopy);
+    // imap.deleteMessages(&toCopy);
 
-    //imap.deleteolder("test");
+    // imap.deleteolder("test");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
 {
-
 }
 
 void printAllMailboxesInfo(IMAPSession &imap)

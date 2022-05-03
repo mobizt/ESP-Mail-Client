@@ -1,19 +1,19 @@
 /**
  * This example shows how to get notification in realtime when incoming message arrived and other mailbox changes.
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For ESP8266, with BearSSL WiFi Client 
+/** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
- * may cause your device out of memory reset in case the memory 
+ * may cause your device out of memory reset in case the memory
  * allocation error.
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -22,15 +22,15 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-//To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
+// To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -47,15 +47,15 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
 
-/** The imap port e.g. 
+/** The imap port e.g.
  * 143  or esp_mail_imap_port_143
  * 993 or esp_mail_imap_port_993
-*/
+ */
 #define IMAP_PORT 993
 
 /* The log in credentials */
@@ -131,7 +131,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Set the callback function to get the reading results */
@@ -145,7 +145,7 @@ void setup()
      * And for ESP8266, assign the CS pins of SPI port
      * MailClient.sdBegin(15)
      * Which pin 15 is the CS pin of SD card adapter
-    */
+     */
 
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
@@ -156,10 +156,10 @@ void setup()
     session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
-    
-    /** Assign internet connection handler function 
-     * in case of lost internet connection for re-listening the mailbox. 
-    */
+
+    /** Assign internet connection handler function
+     * in case of lost internet connection for re-listening the mailbox.
+     */
     session.network_connection_handler = connectWiFi;
 
     /* Connect to server with the session and config */
@@ -181,17 +181,16 @@ void loop()
 {
     /* imap.connect and imap.selectFolder or imap.openFolder nedded to be called once prior to listen */
 
-    //Listen for mailbox changes
+    // Listen for mailbox changes
     if (!imap.listen())
         return;
 
-    //Check the changes
+    // Check the changes
     if (imap.folderChanged())
         printPollingStatus(imap);
 
-    //To stop listen, use imap.stopListen(); and to listen again, call imap.listen()
+    // To stop listen, use imap.stopListen(); and to listen again, call imap.listen()
 }
-
 
 void printPollingStatus(IMAPSession &imap)
 {
@@ -206,13 +205,13 @@ void printPollingStatus(IMAPSession &imap)
 
         ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
 
-        //if (sFolder.recentCount() > 0)
-        //    ESP_MAIL_PRINTF("\nMesssage count which recent flag set: %d\n", sFolder.recentCount());
+        // if (sFolder.recentCount() > 0)
+        //     ESP_MAIL_PRINTF("\nMesssage count which recent flag set: %d\n", sFolder.recentCount());
 
-        //we need to stop polling before do anything
+        // we need to stop polling before do anything
         imap.stopListen();
 
-        //Get the UID of new message and fetch
+        // Get the UID of new message and fetch
         config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
         MailClient.readMail(&imap, false);
     }
@@ -291,7 +290,7 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
          * esp_mail_att_type_none or 0
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
-        */
+         */
         ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
     }
     Serial.println();
@@ -313,8 +312,8 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        //The attachment may not detect in search because the multipart/mixed
-        //was not found in Content-Type header field.
+        // The attachment may not detect in search because the multipart/mixed
+        // was not found in Content-Type header field.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))

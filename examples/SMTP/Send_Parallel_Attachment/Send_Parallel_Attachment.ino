@@ -3,16 +3,16 @@
 /**
  * This example shows how to send Email with media e.g. audio and images as parallen attachments,
  * and play or display them simultaneously on the Email client (depends on the Mail client supports).
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -21,9 +21,9 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
@@ -47,16 +47,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -104,7 +104,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -145,7 +145,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
@@ -155,7 +155,7 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
   message.text.content = F("This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).");
@@ -167,7 +167,7 @@ void setup()
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
   /** The Delivery Status Notifications e.g.
@@ -176,8 +176,8 @@ void setup()
    * esp_mail_smtp_notify_failure
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
-  */
-  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+   */
+  // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <user1@gmail.com>"));
@@ -185,10 +185,10 @@ void setup()
   /* The attachment data item */
   SMTP_Attachment att;
 
-  /** Set the attachment info e.g. 
+  /** Set the attachment info e.g.
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
-  */
+   */
   att.descr.filename = F("haun.png");
   att.descr.mime = F("image/png");
   att.blob.data = shaun_png;
@@ -196,11 +196,11 @@ void setup()
   att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
   message.addParallelAttachment(att);
 
-  /** Set the attachment info e.g. 
+  /** Set the attachment info e.g.
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
-  */
-  message.resetAttachItem(att); //Clear the attach item data to reuse
+   */
+  message.resetAttachItem(att); // Clear the attach item data to reuse
   att.descr.filename = F("mu_law.wav");
   att.descr.mime = F("audio/basic");
   att.blob.data = mu_law_wave;
@@ -217,8 +217,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message, true))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -257,7 +257,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

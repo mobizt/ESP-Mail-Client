@@ -2,20 +2,20 @@
 
 /**
  * This example shows how to send Email with attachments and  inline images stored in SD card.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** Assign SD card type and FS used in src/ESP_Mail_FS.h and 
+/** Assign SD card type and FS used in src/ESP_Mail_FS.h and
  * change the config for that card interfaces in src/addons/SDHelper.h
-*/
+ */
 
 #include <Arduino.h>
 
@@ -25,18 +25,18 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-//Provide the SD card interfaces setting and mounting
+// Provide the SD card interfaces setting and mounting
 #include <extras/SDHelper.h>
 
-//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+// To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -53,16 +53,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -105,21 +105,21 @@ void setup()
   Serial.println(WiFi.localIP());
   Serial.println();
 
-#if defined(ESP_MAIL_DEFAULT_SD_FS) //defined in src/ESP_Mail_FS.h
+#if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
 
-  //Mount SD card.
-  SD_Card_Mounting(); //See src/addons/SDHelper.h
+  // Mount SD card.
+  SD_Card_Mounting(); // See src/addons/SDHelper.h
 
   Serial.println("Preparing SD file attachments...");
 
   const char *orangeImg = "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAYAAABw4pVUAAAAoUlEQVR42u3RMQ0AMAgAsCFgftHLiQpsENJaaFT+fqwRQoQgRAhChCBECEKECBGCECEIEYIQIQgRghCECEGIEIQIQYgQhCBECEKEIEQIQoQgBCFCECIEIUIQIgQhCBGCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBGi/oCaOpTXoAAAAASUVORK5CYII=";
 
-//Write demo data to file
+  // Write demo data to file
 
   static uint8_t buf[512];
 
-//SDFat?
-#if defined(ESP_MAIL_USE_SDFAT) //ESP_MAIL_USE_SDFAT is auto defined when you set to use SdFat in src/ESP_Mail_FS.h
+// SDFat?
+#if defined(ESP_MAIL_USE_SDFAT) // ESP_MAIL_USE_SDFAT is auto defined when you set to use SdFat in src/ESP_Mail_FS.h
   SdFile file;
   file.open("/orange.png", O_RDWR | O_CREAT);
   file.print(orangeImg);
@@ -183,7 +183,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -215,12 +215,11 @@ void setup()
   message.sender.email = AUTHOR_EMAIL;
 
   message.subject = F("Test sending Email with attachments and inline images from SD card and Flash");
-  
+
   message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
 
   /** Two alternative content versions are sending in this example e.g. plain text and html */
   String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 1 inline image and 1 attachment file.</span><br/><br/><img src=\"orange.png\" width=\"100\" height=\"100\">";
-
 
   message.html.content = htmlMsg;
 
@@ -229,7 +228,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
@@ -239,9 +238,9 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
-  
+
   message.text.content = F("This message contains 1 inline image and 1 attachment file.\r\nThe inline images were not shown in the plain text message.");
 
   message.text.charSet = F("utf-8");
@@ -252,7 +251,7 @@ void setup()
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
   /** The Delivery Status Notifications e.g.
@@ -261,8 +260,8 @@ void setup()
    * esp_mail_smtp_notify_failure
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
-  */
-  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+   */
+  // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <user1@gmail.com>"));
@@ -271,19 +270,19 @@ void setup()
   SMTP_Attachment att[2];
   int attIndex = 0;
 
-  /** Set the inline image info e.g. 
+  /** Set the inline image info e.g.
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
-  */
+   */
   att[attIndex].descr.filename = F("orange.png");
   att[attIndex].descr.mime = F("image/png");
   att[attIndex].file.path = F("/orange.png");
 
-  /** The file storage type e.g. 
-   * esp_mail_file_storage_type_none, 
-   * esp_mail_file_storage_type_flash, and 
-   * esp_mail_file_storage_type_sd 
-  */
+  /** The file storage type e.g.
+   * esp_mail_file_storage_type_none,
+   * esp_mail_file_storage_type_flash, and
+   * esp_mail_file_storage_type_sd
+   */
   att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
 
   /* Need to be base64 transfer encoding for inline image */
@@ -292,20 +291,20 @@ void setup()
   /** The orange.png file is already base64 encoded file.
    * Then set the content encoding to match the transfer encoding
    * which no encoding was taken place prior to sending.
-  */
+   */
   att[attIndex].descr.content_encoding = Content_Transfer_Encoding::enc_base64;
 
   /* Add inline image to the message */
   message.addInlineImage(att[attIndex]);
 
-  /** Set the attachment info e.g. 
+  /** Set the attachment info e.g.
    * file name, MIME type, file path, file storage type,
    * transfer encoding and content encoding
-  */
+   */
 
   attIndex++;
   att[attIndex].descr.filename = F("bin1.dat");
-  att[attIndex].descr.mime = F("application/octet-stream"); //binary data
+  att[attIndex].descr.mime = F("application/octet-stream"); // binary data
   att[attIndex].file.path = F("/bin1.dat");
   att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
@@ -321,8 +320,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message, true))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -361,7 +360,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

@@ -2,19 +2,18 @@
 
 /**
  * This example shows how to send Email using custom Clients.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
-
 
 #if defined(ARDUINO_ARCH_SAMD)
 #include <WiFiNINA.h>
@@ -37,17 +36,17 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "smtp.gmail.com"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
-#define SMTP_PORT esp_mail_smtp_port_465 //port 465 is not available for Outlook.com
+ */
+#define SMTP_PORT esp_mail_smtp_port_465 // port 465 is not available for Outlook.com
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
@@ -93,7 +92,7 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-//Define the callback function to handle server connection
+// Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
     // You may need to set the system timestamp in case of custom client
@@ -109,20 +108,20 @@ void connectionRequestCallback(const char *host, int port)
     Serial.println("success.");
 }
 
-//Define the callback function to handle server connection upgrade.
-//This required when connect to port 587 which requires TLS
+// Define the callback function to handle server connection upgrade.
+// This required when connect to port 587 which requires TLS
 void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
 
-    //Required for SMTP on port 587.
+    // Required for SMTP on port 587.
 
-    //Connection upgrade code here...
+    // Connection upgrade code here...
 
-    //The most client library does not allow user to upgrade the existing connection to secure mode since it
-    //was connected to server in non-secure mode.
+    // The most client library does not allow user to upgrade the existing connection to secure mode since it
+    // was connected to server in non-secure mode.
 
-    //You may need to edit the clients sources to make this.
+    // You may need to edit the clients sources to make this.
 }
 
 void setup()
@@ -144,7 +143,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -160,7 +159,6 @@ void setup()
     session.login.password = AUTHOR_PASSWORD;
     session.login.user_domain = F("mydomain.net");
 
-    
     /* Declare the message class */
     SMTP_Message message;
 
@@ -174,60 +172,60 @@ void setup()
     message.text.content = "hiiiiii";
 
     /** The Plain text message character set e.g.
-   * us-ascii
-   * utf-8
-   * utf-7
-   * The default value is utf-8
-  */
+     * us-ascii
+     * utf-8
+     * utf-7
+     * The default value is utf-8
+     */
     message.text.charSet = F("us-ascii");
 
     /** The content transfer encoding e.g.
-   * enc_7bit or "7bit" (not encoded)
-   * enc_qp or "quoted-printable" (encoded)
-   * enc_base64 or "base64" (encoded)
-   * enc_binary or "binary" (not encoded)
-   * enc_8bit or "8bit" (not encoded)
-   * The default value is "7bit"
-  */
+     * enc_7bit or "7bit" (not encoded)
+     * enc_qp or "quoted-printable" (encoded)
+     * enc_base64 or "base64" (encoded)
+     * enc_binary or "binary" (not encoded)
+     * enc_8bit or "8bit" (not encoded)
+     * The default value is "7bit"
+     */
     message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
-    //If this is a reply message
-    //message.in_reply_to = "<parent message id>";
-    //message.references = "<parent references> <parent message id>";
+    // If this is a reply message
+    // message.in_reply_to = "<parent message id>";
+    // message.references = "<parent references> <parent message id>";
 
     /** The message priority
-   * esp_mail_smtp_priority_high or 1
-   * esp_mail_smtp_priority_normal or 3
-   * esp_mail_smtp_priority_low or 5
-   * The default value is esp_mail_smtp_priority_low
-  */
+     * esp_mail_smtp_priority_high or 1
+     * esp_mail_smtp_priority_normal or 3
+     * esp_mail_smtp_priority_low or 5
+     * The default value is esp_mail_smtp_priority_low
+     */
     message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
-    //message.response.reply_to = "someone@somemail.com";
-    //message.response.return_path = "someone@somemail.com";
+    // message.response.reply_to = "someone@somemail.com";
+    // message.response.return_path = "someone@somemail.com";
 
     /** The Delivery Status Notifications e.g.
-   * esp_mail_smtp_notify_never
-   * esp_mail_smtp_notify_success
-   * esp_mail_smtp_notify_failure
-   * esp_mail_smtp_notify_delay
-   * The default value is esp_mail_smtp_notify_never
-  */
-    //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+     * esp_mail_smtp_notify_never
+     * esp_mail_smtp_notify_success
+     * esp_mail_smtp_notify_failure
+     * esp_mail_smtp_notify_delay
+     * The default value is esp_mail_smtp_notify_never
+     */
+    // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
     /* Set the custom message header */
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
-    //For Root CA certificate verification (ESP8266 and ESP32 only)
-    //session.certificate.cert_data = rootCACert;
-    //or
-    //session.certificate.cert_file = "/path/to/der/file";
-    //session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-    //session.certificate.verify = true;
+    // For Root CA certificate verification (ESP8266 and ESP32 only)
+    // session.certificate.cert_data = rootCACert;
+    // or
+    // session.certificate.cert_file = "/path/to/der/file";
+    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    // session.certificate.verify = true;
 
-    //The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
+    // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
-    //Set the callback functions to hadle the required tasks.
+    // Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
 
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
@@ -244,8 +242,8 @@ void setup()
     if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
-    //to clear sending result log
-    //smtp.sendingResult.clear();
+    // to clear sending result log
+    // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -284,7 +282,7 @@ void smtpCallback(SMTP_Status status)
         }
         Serial.println("----------------\n");
 
-        //You need to clear sending result as the memory usage will grow up.
+        // You need to clear sending result as the memory usage will grow up.
         smtp.sendingResult.clear();
     }
 }

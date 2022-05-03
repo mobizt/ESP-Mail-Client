@@ -2,17 +2,17 @@
 
 /**
  * This example shows how to send text Email with text wrapping.
- * 
- * 
+ *
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -21,14 +21,13 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
-
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -45,16 +44,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -102,7 +101,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -135,12 +134,12 @@ void setup()
     /** The option to add soft line break to to the message for
      * the long text message > 78 characters (rfc 3676)
      * Some Servers may not compliant with this standard.
-    */
+     */
     message.text.flowed = true;
 
     /** if the option message.text.flowed is true,
      * the following plain text message will be wrapped.
-    */
+     */
     message.text.content = F("The text below is the long quoted text which breaks into several lines.\r\n\r\n>> Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\r\n\r\nThis is the normal short text.\r\n\r\nAnother long text, abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz abcdefg hijklmnop qrstuv wxyz.");
 
     /** The Plain text message character set e.g.
@@ -148,7 +147,7 @@ void setup()
      * utf-8
      * utf-7
      * The default value is utf-8
-    */
+     */
     message.text.charSet = F("us-ascii");
 
     /** The content transfer encoding e.g.
@@ -158,7 +157,7 @@ void setup()
      * enc_binary or "binary" (not encoded)
      * enc_8bit or "8bit" (not encoded)
      * The default value is "7bit"
-    */
+     */
     message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
     /** The message priority
@@ -166,7 +165,7 @@ void setup()
      * esp_mail_smtp_priority_normal or 3
      * esp_mail_smtp_priority_low or 5
      * The default value is esp_mail_smtp_priority_low
-    */
+     */
     message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
     /** The Delivery Status Notifications e.g.
@@ -175,8 +174,8 @@ void setup()
      * esp_mail_smtp_notify_failure
      * esp_mail_smtp_notify_delay
      * The default value is esp_mail_smtp_notify_never
-    */
-    //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+     */
+    // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
     /* Set the custom message header */
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
@@ -189,8 +188,8 @@ void setup()
     if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
-    //to clear sending result log
-    //smtp.sendingResult.clear();
+    // to clear sending result log
+    // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -229,7 +228,7 @@ void smtpCallback(SMTP_Status status)
         }
         Serial.println("----------------\n");
 
-        //You need to clear sending result as the memory usage will grow up.
+        // You need to clear sending result as the memory usage will grow up.
         smtp.sendingResult.clear();
     }
 }

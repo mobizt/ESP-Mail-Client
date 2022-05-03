@@ -2,20 +2,20 @@
 
 /**
  *This example shows how to log in with the SASL XOAUTH2 mechanisme using OAuth2.0 access token and send Email.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For Gmail, to send the Email via port 465 (SSL), less secure app option 
+/** For Gmail, to send the Email via port 465 (SSL), less secure app option
  * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -24,26 +24,24 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
-
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT 25
 
 /* The user Email for OAuth2.0 access token */
@@ -52,25 +50,25 @@
 /** The OAuth2.0 access token
  * The generation, exchange and refresh of the access token are not available
  * in this library.
- * 
+ *
  * To test this using GMail, get the OAuth2.0 access token from this web site
  * https://developers.google.com/oauthplayground/
- * 
+ *
  * You can use the ESP Signer library to generate OAuth2.0 access token
  * The library is available here https://github.com/mobizt/ESP-Signer
- * 
+ *
  * 1. Select the following scope (in Step 1) from Gmail API V1
  * https://mail.google.com/
  * https://mail.google.com/
- * 
+ *
  * 2. Click Authorize APIs button.
  * 3. Cick Exchangeauthorization code for tokens.
  * 4. From the response, look at access_token from the JSON payload node.
  * 5. Copy that access token and paste to the AUTHOR_ACCESS_TOKEN value.
- * 
+ *
  * The token will be expired in 3600 seconds (1 Hr).
  * The AUTHOR_EMAIL above is the Email address that you granted to access the Gmail services.
-*/
+ */
 #define AUTHOR_ACCESS_TOKEN "<access token>"
 
 /* The SMTP Session object used for Email sending */
@@ -114,7 +112,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -151,7 +149,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.text.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
@@ -161,7 +159,7 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
   /** The message priority
@@ -169,7 +167,7 @@ void setup()
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
   /** The Delivery Status Notifications e.g.
@@ -178,8 +176,8 @@ void setup()
    * esp_mail_smtp_notify_failure
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
-  */
-  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+   */
+  // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -192,8 +190,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -232,7 +230,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

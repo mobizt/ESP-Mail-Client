@@ -2,22 +2,22 @@
 
 /**
  * This example shows how to send Email with inline images from OV2640 camera.
- * 
+ *
  * The html and text version messages will be sent.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-//To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
+// To use send Email for Gmail to port 465 (SSL), less secure app option should be enabled. https://myaccount.google.com/lesssecureapps?pli=1
 
-//The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
+// The file systems for flash and sd memory can be changed in ESP_Mail_FS.h.
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -26,7 +26,7 @@
 
 #include <ESP_Mail_Client.h>
 
-//The OV2640 library
+// The OV2640 library
 #if defined(ESP32)
 #include "cam/OV2640.h"
 #endif
@@ -46,16 +46,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -105,7 +105,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -148,7 +148,7 @@ void setup()
      * enc_binary or "binary" (not encoded)
      * enc_8bit or "8bit" (not encoded)
      * The default value is "7bit"
-    */
+     */
     message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
     /** The HTML text message character set e.g.
@@ -156,7 +156,7 @@ void setup()
      * utf-8
      * utf-7
      * The default value is utf-8
-    */
+     */
     message.html.charSet = F("utf-8");
 
     SMTP_Attachment att;
@@ -164,14 +164,14 @@ void setup()
     /** Set the inline image info e.g.
      * file name, MIME type, file path, file storage type,
      * transfer encoding and content encoding
-    */
+     */
     att.descr.filename = F("camera.jpg");
     att.descr.mime = F("image/jpg");
 
     att.blob.data = cam.getfb();
     att.blob.size = cam.getSize();
 
-    att.descr.content_id = F("image-001"); //The content id (cid) of camera.jpg image in the src tag
+    att.descr.content_id = F("image-001"); // The content id (cid) of camera.jpg image in the src tag
 
     /* Need to be base64 transfer encoding for inline image */
     att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
@@ -187,8 +187,8 @@ void setup()
     if (!MailClient.sendMail(&smtp, &message, true))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
-    //to clear sending result log
-    //smtp.sendingResult.clear();
+    // to clear sending result log
+    // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 
@@ -207,8 +207,8 @@ void initCam()
     camera_config_t camera_config;
 
     /** For M5Stack M5Cam - ESP32 Camera (OV2640)
-   * Change to match your pin configuration between OV2640 Camera and ESP32 connection
-  */
+     * Change to match your pin configuration between OV2640 Camera and ESP32 connection
+     */
     camera_config.ledc_channel = LEDC_CHANNEL_0;
     camera_config.ledc_timer = LEDC_TIMER_0;
     camera_config.pin_d0 = 17;
@@ -268,13 +268,13 @@ void smtpCallback(SMTP_Status status)
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
         }
         Serial.println("----------------\n");
-        
-        //You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
-        //pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
 
-        //Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
-        //a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
+        // You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
+        // pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
 
-        //smtp.sendingResult.clear();
+        // Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
+        // a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
+
+        // smtp.sendingResult.clear();
     }
 }

@@ -1,16 +1,19 @@
 #ifndef ESP_Mail_Client_H
 #define ESP_Mail_Client_H
 
-#define ESP_MAIL_VERSION "2.1.4"
+#define ESP_MAIL_VERSION "2.2.0"
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.4
- *   Released:  May 1, 2022
+ *   Version:   2.2.0
+ *   Released:  May 3, 2022
  *
  *   Updates:
- * - Add support NTP time synching timed out debug.
+ * - Fixed Time.getTimestamp issue.
+ * - Fixed SMTP DSN issue.
+ * - Fixed SMTP Date header issue.
+ * - Reduce program size.
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -835,7 +838,7 @@ private:
   bool connected(SMTPSession *smtp);
   bool setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
   bool smtpAuth(SMTPSession *smtp);
-  bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status_code respCode, int errCode);
+  bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
   void uploadReport(const char *filename, int &lastProgress, int progress);
   MB_FS *getMBFS();
   int setTimestamp(time_t ts);
@@ -871,7 +874,7 @@ private:
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
   int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
   bool getHeader(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
-  bool getHeader(char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
   void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, bool caseSensitive = true);
@@ -1365,6 +1368,7 @@ private:
   int _sentFailedCount = 0;
   bool _chunkedEnable = false;
   int _chunkCount = 0;
+  uint32_t ts = 0;
 
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
   struct esp_mail_auth_capability_t _auth_capability;

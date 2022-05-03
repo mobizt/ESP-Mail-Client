@@ -2,16 +2,16 @@
 
 /**
  * This example show how to login once for sending multiple messages.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -20,14 +20,13 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
-
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -44,16 +43,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -101,7 +100,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -141,7 +140,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
@@ -151,13 +150,13 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
   /** The option to add soft line break to to the message for
    * the long text message > 78 characters (rfc 3676)
    * Some Servers may not compliant with the standard.
-  */
+   */
   message.text.flowed = true;
 
   message.text.content = F("This is the first message");
@@ -170,7 +169,7 @@ void setup()
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_normal;
 
   /** The Delivery Status Notifications e.g.
@@ -179,8 +178,8 @@ void setup()
    * esp_mail_smtp_notify_failure
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
-  */
-  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+   */
+  // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <Admin1@gmail.com>"));
@@ -194,22 +193,21 @@ void setup()
 
   /** Start sending the first Email and keep open the session
    * The third parameter is for close the session.
-  */
+   */
   if (!MailClient.sendMail(&smtp, &message, false))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
- 
   /* To clear all message data */
-  //message.clear();
+  // message.clear();
 
-  /** Clear primary recipients, Cc recipients, Bcc recipients, custom headers 
+  /** Clear primary recipients, Cc recipients, Bcc recipients, custom headers
    * attachments and inline images
-  */
+   */
   message.clearRecipients();
   message.clearCc();
   message.clearBcc();
-  //message.clearAttachments();
-  //message.clearInlineimages();
+  // message.clearAttachments();
+  // message.clearInlineimages();
 
   message.subject = F("Second Email with session reusage");
 
@@ -220,7 +218,7 @@ void setup()
 
   message.html.content = F("<p>This is the <span style=\"color:#ff0000;\">second message</span>.</p>");
   message.html.charSet = F("us-ascii");
-  
+
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
   message.text.content = F("This is the second message");
@@ -237,8 +235,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -277,7 +275,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

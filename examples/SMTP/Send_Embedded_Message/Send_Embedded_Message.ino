@@ -1,18 +1,18 @@
 
 
 /**
- * This example shows how to send Email which the 
+ * This example shows how to send Email which the
  * html and text message will be embedded as attachment or inline content.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -21,15 +21,15 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
 
-//To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+// To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -51,11 +51,11 @@
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -103,7 +103,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -140,7 +140,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.html.charSet = F("utf-8");
 
   /** The content transfer encoding e.g.
@@ -150,7 +150,7 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
   /* Enable to send this message body as file */
@@ -159,13 +159,11 @@ void setup()
   /* The name of embedded file */
   message.html.embed.filename = F("test.html");
 
-  /** The embedded type 
+  /** The embedded type
    * esp_mail_smtp_embed_message_type_attachment or 0
    * esp_mail_smtp_embed_message_type_inline or 1
-  */
+   */
   message.html.embed.type = esp_mail_smtp_embed_message_type_attachment;
-
-
 
   message.text.content = F("This is simple plain text message");
   message.text.charSet = F("utf-8");
@@ -174,19 +172,16 @@ void setup()
   message.text.embed.filename = F("test.txt");
   message.text.embed.type = esp_mail_smtp_embed_message_type_inline;
 
-
   /** The message priority
    * esp_mail_smtp_priority_high or 1
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
-
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
-  
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -196,8 +191,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -236,7 +231,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

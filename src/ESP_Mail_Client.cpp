@@ -1,11 +1,14 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.1.4
- *   Released:  May 1, 2022
+ *   Version:   2.2.0
+ *   Released:  May 3, 2022
  *
  *   Updates:
- * - Add support NTP time synching timed out debug.
+ * - Fixed Time.getTimestamp issue.
+ * - Fixed SMTP DSN issue.
+ * - Fixed SMTP Date header issue.
+ * - Reduce program size
  *
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
@@ -101,6 +104,8 @@ int ESP_Mail_Client::getFreeHeap()
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, bool wait)
 {
 
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
   Time.setClock(gmt_offset, day_light_offset, ntp_server);
   if (wait)
   {
@@ -110,6 +115,9 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
       delay(0);
     }
   }
+
+#endif
+
   _clockReady = Time.clockReady();
 }
 
@@ -1607,13 +1615,15 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
 #endif
   }
 
-  bool sslValidTime = false;
+  bool validTime = false;
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  sslValidTime = strlen(imap->_sesson_cfg->certificate.cert_file) > 0 || imap->_caCert != nullptr;
+  validTime = strlen(imap->_sesson_cfg->certificate.cert_file) > 0 || imap->_caCert != nullptr;
 #endif
 
-  if (imap->_sesson_cfg->time.ntp_server.length() > 0 || sslValidTime)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
+  if (imap->_sesson_cfg->time.ntp_server.length() > 0 || validTime)
   {
     s = esp_mail_str_355;
     esp_mail_debug(s.c_str());
@@ -1621,6 +1631,8 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap)
     if (!Time.clockReady())
       errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
   }
+
+#endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   setSecure(imap->client, imap->_sesson_cfg, imap->_caCert);
@@ -2305,7 +2317,7 @@ void ESP_Mail_Client::setHeader(IMAPSession *imap, char *buf, struct esp_mail_me
   }
 }
 
-bool ESP_Mail_Client::getHeader(char *buf, PGM_P beginH, MB_String &out, bool caseSensitive)
+bool ESP_Mail_Client::getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive)
 {
   if (strcmpP(buf, 0, beginH, caseSensitive))
   {
@@ -5469,13 +5481,15 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 #endif
   }
 
-  bool sslValidTime = false;
+  bool validTime = false;
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  sslValidTime = strlen(smtp->_sesson_cfg->certificate.cert_file) > 0 || smtp->_caCert != nullptr;
+  validTime = true; // strlen(smtp->_sesson_cfg->certificate.cert_file) > 0 || smtp->_caCert != nullptr;
 #endif
 
-  if (smtp->_sesson_cfg->time.ntp_server.length() > 0 || sslValidTime)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
+  if (smtp->_sesson_cfg->time.ntp_server.length() > 0 || validTime)
   {
     s = esp_mail_str_355;
     esp_mail_debug(s.c_str());
@@ -5483,6 +5497,8 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
     if (!Time.clockReady())
       errorStatusCB(smtp, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
   }
+
+#endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   setSecure(smtp->client, smtp->_sesson_cfg, smtp->_caCert);
@@ -5526,10 +5542,8 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
 
   smtp->client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 
-  smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state;
-
   // expected status code 220 for ready to service
-  if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_220, SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED))
+  if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_initial_state, esp_mail_smtp_status_code_220, SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED))
     return false;
 
 init:
@@ -5554,9 +5568,7 @@ init:
   if (smtpSendP(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
     return false;
 
-  smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
-
-  if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, 0))
+  if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
   {
     // just SMTP (rfc821), send HELO
     s = esp_mail_str_5;
@@ -5567,8 +5579,10 @@ init:
 
     if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return false;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
+
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
       return false;
+
     smtp->_send_capability.esmtp = false;
     smtp->_auth_capability.login = true;
   }
@@ -5593,9 +5607,8 @@ init:
 
     // expected status code 250 for complete the request
     // some server returns 220 to restart to initial state
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls;
     smtpSendP(smtp, esp_mail_str_311, false);
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
       return false;
 
     if (smtp->_debug)
@@ -5646,8 +5659,7 @@ init:
       if (smtpSend(smtp, getEncodedToken(smtp).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
-      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
         return false;
 
       return true;
@@ -5688,8 +5700,7 @@ init:
       if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
-      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_auth_plain;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_USER_LOGIN_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth_plain, esp_mail_smtp_status_code_235, SMTP_STATUS_USER_LOGIN_FAILED))
         return false;
 
       return true;
@@ -5702,7 +5713,7 @@ init:
       if (smtpSendP(smtp, esp_mail_str_4, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
         return false;
 
       if (smtp->_debug)
@@ -5715,8 +5726,7 @@ init:
       if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email.c_str(), smtp->_sesson_cfg->login.email.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
-      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_user;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_user, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
         return false;
 
       if (smtp->_debug)
@@ -5730,8 +5740,7 @@ init:
       if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password.c_str(), smtp->_sesson_cfg->login.password.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
-      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_login_psw;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_psw, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
         return false;
 
       return true;
@@ -5757,8 +5766,7 @@ bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
   {
     SMTP_Result status;
     status.completed = result;
-    smtp->client.setSystemTime(Time.getCurrentTimestamp());
-    status.timestamp = smtp->client.getTime();
+    status.timestamp = smtp->ts;
     status.subject = msg->subject.c_str();
     status.recipients = msg->_rcp[0].email.c_str();
 
@@ -5933,8 +5941,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
     return setSendingResult(smtp, msg, false);
 
-  smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_header_sender;
-  if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_SENDER_FAILED))
+  if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_sender, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_SENDER_FAILED))
     return setSendingResult(smtp, msg, false);
 
   for (uint8_t i = 0; i < msg->_rcp.size(); i++)
@@ -5977,25 +5984,29 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     // rfc3461, rfc3464
     if (smtp->_send_capability.dsn)
     {
-      if (msg->response.notify != esp_mail_smtp_notify::esp_mail_smtp_notify_never)
+      if (msg->response.notify != esp_mail_smtp_notify_never)
       {
+
         buf += esp_mail_str_262;
         int opcnt = 0;
-        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_success)
+
+        if ((msg->response.notify & esp_mail_smtp_notify_success) == esp_mail_smtp_notify_success)
         {
           if (opcnt > 0)
             buf += esp_mail_str_263;
           buf += esp_mail_str_264;
           opcnt++;
         }
-        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_failure)
+
+        if ((msg->response.notify & esp_mail_smtp_notify_failure) == esp_mail_smtp_notify_failure)
         {
           if (opcnt > 0)
             buf += esp_mail_str_263;
           buf += esp_mail_str_265;
           opcnt++;
         }
-        if (msg->response.notify == esp_mail_smtp_notify::esp_mail_smtp_notify_delay)
+
+        if ((msg->response.notify & esp_mail_smtp_notify_delay) == esp_mail_smtp_notify_delay)
         {
           if (opcnt > 0)
             buf += esp_mail_str_263;
@@ -6008,8 +6019,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return setSendingResult(smtp, msg, false);
 
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_header_recipient;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
       return setSendingResult(smtp, msg, false);
   }
 
@@ -6043,8 +6053,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return setSendingResult(smtp, msg, false);
 
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_header_recipient;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
       return setSendingResult(smtp, msg, false);
   }
 
@@ -6056,8 +6065,8 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     buf += esp_mail_str_15;
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return setSendingResult(smtp, msg, false);
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_header_recipient;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
+
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
       return setSendingResult(smtp, msg, false);
   }
 
@@ -6081,8 +6090,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     if (smtpSendP(smtp, esp_mail_str_16, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return setSendingResult(smtp, msg, false);
 
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_body;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_354, SMTP_STATUS_SEND_BODY_FAILED))
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_354, SMTP_STATUS_SEND_BODY_FAILED))
       return setSendingResult(smtp, msg, false);
   }
 
@@ -6095,6 +6103,8 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   s += esp_mail_str_34;
 
   bool dateHdr = false;
+  MB_String dt;
+  smtp->ts = 0;
 
   if (msg->_hdr.size() > 0)
   {
@@ -6102,17 +6112,33 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     {
       s += msg->_hdr[k];
       s += esp_mail_str_34;
-
-      if (strcmpP(msg->_hdr[k].c_str(), 0, esp_mail_str_99, false))
-        dateHdr = true;
+      if (getHeader(msg->_hdr[k].c_str(), esp_mail_str_99, dt, false))
+      {
+        smtp->ts = Time.getTimestamp(dt.c_str());
+        dateHdr = smtp->ts > 0;
+      }
     }
   }
 
-  if (!dateHdr)
+  if (!dateHdr && msg->date.length() > 0)
+  {
+    dt = msg->date;
+    smtp->ts = Time.getTimestamp(msg->date.c_str());
+    dateHdr = smtp->ts > 0;
+  }
+
+  if (dateHdr)
+  {
+    s += esp_mail_str_99;
+    s += esp_mail_str_131;
+    s += dt;
+    s += esp_mail_str_34;
+  }
+  else
   {
     smtp->client.setSystemTime(Time.getCurrentTimestamp());
-    time_t now = smtp->client.getTime();
-    if (now > ESP_TIME_DEFAULT_TS)
+    smtp->ts = smtp->client.getTime();
+    if (smtp->ts > ESP_TIME_DEFAULT_TS)
     {
       s += esp_mail_str_99;
       s += esp_mail_str_131;
@@ -6287,8 +6313,7 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
       if (!bdat(smtp, msg, 0, true))
         return false;
 
-      smtp->_smtp_cmd = esp_mail_smtp_cmd_chunk_termination;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_chunk_termination, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
         return false;
     }
     else
@@ -6296,8 +6321,7 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
       if (smtpSendP(smtp, esp_mail_str_37, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return setSendingResult(smtp, msg, false);
 
-      smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_body;
-      if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
+      if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
         return setSendingResult(smtp, msg, false);
     }
 
@@ -6545,8 +6569,7 @@ bool ESP_Mail_Client::bdat(SMTPSession *smtp, SMTP_Message *msg, int len, bool l
 
   if (!smtp->_send_capability.pipelining)
   {
-    smtp->_smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_send_body;
-    if (!handleSMTPResponse(smtp, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
+    if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
       return setSendingResult(smtp, msg, false);
     smtp->_chunkCount = 0;
   }
@@ -8404,8 +8427,10 @@ void ESP_Mail_Client::handleAuth(SMTPSession *smtp, char *buf)
     smtp->_send_capability.dsn = true;
 }
 
-bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_status_code respCode, int errCode)
+bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode)
 {
+  smtp->_smtp_cmd = cmd;
+
   if (!reconnect(smtp))
     return false;
 
@@ -9018,8 +9043,7 @@ bool SMTPSession::closeSession()
    * the connection due to QUIT command, which caused the memory leaks.
    */
   MailClient.smtpSendP(this, esp_mail_str_7, true);
-  _smtp_cmd = esp_mail_smtp_cmd_logout;
-  ret = MailClient.handleSMTPResponse(this, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
+  ret = MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
 #endif
 
   if (ret)

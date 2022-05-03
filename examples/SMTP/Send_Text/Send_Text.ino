@@ -2,17 +2,16 @@
 
 /**
  * This example showes how to send text Email.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
-
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -21,14 +20,13 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
 #include <ESP_Mail_Client.h>
-
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -45,17 +43,17 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
-#define SMTP_PORT esp_mail_smtp_port_587 //port 465 is not available for Outlook.com
+ */
+#define SMTP_PORT esp_mail_smtp_port_587 // port 465 is not available for Outlook.com
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
@@ -105,7 +103,7 @@ void setup()
    * 1 for basic level debugging
    *
    * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-  */
+   */
   smtp.debug(1);
 
   /* Set the callback function to get the sending results */
@@ -140,16 +138,16 @@ void setup()
 
   /** If the message to send is a large string, to reduce the memory used from internal copying  while sending,
    * you can assign string to message.text.blob by cast your string to uint8_t array like this
-   * 
+   *
    * String myBigString = "..... ......";
    * message.text.blob.data = (uint8_t *)myBigString.c_str();
    * message.text.blob.size = myBigString.length();
-   * 
+   *
    * or assign string to message.text.nonCopyContent, like this
-   * 
+   *
    * message.text.nonCopyContent = myBigString.c_str();
-   * 
-   * Only base64 encoding is supported for content transfer encoding in this case. 
+   *
+   * Only base64 encoding is supported for content transfer encoding in this case.
    */
 
   /** The Plain text message character set e.g.
@@ -157,7 +155,7 @@ void setup()
    * utf-8
    * utf-7
    * The default value is utf-8
-  */
+   */
   message.text.charSet = F("us-ascii");
 
   /** The content transfer encoding e.g.
@@ -167,26 +165,23 @@ void setup()
    * enc_binary or "binary" (not encoded)
    * enc_8bit or "8bit" (not encoded)
    * The default value is "7bit"
-  */
+   */
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
-
-  //If this is a reply message
-  //message.in_reply_to = "<parent message id>";
-  //message.references = "<parent references> <parent message id>";
+  // If this is a reply message
+  // message.in_reply_to = "<parent message id>";
+  // message.references = "<parent references> <parent message id>";
 
   /** The message priority
    * esp_mail_smtp_priority_high or 1
    * esp_mail_smtp_priority_normal or 3
    * esp_mail_smtp_priority_low or 5
    * The default value is esp_mail_smtp_priority_low
-  */
+   */
   message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
-
-
-  //message.response.reply_to = "someone@somemail.com";
-  //message.response.return_path = "someone@somemail.com";
+  // message.response.reply_to = "someone@somemail.com";
+  // message.response.return_path = "someone@somemail.com";
 
   /** The Delivery Status Notifications e.g.
    * esp_mail_smtp_notify_never
@@ -194,20 +189,20 @@ void setup()
    * esp_mail_smtp_notify_failure
    * esp_mail_smtp_notify_delay
    * The default value is esp_mail_smtp_notify_never
-  */
-  //message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+   */
+  // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
-  //For Root CA certificate verification (ESP8266 and ESP32 only)
-  //session.certificate.cert_data = rootCACert;
-  //or
-  //session.certificate.cert_file = "/path/to/der/file";
-  //session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-  //session.certificate.verify = true;
+  // For Root CA certificate verification (ESP8266 and ESP32 only)
+  // session.certificate.cert_data = rootCACert;
+  // or
+  // session.certificate.cert_file = "/path/to/der/file";
+  // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+  // session.certificate.verify = true;
 
-  //The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
+  // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
   /* Connect to server with the session config */
   if (!smtp.connect(&session))
@@ -217,8 +212,8 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
-  //to clear sending result log
-  //smtp.sendingResult.clear();
+  // to clear sending result log
+  // smtp.sendingResult.clear();
 
   ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -257,7 +252,7 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    //You need to clear sending result as the memory usage will grow up.
+    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

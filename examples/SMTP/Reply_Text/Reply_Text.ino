@@ -2,22 +2,21 @@
 
 /**
  * This example showes how to send a reply message when specific email was received.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-//The account 2 will send Hello message to account 1.
+// The account 2 will send Hello message to account 1.
 
-//The account 1 will poll the mailbox for incoming message, when new message received with matched subject 
-//and sent from account 1, the account 1 will send a reply messsage to account 2.
-
+// The account 1 will poll the mailbox for incoming message, when new message received with matched subject
+// and sent from account 1, the account 1 will send a reply messsage to account 2.
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -26,9 +25,9 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
@@ -49,7 +48,7 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<imap host for account 1>"
@@ -58,17 +57,16 @@
 #define IMAP_AUTHOR_EMAIL "<email for account 1>"
 #define IMAP_AUTHOR_PASSWORD "<password for account 1>"
 
-#define REPLY_SMTP_AUTHOR_EMAIL "<email for account 1>" 
+#define REPLY_SMTP_AUTHOR_EMAIL "<email for account 1>"
 #define REPLY_SMTP_AUTHOR_PASSWORD "<password for account 1>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define REPLY_SMTP_PORT 587
 #define REPLY_SMTP_HOST "<smtp host for account 1>"
-
 
 #define HELLO_SMTP_AUTHOR_EMAIL "<email for account 2>"
 #define HELLO_SMTP_AUTHOR_PASSWORD "<password for account 2>"
@@ -163,15 +161,15 @@ void loop()
 
     /* imap.connect and imap.selectFolder or imap.openFolder nedded to be called once prior to listen */
 
-    //Listen for mailbox changes
+    // Listen for mailbox changes
     if (!imap.listen())
         return;
 
-    //Check the changes
+    // Check the changes
     if (imap.folderChanged())
         printPollingStatus(imap);
 
-    //To stop listen, use imap.stopListen(); and to listen again, call imap.listen()
+    // To stop listen, use imap.stopListen(); and to listen again, call imap.listen()
 
     if (millis() - helloSendingMillis > 5 * 60 * 1000 || helloSendingMillis == 0)
     {
@@ -193,7 +191,6 @@ void setupIMAP()
     imap_mail_app_session.server.port = IMAP_PORT;
     imap_mail_app_session.login.email = IMAP_AUTHOR_EMAIL;
     imap_mail_app_session.login.password = IMAP_AUTHOR_PASSWORD;
-
 
     /* Connect to server with the session and config */
     if (!imap.connect(&imap_mail_app_session, &imap_config))
@@ -267,7 +264,7 @@ void sendHelloMessage()
     message.sender.email = HELLO_SMTP_AUTHOR_EMAIL;
     message.subject = sendingSubject.c_str();
     message.addRecipient(F("Me"), IMAP_AUTHOR_EMAIL);
-    message.response.reply_to = HELLO_SMTP_AUTHOR_EMAIL; //only email address, excluded < and >
+    message.response.reply_to = HELLO_SMTP_AUTHOR_EMAIL; // only email address, excluded < and >
     message.text.content = F("Hello Me!");
 
     /* Start sending Email and close the session */
@@ -319,15 +316,15 @@ void printPollingStatus(IMAPSession &imap)
 
         ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
 
-        //we need to stop polling before do anything
+        // we need to stop polling before do anything
         imap.stopListen();
 
-        //Get the UID of new message and fetch
+        // Get the UID of new message and fetch
         imap_config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
 
-        //When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
-        //as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
-        //to message, see the Set_Flags.ino example.
+        // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
+        // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
+        // to message, see the Set_Flags.ino example.
         MailClient.readMail(&imap, false);
     }
 }
@@ -350,7 +347,7 @@ void imapCallback(IMAP_Status status)
             Serial.print("Sending Reply message... ");
             std::string replyEmail = msgList.msgItems[0].reply_to;
 
-            //remove < at the beginning and > at the end.
+            // remove < at the beginning and > at the end.
             replyEmail.erase(0, 1);
             replyEmail.pop_back();
 
@@ -392,7 +389,7 @@ void helloSMTPCallback(SMTP_Status status)
         }
         Serial.println("----------------\n");
 
-        //You need to clear sending result as the memory usage will grow up
+        // You need to clear sending result as the memory usage will grow up
         hello_smtp.sendingResult.clear();
     }
 }

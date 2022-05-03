@@ -2,20 +2,20 @@
 
 /**
  * This example shows how to send Email with inline image from ESP32 camera module.
- * 
+ *
  * The ESP32 board used in this example is ESP32 PSRAM Timer Camera X (OV3660).
- * 
+ *
  * The html and text version messages will be sent.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -42,16 +42,16 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "<host>"
 
-/** The smtp port e.g. 
+/** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
-*/
+ */
 #define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
@@ -63,7 +63,6 @@ SMTPSession smtp;
 
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
-
 
 void setup()
 {
@@ -125,7 +124,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     smtp.debug(1);
 
     /* Set the callback function to get the sending results */
@@ -168,7 +167,7 @@ void setup()
      * enc_binary or "binary" (not encoded)
      * enc_8bit or "8bit" (not encoded)
      * The default value is "7bit"
-    */
+     */
     message.html.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
     /** The HTML text message character set e.g.
@@ -176,7 +175,7 @@ void setup()
      * utf-8
      * utf-7
      * The default value is utf-8
-    */
+     */
     message.html.charSet = F("utf-8");
 
     camera_fb_t *fb = esp_camera_fb_get();
@@ -186,14 +185,14 @@ void setup()
     /** Set the inline image info e.g.
      * file name, MIME type, file path, file storage type,
      * transfer encoding and content encoding
-    */
+     */
     att.descr.filename = F("camera.jpg");
     att.descr.mime = F("image/jpg");
 
     att.blob.data = fb->buf;
     att.blob.size = fb->len;
 
-    att.descr.content_id = F("image-001"); //The content id (cid) of camera.jpg image in the src tag
+    att.descr.content_id = F("image-001"); // The content id (cid) of camera.jpg image in the src tag
 
     /* Need to be base64 transfer encoding for inline image */
     att.descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
@@ -209,8 +208,8 @@ void setup()
     if (!MailClient.sendMail(&smtp, &message, true))
         Serial.println("Error sending Email, " + smtp.errorReason());
 
-    //to clear sending result log
-    //smtp.sendingResult.clear();
+    // to clear sending result log
+    // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -249,7 +248,7 @@ void smtpCallback(SMTP_Status status)
         }
         Serial.println("----------------\n");
 
-        //You need to clear sending result as the memory usage will grow up.
+        // You need to clear sending result as the memory usage will grow up.
         smtp.sendingResult.clear();
     }
 }

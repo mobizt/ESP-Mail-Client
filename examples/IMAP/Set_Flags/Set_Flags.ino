@@ -1,19 +1,19 @@
 /**
  * This example shows how to set the argument to the flags and read the message.
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For ESP8266, with BearSSL WiFi Client 
+/** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
- * may cause your device out of memory reset in case the memory 
+ * may cause your device out of memory reset in case the memory
  * allocation error.
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -22,9 +22,9 @@
 #include <ESP8266WiFi.h>
 #else
 
-//Other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
@@ -45,15 +45,15 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
 
-/** The imap port e.g. 
+/** The imap port e.g.
  * 143  or esp_mail_imap_port_143
  * 993 or esp_mail_imap_port_993
-*/
+ */
 #define IMAP_PORT 993
 
 /* The log in credentials */
@@ -113,7 +113,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Set the callback function to get the reading results */
@@ -127,7 +127,7 @@ void setup()
      * And for ESP8266, assign the CS pins of SPI port
      * MailClient.sdBegin(15)
      * Which pin 15 is the CS pin of SD card adapter
-    */
+     */
 
     /* Declare the session config data */
     ESP_Mail_Session session;
@@ -141,9 +141,8 @@ void setup()
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 
-
     /* Set seen flag */
-    //config.fetch.set_seen = true;
+    // config.fetch.set_seen = true;
 
     /* Search criteria */
     config.search.criteria.clear();
@@ -156,26 +155,26 @@ void setup()
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and 
-     * esp_mail_file_storage_type_sd 
-    */
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     config.storage.type = esp_mail_file_storage_type_flash;
 
-    /** Set to download heades, text and html messaeges, 
+    /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
-    */
+     */
     config.download.header = true;
     config.download.text = true;
     config.download.html = true;
     config.download.attachment = true;
     config.download.inlineImg = true;
 
-    /** Set to enable the results i.e. html and text messaeges 
+    /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
      * by the option config.limit.msg_size.
      * The whole message can be download through config.download.text
      * or config.download.html which not depends on these enable options.
-    */
+     */
     config.enable.html = true;
     config.enable.text = true;
 
@@ -188,16 +187,16 @@ void setup()
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 
-    /** Set the maximum size of message stored in 
+    /** Set the maximum size of message stored in
      * IMAPSession object in byte
-    */
+     */
     config.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
-     * that can be downloaded in byte. 
-     * The file which its size is largger than this limit may be saved 
+     * that can be downloaded in byte.
+     * The file which its size is largger than this limit may be saved
      * as truncated file.
-    */
+     */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to server with the session and config */
@@ -214,24 +213,22 @@ void setup()
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-
-
     /* Message UID to fetch or read e.g. 100 */
     int uid = imap.getUID(imap.selectedFolder().msgCount());
 
     /** Set \Seen and \Answered to flags for message with UID
      * The seesion will keep open.
-    */
+     */
     if (MailClient.setFlag(&imap, uid, F("\\Seen \\Answered"), false))
         Serial.println("Setting FLAG success");
     else
         Serial.println("Error, setting FLAG");
 
     /* Add \Seen and \Answered to flags for message with UID 100 */
-    //MailClient.addFlag(imap, 100, "\\Seen \\Answered", false);
+    // MailClient.addFlag(imap, 100, "\\Seen \\Answered", false);
 
     /* Remove \Seen and \Answered from flags for message with UID 100 */
-    //MailClient.removeFlag(imap, 100, "\\Seen \\Answered", false);
+    // MailClient.removeFlag(imap, 100, "\\Seen \\Answered", false);
 
     config.fetch.uid = uid;
 
@@ -304,7 +301,7 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
          * esp_mail_att_type_none or 0
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
-        */
+         */
         ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
     }
     Serial.println();

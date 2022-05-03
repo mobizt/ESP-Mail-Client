@@ -1,21 +1,21 @@
 /**
  * This example shows how to search all messages with the keywords in the opened mailbox folder.
- * 
+ *
  * Created by K. Suwatchai (Mobizt)
- * 
+ *
  * Email: suwatchai@outlook.com
- * 
+ *
  * Github: https://github.com/mobizt/ESP-Mail-Client
- * 
+ *
  * Copyright (c) 2022 mobizt
  *
-*/
+ */
 
-/** For ESP8266, with BearSSL WiFi Client 
+/** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
- * may cause your device out of memory reset in case the memory 
+ * may cause your device out of memory reset in case the memory
  * allocation error.
-*/
+ */
 
 #include <Arduino.h>
 #if defined(ESP32)
@@ -24,9 +24,9 @@
 #include <ESP8266WiFi.h>
 #else
 
-//other Client defined here
-//To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-//See the example Custom_Client.ino for how to use.
+// other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
 
 #endif
 
@@ -47,15 +47,15 @@
  *
  * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
  * and AUTHOR_EMAIL with your account email.
-*/
+ */
 
 /* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
 
-/** The imap port e.g. 
+/** The imap port e.g.
  * 143  or esp_mail_imap_port_143
  * 993 or esp_mail_imap_port_993
-*/
+ */
 #define IMAP_PORT 993
 
 /* The log in credentials */
@@ -115,7 +115,7 @@ void setup()
      * 1 for basic level debugging
      *
      * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-    */
+     */
     imap.debug(1);
 
     /* Set the callback function to get the reading results */
@@ -132,7 +132,7 @@ void setup()
      * And for ESP8266, assign the CS pins of SPI port
      * MailClient.sdBegin(15)
      * Which pin 15 is the CS pin of SD card adapter
-    */
+     */
 
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
@@ -146,24 +146,24 @@ void setup()
     /* Message UID to fetch or read */
     config.fetch.uid.clear();
 
-    /** Search criteria 
-     * 
-     * A search key can also be a parenthesized list of one or more search keys 
-     * (e.g., for use with the OR and NOT keys). 
-     * 
+    /** Search criteria
+     *
+     * A search key can also be a parenthesized list of one or more search keys
+     * (e.g., for use with the OR and NOT keys).
+     *
      * Since IMAP protocol uses Polish notation, the search criteria which in the polish notation form can be.
-     * 
+     *
      * To search the message from "someone@email.com" with the subject "my subject" since 1 Jan 2021, your search criteria can be
      * UID SEARCH (OR SUBJECT "my subject" FROM "someone@email.com") SINCE "Fri, 1 Jan 2021 21:52:25 -0800"
-     * 
+     *
      * To search the message from "mail1@domain.com" or from "mail2@domain.com", the search criteria will be
-     * UID SEARCH OR FROM mail1@domain.com FROM mail2@domain.com 
-     * 
+     * UID SEARCH OR FROM mail1@domain.com FROM mail2@domain.com
+     *
      * For more details on using parentheses, AND, OR and NOT search keys in search criteria.
      * https://www.limilabs.com/blog/imap-search-requires-parentheses
-     * 
-     * 
-    */
+     *
+     *
+     */
     config.search.criteria = F("UID SEARCH ALL");
 
     /* Also search the unseen message */
@@ -174,26 +174,26 @@ void setup()
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and 
-     * esp_mail_file_storage_type_sd 
-    */
+     * esp_mail_file_storage_type_flash, and
+     * esp_mail_file_storage_type_sd
+     */
     config.storage.type = esp_mail_file_storage_type_flash;
 
-    /** Set to download heades, text and html messaeges, 
+    /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
-    */
+     */
     config.download.header = true;
     config.download.text = true;
     config.download.html = true;
     config.download.attachment = true;
     config.download.inlineImg = true;
 
-    /** Set to enable the results i.e. html and text messaeges 
+    /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
      * by the option config.limit.msg_size.
      * The whole message can be download through config.download.text
      * or config.download.html which not depends on these enable options.
-    */
+     */
     config.enable.html = true;
     config.enable.text = true;
 
@@ -205,23 +205,22 @@ void setup()
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    //config.enable.header_case_sensitive = true;
+    // config.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 
-    /** Set the maximum size of message stored in 
+    /** Set the maximum size of message stored in
      * IMAPSession object in byte
-    */
+     */
     config.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
-     * that can be downloaded in byte. 
-     * The file which its size is largger than this limit may be saved 
+     * that can be downloaded in byte.
+     * The file which its size is largger than this limit may be saved
      * as truncated file.
-    */
+     */
     config.limit.attachment_size = 1024 * 1024 * 5;
-
 
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
@@ -237,17 +236,17 @@ void setup()
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-    /** Read or search the Email and keep the TCP session to open 
+    /** Read or search the Email and keep the TCP session to open
      * The second parameter is for close the session.
-    */
+     */
     MailClient.readMail(&imap, false);
 
     /* Clear all stored data in IMAPSession object */
     imap.empty();
 
-    /** Open or select other mailbox folder 
+    /** Open or select other mailbox folder
      * The folder that previousely opened will be closed
-    */
+     */
     if (imap.selectFolder(F("Junk")))
     {
         /*  {Optional} */
@@ -330,7 +329,7 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
          * esp_mail_att_type_none or 0
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
-        */
+         */
         ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.creationDate);
     }
     Serial.println();
@@ -351,9 +350,9 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
         ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
-        
-        //The attachment may not detect in search because the multipart/mixed 
-        //was not found in Content-Type header field.
+
+        // The attachment may not detect in search because the multipart/mixed
+        // was not found in Content-Type header field.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))
