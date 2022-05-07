@@ -370,7 +370,7 @@ void helloSMTPCallback(SMTP_Status status)
     {
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -404,7 +404,7 @@ void replySMTPCallback(SMTP_Status status)
     {
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
