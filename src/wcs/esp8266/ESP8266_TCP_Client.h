@@ -1,30 +1,30 @@
 /**
- * 
+ *
  * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.5
- * 
+ *
  * Created April 17, 2022
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
- * 
+ *
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #ifndef ESP8266_TCP_Client_H
 #define ESP8266_TCP_Client_H
@@ -52,7 +52,6 @@ class ESP8266_TCP_Client : public TCP_Client_Base
 {
 
 public:
-
   ESP8266_TCP_Client();
   ~ESP8266_TCP_Client();
 
@@ -115,7 +114,7 @@ public:
   uint16_t bsslTxSize = 1024;
   bool fragmentable = false;
   int _chunkSize = 1024;
-  int maxRXBufSize = 16384; //SSL full supported 16 kB
+  int maxRXBufSize = 16384; // SSL full supported 16 kB
   int maxTXBufSize = 16384;
   bool mflnChecked = false;
   int rxBufDivider = maxRXBufSize / _chunkSize;
@@ -127,8 +126,6 @@ private:
 #ifndef USING_AXTLS
   X509List *x509 = nullptr;
 #endif
-
-  
 };
 
 #endif /* ESP8266 */

@@ -34,33 +34,41 @@ public:
 	static WiFiStorageFile open(const char *filename);
 	static WiFiStorageFile open(String filename);
 
-	static bool exists(const char *filename) {
+	static bool exists(const char *filename)
+	{
 		uint32_t len;
 		return (WiFiDrv::existsFile(filename, strlen(filename), &len) > 0);
 	}
-	static bool exists(const char *filename, uint32_t* len) {
+	static bool exists(const char *filename, uint32_t *len)
+	{
 		return (WiFiDrv::existsFile(filename, strlen(filename), len) > 0);
 	}
-	static bool remove(const char *filename) {
+	static bool remove(const char *filename)
+	{
 		WiFiDrv::deleteFile(filename, strlen(filename));
 		return true;
 	}
-	static bool rename(const char * old_file_name, const char * new_file_name) {
+	static bool rename(const char *old_file_name, const char *new_file_name)
+	{
 		return (WiFiDrv::renameFile(old_file_name, strlen(old_file_name), new_file_name, strlen(new_file_name)) == 0);
 	}
-	static bool read(const char *filename, uint32_t offset, uint8_t* buffer, uint32_t buffer_len) {
+	static bool read(const char *filename, uint32_t offset, uint8_t *buffer, uint32_t buffer_len)
+	{
 		WiFiDrv::readFile(filename, strlen(filename), offset, buffer, buffer_len);
 		return true;
 	}
-	static bool write(const char *filename, uint32_t offset, uint8_t* buffer, uint32_t buffer_len) {
+	static bool write(const char *filename, uint32_t offset, uint8_t *buffer, uint32_t buffer_len)
+	{
 		WiFiDrv::writeFile(filename, strlen(filename), offset, buffer, buffer_len);
 		return true;
 	}
-	static bool download(const char* url, const char *filename) {
+	static bool download(const char *url, const char *filename)
+	{
 		WiFiDrv::downloadFile(url, strlen(url), filename, strlen(filename));
 		return true;
 	}
-    static bool downloadOTA(const char * url, uint8_t * res_ota_download = NULL) {
+	static bool downloadOTA(const char *url, uint8_t *res_ota_download = NULL)
+	{
 		/* The buffer within the nina firmware allows a maximum
 		 * url size of 128 bytes. It's better to prevent the
 		 * transmission of over-sized URL as soon as possible.
@@ -70,84 +78,100 @@ public:
 
 		uint8_t const res = WiFiDrv::downloadOTA(url, strlen(url));
 		if (res_ota_download)
-		  *res_ota_download = res;
+			*res_ota_download = res;
 		bool const success = (res == 0);
-        return success;
-    }
-
-
-    static bool remove(String filename) {
-    	return remove(filename.c_str());
+		return success;
 	}
-	static bool rename(String old_file_name, String new_file_name) {
+
+	static bool remove(String filename)
+	{
+		return remove(filename.c_str());
+	}
+	static bool rename(String old_file_name, String new_file_name)
+	{
 		return rename(old_file_name.c_str(), new_file_name.c_str());
 	}
-	static bool read(String filename, uint32_t offset, uint8_t* buffer, uint32_t buffer_len) {
+	static bool read(String filename, uint32_t offset, uint8_t *buffer, uint32_t buffer_len)
+	{
 		return read(filename.c_str(), offset, buffer, buffer_len);
 	}
-	static bool write(String filename, uint32_t offset, uint8_t* buffer, uint32_t buffer_len) {
+	static bool write(String filename, uint32_t offset, uint8_t *buffer, uint32_t buffer_len)
+	{
 		return write(filename.c_str(), offset, buffer, buffer_len);
 	}
-    static bool download(String url, String filename) {
-    	return download(url.c_str(), filename.c_str());
-    }
-    static bool download(String url, uint8_t * res_ota_download = NULL) {
-        return downloadOTA(url.c_str(), res_ota_download);
-    }
+	static bool download(String url, String filename)
+	{
+		return download(url.c_str(), filename.c_str());
+	}
+	static bool download(String url, uint8_t *res_ota_download = NULL)
+	{
+		return downloadOTA(url.c_str(), res_ota_download);
+	}
 };
 
 extern WiFiStorageClass WiFiStorage;
 
-
 class WiFiStorageFile
 {
 public:
-	constexpr WiFiStorageFile(const char* _filename) : filename(_filename) { }
+	constexpr WiFiStorageFile(const char *_filename) : filename(_filename) {}
 
-	operator bool() {
+	operator bool()
+	{
 		return WiFiStorage.exists(filename, &length);
 	}
-	uint32_t read(void *buf, uint32_t rdlen) {
-		if (offset + rdlen > length) {
-			if (offset >= length) return 0;
+	uint32_t read(void *buf, uint32_t rdlen)
+	{
+		if (offset + rdlen > length)
+		{
+			if (offset >= length)
+				return 0;
 			rdlen = length - offset;
 		}
-		WiFiStorage.read(filename, offset, (uint8_t*)buf, rdlen);
+		WiFiStorage.read(filename, offset, (uint8_t *)buf, rdlen);
 		offset += rdlen;
 		return rdlen;
 	}
-	uint32_t write(const void *buf, uint32_t wrlen) {
-		WiFiStorage.write(filename, offset, (uint8_t*)buf, wrlen);
+	uint32_t write(const void *buf, uint32_t wrlen)
+	{
+		WiFiStorage.write(filename, offset, (uint8_t *)buf, wrlen);
 		offset += wrlen;
 		return wrlen;
 	}
-	void seek(uint32_t n) {
+	void seek(uint32_t n)
+	{
 		offset = n;
 	}
-	uint32_t position() {
+	uint32_t position()
+	{
 		return offset;
 	}
-	uint32_t size() {
+	uint32_t size()
+	{
 		WiFiStorage.exists(filename, &length);
 		return length;
 	}
-	uint32_t available() {
+	uint32_t available()
+	{
 		WiFiStorage.exists(filename, &length);
 		return length - offset;
 	}
-	void erase() {
+	void erase()
+	{
 		offset = 0;
 		WiFiStorage.remove(filename);
 	}
 	void flush();
-	void close() {
+	void close()
+	{
 		offset = 0;
 	}
+
 protected:
 	friend class WiFiStorageClass;
 	uint32_t offset = 0;
 	uint32_t length = 0;
-	const char* filename;
+	const char *filename;
 };
 
 #endif

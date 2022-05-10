@@ -1,15 +1,10 @@
+#ifndef ESP_MAIL_Client_CPP
+#define ESP_MAIL_Client_CPP
+
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- *   Version:   2.2.0
- *   Released:  May 3, 2022
- *
- *   Updates:
- * - Fixed Time.getTimestamp issue.
- * - Fixed SMTP DSN issue.
- * - Fixed SMTP Date header issue.
- * - Reduce program size
- *
+ * Created May 10, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -35,10 +30,8 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef ESP_Mail_Client_CPP
-#define ESP_Mail_Client_CPP
-
 #include "ESP_Mail_Client.h"
+#include "ESP_Mail_Client_Version.h"
 
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
@@ -110,7 +103,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
   if (wait)
   {
     unsigned long waitMs = millis();
-    while (!Time.clockReady() && millis() - waitMs < 5000)
+    while (!Time.clockReady() && millis() - waitMs < 10000)
     {
       delay(0);
     }
@@ -5494,6 +5487,7 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp)
     s = esp_mail_str_355;
     esp_mail_debug(s.c_str());
     setTime(smtp->_sesson_cfg->time.gmt_offset, smtp->_sesson_cfg->time.day_light_offset, smtp->_sesson_cfg->time.ntp_server.c_str(), true);
+
     if (!Time.clockReady())
       errorStatusCB(smtp, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
   }
@@ -5919,20 +5913,26 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     }
   }
 
-  buf2 += esp_mail_str_10;
+  // Construct 'From' header field.
+
+  buf2 += esp_mail_str_10; // 'From' header.
   buf2 += esp_mail_str_131;
 
   if (msg->sender.name.length() > 0)
-    buf2 += msg->sender.name;
+  {
+    buf2 += esp_mail_str_136;
+    buf2 += msg->sender.name; // sender name
+    buf2 += esp_mail_str_136;
+  }
 
   buf2 += esp_mail_str_14;
-  buf2 += msg->sender.email;
+  buf2 += msg->sender.email; // sender Email
   buf2 += esp_mail_str_15;
   buf2 += esp_mail_str_34;
 
-  buf = esp_mail_str_8;
+  buf = esp_mail_str_8; // 'MAIL FROM' command
   buf += esp_mail_str_14;
-  buf += msg->sender.email;
+  buf += msg->sender.email; // sender Email
   buf += esp_mail_str_15;
 
   if (smtp->_send_capability.binaryMIME && smtp->_send_capability.chunking && msg->enable.chunking && (msg->text._int.binary || msg->html._int.binary))
@@ -5944,17 +5944,23 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_sender, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_SENDER_FAILED))
     return setSendingResult(smtp, msg, false);
 
+  // Construct 'To' header fields.
+
   for (uint8_t i = 0; i < msg->_rcp.size(); i++)
   {
     if (i == 0)
     {
-      buf2 += esp_mail_str_11;
+      buf2 += esp_mail_str_11; // 'To' header
       buf2 += esp_mail_str_131;
       if (msg->_rcp[i].name.length() > 0)
-        buf2 += msg->_rcp[i].name;
+      {
+        buf2 += esp_mail_str_136;
+        buf2 += msg->_rcp[i].name; // recipient name
+        buf2 += esp_mail_str_136;
+      }
 
       buf2 += esp_mail_str_14;
-      buf2 += msg->_rcp[i].email;
+      buf2 += msg->_rcp[i].email; // recipient Email
       buf2 += esp_mail_str_15;
     }
     else
@@ -5962,12 +5968,14 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       if (msg->_rcp[i].name.length() > 0)
       {
         buf2 += esp_mail_str_263;
-        buf2 += msg->_rcp[i].name;
+        buf2 += esp_mail_str_136;
+        buf2 += msg->_rcp[i].name; // recipient name
+        buf2 += esp_mail_str_136;
         buf2 += esp_mail_str_14;
       }
       else
         buf2 += esp_mail_str_13;
-      buf2 += msg->_rcp[i].email;
+      buf2 += msg->_rcp[i].email; // recipient Email
       buf2 += esp_mail_str_15;
     }
 
@@ -5975,10 +5983,11 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       buf2 += esp_mail_str_34;
 
     buf.clear();
+
     // only address
-    buf += esp_mail_str_9;
+    buf += esp_mail_str_9; // 'RCP TO' command
     buf += esp_mail_str_14;
-    buf += msg->_rcp[i].email;
+    buf += msg->_rcp[i].email; // recipient Email
     buf += esp_mail_str_15;
 
     // rfc3461, rfc3464
@@ -6023,6 +6032,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       return setSendingResult(smtp, msg, false);
   }
 
+  // Construct 'Cc' header field.
   for (uint8_t i = 0; i < msg->_cc.size(); i++)
   {
     if (i == 0)
@@ -6045,9 +6055,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 
     buf.clear();
 
-    buf += esp_mail_str_9;
+    // only address
+    buf += esp_mail_str_9; // 'RCP TO' command
     buf += esp_mail_str_14;
-    buf += msg->_cc[i].email;
+    buf += msg->_cc[i].email; // cc recipient Email
     buf += esp_mail_str_15;
 
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -6059,10 +6070,12 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 
   for (uint8_t i = 0; i < msg->_bcc.size(); i++)
   {
-    buf = esp_mail_str_9;
+    // only address
+    buf = esp_mail_str_9; // 'RCP TO' command
     buf += esp_mail_str_14;
-    buf += msg->_bcc[i].email;
+    buf += msg->_bcc[i].email; // bcc recipient Email
     buf += esp_mail_str_15;
+
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
       return setSendingResult(smtp, msg, false);
 
@@ -6102,10 +6115,15 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   s += msg->subject;
   s += esp_mail_str_34;
 
+  // Construct the 'Date' header field.
+  // The 'Date' header field should be valid and should be included in the message headers to
+  // prevent the 'spam' or 'junk' message considered by mail server.
+
   bool dateHdr = false;
   MB_String dt;
   smtp->ts = 0;
 
+  // Check if valid 'Date' field assigned from custom headers.
   if (msg->_hdr.size() > 0)
   {
     for (uint8_t k = 0; k < msg->_hdr.size(); k++)
@@ -6115,20 +6133,23 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
       if (getHeader(msg->_hdr[k].c_str(), esp_mail_str_99, dt, false))
       {
         smtp->ts = Time.getTimestamp(dt.c_str(), true);
-        dateHdr = smtp->ts > 0;
+        dateHdr = smtp->ts > ESP_MAIL_CLIENT_VALID_TS;
       }
     }
   }
 
+  // Check if valid 'Date' field assigned from SMTP_Message's date property.
   if (!dateHdr && msg->date.length() > 0)
   {
     dt = msg->date;
     smtp->ts = Time.getTimestamp(msg->date.c_str(), true);
-    dateHdr = smtp->ts > 0;
+    dateHdr = smtp->ts > ESP_MAIL_CLIENT_VALID_TS;
   }
 
   if (dateHdr)
   {
+    // 'Date' header field assigned.
+
     s += esp_mail_str_99;
     s += esp_mail_str_131;
     s += dt;
@@ -6136,9 +6157,11 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
   }
   else
   {
+    // If there is no 'Date' field assigned, get time from system and construct 'Date' header field.
+
     smtp->client.setSystemTime(Time.getCurrentTimestamp());
     smtp->ts = smtp->client.getTime();
-    if (smtp->ts > ESP_TIME_DEFAULT_TS)
+    if (smtp->ts > ESP_MAIL_CLIENT_VALID_TS)
     {
       s += esp_mail_str_99;
       s += esp_mail_str_131;
@@ -6372,7 +6395,7 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
   {
     smtp->client.setSystemTime(Time.getCurrentTimestamp());
     time_t now = smtp->client.getTime();
-    if (now > ESP_TIME_DEFAULT_TS)
+    if (now > ESP_MAIL_CLIENT_VALID_TS)
     {
       buf += esp_mail_str_99;
       buf += esp_mail_str_131;
@@ -6381,13 +6404,19 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     }
   }
 
+  // Construct 'From' header field.
+
   if (msg->from.email.length() > 0)
   {
-    buf += esp_mail_str_10;
+    buf += esp_mail_str_10; // 'From' header
     buf += esp_mail_str_131;
 
     if (msg->from.name.length() > 0)
+    {
+      buf += esp_mail_str_136;
       buf += msg->from.name;
+      buf += esp_mail_str_136;
+    }
 
     buf += esp_mail_str_14;
     buf += msg->from.email;
@@ -6395,13 +6424,18 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     buf += esp_mail_str_34;
   }
 
+  // Construct 'Sender' header field.
   if (msg->sender.email.length() > 0)
   {
     buf += esp_mail_str_150;
     buf += esp_mail_str_131;
 
     if (msg->sender.name.length() > 0)
+    {
+      buf += esp_mail_str_136;
       buf += msg->sender.name;
+      buf += esp_mail_str_136;
+    }
 
     buf += esp_mail_str_14;
     buf += msg->sender.email;
@@ -6429,14 +6463,20 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     buf += esp_mail_str_34;
   }
 
+  // Construct 'To' header field.
+
   for (uint8_t i = 0; i < msg->_rcp.size(); i++)
   {
     if (i == 0)
     {
-      buf += esp_mail_str_11;
+      buf += esp_mail_str_11; // 'To' header
       buf += esp_mail_str_131;
       if (msg->_rcp[i].name.length() > 0)
+      {
+        buf += esp_mail_str_136;
         buf += msg->_rcp[i].name;
+        buf += esp_mail_str_136;
+      }
 
       buf += esp_mail_str_14;
       buf += msg->_rcp[i].email;
@@ -6447,7 +6487,9 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
       if (msg->_rcp[i].name.length() > 0)
       {
         buf += esp_mail_str_263;
+        buf += esp_mail_str_136;
         buf += msg->_rcp[i].name;
+        buf += esp_mail_str_136;
         buf += esp_mail_str_14;
       }
       else

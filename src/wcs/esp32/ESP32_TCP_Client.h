@@ -1,17 +1,17 @@
 /*
  * ESP32 TCP Client Library v1.0.6.
- * 
+ *
  * February 12, 2022
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
- * 
+ *
  * TCPClient Arduino library for ESP32
  *
  * Copyright (c) 2015 Markus Sattler. All rights reserved.
  * This file is part of the TCPClient for Arduino.
- * Port to ESP32 by Evandro Luis Copercini (2017), 
- * changed fingerprints to CA verification. 	
+ * Port to ESP32 by Evandro Luis Copercini (2017),
+ * changed fingerprints to CA verification.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,7 +27,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
  *
-*/
+ */
 
 #ifndef ESP32_TCP_Client_H
 #define ESP32_TCP_Client_H
@@ -116,6 +116,6 @@ private:
   char *cert_buf = NULL;
 };
 
-#endif //ESP32
+#endif // ESP32
 
-#endif //ESP32_TCP_Client_H
+#endif // ESP32_TCP_Client_H

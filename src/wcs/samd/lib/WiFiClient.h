@@ -22,12 +22,13 @@
 
 #ifndef wificlient_h
 #define wificlient_h
-#include "Arduino.h"	
+#include "Arduino.h"
 #include "Print.h"
 #include "Client.h"
 #include "IPAddress.h"
 
-class WiFiClient : public Client {
+class WiFiClient : public Client
+{
 
 public:
   WiFiClient();
@@ -67,8 +68,8 @@ public:
 
 private:
   static uint16_t _srcport;
-  uint8_t _sock;   //not used
-  uint16_t  _socket;
+  uint8_t _sock; // not used
+  uint16_t _socket;
   bool _retrySend;
 };
 

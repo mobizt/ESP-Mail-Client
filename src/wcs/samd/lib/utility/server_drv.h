@@ -27,44 +27,53 @@
 #include "wifi_spi.h"
 
 /* ESP Mail Client */
-typedef enum eProtMode {TCP_MODE, UDP_MODE, TLS_MODE, UDP_MULTICAST_MODE, TLS_BEARSSL_MODE, NS_MODE = 0xf0, NS_TLS_MODE = 0xf1, NS_TLS_VERIFY_MODE = 0xf2}tProtMode;
+typedef enum eProtMode
+{
+  TCP_MODE,
+  UDP_MODE,
+  TLS_MODE,
+  UDP_MULTICAST_MODE,
+  TLS_BEARSSL_MODE,
+  NS_MODE = 0xf0,
+  NS_TLS_MODE = 0xf1,
+  NS_TLS_VERIFY_MODE = 0xf2
+} tProtMode;
 
 class ServerDrv
 {
 public:
+  // Start server TCP on port specified
+  static void startServer(uint16_t port, uint8_t sock, uint8_t protMode = TCP_MODE);
 
-    // Start server TCP on port specified
-    static void startServer(uint16_t port, uint8_t sock, uint8_t protMode=TCP_MODE);
+  static void startServer(uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode = TCP_MODE);
 
-    static void startServer(uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode=TCP_MODE);
+  static void startClient(uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode = TCP_MODE);
 
-    static void startClient(uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode=TCP_MODE);
+  static void startClient(const char *host, uint8_t host_len, uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode = TCP_MODE);
 
-    static void startClient(const char* host, uint8_t host_len, uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode=TCP_MODE);
+  static void stopClient(uint8_t sock);
 
-    static void stopClient(uint8_t sock);
-                                                                                  
-    static uint8_t getServerState(uint8_t sock);
+  static uint8_t getServerState(uint8_t sock);
 
-    static uint8_t getClientState(uint8_t sock);
+  static uint8_t getClientState(uint8_t sock);
 
-    static bool getData(uint8_t sock, uint8_t *data, uint8_t peek = 0);
+  static bool getData(uint8_t sock, uint8_t *data, uint8_t peek = 0);
 
-    static bool getDataBuf(uint8_t sock, uint8_t *data, uint16_t *len);
+  static bool getDataBuf(uint8_t sock, uint8_t *data, uint16_t *len);
 
-    static bool insertDataBuf(uint8_t sock, const uint8_t *_data, uint16_t _dataLen);
+  static bool insertDataBuf(uint8_t sock, const uint8_t *_data, uint16_t _dataLen);
 
-    static uint16_t sendData(uint8_t sock, const uint8_t *data, uint16_t len);
+  static uint16_t sendData(uint8_t sock, const uint8_t *data, uint16_t len);
 
-    static bool sendUdpData(uint8_t sock);
+  static bool sendUdpData(uint8_t sock);
 
-    static uint16_t availData(uint8_t sock);
+  static uint16_t availData(uint8_t sock);
 
-    static uint8_t availServer(uint8_t sock);
+  static uint8_t availServer(uint8_t sock);
 
-    static uint8_t checkDataSent(uint8_t sock);
+  static uint8_t checkDataSent(uint8_t sock);
 
-    static uint8_t getSocket();
+  static uint8_t getSocket();
 };
 
 extern ServerDrv serverDrv;

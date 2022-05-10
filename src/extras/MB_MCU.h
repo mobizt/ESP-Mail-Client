@@ -24,6 +24,4 @@
 #define MB_MCU_TEENSY_ARM 5
 #endif
 
-
-
 #endif

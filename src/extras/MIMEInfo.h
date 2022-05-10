@@ -3,7 +3,6 @@
 #ifndef MIMEInfo_H
 #define MIMEInfo_H
 
-
 #include <Arduino.h>
 
 enum esp_mail_file_extension
@@ -36,8 +35,8 @@ enum esp_mail_file_extension
 
 struct esp_mail_mime_prop_t
 {
-   char endsWith[10];
-   char mimeType[50];
+  char endsWith[10];
+  char mimeType[50];
 };
 
 const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROGMEM =

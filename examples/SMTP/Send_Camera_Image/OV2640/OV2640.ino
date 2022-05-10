@@ -248,9 +248,13 @@ void smtpCallback(SMTP_Status status)
     /* Print the sending result */
     if (status.success())
     {
+        // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
+        // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+        // In ESP32 and ESP32, you can use Serial.printf directly.
+
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failled: %d\n", status.failedCount());
+        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -258,23 +262,23 @@ void smtpCallback(SMTP_Status status)
         {
             /* Get the result item */
             SMTP_Result result = smtp.sendingResult.getItem(i);
+
+            // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
+            // your device time was synched with NTP server.
+            // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
+            // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
             time_t ts = (time_t)result.timestamp;
             localtime_r(&ts, &dt);
 
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
             ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients);
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject);
+            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
+            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 
-        // You need to clear sending result as the memory usage will grow up as it keeps the status, timstamp and
-        // pointer to const char of recipients and subject that user assigned to the SMTP_Message object.
-
-        // Because of pointer to const char that stores instead of dynamic string, the subject and recipients value can be
-        // a garbage string (pointer points to undefind location) as SMTP_Message was declared as local variable or the value changed.
-
-        // smtp.sendingResult.clear();
+        // You need to clear sending result as the memory usage will grow up.
+        smtp.sendingResult.clear();
     }
 }

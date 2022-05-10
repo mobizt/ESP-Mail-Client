@@ -72,7 +72,6 @@ public:
 
     void networkDisconnect()
     {
-
     }
 
     String fwVersion()

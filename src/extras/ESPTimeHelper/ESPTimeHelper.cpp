@@ -88,8 +88,10 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
     }
 #elif defined(ESP32) || defined(ESP8266)
     bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
-    if (now < ESP_TIME_DEFAULT_TS || newConfig)
+    if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (now < ESP_TIME_DEFAULT_TS || newConfig))
     {
+
+        lastSyncMillis = millis();
 
         MB_VECTOR<MB_String> tk;
         MB_String sv = servers;
@@ -178,7 +180,7 @@ bool ESPTimeHelper::clockReady()
 {
 
 #if !defined(__arm__)
-    time_t now = time(nullptr);
+    now = time(nullptr);
 #endif
     _clockReady = now > ESP_TIME_DEFAULT_TS;
     if (_clockReady)
@@ -438,6 +440,7 @@ time_t ESPTimeHelper::getTimestamp(const char *timeString, bool gmt)
 void ESPTimeHelper::setSysTime()
 {
 #if defined(ESP32)
+    now = time(nullptr);
     getLocalTime(&timeinfo);
 #elif defined(ESP8266)
     now = time(nullptr);

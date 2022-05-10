@@ -12,16 +12,16 @@
 #endif
 #endif
 
-#define strfcpy(A,B,C) strncpy(A,B,C), *(A+(C)-1)=0
+#define strfcpy(A, B, C) strncpy(A, B, C), *(A + (C)-1) = 0
 
 enum
 {
-  ENCOTHER,
-  ENC7BIT,
-  ENC8BIT,
-  ENCQUOTEDPRINTABLE,
-  ENCBASE64,
-  ENCBINARY
+    ENCOTHER,
+    ENC7BIT,
+    ENC8BIT,
+    ENCQUOTEDPRINTABLE,
+    ENCBASE64,
+    ENCBINARY
 };
 
 __attribute__((used)) static const char *Charset = "utf-8";
@@ -47,29 +47,26 @@ __attribute__((used)) static int Index_64[128] = {
     41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1};
 
 #define IsPrint(c) (isprint((unsigned char)(c)) || \
-	((unsigned char)(c) >= 0xa0))
+                    ((unsigned char)(c) >= 0xa0))
 
 #define hexval(c) Index_hex[(unsigned int)(c)]
 #define base64val(c) Index_64[(unsigned int)(c)]
 
-class RFC2047_Decoder{
+class RFC2047_Decoder
+{
 
-    public:
-        RFC2047_Decoder();
-        ~RFC2047_Decoder();
-        void rfc2047Decode(char *d, const char *s, size_t dlen);
+public:
+    RFC2047_Decoder();
+    ~RFC2047_Decoder();
+    void rfc2047Decode(char *d, const char *s, size_t dlen);
 
-
-    private:
+private:
     void rfc2047DecodeWord(char *d, const char *s, size_t dlen);
-    void *safe_calloc (size_t nmemb, size_t size);
-    void *safe_malloc (unsigned int siz);
-    void safe_realloc (void **p, size_t siz);
-    void safe_free (void *ptr);
-    char *safe_strdup (const char *s);
-
-
+    void *safe_calloc(size_t nmemb, size_t size);
+    void *safe_malloc(unsigned int siz);
+    void safe_realloc(void **p, size_t siz);
+    void safe_free(void *ptr);
+    char *safe_strdup(const char *s);
 };
 
-
-#endif //RFC2047_H
+#endif // RFC2047_H

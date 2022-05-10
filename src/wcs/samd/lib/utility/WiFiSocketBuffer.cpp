@@ -41,14 +41,16 @@ WiFiSocketBufferClass::WiFiSocketBufferClass()
 
 WiFiSocketBufferClass::~WiFiSocketBufferClass()
 {
-  for (unsigned int i = 0; i < WIFI_SOCKET_NUM_BUFFERS; i++) {
+  for (unsigned int i = 0; i < WIFI_SOCKET_NUM_BUFFERS; i++)
+  {
     close(i);
   }
 }
 
 void WiFiSocketBufferClass::close(int socket)
 {
-  if (_buffers[socket].data) {
+  if (_buffers[socket].data)
+  {
     free(_buffers[socket].data);
     _buffers[socket].data = _buffers[socket].head = NULL;
     _buffers[socket].length = 0;
@@ -57,16 +59,19 @@ void WiFiSocketBufferClass::close(int socket)
 
 int WiFiSocketBufferClass::available(int socket)
 {
-  if (_buffers[socket].length == 0) {
-    if (_buffers[socket].data == NULL) {
-      _buffers[socket].data = _buffers[socket].head = (uint8_t*)malloc(WIFI_SOCKET_BUFFER_SIZE);
+  if (_buffers[socket].length == 0)
+  {
+    if (_buffers[socket].data == NULL)
+    {
+      _buffers[socket].data = _buffers[socket].head = (uint8_t *)malloc(WIFI_SOCKET_BUFFER_SIZE);
       _buffers[socket].length = 0;
     }
 
     // sizeof(size_t) is architecture dependent
     // but we need a 16 bit data type here
     uint16_t size = WIFI_SOCKET_BUFFER_SIZE;
-    if (ServerDrv::getDataBuf(socket, _buffers[socket].data, &size)) {
+    if (ServerDrv::getDataBuf(socket, _buffers[socket].data, &size))
+    {
       _buffers[socket].head = _buffers[socket].data;
       _buffers[socket].length = size;
     }
@@ -77,22 +82,25 @@ int WiFiSocketBufferClass::available(int socket)
 
 int WiFiSocketBufferClass::peek(int socket)
 {
-  if (!available(socket)) {
+  if (!available(socket))
+  {
     return -1;
   }
 
   return *_buffers[socket].head;
 }
 
-int WiFiSocketBufferClass::read(int socket, uint8_t* data, size_t length)
+int WiFiSocketBufferClass::read(int socket, uint8_t *data, size_t length)
 {
   int avail = available(socket);
 
-  if (!avail) {
+  if (!avail)
+  {
     return 0;
   }
 
-  if (avail < (int)length) {
+  if (avail < (int)length)
+  {
     length = avail;
   }
 

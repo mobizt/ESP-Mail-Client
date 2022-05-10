@@ -4,36 +4,35 @@
 #ifndef MB_FS_INTERFACES_H
 #define MB_FS_INTERFACES_H
 
-
 #include <Arduino.h>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-//include definitions file
+// include definitions file
 #include "./ESP_Mail_FS.h"
 
-//1. ESP_MAIL_DEFAULT_FLASH_FS -> MBFS_FLASH_FS
+// 1. ESP_MAIL_DEFAULT_FLASH_FS -> MBFS_FLASH_FS
 #if defined ESP_MAIL_DEFAULT_FLASH_FS
 #define MBFS_FLASH_FS ESP_MAIL_DEFAULT_FLASH_FS
 #endif
 
-//2. ESP_MAIL_DEFAULT_SD_FS -> MBFS_SD_FS
+// 2. ESP_MAIL_DEFAULT_SD_FS -> MBFS_SD_FS
 #if defined ESP_MAIL_DEFAULT_SD_FS
 #define MBFS_SD_FS ESP_MAIL_DEFAULT_SD_FS
 #endif
 
-//3. ESP_MAIL_CARD_TYPE_SD -> MBFS_CARD_TYPE_SD
+// 3. ESP_MAIL_CARD_TYPE_SD -> MBFS_CARD_TYPE_SD
 #if defined(ESP_MAIL_CARD_TYPE_SD)
 #define MBFS_CARD_TYPE_SD /*  */ ESP_MAIL_CARD_TYPE_SD
 #endif
 
-//4. ESP_MAIL_CARD_TYPE_SD_MMC -> MBFS_CARD_TYPE_SD_MMC
+// 4. ESP_MAIL_CARD_TYPE_SD_MMC -> MBFS_CARD_TYPE_SD_MMC
 #if defined(ESP_MAIL_CARD_TYPE_SD_MMC)
 #define MBFS_CARD_TYPE_SD_MMC /*  */ ESP_MAIL_CARD_TYPE_SD_MMC
 #endif
 
-//5. ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED -> MBFS_FORMAT_FLASH
+// 5. ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED -> MBFS_FORMAT_FLASH
 #if defined(ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED)
 #define MBFS_FORMAT_FLASH /*  */ ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED
 #endif
@@ -56,7 +55,7 @@
 #endif
 #endif
 
-//For MB_String
+// For MB_String
 #if defined(ESP_MAIL_USE_PSRAM)
 #define MB_STRING_USE_PSRAM
 #endif

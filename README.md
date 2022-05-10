@@ -103,7 +103,7 @@ This section is for the built-in Client to update the Core SDK or install the fi
 
 ### Third party SD library must be removed
 
-In Arduino IDE, all third party SD libraries installed in libraries folder **MUST BE UNINSTALL**.
+In Arduino IDE, all third party SD libraries installed in libraries folder **MUST BE UNINSTALLED**.
 
 The Core SD library was used instead of third party SD libraries.
 
@@ -206,13 +206,7 @@ Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from 
 
 
 
-### Important Note for Manual Installation in Arduino IDE
 
-Folder renaming to **ESP_Mail_Client** was required for making the library can be updated via Library Manager without problems.
-
-Without folder renaming, when you update the library via Library Manager, library will be updated to the another folder named  **ESP-Mail-Client-master** which leads to compilation error when there are two different versions of library found in the libraries folder and can cause the conflicts when file structures and functions changed in the newer version. 
-
-In this case, you need to delete **ESP-Mail-Client-master** folder from libraries folder.
 
 
 
@@ -554,6 +548,10 @@ void setup()
 
   // Get the message(s) list
   IMAP_MSG_List msgList = imap.data();
+
+  // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
+  // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+  // In ESP32 and ESP32, you can use Serial.printf directly.
 
   for (size_t i = 0; i < msgList.msgItems.size(); i++)
   {

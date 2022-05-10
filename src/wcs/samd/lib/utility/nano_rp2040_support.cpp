@@ -40,11 +40,16 @@
 
 uint8_t toAnalogPin(NinaPin pin)
 {
-  if      (pin == A4) return 6; /* ADC1 - CH6 */
-  else if (pin == A5) return 3; /* ADC1 - CH3 */
-  else if (pin == A6) return 0; /* ADC1 - CH0 */
-  else if (pin == A7) return 7; /* ADC1 - CH7 */
-  else                return 0xFF;
+  if (pin == A4)
+    return 6; /* ADC1 - CH6 */
+  else if (pin == A5)
+    return 3; /* ADC1 - CH3 */
+  else if (pin == A6)
+    return 0; /* ADC1 - CH0 */
+  else if (pin == A7)
+    return 7; /* ADC1 - CH7 */
+  else
+    return 0xFF;
 }
 
 void pinMode(NinaPin pin, PinMode mode)

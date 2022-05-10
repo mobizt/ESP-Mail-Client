@@ -1,32 +1,32 @@
 /*
  * WiFiNINA TCP Client for ESP Mail Client, version 1.0.4
  *
- * 
+ *
  * February 1, 2022
- * 
+ *
  * Add support Arduino Nano RP2040 Connect
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
- * 
+ *
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
@@ -64,7 +64,7 @@ void WiFiNINA_TCP_Client::setCACert(const char *caCert)
     baseSetCertType(esp_mail_cert_type_data);
   else
     baseSetCertType(esp_mail_cert_type_none);
-  //wcs->setNoDelay(true);
+  // wcs->setNoDelay(true);
 }
 
 void WiFiNINA_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
@@ -88,7 +88,6 @@ bool WiFiNINA_TCP_Client::networkReady()
 
 void WiFiNINA_TCP_Client::networkReconnect()
 {
-  
 }
 
 void WiFiNINA_TCP_Client::networkDisconnect()
@@ -192,7 +191,7 @@ bool WiFiNINA_TCP_Client::connect(bool secured, bool verify)
       if (!wcs)
         wcs = new WiFiSSLClient();
 
-      //use the default SSL connection
+      // use the default SSL connection
       if (wcs->connect(host.c_str(), port) == 0)
         return false;
     }
@@ -201,7 +200,7 @@ bool WiFiNINA_TCP_Client::connect(bool secured, bool verify)
       if (!wc)
         wc = new WiFiClient();
 
-      //use the default TCP connection
+      // use the default TCP connection
       if (wc->connect(host.c_str(), port) == 0)
         return false;
     }
@@ -212,7 +211,7 @@ bool WiFiNINA_TCP_Client::connect(bool secured, bool verify)
     if (!wcs)
       wcs = new WiFiSSLClient();
 
-    //use upgradable connection
+    // use upgradable connection
     if (wcs->ns_connect(host.c_str(), port) == 0)
       return false;
 
@@ -234,7 +233,7 @@ bool WiFiNINA_TCP_Client::connectSSL(bool verify)
 
   verifyRootCA = verify;
 
-  //upgrade connection
+  // upgrade connection
   if (!wcs->ns_connectSSL(host.c_str(), port, verify))
     return false;
 
@@ -255,7 +254,7 @@ void WiFiNINA_TCP_Client::stop()
 
 int WiFiNINA_TCP_Client::write(uint8_t *data, int len)
 {
-  
+
   if (!connect(secured, verifyRootCA))
     return TCP_CLIENT_ERROR_CONNECTION_REFUSED;
 

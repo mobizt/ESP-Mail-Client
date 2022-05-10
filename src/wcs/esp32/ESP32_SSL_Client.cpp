@@ -1,22 +1,22 @@
 /*
  * ESP32 SSL Client v1.0.3
- * 
+ *
  * February 28, 2022
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
- * 
+ *
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
@@ -26,12 +26,12 @@
  */
 
 /* Provide SSL/TLS functions to ESP32 with Arduino IDE
-*
-* Adapted from the ssl_client1 example of mbedtls.
-*
-* Original Copyright (C) 2006-2015, ARM Limited, All Rights Reserved, Apache 2.0 License.
-* Additions Copyright (C) 2017 Evandro Luis Copercini, Apache 2.0 License.
-*/
+ *
+ * Adapted from the ssl_client1 example of mbedtls.
+ *
+ * Original Copyright (C) 2006-2015, ARM Limited, All Rights Reserved, Apache 2.0 License.
+ * Additions Copyright (C) 2017 Evandro Luis Copercini, Apache 2.0 License.
+ */
 
 #ifndef ESP32_SSL_Client_CPP
 #define ESP32_SSL_Client_CPP
@@ -216,7 +216,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
         mbedtls_ssl_conf_authmode(&ssl->ssl_conf, MBEDTLS_SSL_VERIFY_REQUIRED);
         ret = mbedtls_x509_crt_parse(&ssl->ca_cert, (const unsigned char *)rootCABuff, strlen(rootCABuff) + 1);
         mbedtls_ssl_conf_ca_chain(&ssl->ssl_conf, &ssl->ca_cert, NULL);
-        //mbedtls_ssl_conf_verify(&ssl->ssl_ctx, my_verify, NULL );
+        // mbedtls_ssl_conf_verify(&ssl->ssl_ctx, my_verify, NULL );
         if (ret < 0)
         {
             if (ssl->_debugCallback)
@@ -361,7 +361,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
         }
         if ((millis() - handshake_start_time) > ssl->handshake_timeout)
             return -1;
-        vTaskDelay(2); //2 ticks
+        vTaskDelay(2); // 2 ticks
     }
 
     if (cli_cert != NULL && cli_key != NULL)
@@ -387,7 +387,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
         memset(buf, 0, sizeof(buf));
         mbedtls_x509_crt_verify_info(buf, sizeof(buf), "  ! ", flags);
         log_e("Failed to verify peer certificate! verification info: %s", buf);
-        stop_ssl_socket(ssl, rootCABuff, cli_cert, cli_key); //It's not safe continue.
+        stop_ssl_socket(ssl, rootCABuff, cli_cert, cli_key); // It's not safe continue.
         return esp32_ssl_handle_error(ret);
     }
     else
@@ -438,9 +438,9 @@ int ESP32_SSL_Client::data_to_read(ssl_data *ssl)
 {
     int ret, res;
     ret = mbedtls_ssl_read(&ssl->ssl_ctx, NULL, 0);
-    //log_e("RET: %i",ret);   //for low level debug
+    // log_e("RET: %i",ret);   //for low level debug
     res = mbedtls_ssl_get_bytes_avail(&ssl->ssl_ctx);
-    //log_e("RES: %i",res);    //for low level debug
+    // log_e("RES: %i",res);    //for low level debug
     if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE && ret < 0)
     {
         if (ssl->_debugCallback)
@@ -453,17 +453,17 @@ int ESP32_SSL_Client::data_to_read(ssl_data *ssl)
 
 int ESP32_SSL_Client::send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t len)
 {
-    log_v("Writing HTTP request with %d bytes...", len); //for low level debug
+    log_v("Writing HTTP request with %d bytes...", len); // for low level debug
     int ret = -1;
 
     while ((ret = mbedtls_ssl_write(&ssl->ssl_ctx, data, len)) <= 0)
     {
         if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE && ret < 0)
         {
-            log_v("Handling error %d", ret); //for low level debug
+            log_v("Handling error %d", ret); // for low level debug
             return esp32_ssl_handle_error(ret);
         }
-        //wait for space to become available
+        // wait for space to become available
         vTaskDelay(2);
     }
 
@@ -473,12 +473,12 @@ int ESP32_SSL_Client::send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t l
 int ESP32_SSL_Client::get_ssl_receive(ssl_data *ssl, uint8_t *data, int length)
 {
 
-    //log_d( "Reading HTTP response...");   //for low level debug
+    // log_d( "Reading HTTP response...");   //for low level debug
     int ret = -1;
 
     ret = mbedtls_ssl_read(&ssl->ssl_ctx, data, length);
 
-    //log_v( "%d bytes read", ret);   //for low level debug
+    // log_v( "%d bytes read", ret);   //for low level debug
     return ret;
 }
 
@@ -696,6 +696,6 @@ void ESP32_SSL_Client::ssl_client_debug_pgm_send_cb(ssl_data *ssl, PGM_P info)
     delete[] dbgInfo;
 }
 
-#endif //ESP32
+#endif // ESP32
 
-#endif //ESP32_SSL_Client_CPP
+#endif // ESP32_SSL_Client_CPP

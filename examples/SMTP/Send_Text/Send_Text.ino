@@ -128,10 +128,10 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = F("ESP Mail");
-  message.sender.email = AUTHOR_EMAIL;
+  message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
+  message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
   message.subject = F("Test sending plain text Email");
-  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
 
   String textMsg = "This is simple plain text message";
   message.text.content = textMsg;
@@ -205,6 +205,14 @@ void setup()
   // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
   /* Connect to server with the session config */
+
+  // Library will be trying to sync the time with NTP server if time is never sync or set.
+  // This is 10 seconds blocking process.
+  // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
+  // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
+  // Time can be set manually with provided timestamp to function smtp.setSystemTime.
+
+  // 
   if (!smtp.connect(&session))
     return;
 
@@ -231,6 +239,10 @@ void smtpCallback(SMTP_Status status)
   /* Print the sending result */
   if (status.success())
   {
+    // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port 
+    // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+    // In ESP32 and ESP32, you can use Serial.printf directly.
+
     Serial.println("----------------");
     ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
     ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
@@ -241,6 +253,11 @@ void smtpCallback(SMTP_Status status)
     {
       /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
+
+      // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
+      // your device time was synched with NTP server.
+      // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
+      // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
       time_t ts = (time_t)result.timestamp;
       localtime_r(&ts, &dt);
 

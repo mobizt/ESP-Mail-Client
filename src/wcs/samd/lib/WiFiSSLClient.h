@@ -24,28 +24,30 @@
 
 #include "WiFiClient.h"
 
-class WiFiSSLClient : public WiFiClient {
+class WiFiSSLClient : public WiFiClient
+{
 
 public:
-	WiFiSSLClient();
-	WiFiSSLClient(uint8_t sock);
+  WiFiSSLClient();
+  WiFiSSLClient(uint8_t sock);
 
-	virtual int connect(IPAddress ip, uint16_t port);
-	virtual int connect(const char* host, uint16_t port);
-	/* Secure Connection Upgradable Supports */
-	virtual int ns_connect(const char *host, uint16_t port);
-	/* Secure Connection Upgradable Supports */
-	virtual int ns_connectSSL(const char *host, uint16_t port, bool verify);
+  virtual int connect(IPAddress ip, uint16_t port);
+  virtual int connect(const char *host, uint16_t port);
+  /* Secure Connection Upgradable Supports */
+  virtual int ns_connect(const char *host, uint16_t port);
+  /* Secure Connection Upgradable Supports */
+  virtual int ns_connectSSL(const char *host, uint16_t port, bool verify);
 };
 
-class WiFiBearSSLClient : public WiFiClient {
+class WiFiBearSSLClient : public WiFiClient
+{
 
 public:
-	WiFiBearSSLClient();
-	WiFiBearSSLClient(uint8_t sock);
+  WiFiBearSSLClient();
+  WiFiBearSSLClient(uint8_t sock);
 
-	virtual int connect(IPAddress ip, uint16_t port);
-	virtual int connect(const char* host, uint16_t port);
+  virtual int connect(IPAddress ip, uint16_t port);
+  virtual int connect(const char *host, uint16_t port);
 };
 
 #endif /* WIFISSLCLIENT_H */

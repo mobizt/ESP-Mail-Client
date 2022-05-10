@@ -30,7 +30,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-
 #ifndef MB_PRINT_C
 #define MB_PRINT_C
 
@@ -848,7 +847,7 @@ static int mb_print_vsnprintf_int(mb_print_out_fn_type out, char *buffer, const 
                 else
                 {
                     const int value = (flags & MB_PRINT_FLAGS_CHAR) ? (char)va_arg(va, int) : (flags & MB_PRINT_FLAGS_SHORT) ? (short int)va_arg(va, int)
-                                                                                                             : va_arg(va, int);
+                                                                                                                             : va_arg(va, int);
                     idx = mb_print_itoa_long(out, buffer, idx, maxlen, (unsigned int)(value > 0 ? value : 0 - value), value < 0, base, precision, width, flags);
                 }
             }
@@ -868,7 +867,7 @@ static int mb_print_vsnprintf_int(mb_print_out_fn_type out, char *buffer, const 
                 else
                 {
                     const unsigned int value = (flags & MB_PRINT_FLAGS_CHAR) ? (unsigned char)va_arg(va, unsigned int) : (flags & MB_PRINT_FLAGS_SHORT) ? (unsigned short int)va_arg(va, unsigned int)
-                                                                                                                                        : va_arg(va, unsigned int);
+                                                                                                                                                        : va_arg(va, unsigned int);
                     idx = mb_print_itoa_long(out, buffer, idx, maxlen, value, false, base, precision, width, flags);
                 }
             }

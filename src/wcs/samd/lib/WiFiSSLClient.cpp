@@ -21,24 +21,22 @@
 
 #include "WiFiSSLClient.h"
 
-WiFiSSLClient::WiFiSSLClient() : 
-	WiFiClient()
+WiFiSSLClient::WiFiSSLClient() : WiFiClient()
 {
 }
 
-WiFiSSLClient::WiFiSSLClient(uint8_t sock) :
-	WiFiClient(sock)
-{  
+WiFiSSLClient::WiFiSSLClient(uint8_t sock) : WiFiClient(sock)
+{
 }
 
 int WiFiSSLClient::connect(IPAddress ip, uint16_t port)
 {
-	return WiFiClient::connectSSL(ip, port);
+  return WiFiClient::connectSSL(ip, port);
 }
 
-int WiFiSSLClient::connect(const char* host, uint16_t port)
+int WiFiSSLClient::connect(const char *host, uint16_t port)
 {
-	return WiFiClient::connectSSL(host, port);
+  return WiFiClient::connectSSL(host, port);
 }
 
 /* Secure Connection Upgradable Supports */
@@ -53,24 +51,22 @@ int WiFiSSLClient::ns_connectSSL(const char *host, uint16_t port, bool verify)
   return WiFiClient::ns_connectSSL(host, port, verify);
 }
 
-WiFiBearSSLClient::WiFiBearSSLClient() :
-	WiFiClient()
+WiFiBearSSLClient::WiFiBearSSLClient() : WiFiClient()
 {
 }
 
-WiFiBearSSLClient::WiFiBearSSLClient(uint8_t sock) :
-	WiFiClient(sock)
+WiFiBearSSLClient::WiFiBearSSLClient(uint8_t sock) : WiFiClient(sock)
 {
 }
 
 int WiFiBearSSLClient::connect(IPAddress ip, uint16_t port)
 {
-	return WiFiClient::connectBearSSL(ip, port);
+  return WiFiClient::connectBearSSL(ip, port);
 }
 
-int WiFiBearSSLClient::connect(const char* host, uint16_t port)
+int WiFiBearSSLClient::connect(const char *host, uint16_t port)
 {
-	return WiFiClient::connectBearSSL(host, port);
+  return WiFiClient::connectBearSSL(host, port);
 }
 
 #endif

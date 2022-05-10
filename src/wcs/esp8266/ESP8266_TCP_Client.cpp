@@ -1,33 +1,34 @@
 /**
- * 
+ *
  * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.5
- * 
+ *
  * Created April 17, 2022
- * 
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
- * 
- * 
+ *
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
  * IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*/
+ */
 
 #ifndef ESP8266_TCP_Client_CPP
 #define ESP8266_TCP_Client_CPP
+
 
 #ifdef ESP8266
 
@@ -163,7 +164,7 @@ bool ESP8266_TCP_Client::ethLinkUp()
   return ret;
 
 ex:
-  //workaround for ESP8266 Ethernet
+  // workaround for ESP8266 Ethernet
   delayMicroseconds(0);
 #endif
 
@@ -240,7 +241,7 @@ bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
   this->host = host;
   this->port = port;
 
-  //probe for fragmentation support at the specified size
+  // probe for fragmentation support at the specified size
   if (!mflnChecked)
   {
     fragmentable = WiFiClientSecure::probeMaxFragmentLength(this->host.c_str(), this->port, _chunkSize);

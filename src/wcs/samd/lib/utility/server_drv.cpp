@@ -27,16 +27,16 @@
 #include "Arduino.h"
 #include "spi_drv.h"
 
-extern "C" {
+extern "C"
+{
 #include "wl_types.h"
 #include "debug.h"
 }
 
-
 // Start server TCP on port specified
 void ServerDrv::startServer(uint16_t port, uint8_t sock, uint8_t protMode)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(START_SERVER_TCP_CMD, PARAM_NUMS_3);
     SpiDrv::sendParam(port);
@@ -47,7 +47,7 @@ void ServerDrv::startServer(uint16_t port, uint8_t sock, uint8_t protMode)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -66,13 +66,13 @@ void ServerDrv::startServer(uint32_t ipAddress, uint16_t port, uint8_t sock, uin
     WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(START_SERVER_TCP_CMD, PARAM_NUMS_4);
-    SpiDrv::sendParam((uint8_t*)&ipAddress, sizeof(ipAddress));
+    SpiDrv::sendParam((uint8_t *)&ipAddress, sizeof(ipAddress));
     SpiDrv::sendParam(port);
     SpiDrv::sendParam(&sock, 1);
     SpiDrv::sendParam(&protMode, 1, LAST_PARAM);
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -89,16 +89,16 @@ void ServerDrv::startServer(uint32_t ipAddress, uint16_t port, uint8_t sock, uin
 // Start server TCP on port specified
 void ServerDrv::startClient(uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(START_CLIENT_TCP_CMD, PARAM_NUMS_4);
-    SpiDrv::sendParam((uint8_t*)&ipAddress, sizeof(ipAddress));
+    SpiDrv::sendParam((uint8_t *)&ipAddress, sizeof(ipAddress));
     SpiDrv::sendParam(port);
     SpiDrv::sendParam(&sock, 1);
     SpiDrv::sendParam(&protMode, 1, LAST_PARAM);
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -112,26 +112,27 @@ void ServerDrv::startClient(uint32_t ipAddress, uint16_t port, uint8_t sock, uin
     SpiDrv::spiSlaveDeselect();
 }
 
-void ServerDrv::startClient(const char* host, uint8_t host_len, uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode)
+void ServerDrv::startClient(const char *host, uint8_t host_len, uint32_t ipAddress, uint16_t port, uint8_t sock, uint8_t protMode)
 {
     WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(START_CLIENT_TCP_CMD, PARAM_NUMS_5);
-    SpiDrv::sendParam((uint8_t*)host, host_len);
-    SpiDrv::sendParam((uint8_t*)&ipAddress, sizeof(ipAddress));
+    SpiDrv::sendParam((uint8_t *)host, host_len);
+    SpiDrv::sendParam((uint8_t *)&ipAddress, sizeof(ipAddress));
     SpiDrv::sendParam(port);
     SpiDrv::sendParam(&sock, 1);
     SpiDrv::sendParam(&protMode, 1, LAST_PARAM);
 
     // pad to multiple of 4
     int commandSize = 17 + host_len;
-    while (commandSize % 4) {
+    while (commandSize % 4)
+    {
         SpiDrv::readChar();
         commandSize++;
     }
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady(/* feed_watchdog = */ (protMode == TLS_BEARSSL_MODE));
     SpiDrv::spiSlaveSelect();
 
@@ -142,13 +143,13 @@ void ServerDrv::startClient(const char* host, uint8_t host_len, uint32_t ipAddre
     {
         WARN("error waitResponse");
     }
-    SpiDrv::spiSlaveDeselect();  
+    SpiDrv::spiSlaveDeselect();
 }
 
 // Start server TCP on port specified
 void ServerDrv::stopClient(uint8_t sock)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(STOP_CLIENT_TCP_CMD, PARAM_NUMS_1);
     SpiDrv::sendParam(&sock, 1, LAST_PARAM);
@@ -158,7 +159,7 @@ void ServerDrv::stopClient(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -172,10 +173,9 @@ void ServerDrv::stopClient(uint8_t sock)
     SpiDrv::spiSlaveDeselect();
 }
 
-
 uint8_t ServerDrv::getServerState(uint8_t sock)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(GET_STATE_TCP_CMD, PARAM_NUMS_1);
     SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
@@ -185,7 +185,7 @@ uint8_t ServerDrv::getServerState(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -197,12 +197,12 @@ uint8_t ServerDrv::getServerState(uint8_t sock)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-   return _data;
+    return _data;
 }
 
 uint8_t ServerDrv::getClientState(uint8_t sock)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(GET_CLIENT_STATE_TCP_CMD, PARAM_NUMS_1);
     SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
@@ -212,7 +212,7 @@ uint8_t ServerDrv::getClientState(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -224,16 +224,17 @@ uint8_t ServerDrv::getClientState(uint8_t sock)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-   return _data;
+    return _data;
 }
 
 uint16_t ServerDrv::availData(uint8_t sock)
 {
-    if (!SpiDrv::available()) {
+    if (!SpiDrv::available())
+    {
         return 0;
     }
 
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(AVAIL_DATA_TCP_CMD, PARAM_NUMS_1);
     SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
@@ -243,15 +244,15 @@ uint16_t ServerDrv::availData(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
     // Wait for reply
     uint8_t _dataLen = 0;
-	uint16_t len = 0;
+    uint16_t len = 0;
 
-    SpiDrv::waitResponseCmd(AVAIL_DATA_TCP_CMD, PARAM_NUMS_1, (uint8_t*)&len,  &_dataLen);
+    SpiDrv::waitResponseCmd(AVAIL_DATA_TCP_CMD, PARAM_NUMS_1, (uint8_t *)&len, &_dataLen);
 
     SpiDrv::spiSlaveDeselect();
 
@@ -260,7 +261,8 @@ uint16_t ServerDrv::availData(uint8_t sock)
 
 uint8_t ServerDrv::availServer(uint8_t sock)
 {
-    if (!SpiDrv::available()) {
+    if (!SpiDrv::available())
+    {
         return 255;
     }
 
@@ -274,7 +276,7 @@ uint8_t ServerDrv::availServer(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -282,7 +284,7 @@ uint8_t ServerDrv::availServer(uint8_t sock)
     uint8_t _dataLen = 0;
     uint16_t socket = 0;
 
-    SpiDrv::waitResponseCmd(AVAIL_DATA_TCP_CMD, PARAM_NUMS_1, (uint8_t*)&socket,  &_dataLen);
+    SpiDrv::waitResponseCmd(AVAIL_DATA_TCP_CMD, PARAM_NUMS_1, (uint8_t *)&socket, &_dataLen);
 
     SpiDrv::spiSlaveDeselect();
 
@@ -291,7 +293,7 @@ uint8_t ServerDrv::availServer(uint8_t sock)
 
 bool ServerDrv::getData(uint8_t sock, uint8_t *data, uint8_t peek)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(GET_DATA_TCP_CMD, PARAM_NUMS_2);
     SpiDrv::sendParam(&sock, sizeof(sock));
@@ -303,7 +305,7 @@ bool ServerDrv::getData(uint8_t sock, uint8_t *data, uint8_t peek)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -315,7 +317,7 @@ bool ServerDrv::getData(uint8_t sock, uint8_t *data, uint8_t peek)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-    if (_dataLen!=0)
+    if (_dataLen != 0)
     {
         *data = _data;
         return true;
@@ -330,8 +332,8 @@ bool ServerDrv::getDataBuf(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
         *_dataLen = 0;
         return false;
     }
-    
-	WAIT_FOR_SLAVE_SELECT();
+
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(GET_DATABUF_TCP_CMD, PARAM_NUMS_2);
     SpiDrv::sendBuffer(&sock, sizeof(sock));
@@ -341,7 +343,7 @@ bool ServerDrv::getDataBuf(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -351,7 +353,7 @@ bool ServerDrv::getDataBuf(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-    if (*_dataLen!=0)
+    if (*_dataLen != 0)
     {
         return true;
     }
@@ -360,7 +362,7 @@ bool ServerDrv::getDataBuf(uint8_t sock, uint8_t *_data, uint16_t *_dataLen)
 
 bool ServerDrv::insertDataBuf(uint8_t sock, const uint8_t *data, uint16_t _len)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(INSERT_DATABUF_CMD, PARAM_NUMS_2);
     SpiDrv::sendBuffer(&sock, sizeof(sock));
@@ -368,13 +370,14 @@ bool ServerDrv::insertDataBuf(uint8_t sock, const uint8_t *data, uint16_t _len)
 
     // pad to multiple of 4
     int commandSize = 9 + _len;
-    while (commandSize % 4) {
+    while (commandSize % 4)
+    {
         SpiDrv::readChar();
         commandSize++;
     }
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -386,7 +389,7 @@ bool ServerDrv::insertDataBuf(uint8_t sock, const uint8_t *data, uint16_t _len)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-    if (_dataLen!=0)
+    if (_dataLen != 0)
     {
         return (_data == 1);
     }
@@ -395,7 +398,7 @@ bool ServerDrv::insertDataBuf(uint8_t sock, const uint8_t *data, uint16_t _len)
 
 bool ServerDrv::sendUdpData(uint8_t sock)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(SEND_DATA_UDP_CMD, PARAM_NUMS_1);
     SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
@@ -405,7 +408,7 @@ bool ServerDrv::sendUdpData(uint8_t sock)
     SpiDrv::readChar();
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
@@ -417,17 +420,16 @@ bool ServerDrv::sendUdpData(uint8_t sock)
         WARN("error waitResponse");
     }
     SpiDrv::spiSlaveDeselect();
-    if (_dataLen!=0)
+    if (_dataLen != 0)
     {
         return (_data == 1);
     }
     return false;
 }
 
-
 uint16_t ServerDrv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
 {
-	WAIT_FOR_SLAVE_SELECT();
+    WAIT_FOR_SLAVE_SELECT();
     // Send Command
     SpiDrv::sendCmd(SEND_DATA_TCP_CMD, PARAM_NUMS_2);
     SpiDrv::sendBuffer(&sock, sizeof(sock));
@@ -435,20 +437,21 @@ uint16_t ServerDrv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
 
     // pad to multiple of 4
     int commandSize = 9 + len;
-    while (commandSize % 4) {
+    while (commandSize % 4)
+    {
         SpiDrv::readChar();
         commandSize++;
     }
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
     // Wait for reply
     uint16_t _data = 0;
     uint8_t _dataLen = 0;
-    if (!SpiDrv::waitResponseData8(SEND_DATA_TCP_CMD, (uint8_t*)&_data, &_dataLen))
+    if (!SpiDrv::waitResponseData8(SEND_DATA_TCP_CMD, (uint8_t *)&_data, &_dataLen))
     {
         WARN("error waitResponse");
     }
@@ -457,44 +460,46 @@ uint16_t ServerDrv::sendData(uint8_t sock, const uint8_t *data, uint16_t len)
     return _data;
 }
 
-
 uint8_t ServerDrv::checkDataSent(uint8_t sock)
 {
-	const uint16_t TIMEOUT_DATA_SENT = 25;
+    const uint16_t TIMEOUT_DATA_SENT = 25;
     uint16_t timeout = 0;
-	uint8_t _data = 0;
-	uint8_t _dataLen = 0;
+    uint8_t _data = 0;
+    uint8_t _dataLen = 0;
 
-	do {
-		WAIT_FOR_SLAVE_SELECT();
-		// Send Command
-		SpiDrv::sendCmd(DATA_SENT_TCP_CMD, PARAM_NUMS_1);
-		SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
+    do
+    {
+        WAIT_FOR_SLAVE_SELECT();
+        // Send Command
+        SpiDrv::sendCmd(DATA_SENT_TCP_CMD, PARAM_NUMS_1);
+        SpiDrv::sendParam(&sock, sizeof(sock), LAST_PARAM);
 
         // pad to multiple of 4
         SpiDrv::readChar();
         SpiDrv::readChar();
 
         SpiDrv::spiSlaveDeselect();
-        //Wait the reply elaboration
+        // Wait the reply elaboration
         SpiDrv::waitForSlaveReady();
         SpiDrv::spiSlaveSelect();
 
-		// Wait for reply
-		if (!SpiDrv::waitResponseCmd(DATA_SENT_TCP_CMD, PARAM_NUMS_1, &_data, &_dataLen))
-		{
-			WARN("error waitResponse isDataSent");
-		}
-		SpiDrv::spiSlaveDeselect();
+        // Wait for reply
+        if (!SpiDrv::waitResponseCmd(DATA_SENT_TCP_CMD, PARAM_NUMS_1, &_data, &_dataLen))
+        {
+            WARN("error waitResponse isDataSent");
+        }
+        SpiDrv::spiSlaveDeselect();
 
-		if (_data) timeout = 0;
-		else{
-			++timeout;
-			delay(100);
-		}
+        if (_data)
+            timeout = 0;
+        else
+        {
+            ++timeout;
+            delay(100);
+        }
 
-	}while((_data==0)&&(timeout<TIMEOUT_DATA_SENT));
-    return (timeout==TIMEOUT_DATA_SENT)?0:1;
+    } while ((_data == 0) && (timeout < TIMEOUT_DATA_SENT));
+    return (timeout == TIMEOUT_DATA_SENT) ? 0 : 1;
 }
 
 uint8_t ServerDrv::getSocket()
@@ -505,7 +510,7 @@ uint8_t ServerDrv::getSocket()
     SpiDrv::sendCmd(GET_SOCKET_CMD, PARAM_NUMS_0);
 
     SpiDrv::spiSlaveDeselect();
-    //Wait the reply elaboration
+    // Wait the reply elaboration
     SpiDrv::waitForSlaveReady();
     SpiDrv::spiSlaveSelect();
 
