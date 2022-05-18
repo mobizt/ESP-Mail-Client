@@ -124,6 +124,28 @@ void setup()
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
+  /** In ESP32, timezone environment will not keep after wake up boot from sleep.
+   * The local time will equal to GMT time.
+   *
+   * To sync or set time with NTP server with the valid local time after wake up boot,
+   * set both gmt and day light offsets to 0 and assign the timezone environment string e.g.
+
+     session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+     session.time.gmt_offset = 0;
+     session.time.day_light_offset = 0;
+     session.time.timezone_env_string = "JST-9"; // for Tokyo
+
+   * The library will get (sync) the time from NTP server without GMT time offset adjustment
+   * and set the timezone environment variable later.
+   *
+   * This timezone environment string will be stored to flash or SD file named "/tz_env.txt"
+   * which set via session.time.timezone_file.
+   *
+   * See the timezone environment string list from
+   * https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+   *
+   */
+
   /* Declare the message class */
   SMTP_Message message;
 
@@ -212,7 +234,7 @@ void setup()
   // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
   // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
-  // 
+  //
   if (!smtp.connect(&session))
     return;
 
@@ -239,7 +261,7 @@ void smtpCallback(SMTP_Status status)
   /* Print the sending result */
   if (status.success())
   {
-    // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port 
+    // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
     // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
     // In ESP32 and ESP32, you can use Serial.printf directly.
 

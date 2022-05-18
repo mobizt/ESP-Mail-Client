@@ -3,7 +3,6 @@
 #ifndef ESP_MAIL_CONST_H
 #define ESP_MAIL_CONST_H
 
-
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Error.h"
 #include "extras/MB_FS.h"
@@ -284,6 +283,7 @@ struct esp_mail_attachment_info_t
     const char *name = "";
     const char *creationDate = "";
     const char *mime = "";
+    const char *description = "";
     esp_mail_attach_type type = esp_mail_att_type_none;
     size_t size;
 };
@@ -435,6 +435,9 @@ struct esp_mail_attach_descr_t
 
     /* The content id of attachment file */
     MB_String content_id;
+
+    /* The description of attachment file */
+    MB_String description;
 };
 
 struct esp_mail_attach_internal_t
@@ -910,20 +913,40 @@ typedef struct esp_mail_imap_polling_status_t
 
 struct esp_mail_message_part_info_t
 {
+    enum content_header_field
+    {
+        content_header_field_none,
+        content_header_field_type,
+        content_header_field_description,
+        content_header_field_id,
+        content_header_field_disposition,
+        content_header_field_transfer_enc,
+        content_header_field_ext
+
+    };
+
     int octetLen = 0;
     int octetCount = 0;
     int attach_data_size = 0;
     int textLen = 0;
     bool sizeProp = false;
     int nestedLevel = 0;
+    
+    // pointer to the MB_String for storing multi-line header field content.
+    uint32_t stringPtr = 0;
+
+    content_header_field cur_content_hdr = content_header_field_none;
+
     MB_String partNumStr;
     MB_String partNumFetchStr;
     MB_String text;
     MB_String filename;
+    MB_String CID;
     MB_String type;
     MB_String save_path;
     MB_String name;
     MB_String content_disposition;
+    MB_String content_description;
     MB_String content_type;
     MB_String descr;
     MB_String content_transfer_encoding;
@@ -1303,6 +1326,14 @@ struct esp_mail_sesson_time_config_t
 
     /* the day light saving offset */
     float day_light_offset = 0;
+
+    /** TZ environment variable for local time setting
+     * See https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+     */
+    MB_String timezone_env_string;
+
+    /* the file path to store TZ environment variable */
+    MB_String timezone_file = "/tz_env.txt";
 };
 
 struct esp_mail_sesson_secure_config_t
@@ -1597,18 +1628,18 @@ static const char esp_mail_str_157[] PROGMEM = "Set FLAG";
 static const char esp_mail_str_161[] PROGMEM = "/msg";
 static const char esp_mail_str_163[] PROGMEM = "/rfc822_msg";
 static const char esp_mail_str_169[] PROGMEM = "charset=";
-static const char esp_mail_str_170[] PROGMEM = "name=\"";
-static const char esp_mail_str_171[] PROGMEM = "name=";
+static const char esp_mail_str_170[] PROGMEM = "name";
+static const char esp_mail_str_171[] PROGMEM = "content-id:";
 static const char esp_mail_str_172[] PROGMEM = "content-transfer-encoding:";
 static const char esp_mail_str_174[] PROGMEM = "content-description:";
 static const char esp_mail_str_175[] PROGMEM = "content-disposition:";
-static const char esp_mail_str_176[] PROGMEM = "filename=\"";
-static const char esp_mail_str_177[] PROGMEM = "filename=";
-static const char esp_mail_str_178[] PROGMEM = "size=";
-static const char esp_mail_str_179[] PROGMEM = "creation-date=\"";
-static const char esp_mail_str_180[] PROGMEM = "creation-date=";
-static const char esp_mail_str_181[] PROGMEM = "modification-date=\"";
-static const char esp_mail_str_182[] PROGMEM = "modification-date=";
+static const char esp_mail_str_176[] PROGMEM = "filename";
+static const char esp_mail_str_177[] PROGMEM = "=";
+static const char esp_mail_str_178[] PROGMEM = "size";
+static const char esp_mail_str_179[] PROGMEM = "creation-date";
+static const char esp_mail_str_180[] PROGMEM = "content-";
+static const char esp_mail_str_181[] PROGMEM = "modification-date";
+static const char esp_mail_str_182[] PROGMEM = "Content-Description: ";
 static const char esp_mail_str_187[] PROGMEM = "Message fetch cmpleted";
 static const char esp_mail_str_188[] PROGMEM = "fail to close the mailbox";
 static const char esp_mail_str_189[] PROGMEM = "> C: Get UID...";
@@ -1778,7 +1809,7 @@ static const char esp_mail_str_134[] PROGMEM = "Comments:";
 static const char esp_mail_str_136[] PROGMEM = "\"";
 static const char esp_mail_str_145[] PROGMEM = "Keywords:";
 static const char esp_mail_str_150[] PROGMEM = "Sender:";
-static const char esp_mail_str_168[] PROGMEM = "charset=\"";
+static const char esp_mail_str_168[] PROGMEM = "charset";
 static const char esp_mail_str_184[] PROGMEM = "Reply-To:";
 static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";

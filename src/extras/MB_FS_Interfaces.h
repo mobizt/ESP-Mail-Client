@@ -83,4 +83,8 @@
 
 #endif
 
+#ifndef MB_STRING_INCLUDE_CLASS
+#define MB_STRING_INCLUDE_CLASS "MB_String.h"
+#endif
+
 #endif /* MB_FS_INTERFACES_H */

@@ -64,7 +64,7 @@ static SdFat sd_fat_fs;   //should declare as static here
 #if defined(ESP32) || defined(ESP8266)
 #include <SD.h>
 #define ESP_MAIL_DEFAULT_SD_FS SD
-#define CARD_TYPE_SD 1
+#define ESP_MAIL_CARD_TYPE_SD 1
 #endif
 
 // For ESP32, format SPIFFS or FFat if mounting failed

@@ -1,7 +1,7 @@
 
 
 /**
- * This example shows how to send Email with attachment stored in PSRAM (ESP32 only).
+ * This example showes how to send text Email.
  *
  * Created by K. Suwatchai (Mobizt)
  *
@@ -16,10 +16,15 @@
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>
-#endif
-#include <ESP_Mail_Client.h>
+#else
 
-// To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
+
+#endif
+
+#include <ESP_Mail_Client.h>
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -46,7 +51,7 @@
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
  */
-#define SMTP_PORT esp_mail_smtp_port_587
+#define SMTP_PORT esp_mail_smtp_port_587 // port 465 is not available for Outlook.com
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
@@ -61,39 +66,8 @@ void smtpCallback(SMTP_Status status);
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
                                   "-----END CERTIFICATE-----\n";
 
-void setup()
+void sendEmail()
 {
-
-    Serial.begin(115200);
-
-    Serial.println();
-
-    Serial.print("Connecting to AP");
-
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print(".");
-        delay(200);
-    }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
-
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
-    smtp.debug(1);
-
-    /* Set the callback function to get the sending results */
-    smtp.callback(smtpCallback);
-
     /* Declare the session config data */
     ESP_Mail_Session session;
 
@@ -105,21 +79,40 @@ void setup()
     session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
+
     session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    session.time.gmt_offset = 3;
+    session.time.gmt_offset = 0;
     session.time.day_light_offset = 0;
+    session.time.timezone_env_string = "JST-9"; // for Tokyo
+
+    //See the timezone environment string list from https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+
 
     /* Declare the message class */
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = F("ESP Mail");
-    message.sender.email = AUTHOR_EMAIL;
-    message.subject = F("Test sending plain text Email with PSRAM attachment");
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+    message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
+    message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
+    message.subject = F("Test sending plain text Email");
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
 
-    String textMsg = "This is simple plain text message with PSRAM attachment";
+    String textMsg = "This is simple plain text message";
     message.text.content = textMsg;
+
+    /** If the message to send is a large string, to reduce the memory used from internal copying  while sending,
+     * you can assign string to message.text.blob by cast your string to uint8_t array like this
+     *
+     * String myBigString = "..... ......";
+     * message.text.blob.data = (uint8_t *)myBigString.c_str();
+     * message.text.blob.size = myBigString.length();
+     *
+     * or assign string to message.text.nonCopyContent, like this
+     *
+     * message.text.nonCopyContent = myBigString.c_str();
+     *
+     * Only base64 encoding is supported for content transfer encoding in this case.
+     */
 
     /** The Plain text message character set e.g.
      * us-ascii
@@ -175,33 +168,15 @@ void setup()
 
     // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
-    /* The attachment data item */
-    SMTP_Attachment att[1];
-    int attIndex = 0;
-
-#if defined(ESP32)
-
-    int dlen = 3 * 1024 * 1024 + 512 * 1024;
-    uint8_t *data = (uint8_t *)ps_malloc(dlen);
-
-    if (psramFound())
-    {
-        memset(data, 0xff, dlen);
-
-        att[attIndex].descr.filename = F("data.dat");
-        att[attIndex].descr.mime = F("application/octet-stream");
-        att[attIndex].descr.description = F("This is binary data");
-        att[attIndex].blob.data = data;
-        att[attIndex].blob.size = dlen;
-        att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-
-        /* Add inline image to the message */
-        message.addInlineImage(att[attIndex]);
-    }
-
-#endif
-
     /* Connect to server with the session config */
+
+    // Library will be trying to sync the time with NTP server if time is never sync or set.
+    // This is 10 seconds blocking process.
+    // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
+    // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
+    // Time can be set manually with provided timestamp to function smtp.setSystemTime.
+
+    //
     if (!smtp.connect(&session))
         return;
 
@@ -213,6 +188,54 @@ void setup()
     // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+}
+
+void setup()
+{
+
+    Serial.begin(115200);
+
+    Serial.println();
+
+    Serial.print("Connecting to AP");
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(200);
+    }
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+
+    /** Enable the debug via Serial port
+     * 0 for no debugging
+     * 1 for basic level debugging
+     *
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     */
+    smtp.debug(1);
+
+    /* Set the callback function to get the sending results */
+    smtp.callback(smtpCallback);
+
+    sendEmail();
+
+    // Sleep for 60 seconds
+
+    Serial.println("Going to sleep for 60 seconds...");
+
+#if defined(ESP32)
+
+    esp_sleep_enable_timer_wakeup(60 * 1000000);
+
+    esp_deep_sleep_start();
+
+#endif
 }
 
 void loop()

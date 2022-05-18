@@ -113,12 +113,30 @@ param **`mosi`** The SPI MOSI pin (ESP32 only).
 
 param **`ss`** The SPI Chip/Slave Select pin (ESP32 and ESP8266).
 
+aram **`frequency`** The SPI frequency (ESP32 only).
+
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss);
+bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss, uint32_t frequency = 4000000);
 ```
 
+
+
+
+#### SD card config with chip select and SPI configuration (ESP32 only)
+
+param **`ss`** The SPI Chip/Slave Select pin.
+
+aram **`spiConfig`** The pointer to SPIClass object for SPI configuartion.
+
+aram **`frequency`** The SPI frequency.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+bool sdBegin(int8_t ss, SPIClass *spiConfig = nullptr, uint32_t frequency = 4000000);
+```
 
 
 

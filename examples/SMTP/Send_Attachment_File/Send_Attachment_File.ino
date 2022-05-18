@@ -305,6 +305,7 @@ void setup()
   attIndex++;
   att[attIndex].descr.filename = F("bin1.dat");
   att[attIndex].descr.mime = F("application/octet-stream"); // binary data
+  att[attIndex].descr.description = F("This is binary data"); 
   att[attIndex].file.path = F("/bin1.dat");
   att[attIndex].file.storage_type = esp_mail_file_storage_type_sd;
   att[attIndex].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;

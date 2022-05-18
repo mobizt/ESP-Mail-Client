@@ -133,7 +133,7 @@ bool ESPTimeHelper::setClock(float gmtOffset, float daylightOffset, const char *
 #if defined(ESP32)
     getLocalTime(&timeinfo);
 #elif defined(ESP8266)
-    gmtime_r(&now, &timeinfo);
+    localtime_r(&now, &timeinfo);
 #endif
 
 #endif

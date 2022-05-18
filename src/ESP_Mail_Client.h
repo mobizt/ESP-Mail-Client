@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created May 10, 2022
+ * Created May 18, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -671,9 +671,10 @@ public:
    * @param sck SPI Clock pin.
    * @param miso SPI MISO pin.
    * @param mosi SPI MOSI pin.
+   * @param frequency The SPI frequency
    * @return Boolean type status indicates the success of the operation.
    */
-  bool sdBegin(int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
+  bool sdBegin(int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1, uint32_t frequency = 4000000);
 
 #if defined(ESP8266)
 
@@ -691,10 +692,11 @@ public:
   /** SD card config with chip select and SPI configuration (ESP32 only).
    *
    * @param ss SPI Chip/Slave Select pin.
-   * @param spiConfig The pointer to SPIClass object for SPI configuartion (ESP32 only).
+   * @param spiConfig The pointer to SPIClass object for SPI configuartion.
+   * @param frequency The SPI frequency.
    * @return Boolean type status indicates the success of the operation.
    */
-  bool sdBegin(int8_t ss, SPIClass *spiConfig = nullptr);
+  bool sdBegin(int8_t ss, SPIClass *spiConfig = nullptr, uint32_t frequency = 4000000);
 #endif
 
 #if defined(MBFS_ESP32_SDFAT_ENABLED) || defined(MBFS_SDFAT_ENABLED)
@@ -772,7 +774,9 @@ private:
   bool strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive = true);
   int strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive = true);
   char *strP(PGM_P pgm);
-  void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, bool wait);
+  void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
+  void setTimezone(const char *TZ_Var, const char *TZ_file);
+  void getTimezone(const char *TZ_file, MB_String &out);
 #endif
 
 #if defined(ENABLE_SMTP)
@@ -782,6 +786,7 @@ private:
   void softBreak(MB_String &content, const char *quoteMarks);
   void getMIME(const char *ext, MB_String &mime);
   void mimeFromFile(const char *name, MB_String &mime);
+  void getExtfromMIME(const char *mime, MB_String &ext);
   MB_String getBoundary(size_t len);
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
@@ -866,8 +871,9 @@ private:
   bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
-  void handlePartHeader(IMAPSession *imap, char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, bool caseSensitive = true);
-
+  void handlePartHeader(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
+  bool storeStringPtr(uint32_t addr, MB_String &value, const char *buf);
+  bool getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, bool caseSensitive);
   struct esp_mail_message_part_info_t *cPart(IMAPSession *imap);
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);

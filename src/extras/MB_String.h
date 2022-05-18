@@ -1,10 +1,13 @@
 
 /**
- * Mobizt's SRAM/PSRAM supported String, version 1.2.4
+ * Mobizt's SRAM/PSRAM supported String, version 1.2.5
  *
- * Created February 28, 2022
+ * Created May 15, 2022
  *
  * Changes Log
+ *
+ * v1.2.4
+ * - Update trim()
  *
  * v1.2.4
  * - Check PSRAM availability before allocating the memory
@@ -62,7 +65,6 @@
 #ifndef MB_String_H
 #define MB_String_H
 
-
 #include <Arduino.h>
 #if !defined(__AVR__)
 #include <string>
@@ -72,7 +74,7 @@
 
 #define MB_STRING_MAJOR 1
 #define MB_STRING_MINOR 2
-#define MB_STRING_PATCH 4
+#define MB_STRING_PATCH 5
 
 #if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
 #include <umm_malloc/umm_malloc.h>
@@ -883,14 +885,14 @@ public:
         int p1 = 0, p2 = length() - 1;
         while (p1 < (int)length())
         {
-            if (buf[p1] != ' ')
+            if (buf[p1] > 32)
                 break;
             p1++;
         }
 
         while (p2 >= 0)
         {
-            if (buf[p2] != ' ')
+            if (buf[p2] > 32)
                 break;
             p2--;
         }
