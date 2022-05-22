@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.5
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.6
  *
- * Created April 17, 2022
+ * Created May 22, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)

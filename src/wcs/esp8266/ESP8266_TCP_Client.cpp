@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.5
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.6
  *
- * Created April 17, 2022
+ * Created May 22, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -305,6 +305,9 @@ int ESP8266_TCP_Client::write(uint8_t *data, int len)
 
   if (len == 0)
     return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+  if (!networkReady())
+    return TCP_CLIENT_ERROR_NOT_CONNECTED;
 
   if (!connect(wcs->isSecure(), wcs->isVerify()))
     return TCP_CLIENT_ERROR_CONNECTION_REFUSED;

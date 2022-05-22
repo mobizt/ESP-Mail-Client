@@ -1845,6 +1845,7 @@ static const char esp_mail_str_352[] PROGMEM = "Custom Client is not yet enabled
 static const char esp_mail_str_353[] PROGMEM = "! W: PSRAM was enabled but not detected.";
 static const char esp_mail_str_355[] PROGMEM = "> C: Wait for NTP server time synching";
 static const char esp_mail_str_356[] PROGMEM = "NTP server time synching timed out";
+static const char esp_mail_str_357[] PROGMEM = "not connected";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)

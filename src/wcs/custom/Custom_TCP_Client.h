@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.2.
+ * The custom TCP Client Class v1.0.3.
  *
- * February 28, 2022
+ * May 22, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -148,6 +148,9 @@ public:
 
         if (len == 0)
             return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+        if (!networkReady())
+            return TCP_CLIENT_ERROR_NOT_CONNECTED;
 
         if (!connect(0, 0))
             return TCP_CLIENT_ERROR_CONNECTION_REFUSED;

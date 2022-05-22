@@ -1,5 +1,5 @@
 /**
- * Created May 1, 2022
+ * Created May 22, 2022
  */
 #pragma once
 
@@ -10,6 +10,7 @@
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED (-1)
 #define TCP_CLIENT_ERROR_SEND_DATA_FAILED (-2)
 #define TCP_CLIENT_ERROR_NOT_INITIALIZED (-3)
+#define TCP_CLIENT_ERROR_NOT_CONNECTED (-4)
 
 #if defined(ENABLE_SMTP)
 

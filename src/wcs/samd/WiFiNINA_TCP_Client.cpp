@@ -1,8 +1,8 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.4
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.5
  *
  *
- * February 1, 2022
+ * May 22, 2022
  *
  * Add support Arduino Nano RP2040 Connect
  *
@@ -254,6 +254,9 @@ void WiFiNINA_TCP_Client::stop()
 
 int WiFiNINA_TCP_Client::write(uint8_t *data, int len)
 {
+
+  if (!networkReady())
+    return TCP_CLIENT_ERROR_NOT_CONNECTED;
 
   if (!connect(secured, verifyRootCA))
     return TCP_CLIENT_ERROR_CONNECTION_REFUSED;

@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.6.
+ * ESP32 TCP Client Library v1.0.7.
  *
- * February 12, 2022
+ * May 22, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -228,6 +228,9 @@ int ESP32_TCP_Client::write(uint8_t *data, int len)
 
     if (len == 0)
         return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
+
+    if (!networkReady())
+        return TCP_CLIENT_ERROR_NOT_CONNECTED;
 
     if (!connect(wcs->isSecure(), wcs->isVerify()))
         return TCP_CLIENT_ERROR_CONNECTION_REFUSED;

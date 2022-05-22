@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created May 18, 2022
+ * Created May 22, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -9249,7 +9249,9 @@ String SMTPSession::errorReason()
   case TCP_CLIENT_ERROR_NOT_INITIALIZED:
     ret += esp_mail_str_346;
     break;
-
+  case TCP_CLIENT_ERROR_NOT_CONNECTED:
+    ret += esp_mail_str_357;
+    break;
   case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
     ret += esp_mail_str_356;
     break;
