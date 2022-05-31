@@ -247,7 +247,7 @@ void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
 
         if (strcmp(streaminfo.disposition, "attachment") == 0 || strcmp(streaminfo.disposition, "inline") == 0)
         {
-            
+
             if (strcmp(streaminfo.disposition, "inline") == 0)
             {
                 Serial.print("Content ID: ");
@@ -288,8 +288,15 @@ void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
     }
 
     // Decoded data is available here
-    // Cast the data to char * or uint8_t *.
-    // Serial.print((char *)streaminfo.data);
+    if (streaminfo.data)
+    {
+        // to print null terminated string from data
+        
+        // char str[streaminfo.data_size + 1];
+        // memcpy(str, streaminfo.data, streaminfo.data_size);
+        // str[streaminfo.data_size] = 0;
+        // Serial.print(str);
+    }
 
     if (streaminfo.isLastData)
     {
