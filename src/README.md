@@ -538,6 +538,18 @@ void callback(imapStatusCallback imapCallback);
 
 
 
+#### Assign the callback function that returns the MIME data stream from fetching or reading the Email.
+
+param **`mimeDataStreamCallback`** The function that accepts the MIME_Stream_Info as parameter.
+
+```cpp
+void mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCallback);
+```
+
+
+
+
+
 #### Determine if no message body contained in the search result and only the message header is available.
 
 ```cpp

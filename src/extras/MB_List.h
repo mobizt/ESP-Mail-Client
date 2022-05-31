@@ -28,14 +28,14 @@
 #ifndef MB_LIST_H
 #define MB_LIST_H
 
-#if !defined(__AVR__)
+#if !defined(__AVR__) // #if __cplusplus >= 201103
 #define MB_VECTOR std::vector
 #define MB_USE_STD_VECTOR
 #else
 #define MB_VECTOR MB_List
 #endif
 
-#if defined(__AVR__)
+#if defined(__AVR__) // #if __cplusplus < 201103
 #define MB_LIST_NULL NULL
 #else
 #define MB_LIST_NULL nullptr

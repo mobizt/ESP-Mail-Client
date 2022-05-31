@@ -1,5 +1,5 @@
 /**
- * This example shows how to read Email and store the message in SD card.
+ * This example shows how to read Email and collect the stream data to print or store via the callback function.
  *
  * Email: suwatchai@outlook.com
  *
@@ -61,23 +61,13 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Callback function to get the Email reading status */
-void imapCallback(IMAP_Status status);
-
-/* Print the list of mailbox folders */
-void printAllMailboxesInfo(IMAPSession &imap);
-
-/* Print the selected folder info */
-void printSelectedMailboxInfo(SelectedFolderInfo sFolder);
-
-/* Print all messages from the message list */
-void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly);
-
-/* Print all attachments info from the message */
-void printAttacements(std::vector<IMAP_Attach_Item> &atts);
+void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo);
 
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
+
+int progress = 0;
+int lastProgress = -1;
 
 void setup()
 {
@@ -114,16 +104,8 @@ void setup()
     SD_Card_Mounting(); // See src/addons/SDHelper.h
 #endif
 
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
-    imap.debug(1);
-
-    /* Set the callback function to get the reading results */
-    imap.callback(imapCallback);
+    /* Set the callback function to get MIME Data stream */
+    imap.mimeDataStreamCallback(mimeDataStreamCallback);
 
     /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
      * MailClient.sdBegin function which may be different for ESP32 and ESP8266
@@ -204,15 +186,9 @@ void setup()
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional} */
-    printAllMailboxesInfo(imap);
-
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
         return;
-
-    /*  {Optional} */
-    printSelectedMailboxInfo(imap.selectedFolder());
 
     /** Message UID to fetch or read e.g. 100.
      * In this case we will get the UID from the max message number (lastest message)
@@ -244,153 +220,80 @@ void loop()
 {
 }
 
-/* Callback function to get the Email reading status */
-void imapCallback(IMAP_Status status)
+void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
 {
-    /* Print the current status */
-    Serial.println(status.info());
-
-    /* Show the result when reading finished */
-    if (status.success())
+    if (streaminfo.isFirstData)
     {
-        /* Print the result */
-        /* Get the message list from the message list data */
-        IMAP_MSG_List msgList = imap.data();
-        printMessages(msgList.msgItems, imap.headerOnly());
+        progress = 0;
+        lastProgress = -1;
 
-        /* Clear all stored data in IMAPSession object */
-        imap.empty();
-    }
-}
+        Serial.print("Message UID: ");
+        Serial.println(streaminfo.uid);
 
-void printAllMailboxesInfo(IMAPSession &imap)
-{
-    /* Declare the folder collection class to get the list of mailbox folders */
-    FoldersCollection folders;
+        Serial.print("Content Type: ");
+        Serial.println(streaminfo.type);
 
-    /* Get the mailbox folders */
-    if (imap.getFolders(folders))
-    {
-        for (size_t i = 0; i < folders.size(); i++)
+        Serial.print("Content Disposition: ");
+        Serial.println(streaminfo.disposition);
+
+        Serial.print("Text Character Set: ");
+        Serial.println(streaminfo.charSet);
+
+        Serial.print("Content Transfer Encoding: ");
+        Serial.println(streaminfo.transfer_encoding);
+
+        Serial.print("Total Octets: ");
+        Serial.println(streaminfo.octet_size);
+
+        if (strcmp(streaminfo.disposition, "attachment") == 0 || strcmp(streaminfo.disposition, "inline") == 0)
         {
-            /* Iterate each folder info using the  folder info item data */
-            FolderInfo folderInfo = folders.info(i);
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
-        }
-    }
-}
-
-void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
-{
-    /* Show the mailbox info */
-    ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
-    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
-    for (size_t i = 0; i < sFolder.flagCount(); i++)
-        ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
-}
-
-void printAttacements(std::vector<IMAP_Attach_Item> &atts)
-{
-    ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", atts.size());
-    for (size_t j = 0; j < atts.size(); j++)
-    {
-        IMAP_Attach_Item att = atts[j];
-        /** att.type can be
-         * esp_mail_att_type_none or 0
-         * esp_mail_att_type_attachment or 1
-         * esp_mail_att_type_inline or 2
-         */
-        ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Description: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.description, att.creationDate);
-    }
-    Serial.println();
-}
-
-void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
-{
-
-    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and
-     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename
-     * (> 13 characters) is not support in the SD.h library.
-     * To show how its original file name, use imap.fileList().
-     */
-    // Serial.println(imap.fileList());
-
-    for (size_t i = 0; i < msgItems.size(); i++)
-    {
-
-        /* Iterate to get each message data through the message item data */
-        IMAP_MSG_Item msg = msgItems[i];
-
-        Serial.println("****************************");
-        ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
-        ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-        ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
-
-        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
-
-        // The attachment may not detect in search because the multipart/mixed
-        // was not found in Content-Type header field.
-        ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
-
-        if (strlen(msg.acceptLang))
-            ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
-        if (strlen(msg.contentLang))
-            ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
-        if (strlen(msg.from))
-            ESP_MAIL_PRINTF("From: %s\n", msg.from);
-        if (strlen(msg.sender))
-            ESP_MAIL_PRINTF("Sender: %s\n", msg.sender);
-        if (strlen(msg.to))
-            ESP_MAIL_PRINTF("To: %s\n", msg.to);
-        if (strlen(msg.cc))
-            ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
-        if (strlen(msg.date))
-        {
-            ESP_MAIL_PRINTF("Date: %s\n", msg.date);
-            ESP_MAIL_PRINTF("Timestamp: %d\n", (int)MailClient.Time.getTimestamp(msg.date));
-        }
-        if (strlen(msg.subject))
-            ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
-        if (strlen(msg.reply_to))
-            ESP_MAIL_PRINTF("Reply-To: %s\n", msg.reply_to);
-        if (strlen(msg.return_path))
-            ESP_MAIL_PRINTF("Return-Path: %s\n", msg.return_path);
-        if (strlen(msg.in_reply_to))
-            ESP_MAIL_PRINTF("In-Reply-To: %s\n", msg.in_reply_to);
-        if (strlen(msg.references))
-            ESP_MAIL_PRINTF("References: %s\n", msg.references);
-        if (strlen(msg.comments))
-            ESP_MAIL_PRINTF("Comments: %s\n", msg.comments);
-        if (strlen(msg.keywords))
-            ESP_MAIL_PRINTF("Keywords: %s\n", msg.keywords);
-
-        /* If the result contains the message info (Fetch mode) */
-        if (!headerOnly)
-        {
-            if (strlen(msg.text.content))
-                ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
-            if (strlen(msg.text.charSet))
-                ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
-            if (strlen(msg.text.transfer_encoding))
-                ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-            if (strlen(msg.html.content))
-                ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
-            if (strlen(msg.html.charSet))
-                ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
-            if (strlen(msg.html.transfer_encoding))
-                ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
-
-            if (msg.rfc822.size() > 0)
+            
+            if (strcmp(streaminfo.disposition, "inline") == 0)
             {
-                ESP_MAIL_PRINTF("\r\nRFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
-                printMessages(msg.rfc822, headerOnly);
+                Serial.print("Content ID: ");
+                Serial.println(streaminfo.cid);
             }
 
-            if (msg.attachments.size() > 0)
-                printAttacements(msg.attachments);
+            Serial.print("Name: ");
+            Serial.println(streaminfo.name);
+
+            Serial.print("File Name: ");
+            Serial.println(streaminfo.filename);
+
+            Serial.print("Size: ");
+            Serial.println(streaminfo.size);
+
+            Serial.print("Content Description: ");
+            Serial.println(streaminfo.description);
+
+            Serial.print("Creation Date: ");
+            Serial.println(streaminfo.date);
         }
 
+        Serial.println("Content:");
+    }
+
+    progress = 100 * streaminfo.octet_count / streaminfo.octet_size;
+
+    if (progress != lastProgress && (progress == 0 || progress == 100 || lastProgress + 5 <= progress))
+    {
+
+        lastProgress = progress;
+
+        Serial.print("Data Length: ");
+        Serial.print(streaminfo.data_size);
+
+        Serial.print(", Reading %: ");
+        Serial.println(progress);
+    }
+
+    // Decoded data is available here
+    // Cast the data to char * or uint8_t *.
+    // Serial.print((char *)streaminfo.data);
+
+    if (streaminfo.isLastData)
+    {
+        Serial.println();
         Serial.println();
     }
 }

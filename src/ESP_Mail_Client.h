@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created May 22, 2022
+ * Created May 31, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -253,13 +253,14 @@ public:
 
 typedef void (*imapStatusCallback)(IMAP_Status);
 typedef void (*imapResponseCallback)(const char *);
+typedef void (*MIMEDataStreamCallback)(MIME_Data_Stream_Info);
 
 #endif
 
 #if defined(ENABLE_SMTP)
 
-/* The SMTP message class */
-class SMTP_Message
+    /* The SMTP message class */
+    class SMTP_Message
 {
 public:
   SMTP_Message(){};
@@ -872,8 +873,11 @@ private:
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
   void handlePartHeader(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
+  int countChar(const char *buf, char find);
   bool storeStringPtr(uint32_t addr, MB_String &value, const char *buf);
-  bool getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, bool caseSensitive);
+  bool getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive);
+  char *urlDecode(const char *str);
+  void resetStringPtr(struct esp_mail_message_part_info_t &part);
   struct esp_mail_message_part_info_t *cPart(IMAPSession *imap);
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
@@ -888,6 +892,7 @@ private:
   void addHeader(MB_String &s, const char *name, const MB_String &value, bool trim, bool json);
   void addHeader(MB_String &s, const char *name, int value, bool json);
   void saveHeader(IMAPSession *imap, bool json);
+  void sendStreamCB(IMAPSession *imap, void *buf, size_t len, int chunkIndex, bool hrdBrk);
   void prepareFilePath(IMAPSession *imap, MB_String &filePath, bool header);
   void decodeText(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetLength, int &readDataLen);
   bool handleAttachment(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
@@ -1108,6 +1113,14 @@ public:
    */
   void callback(imapStatusCallback imapCallback);
 
+  /** Assign the callback function that returns the MIME data stream from
+   * fetching or reading the Email.
+   *
+   * @param mimeDataStreamCallback The function that accepts the MIME_Stream_Info as
+   * parameter.
+   */
+  void mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCallback);
+
   /** Determine if no message body contained in the search result and only the
    * message header is available.
    */
@@ -1211,6 +1224,7 @@ private:
   bool _secure = false;
   imapStatusCallback _readCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
+  MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
 
   MB_VECTOR<uint32_t> _msgUID;
   FoldersCollection _folders;

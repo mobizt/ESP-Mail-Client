@@ -1,10 +1,10 @@
-#ifndef ESP_MAIL_Client_CPP
-#define ESP_MAIL_Client_CPP
+#ifndef ESP_MAIL_CLIENT_CPP
+#define ESP_MAIL_CLIENT_CPP
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created May 22, 2022
+ * Created May 31, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -171,7 +171,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
   if (!_clockReady)
   {
-  
+
     Time.setClock(gmt_offset, day_light_offset, ntp_server);
 
     if (wait)
@@ -187,8 +187,8 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
   // set and get TZ environment variable
 
   MB_String timezone;
-  
-  // only ESP32 only 
+
+  // only ESP32 only
   getTimezone(TZ_file, timezone);
 
   if (timezone.length() == 0)
@@ -615,8 +615,6 @@ int ESP_Mail_Client::readLine(IMAPSession *imap, char *buf, int bufLen, bool crl
     if (ret > -1)
     {
       count++;
-      if (idx >= bufLen - 1)
-        return idx;
 
       c = (char)ret;
       strcat_c(buf, c);
@@ -631,6 +629,9 @@ int ESP_Mail_Client::readLine(IMAPSession *imap, char *buf, int bufLen, bool crl
         return idx;
       }
       _c = c;
+
+      if (idx >= bufLen - 1)
+        return idx;
     }
     if (!imap->client.connected())
       return idx;
@@ -797,6 +798,8 @@ esp_mail_char_decoding_scheme ESP_Mail_Client::getEncodingFromCharset(const char
     scheme = esp_mail_char_decoding_scheme_tis620;
   else if (strposP(enc, esp_mail_str_227, 0, false) > -1)
     scheme = esp_mail_char_decoding_scheme_iso8859_1;
+  else if (strpos(enc, "utf-8", 0, false) > -1)
+    scheme = esp_mail_char_decoding_scheme_utf_8;
 
   return scheme;
 }
@@ -1298,7 +1301,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
           if (cPart(imap)->rfc822_part || cPart(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_none)
             continue;
 
-          bool rfc822_body_subtype = cPart(imap)->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
+          bool rfc822_body_subtype = cPart(imap)->message_sub_type == esp_mail_imap_message_sub_type_rfc822 && cPart(imap)->attach_type != esp_mail_att_type_attachment;
 
           if (cPart(imap)->attach_type == esp_mail_att_type_none && (cPart(imap)->msg_type == esp_mail_msg_type_html || cPart(imap)->msg_type == esp_mail_msg_type_plain || cPart(imap)->msg_type == esp_mail_msg_type_enriched))
           {
@@ -1541,7 +1544,7 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
   {
 
     struct esp_mail_message_part_info_t *_cpart = &cHeader(imap)->part_headers[cHeader(imap)->message_data_count - 1];
-    bool rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
+    bool rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822 && _cpart->attach_type != esp_mail_att_type_attachment;
 
     MB_String cmd;
 
@@ -1566,7 +1569,7 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
     ret = handleIMAPResponse(imap, IMAP_STATUS_IMAP_RESPONSE_FAILED, false);
 
     _cpart = &cHeader(imap)->part_headers[cHeader(imap)->message_data_count - 1];
-    rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
+    rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822 && _cpart->attach_type != esp_mail_att_type_attachment;
     cLevel = imap->_multipart_levels.size() - 1;
 
     if (ret)
@@ -2100,7 +2103,8 @@ void ESP_Mail_Client::imapCB(IMAPSession *imap, const char *info, bool success)
 {
   imap->_cbData._info = info;
   imap->_cbData._success = success;
-  imap->_readCallback(imap->_cbData);
+  if (imap->_readCallback)
+    imap->_readCallback(imap->_cbData);
 }
 
 int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
@@ -2401,6 +2405,8 @@ bool ESP_Mail_Client::getHeader(const char *buf, PGM_P beginH, MB_String &out, b
     if (tmp)
     {
       out = tmp;
+      // decode header text
+      decodeHeader(out);
       delP(&tmp);
       return true;
     }
@@ -2466,7 +2472,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
       {
 
         part.cur_content_hdr = esp_mail_message_part_info_t::content_header_field_type;
-        part.stringPtr = 0;
+        resetStringPtr(part);
 
         tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, caseSensitive);
         if (tmp)
@@ -2561,7 +2567,8 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
           if (part.CID[part.CID.length() - 1] == '>')
             part.CID.erase(part.CID.length() - 1, 1);
 
-          if (part.attach_type == esp_mail_att_type_inline)
+          // if inline attachment file name was not assigned
+          if (part.attach_type == esp_mail_att_type_inline && part.filename.length() == 0)
           {
             // set filename from content id and append extension later
 
@@ -2571,7 +2578,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
         }
 
         part.cur_content_hdr = esp_mail_message_part_info_t::content_header_field_id;
-        part.stringPtr = 0;
+        resetStringPtr(part);
       }
 
       // Content-Disposition
@@ -2579,7 +2586,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
       {
 
         part.cur_content_hdr = esp_mail_message_part_info_t::content_header_field_disposition;
-        part.stringPtr = 0;
+        resetStringPtr(part);
 
         tmp = subStr(buf, esp_mail_str_175, esp_mail_str_97, 0, 0, caseSensitive);
         if (tmp)
@@ -2615,7 +2622,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
         // store last text field
 
         part.cur_content_hdr = esp_mail_message_part_info_t::content_header_field_transfer_enc;
-        part.stringPtr = 0;
+        resetStringPtr(part);
 
         tmp = subStr(buf, esp_mail_str_172, NULL, 0, -1, caseSensitive);
         if (tmp)
@@ -2629,6 +2636,8 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
             part.xencoding = esp_mail_msg_part_xencoding_qp;
           else if (strcmpP(tmp, 0, esp_mail_str_29))
             part.xencoding = esp_mail_msg_part_xencoding_7bit;
+          else if (strcmpP(tmp, 0, esp_mail_str_358))
+            part.xencoding = esp_mail_msg_part_xencoding_8bit;
 
           delP(&tmp);
         }
@@ -2640,7 +2649,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
       if (part.cur_content_hdr == esp_mail_message_part_info_t::content_header_field_none)
       {
 
-        part.stringPtr = 0;
+        resetStringPtr(part);
 
         if (getHeader(buf, esp_mail_str_150, part.rfc822_header.sender, caseSensitive))
           return;
@@ -2691,35 +2700,35 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
       if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched)
       {
 
-        if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, caseSensitive))
+        if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
         {
           part.charset = value;
-          part.stringPtr = 0;
+          resetStringPtr(part);
         }
 
         if (strposP(buf, esp_mail_str_275, 0, caseSensitive) > -1 || strposP(buf, esp_mail_str_270, 0, caseSensitive) > -1)
         {
           part.plain_flowed = true;
-          part.stringPtr = 0;
+          resetStringPtr(part);
         }
 
         if (strposP(buf, esp_mail_str_259, 0, caseSensitive) > -1 || strposP(buf, esp_mail_str_257, 0, caseSensitive) > -1)
         {
           part.plain_delsp = true;
-          part.stringPtr = 0;
+          resetStringPtr(part);
         }
       }
 
       if (part.charset.length() == 0)
       {
-        if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, caseSensitive))
+        if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
         {
           part.charset = value;
-          part.stringPtr = 0;
+          resetStringPtr(part);
         }
       }
 
-      if (getPartSubHeader(buf, esp_mail_str_170, esp_mail_str_136, false, value, old_value, caseSensitive))
+      if (getPartSubHeader(buf, esp_mail_str_170, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
       {
         part.stringPtr = toAddr(part.name);
         value.trim();
@@ -2733,12 +2742,8 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
     if (part.cur_content_hdr == esp_mail_message_part_info_t::content_header_field_disposition && part.content_disposition.length() > 0)
     {
 
-      if (part.attach_type == esp_mail_att_type_inline)
-      {
-      }
-
       // filename prop
-      if (getPartSubHeader(buf, esp_mail_str_176, esp_mail_str_136, false, value, old_value, caseSensitive))
+      if (getPartSubHeader(buf, esp_mail_str_176, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
       {
         part.stringPtr = toAddr(part.filename);
         value.trim();
@@ -2747,7 +2752,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
       }
 
       // size prop
-      if (getPartSubHeader(buf, esp_mail_str_178, esp_mail_str_97, true, value, old_value, caseSensitive))
+      if (getPartSubHeader(buf, esp_mail_str_178, esp_mail_str_97, true, value, old_value, part.stringEnc, caseSensitive))
       {
         part.attach_data_size = atoi(value.c_str());
         cHeader(imap)->total_attach_data_size += part.attach_data_size;
@@ -2755,32 +2760,54 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
 
         if (!valueStored && old_value.length() > 0)
           valueStored = storeStringPtr(part.stringPtr, old_value, buf);
-        part.stringPtr = 0;
+        resetStringPtr(part);
       }
 
       // creation date prop
-      if (getPartSubHeader(buf, esp_mail_str_179, esp_mail_str_136, false, value, old_value, caseSensitive))
+      if (getPartSubHeader(buf, esp_mail_str_179, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
       {
         part.creation_date = value;
         if (!valueStored && old_value.length() > 0)
           valueStored = storeStringPtr(part.stringPtr, old_value, buf);
-        part.stringPtr = 0;
+        resetStringPtr(part);
       }
 
       // mod date prop
-      if (getPartSubHeader(buf, esp_mail_str_181, esp_mail_str_136, false, value, old_value, caseSensitive))
+      if (getPartSubHeader(buf, esp_mail_str_181, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
       {
 
         part.modification_date = value;
         if (!valueStored && old_value.length() > 0)
           valueStored = storeStringPtr(part.stringPtr, old_value, buf);
-        part.stringPtr = 0;
+        resetStringPtr(part);
       }
     }
 
     if (!valueStored && (part.cur_content_hdr == esp_mail_message_part_info_t::content_header_field_description || part.cur_content_hdr == esp_mail_message_part_info_t::content_header_field_type || part.cur_content_hdr == esp_mail_message_part_info_t::content_header_field_disposition))
       storeStringPtr(part.stringPtr, value, buf);
   }
+}
+
+void ESP_Mail_Client::resetStringPtr(struct esp_mail_message_part_info_t &part)
+{
+  part.stringPtr = 0;
+  part.stringEnc = esp_mail_char_decoding_scheme_default;
+}
+
+int ESP_Mail_Client::countChar(const char *buf, char find)
+{
+  if (!buf)
+    return 0;
+
+  int count = 0;
+
+  for (int i = 0; i < strlen(buf); i++)
+  {
+    if (buf[i] == find)
+      count++;
+  }
+
+  return count;
 }
 
 bool ESP_Mail_Client::storeStringPtr(uint32_t addr, MB_String &value, const char *buf)
@@ -2794,7 +2821,7 @@ bool ESP_Mail_Client::storeStringPtr(uint32_t addr, MB_String &value, const char
 
     // is value string contains double quotes?
     // trim it
-    if (a->find('"') != MB_String::npos || s.find('"') != MB_String::npos)
+    if (countChar(s.c_str(), '"') == 2)
       s.trim();
 
     if (s[0] == '"')
@@ -2813,7 +2840,7 @@ bool ESP_Mail_Client::storeStringPtr(uint32_t addr, MB_String &value, const char
   return false;
 }
 
-bool ESP_Mail_Client::getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, bool caseSensitive)
+bool ESP_Mail_Client::getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive)
 {
 
   MB_String str = p;
@@ -2821,12 +2848,81 @@ bool ESP_Mail_Client::getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool n
   if (!num)
     str += esp_mail_str_136;
 
-  char *tmp = subStr(buf, str.c_str(), e, 0, caseSensitive);
+  char *tmp = subStr(buf, str.c_str(), e, 0, 0, caseSensitive);
   if (!tmp)
   {
     str = p;
     str += esp_mail_str_177;
-    tmp = subStr(buf, str.c_str(), NULL, 0, -1, caseSensitive);
+    tmp = subStr(buf, str.c_str(), e, 0, 0, caseSensitive);
+
+    if (tmp)
+    {
+      // other sub headers found?
+      int p2 = strposP(tmp, esp_mail_str_97, 0, caseSensitive);
+      if (p2 > -1)
+      {
+        delP(&tmp);
+        tmp = subStr(buf, str.c_str(), esp_mail_str_97, 0, 0, caseSensitive);
+      }
+    }
+    else
+    {
+      // Extended notation rfc5987
+      str = p;
+      str += esp_mail_str_183;
+      int p2 = strpos(buf, str.c_str(), 0, caseSensitive);
+      if (p2 > -1)
+      {
+        int p3 = strposP(buf, esp_mail_str_183, p2 + str.length() + 1, caseSensitive);
+        if (p3 > -1 && p3 < strlen(buf))
+        {
+
+          p3 += 2;
+
+          int p4 = strpos(buf, "'", p3, caseSensitive);
+          if (p4 > -1)
+          {
+
+            scheme = getEncodingFromCharset(buf);
+
+            p4 = strpos(buf, "'", p4 + 1, caseSensitive);
+            p3 = p4 + 1;
+          }
+
+          int len = strlen(buf) - p3;
+          tmp = (char *)newP(len + 1);
+
+          if (buf[strlen(buf) - 1] == ';')
+            len--;
+
+          memcpy(tmp, &buf[p3], len);
+
+          if (scheme == esp_mail_char_decoding_scheme_utf_8)
+          {
+            char *buf2 = urlDecode(tmp);
+            delP(&tmp);
+            tmp = buf2;
+          }
+          else if (scheme == esp_mail_char_decoding_scheme_iso8859_1)
+          {
+            int ilen = strlen(tmp);
+            int olen = (ilen + 1) * 2;
+            char *buf2 = (char *)newP(olen);
+            decodeLatin1_UTF8((unsigned char *)buf2, &olen, (unsigned char *)tmp, &ilen);
+            delP(&tmp);
+            tmp = buf2;
+          }
+          else if (scheme == esp_mail_char_decoding_scheme_tis620)
+          {
+            int ilen = strlen(tmp);
+            char *buf2 = (char *)newP((ilen + 1) * 3);
+            decodeTIS620_UTF8(buf2, tmp, ilen);
+            delP(&tmp);
+            tmp = buf2;
+          }
+        }
+      }
+    }
   }
 
   if (tmp)
@@ -2838,6 +2934,53 @@ bool ESP_Mail_Client::getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool n
   }
 
   return false;
+}
+
+/* Function: urlDecode */
+char *ESP_Mail_Client::urlDecode(const char *str)
+{
+  int d = 0; /* whether or not the string is decoded */
+
+  char *dStr = (char *)newP(strlen(str) + 1);
+  char eStr[] = "00"; /* for a hex code */
+
+  strcpy(dStr, str);
+
+  while (!d)
+  {
+    d = 1;
+    int i; /* the counter for the string */
+
+    for (i = 0; i < strlen(dStr); ++i)
+    {
+
+      if (dStr[i] == '%')
+      {
+        if (dStr[i + 1] == 0)
+          return dStr;
+
+        if (isxdigit(dStr[i + 1]) && isxdigit(dStr[i + 2]))
+        {
+
+          d = 0;
+
+          /* combine the next to numbers into one */
+          eStr[0] = dStr[i + 1];
+          eStr[1] = dStr[i + 2];
+
+          /* convert it to decimal */
+          long int x = strtol(eStr, NULL, 16);
+
+          /* remove the hex */
+          memmove(&dStr[i + 1], &dStr[i + 3], strlen(&dStr[i + 3]) + 1);
+
+          dStr[i] = x;
+        }
+      }
+    }
+  }
+
+  return dStr;
 }
 
 void ESP_Mail_Client::closeTCPSession(IMAPSession *imap)
@@ -2998,10 +3141,6 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
       lastBuf = (char *)newP(BASE64_CHUNKED_LEN + 1);
 
-    if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
-    {
-    }
-
     while (!completedResponse)
     {
       delay(0);
@@ -3030,7 +3169,8 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         }
         else
         {
-          readLen = readLine(imap, response, chunkBufSize, crLF, octetCount);
+          bool nl = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_part_xencoding_base64 ? true : crLF;
+          readLen = readLine(imap, response, chunkBufSize, nl, octetCount);
         }
 
         if (readLen)
@@ -3324,7 +3464,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched || part.msg_type == esp_mail_msg_type_html || part.attach_type == esp_mail_att_type_none || (part.attach_type == esp_mail_att_type_attachment && imap->_config->download.attachment) || (part.attach_type == esp_mail_att_type_inline && imap->_config->download.inlineImg))
         {
-          if (part.message_sub_type != esp_mail_imap_message_sub_type_rfc822)
+          if (part.attach_type == esp_mail_att_type_attachment || part.message_sub_type != esp_mail_imap_message_sub_type_rfc822)
           {
             if (part.attach_type != esp_mail_att_type_none && cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
               cHeader(imap)->attachment_count++;
@@ -4023,7 +4163,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
       octetCount = 0; // CRLF counted from first line
       octetLength = atoi(tmp);
       delP(&tmp);
-      chunkIdx++;
+      cPart(imap)->octetLen = octetLength;
       cPart(imap)->octetCount = 0;
       cHeader(imap)->total_download_size += octetLength;
       imap->_lastProgress = -1;
@@ -4072,6 +4212,8 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
     return true;
   }
 
+  delay(0);
+
   if (octetLength == 0)
     return true;
 
@@ -4096,6 +4238,9 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
         downloadReport(imap, 100 * cPart(imap)->octetCount / octetLength);
     }
 
+    if (cPart(imap)->octetCount > octetLength)
+      return true;
+
     if (cPart(imap)->xencoding == esp_mail_msg_part_xencoding_base64)
     {
 
@@ -4110,6 +4255,8 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
           cPart(imap)->attach_data_size += olen;
           cHeader(imap)->total_attach_data_size += cPart(imap)->attach_data_size;
         }
+
+        sendStreamCB(imap, (void *)decoded, olen, chunkIdx, false);
 
         int write = olen;
         if (mbfs->ready(mbfs_type imap->_config->storage.type))
@@ -4132,6 +4279,8 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
         cPart(imap)->attach_data_size += bufLen;
         cHeader(imap)->total_attach_data_size += cPart(imap)->attach_data_size;
       }
+
+      sendStreamCB(imap, (void *)buf, bufLen, chunkIdx, false);
 
       int write = bufLen;
       if (mbfs->ready(mbfs_type imap->_config->storage.type))
@@ -4241,7 +4390,6 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
       octetCount = 0;
       octetLength = atoi(tmp);
       delP(&tmp);
-      chunkIdx++;
       cPart(imap)->octetLen = octetLength;
       cPart(imap)->octetCount = 0;
 
@@ -4303,6 +4451,8 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
 
   if (octetLength == 0)
     return;
+
+  chunkIdx++;
 
   bool enableDownloads = (imap->_config->download.rfc822 && rfc822_body_subtype) || (!rfc822_body_subtype && ((cPart(imap)->msg_type == esp_mail_msg_type_html && imap->_config->download.html) || ((cPart(imap)->msg_type == esp_mail_msg_type_plain || cPart(imap)->msg_type == esp_mail_msg_type_enriched) && imap->_config->download.text)));
 
@@ -4425,9 +4575,54 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
           }
         }
 
+        sendStreamCB(imap, (void *)decoded, olen, chunkIdx, hrdBrk);
+
         if (newC)
           delP(&decoded);
       }
+    }
+  }
+}
+
+void ESP_Mail_Client::sendStreamCB(IMAPSession *imap, void *buf, size_t len, int chunkIndex, bool hrdBrk)
+{
+  if (imap->_mimeDataStreamCallback && len > 0)
+  {
+
+    MIME_Data_Stream_Info streaminfo;
+
+    streaminfo.uid = cHeader(imap)->message_uid;
+    streaminfo.disposition = cPart(imap)->content_disposition.c_str();
+    streaminfo.type = cPart(imap)->content_type.c_str();
+    streaminfo.charSet = cPart(imap)->charset.c_str();
+    streaminfo.transfer_encoding = cPart(imap)->content_transfer_encoding.c_str();
+    streaminfo.cid = cPart(imap)->CID.c_str();
+    streaminfo.description = cPart(imap)->content_description.c_str();
+    streaminfo.date = cPart(imap)->creation_date.c_str();
+    streaminfo.filename = cPart(imap)->filename.c_str();
+    streaminfo.size = (cPart(imap)->sizeProp) ? cPart(imap)->attach_data_size : cPart(imap)->octetLen;
+
+    streaminfo.name = cPart(imap)->name.c_str();
+    streaminfo.octet_size = cPart(imap)->octetLen;
+    streaminfo.octet_count = cPart(imap)->octetCount;
+    
+    streaminfo.isFirstData = chunkIndex == 1;
+    streaminfo.isLastData = !hrdBrk? cPart(imap)->octetLen == cPart(imap)->octetCount:false;
+
+    streaminfo.data_size = len;
+    streaminfo.data = buf;
+    streaminfo.flowed = cPart(imap)->plain_flowed;
+    streaminfo.delsp = cPart(imap)->plain_delsp;
+
+    imap->_mimeDataStreamCallback(streaminfo);
+
+    if (hrdBrk)
+    {
+      streaminfo.isFirstData = false;
+      streaminfo.isLastData = cPart(imap)->octetLen == cPart(imap)->octetCount;
+      streaminfo.data_size = 2;
+      streaminfo.data = (void *)MBSTRING_FLASH_MCR("\r\n");
+      imap->_mimeDataStreamCallback(streaminfo);
     }
   }
 }
@@ -4972,6 +5167,11 @@ void IMAPSession::callback(imapStatusCallback imapCallback)
   _readCallback = imapCallback;
 }
 
+void IMAPSession::mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCallback)
+{
+  _mimeDataStreamCallback = mimeDataStreamCallback;
+}
+
 void IMAPSession::setSystemTime(time_t ts)
 {
   this->client.setSystemTime(ts);
@@ -4995,7 +5195,7 @@ void IMAPSession::getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_it
     {
       for (int i = 0; i < sz; i++)
       {
-        if (!_headers[messageIndex].part_headers[i].rfc822_part && _headers[messageIndex].part_headers[i].message_sub_type != esp_mail_imap_message_sub_type_rfc822)
+        if (_headers[messageIndex].part_headers[i].attach_type == esp_mail_att_type_attachment || (!_headers[messageIndex].part_headers[i].rfc822_part && _headers[messageIndex].part_headers[i].message_sub_type != esp_mail_imap_message_sub_type_rfc822))
         {
           if (_headers[messageIndex].part_headers[i].attach_type == esp_mail_att_type_none)
           {
@@ -5045,7 +5245,7 @@ void IMAPSession::getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_
     {
       for (int i = 0; i < sz; i++)
       {
-        if (_headers[messageIndex].part_headers[i].message_sub_type == esp_mail_imap_message_sub_type_rfc822)
+        if (_headers[messageIndex].part_headers[i].message_sub_type == esp_mail_imap_message_sub_type_rfc822 && _headers[messageIndex].part_headers[i].attach_type != esp_mail_att_type_attachment)
         {
           if (_headers[messageIndex].part_headers[i].rfc822_part)
           {
@@ -5554,8 +5754,6 @@ int ESP_Mail_Client::readLine(SMTPSession *smtp, char *buf, int bufLen, bool crl
     ret = smtp->client.read();
     if (ret > -1)
     {
-      if (idx >= bufLen - 1)
-        return idx;
 
       c = (char)ret;
       strcat_c(buf, c);
@@ -5571,6 +5769,9 @@ int ESP_Mail_Client::readLine(SMTPSession *smtp, char *buf, int bufLen, bool crl
         return idx;
       }
       _c = c;
+
+      if (idx >= bufLen - 1)
+        return idx;
     }
     if (!smtp->client.connected())
       return idx;
@@ -8381,7 +8582,8 @@ void ESP_Mail_Client::smtpCB(SMTPSession *smtp, const char *info, bool success)
 {
   smtp->_cbData._info = info;
   smtp->_cbData._success = success;
-  smtp->_sendCallback(smtp->_cbData);
+  if (smtp->_sendCallback)
+    smtp->_sendCallback(smtp->_cbData);
 }
 
 bool ESP_Mail_Client::sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report)

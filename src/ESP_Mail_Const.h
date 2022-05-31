@@ -560,7 +560,8 @@ enum esp_mail_char_decoding_scheme
 {
     esp_mail_char_decoding_scheme_default,
     esp_mail_char_decoding_scheme_iso8859_1,
-    esp_mail_char_decoding_scheme_tis620
+    esp_mail_char_decoding_scheme_tis620,
+    esp_mail_char_decoding_scheme_utf_8
 };
 
 enum esp_mail_imap_port
@@ -826,6 +827,65 @@ struct esp_mail_imap_composite_media_type_t
     static constexpr const char *message = "message";
 };
 
+typedef struct esp_mail_imap_mime_data_stream_info_t
+{
+    /* message UID */
+    uint32_t uid = 0;
+    /* content type */
+    const char *type = "";
+
+    /* disposition */
+    const char *disposition = "";
+
+    /* content character set */
+    const char *charSet = "";
+
+    /* text content flowed format parameter */
+    bool flowed = false;
+
+    /* text content format DelSp parameter */
+    bool delsp = false;
+
+    /* content transfer encoding  */
+    const char *transfer_encoding = "";
+
+    /* content ID */
+    const char *cid = "";
+
+    /* content description */
+    const char *description = "";
+
+    /* content file name */
+    const char *filename = "";
+
+    /* content name  */
+    const char *name = "";
+
+    /* creation date */
+    const char *date = "";
+
+    /* content size */
+    size_t size = 0;
+
+    /* octet size */
+    size_t octet_size = 0;
+
+    /* current octet count */
+    int octet_count = 0;
+
+    /* data size */
+    size_t data_size = 0;
+
+    /* data buffer */
+    void *data = NULL;
+
+
+    bool isFirstData = false;
+
+    bool isLastData = false;
+
+} MIME_Data_Stream_Info;
+
 struct esp_mail_imap_media_text_sub_type_t
 {
     static constexpr const char *plain = "plain";
@@ -931,9 +991,10 @@ struct esp_mail_message_part_info_t
     int textLen = 0;
     bool sizeProp = false;
     int nestedLevel = 0;
-    
+
     // pointer to the MB_String for storing multi-line header field content.
     uint32_t stringPtr = 0;
+    esp_mail_char_decoding_scheme stringEnc = esp_mail_char_decoding_scheme_default;
 
     content_header_field cur_content_hdr = content_header_field_none;
 
@@ -1480,7 +1541,7 @@ static const char esp_mail_str_164[] PROGMEM = "msg.txt";
 static const char esp_mail_str_166[] PROGMEM = "binary";
 static const char esp_mail_str_167[] PROGMEM = "Sending inline data...";
 static const char esp_mail_str_173[] PROGMEM = " LAST";
-static const char esp_mail_str_183[] PROGMEM = "*";
+
 static const char esp_mail_str_205[] PROGMEM = "sender Email address is not valid";
 static const char esp_mail_str_206[] PROGMEM = "some of the recipient Email address is not valid";
 static const char esp_mail_str_207[] PROGMEM = "> C: Send Email";
@@ -1810,6 +1871,7 @@ static const char esp_mail_str_136[] PROGMEM = "\"";
 static const char esp_mail_str_145[] PROGMEM = "Keywords:";
 static const char esp_mail_str_150[] PROGMEM = "Sender:";
 static const char esp_mail_str_168[] PROGMEM = "charset";
+static const char esp_mail_str_183[] PROGMEM = "*";
 static const char esp_mail_str_184[] PROGMEM = "Reply-To:";
 static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";
@@ -1846,6 +1908,7 @@ static const char esp_mail_str_353[] PROGMEM = "! W: PSRAM was enabled but not d
 static const char esp_mail_str_355[] PROGMEM = "> C: Wait for NTP server time synching";
 static const char esp_mail_str_356[] PROGMEM = "NTP server time synching timed out";
 static const char esp_mail_str_357[] PROGMEM = "not connected";
+static const char esp_mail_str_358[] PROGMEM = "8bit";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)

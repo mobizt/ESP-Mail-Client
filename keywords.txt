@@ -114,6 +114,7 @@ connectionUpgradeRequestCallback    KEYWORD2
 networkConnectionRequestCallback    KEYWORD2
 networkStatusRequestCallback    KEYWORD2
 setSystemTime   KEYWORD2
+mimeDataStreamCallback  KEYWORD2
 
 #######################################
 # Struct (KEYWORD3)
