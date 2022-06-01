@@ -778,6 +778,9 @@ private:
   void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
   void setTimezone(const char *TZ_Var, const char *TZ_file);
   void getTimezone(const char *TZ_file, MB_String &out);
+  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  void getExtfromMIME(const char *mime, MB_String &ext);
+
 #endif
 
 #if defined(ENABLE_SMTP)
@@ -787,7 +790,6 @@ private:
   void softBreak(MB_String &content, const char *quoteMarks);
   void getMIME(const char *ext, MB_String &mime);
   void mimeFromFile(const char *name, MB_String &mime);
-  void getExtfromMIME(const char *mime, MB_String &ext);
   MB_String getBoundary(size_t len);
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
@@ -868,10 +870,10 @@ private:
   void imapCB(IMAPSession *imap, const char *info, bool success);
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
   int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
-  bool getHeader(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
-  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  bool getHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
   void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
+  bool getDecodedHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
   void handlePartHeader(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
   int countChar(const char *buf, char find);
   bool storeStringPtr(uint32_t addr, MB_String &value, const char *buf);
@@ -1405,4 +1407,4 @@ private:
 
 extern ESP_Mail_Client MailClient;
 
-#endif // ESP_Mail_Client_H
+#endif /* ESP_MAIL_CLIENT_H */
