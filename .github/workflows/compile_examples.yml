@@ -19,6 +19,7 @@ jobs:
         example: 
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
         - "examples/IMAP/Custom_Command/Custom_Command.ino"
+        - "examples/IMAP/DataStreamCallback/DataStreamCallback.ino"
         - "examples/IMAP/Delete_Messages/Delete_Messsages.ino"
         - "examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino"
         - "examples/IMAP/Read_Email_Access_Token/Read_Email_Access_Token.ino"
@@ -86,6 +87,7 @@ jobs:
         example: 
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
         - "examples/IMAP/Custom_Command/Custom_Command.ino"
+        - "examples/IMAP/DataStreamCallback/DataStreamCallback.ino"
         - "examples/IMAP/Delete_Messages/Delete_Messsages.ino"
         - "examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino"
         - "examples/IMAP/Read_Email_Access_Token/Read_Email_Access_Token.ino"

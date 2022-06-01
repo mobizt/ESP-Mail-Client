@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created May 31, 2022
+ * Created June 1, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2441,18 +2441,23 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
     bool valueStored = false;
     chunkIdx++;
 
-    // all octets read
+    // if all octets read
 
     if (octetCount > part.octetLen)
     {
 
+      // Is inline attachment without content id or name or filename?
+      // It is supposed to be the inline message txt content, reset attach type to none
+
+      if (part.attach_type == esp_mail_att_type_inline && part.CID.length() == 0)
+        part.attach_type = esp_mail_att_type_none;
+
       // Is attachment file extension missing?
       // append extension
 
-      if (part.content_disposition.length() > 0)
+      if (part.attach_type == esp_mail_att_type_inline || part.attach_type == esp_mail_att_type_attachment)
       {
-
-        if (part.filename.find('.') == MB_String::npos)
+        if (part.filename.length() > 0 && part.filename.find('.') == MB_String::npos)
         {
           MB_String ext;
           getExtfromMIME(part.content_type.c_str(), ext);
@@ -3135,7 +3140,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
       imap->_msgUID.clear();
     }
 
-    chunkBufSize = 512;
+    chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
     response = (char *)newP(chunkBufSize + 1);
 
     if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
@@ -3158,7 +3163,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
       if (chunkBufSize > 0)
       {
-        chunkBufSize = 512;
+        chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
 
         if (imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_search)
         {
@@ -3876,7 +3881,7 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
 
   if (chunkBufSize > 0)
   {
-    chunkBufSize = 512;
+    chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
 
     char *buf = (char *)newP(chunkBufSize + 1);
 
@@ -4160,6 +4165,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
     char *tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0);
     if (tmp)
     {
+      chunkIdx++;
       octetCount = 0; // CRLF counted from first line
       octetLength = atoi(tmp);
       delP(&tmp);
@@ -4216,10 +4222,6 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
 
   if (octetLength == 0)
     return true;
-
-  chunkIdx++;
-
-  delay(0);
 
   if (cPart(imap)->octetCount <= octetLength)
   {
@@ -4295,6 +4297,8 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
         return false;
     }
   }
+
+  chunkIdx++;
   return true;
 }
 
@@ -4382,11 +4386,12 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
   bool rfc822_body_subtype = cPart(imap)->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
   if (chunkIdx == 0)
   {
+
     imap->_lastProgress = -1;
     char *tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0);
     if (tmp)
     {
-
+      chunkIdx++;
       octetCount = 0;
       octetLength = atoi(tmp);
       delP(&tmp);
@@ -4451,8 +4456,6 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
 
   if (octetLength == 0)
     return;
-
-  chunkIdx++;
 
   bool enableDownloads = (imap->_config->download.rfc822 && rfc822_body_subtype) || (!rfc822_body_subtype && ((cPart(imap)->msg_type == esp_mail_msg_type_html && imap->_config->download.html) || ((cPart(imap)->msg_type == esp_mail_msg_type_plain || cPart(imap)->msg_type == esp_mail_msg_type_enriched) && imap->_config->download.text)));
 
@@ -4565,7 +4568,6 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
 
         if (filePath.length() > 0 && downloadRequest)
         {
-
           if (mbfs->ready(mbfs_type imap->_config->storage.type))
           {
             if (olen > 0)
@@ -4582,6 +4584,8 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
       }
     }
   }
+
+  chunkIdx++;
 }
 
 void ESP_Mail_Client::sendStreamCB(IMAPSession *imap, void *buf, size_t len, int chunkIndex, bool hrdBrk)
@@ -4605,9 +4609,9 @@ void ESP_Mail_Client::sendStreamCB(IMAPSession *imap, void *buf, size_t len, int
     streaminfo.name = cPart(imap)->name.c_str();
     streaminfo.octet_size = cPart(imap)->octetLen;
     streaminfo.octet_count = cPart(imap)->octetCount;
-    
+
     streaminfo.isFirstData = chunkIndex == 1;
-    streaminfo.isLastData = !hrdBrk? cPart(imap)->octetLen == cPart(imap)->octetCount:false;
+    streaminfo.isLastData = !hrdBrk ? cPart(imap)->octetLen == cPart(imap)->octetCount : false;
 
     streaminfo.data_size = len;
     streaminfo.data = buf;
@@ -8968,7 +8972,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
       if (chunkBufSize > 0)
       {
-        chunkBufSize = 512;
+        chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
         response = (char *)newP(chunkBufSize + 1);
 
         readLen = readLine(smtp, response, chunkBufSize, false, count);

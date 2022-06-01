@@ -242,6 +242,8 @@ void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
         Serial.print("Content Transfer Encoding: ");
         Serial.println(streaminfo.transfer_encoding);
 
+        // The total octets of encoded or non-encoded MIME content.
+        // The size of decoded content may be different.
         Serial.print("Total Octets: ");
         Serial.println(streaminfo.octet_size);
 
@@ -280,6 +282,7 @@ void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
 
         lastProgress = progress;
 
+        // The size of current decoded chunk data
         Serial.print("Data Length: ");
         Serial.print(streaminfo.data_size);
 
@@ -287,15 +290,28 @@ void mimeDataStreamCallback(MIME_Data_Stream_Info streaminfo)
         Serial.println(progress);
     }
 
-    // Decoded data is available here
+    // Decoded chunk data is available here
     if (streaminfo.data)
     {
-        // to print null terminated string from data
-        
-        // char str[streaminfo.data_size + 1];
-        // memcpy(str, streaminfo.data, streaminfo.data_size);
-        // str[streaminfo.data_size] = 0;
-        // Serial.print(str);
+
+        // If streaminfo.transfer_encoding is 'base64',
+        // to print or send null terminated string from stream data
+
+        /**
+         char str[streaminfo.data_size + 1];
+         memcpy(str, streaminfo.data, streaminfo.data_size);
+         str[streaminfo.data_size] = 0;
+         Serial.print(str);
+        */
+
+        // If streaminfo.transfer_encoding is not 'base64', the string can be
+        // taken directly from casting streaminfo.data as (const char*)streaminfo.data
+
+
+        // To write data to file (if fs is File class object that open in appended mode)
+        // fs.write((uint8_t *)streaminfo.data, streaminfo.data_size);
+
+        // streaminfo.data_size is not more than 512
     }
 
     if (streaminfo.isLastData)
