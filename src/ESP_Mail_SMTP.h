@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 1, 2022
+ * Created June 2, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -3227,8 +3227,11 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
             if (chunkBufSize > 0)
             {
+
                 chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
                 response = (char *)newP(chunkBufSize + 1);
+
+            read_line:
 
                 readLen = readLine(smtp, response, chunkBufSize, false, count);
 
@@ -3237,7 +3240,8 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     if (smtp->_smtp_cmd != esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
                     {
                         // sometimes server sent multiple lines response
-                        // sometimes rx buffer may not ready for a while
+                        // sometimes rx buffer is not ready for a while
+
                         if (strlen(response) < minResLen)
                         {
                             r += response;
@@ -3268,6 +3272,23 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     }
 
                     getResponseStatus(response, respCode, 0, status);
+
+                    // No response code from greeting?
+                    // Assumed multi-line greeting responses.
+
+                    if (status.respCode == 0 && smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
+                    {
+                        s = esp_mail_str_260;
+                        s += response;
+
+                        if (smtp->_debug)
+                            esp_mail_debug(s.c_str());
+
+                        memset(response, 0, chunkBufSize + 1);
+
+                        // read again until we get the response code
+                        goto read_line;
+                    }
 
                     // get the status code again for unexpected return code
                     if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.respCode == 0)
@@ -3333,7 +3354,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
     int p1 = 0;
     if (respCode > esp_mail_smtp_status_code_0)
     {
-        s = respCode;
+        s = (int)respCode;
         s += esp_mail_str_131;
         p1 = strpos(buf, (const char *)s.c_str(), beginPos);
     }
