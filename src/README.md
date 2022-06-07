@@ -433,18 +433,34 @@ const char *getFlags(int msgNum);
 
 param **`cmd`** The command string.
 
-param **`callback`** The function that accepts the pointer to const char (const char*) as parameter.
+param **`callback`** The function that accepts IMAP_Response as parameter.
+
+param **`tag`** The tag string to pass to the callback function.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
 imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
 
 ```cpp
-bool sendCustomCommand(const char *cmd, imapResponseCallback callback);
+bool sendCustomCommand(<string> cmd, imapResponseCallback callback, <string> tag);
 ```
 
 
 
+
+#### Begin the IMAP server connection without authentication.
+
+param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+
+param **`callback`** The callback function that accepts IMAP_Response as parameter.
+
+param **`tag`** The tag that pass to the callback function.
+
+return **`The boolean`** value indicates the success of operation.
+
+```cpp
+bool customConnect(ESP_Mail_Session *session, imapResponseCallback callback, <string> tag);
+```
 
 
 
@@ -702,17 +718,85 @@ bool closeSession();
 
 
 
+#### Begin the SMTP server connection without authentication.
+
+param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+
+param **`callback`** The callback function that accepts the SMTP_Response as parameter.
+
+param **`commandID`** The command identifier number that will pass to the callback.
+
+return **`The boolean`** value indicates the success of operation.
+
+If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
+
+```cpp
+bool customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+```
+
+
+
+
+
+
+#### Send the custom SMTP command and get the result via callback.
+
+param **`cmd`** The command string.
+
+param **`callback`** The function that accepts the SMTP_Response as parameter.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+smtp.connect or smtp.customConnect is needed to call once prior to call this function.
+
+```cpp
+bool sendCustomCommand(<string> cmd, smtpResponseCallback callback);
+```
+
+
+
+
+
+#### Send the custom SMTP command data string.
+
+param **`data`** The string data.
+
+return **`The boolean`** value which indicates the success of operation.
+
+Should be used after calling sendCustomCommand("DATA");
+
+```cpp
+bool sendCustomData(<string> data);
+```
+
+
+
+
+#### Send the custom SMTP command data.
+
+param **`data`**  The byte data.
+
+param **`size`**  The data size.
+
+return **`The boolean`** value which indicates the success of operation.
+
+Should be used after calling sendCustomCommand("DATA");
+
+```cpp
+bool sendCustomData(uint8_t *data, size_t size);
+```
+
+
+
+
+
 #### Set to enable the debug.
 
 param **`level`** The level to enable the debug message
 
-level = 0, no debug
+level = 0, no debugging
 
-level = 1, basic debug
-
-level = 2, full debug 1
-
-level = 333, full debug 2
+level = 1, basic level debugging
 
 ```cpp
 void debug(int level);

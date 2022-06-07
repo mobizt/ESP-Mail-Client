@@ -62,16 +62,10 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Print the list of mailbox folders */
-void printAllMailboxesInfo(IMAPSession &imap);
-
-/* Print the selected folder info */
-void printSelectedMailboxInfo(IMAPSession &imap);
-
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
 
-void customCommandCallback(const char *res)
+void customCommandCallback(IMAP_Response res)
 {
     // The server responses will included tagged and/or untagged data.
 
@@ -83,8 +77,17 @@ void customCommandCallback(const char *res)
     // When you send multiple commands with different tag simultaneously,
     // tag will be used as command identifier.
 
+    Serial.print("> C: TAG ");
+    Serial.println(res.tag.c_str());
     Serial.print("< S: ");
-    Serial.println(res);
+    Serial.println(res.text.c_str());
+
+    if (res.completed)
+    {
+        Serial.print("> C: Response finished with status ");
+        Serial.println(res.status.c_str());
+        Serial.println();
+    }
 }
 
 void setup()
@@ -117,13 +120,8 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
-    imap.debug(1);
+    /* Setup the configuration for searching or fetching operation and its result */
+    IMAP_Config config;
 
     /* Declare the session config data */
     ESP_Mail_Session session;
@@ -134,49 +132,20 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Setup the configuration for searching or fetching operation and its result */
-    IMAP_Config config;
-
     /* Connect to server with the session and config */
     if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional} */
-    printAllMailboxesInfo(imap);
+    // You can also assign tag to the begining of the command e.g. "A01 FETCH 1 UID"
+    // Do not assign tag to command when you assign tag to the last parameter of function.
 
-    /* Open or select the mailbox folder to read or search the message */
-    if (!imap.selectFolder(F("INBOX")))
-        return;
+    imap.sendCustomCommand(F("SELECT \"INBOX\""), customCommandCallback, F("A01") /* tag */);
 
-    /* Send custom command to fetch message no.1 for UID */
-    Serial.println("Send custom command to fetch message no.1 for UID");
-    Serial.println("---------------------");
+    imap.sendCustomCommand(F("LIST \"\" *"), customCommandCallback, F("A02") /* tag */);
 
-    // A01 is command identifier or tag which can be any string.
-    // Any command that required the mailbox access,
-    // the mailbox should be selected or opened before sending the command.
-    // Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol.
-
-    imap.sendCustomCommand(F("A01 FETCH 1 UID"), customCommandCallback);
+    imap.sendCustomCommand(F("FETCH 1 UID"), customCommandCallback, F("A03") /* tag */);
 }
 
 void loop()
 {
-}
-
-void printAllMailboxesInfo(IMAPSession &imap)
-{
-    /* Declare the folder collection class to get the list of mailbox folders */
-    FoldersCollection folders;
-
-    /* Get the mailbox folders */
-    if (imap.getFolders(folders))
-    {
-        for (size_t i = 0; i < folders.size(); i++)
-        {
-            /* Iterate each folder info using the  folder info item data */
-            FolderInfo folderInfo = folders.info(i);
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
-        }
-    }
 }

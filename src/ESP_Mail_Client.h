@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 1, 2022
+ * Created June 7, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -252,15 +252,15 @@ public:
 };
 
 typedef void (*imapStatusCallback)(IMAP_Status);
-typedef void (*imapResponseCallback)(const char *);
+typedef void (*imapResponseCallback)(IMAP_Response);
 typedef void (*MIMEDataStreamCallback)(MIME_Data_Stream_Info);
 
 #endif
 
 #if defined(ENABLE_SMTP)
 
-    /* The SMTP message class */
-    class SMTP_Message
+/* The SMTP message class */
+class SMTP_Message
 {
 public:
   SMTP_Message(){};
@@ -282,7 +282,7 @@ public:
     att._int.index = 0;
     att._int.msg_uid = 0;
     att._int.flash_blob = false;
-    att._int.binary = false;
+    att._int.xencoding = esp_mail_msg_xencoding_none;
     att._int.parallel = false;
     att._int.cid.clear();
   }
@@ -585,6 +585,7 @@ private:
 };
 
 typedef void (*smtpStatusCallback)(SMTP_Status);
+typedef void (*smtpResponseCallback)(SMTP_Response);
 
 #endif
 
@@ -732,6 +733,13 @@ public:
    */
   int getFreeHeap();
 
+  /** Get base64 encode string.
+   *
+   * @return String of base64 encoded string.
+   */
+  template <typename T = const char *>
+  String toBase64(T str) { return mGetBase64(toStringPtr(str)).c_str(); }
+
   ESPTimeHelper Time;
 
 private:
@@ -780,6 +788,7 @@ private:
   void getTimezone(const char *TZ_file, MB_String &out);
   bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
   void getExtfromMIME(const char *mime, MB_String &ext);
+  MB_String mGetBase64(MB_StringPtr str);
 
 #endif
 
@@ -806,7 +815,7 @@ private:
   bool sendRFC822Msg(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary, bool closeSession, bool rfc822MSG);
   void getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg, MB_String &buf);
   bool bdat(SMTPSession *smtp, SMTP_Message *msg, int len, bool last);
-  void checkBinaryData(SMTPSession *smtp, SMTP_Message *msg);
+  void checkUnencodedData(SMTPSession *smtp, SMTP_Message *msg);
   bool sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
   bool sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
   bool openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &s, MB_String &buf, const MB_String &boundary, bool inlined);
@@ -834,7 +843,7 @@ private:
   MB_String getEncodedToken(SMTPSession *smtp);
   bool connected(SMTPSession *smtp);
   bool setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
-  bool smtpAuth(SMTPSession *smtp);
+  bool smtpAuth(SMTPSession *smtp, bool &ssl);
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
   void uploadReport(const char *filename, int &lastProgress, int progress);
   MB_FS *getMBFS();
@@ -858,7 +867,7 @@ private:
   bool getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_String &partText);
   bool fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx);
   bool connected(IMAPSession *imap);
-  bool imapAuth(IMAPSession *imap);
+  bool imapAuth(IMAPSession *imap, bool &ssl);
   bool sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCase);
   void errorStatusCB(IMAPSession *imap, int error);
   size_t imapSendP(IMAPSession *imap, PGM_P v, bool newline = false);
@@ -888,7 +897,7 @@ private:
   void searchReport(int progress, const char *percent);
   int cMSG(IMAPSession *imap);
   int cIdx(IMAPSession *imap);
-  esp_mail_imap_response_status imapResponseStatus(IMAPSession *imap, char *response);
+  esp_mail_imap_response_status imapResponseStatus(IMAPSession *imap, char *response, PGM_P tag);
   void addHeaderItem(MB_String &str, esp_mail_message_header_t *header, bool json);
   void addHeaders(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json);
   void addHeader(MB_String &s, const char *name, const MB_String &value, bool trim, bool json);
@@ -966,6 +975,17 @@ public:
    */
   bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 
+  /** Begin the IMAP server connection without authentication.
+   *
+   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * the server and log in details.
+   * @param callback The callback function that accepts IMAP_Response as parameter.
+   * @param tag The tag that pass to the callback function.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool customConnect(ESP_Mail_Session *session, imapResponseCallback callback, T tag = "") { return mCustomConnect(session, callback, toStringPtr(tag)); };
+
   /** Close the IMAP session.
    *
    * @return The boolean value which indicates the success of operation.
@@ -975,10 +995,8 @@ public:
   /** Set to enable the debug.
    *
    * @param level The level to enable the debug message
-   * level = 0, no debug
-   * level = 1, basic debug
-   * level = 2, full debug 1
-   * level = 333, full debug 2
+   * level = 0, no debugging
+   * level = 1, basic level debugging
    */
   void debug(int level);
 
@@ -1065,13 +1083,14 @@ public:
   /** Send the custom IMAP command and get the result via callback.
    *
    * @param cmd The command string.
-   * @param callback The function that accepts the pointer to const char (const char*) as parameter.
-   * @return he boolean value which indicates the success of operation.
+   * @param callback The callback function that accepts IMAP_Response as parameter.
+   * @param tag The tag string to pass to the callback function.
+   * @return The boolean value which indicates the success of operation.
    *
    * @note imap.connect and imap.selectFolder or imap.openFolder are needed to call once prior to call this function.
    */
-  template <typename T = const char *>
-  bool sendCustomCommand(T cmd, imapResponseCallback callback) { return mSendCustomCommand(toStringPtr(cmd), callback); }
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool sendCustomCommand(T1 cmd, imapResponseCallback callback, T2 tag = "") { return mSendCustomCommand(toStringPtr(cmd), callback, toStringPtr(tag)); }
 
   /** Copy the messages to the defined mailbox folder.
    *
@@ -1180,16 +1199,20 @@ private:
   bool closeMailbox();
   bool openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse);
   bool getMailboxes(FoldersCollection &flders);
+  MB_String prependTag(PGM_P tag, PGM_P cmd);
   bool checkCapability();
   bool mListen(bool recon);
   bool mStopListen(bool recon);
-  bool mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback);
+  bool mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback, MB_StringPtr tag);
   bool mDeleteFolder(MB_StringPtr folderName);
   bool mCreateFolder(MB_StringPtr folderName);
   bool mCopyMessages(MessageList *toCopy, MB_StringPtr dest);
   bool mCloseFolder(MB_StringPtr folderName);
   bool mOpenFolder(MB_StringPtr folderName, bool readOnly);
   bool mSelectFolder(MB_StringPtr folderName, bool readOnly);
+  bool mCustomConnect(ESP_Mail_Session *session, imapResponseCallback callback, MB_StringPtr tag);
+  bool handleConnection(ESP_Mail_Session *session, IMAP_Config *config, bool &ssl);
+  bool connect(bool &ssl);
 
   bool _tcpConnected = false;
   unsigned long _last_polling_error_ms = 0;
@@ -1336,10 +1359,56 @@ public:
    */
   bool connect(ESP_Mail_Session *session);
 
+  /** Begin the SMTP server connection without authentication.
+   *
+   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * the server and log in details.
+   * @param callback The callback function that accepts the SMTP_Response as parameter.
+   * @param commandID The command identifier number that will pass to the callback.
+   * @return The boolean value indicates the success of operation.
+   *
+   * @note If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
+   */
+  int32 customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+
   /** Close the SMTP session.
    *
    */
   bool closeSession();
+
+  /** Send the custom SMTP command and get the result via callback.
+   *
+   * @param cmd The command string.
+   * @param callback The function that accepts the SMTP_Response as parameter.
+   * @param commandID The command identifier number that will pass to the callback.
+   * @return The integer value of response code.
+   *
+   * @note smtp.connect or smtp.customConnect is needed to call once prior to call this function.
+   *
+   * If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
+   */
+  template <typename T = const char *>
+  int sendCustomCommand(T cmd, smtpResponseCallback callback, int commandID = -1) { return mSendCustomCommand(toStringPtr(cmd), callback, commandID); }
+
+  /** Send the custom SMTP command data string.
+   *
+   * @param data The string data.
+   * @return The boolean value which indicates the success of operation.
+   *
+   * @note Should be used after calling sendCustomCommand("DATA");
+   */
+  template <typename T = const char *>
+  bool sendCustomData(T data) { return mSendData(toStringPtr(data)); }
+
+  /** Send the custom SMTP command data.
+   *
+   * @param data The byte data.
+   * @param size The data size.
+   * @return The boolean value which indicates the success of operation.
+   *
+   * @note Should be used after calling sendCustomCommand("DATA");
+   */
+  bool sendCustomData(uint8_t *data, size_t size) { return mSendData(data, size); }
 
   /** Set to enable the debug.
    *
@@ -1390,6 +1459,8 @@ private:
   int _debugLevel = 0;
   bool _secure = false;
   smtpStatusCallback _sendCallback = NULL;
+  smtpResponseCallback _customCmdResCallback = NULL;
+  int _commandID = -1;
 
   SMTP_Status _cbData;
   struct esp_mail_smtp_msg_type_t _msgType;
@@ -1401,6 +1472,12 @@ private:
 #endif
 
   ESP_MAIL_TCP_CLIENT client;
+
+  bool connect(bool &ssl);
+  bool handleConnection(ESP_Mail_Session *config, bool &ssl);
+  int mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callback, int commandID = -1);
+  bool mSendData(MB_StringPtr data);
+  bool mSendData(uint8_t *data, size_t size);
 };
 
 #endif

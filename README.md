@@ -32,6 +32,7 @@ External Arduino Client can be used which this allows other devices (with minimu
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support IMAP MIME data stream callback for external reader.
+* Support custom commands for both IMAP and SMTP.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD, SdFat and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 * Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
