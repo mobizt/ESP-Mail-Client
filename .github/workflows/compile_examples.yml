@@ -18,7 +18,8 @@ jobs:
       matrix:
         example: 
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
-        - "examples/IMAP/Custom_Command/Custom_Command.ino"
+        - "examples/IMAP/Custom_Command/Basic_Auth/Basic_Auth.ino"
+        - "examples/IMAP/Custom_Command/Custom_Auth/Custom_Auth.ino"
         - "examples/IMAP/DataStreamCallback/DataStreamCallback.ino"
         - "examples/IMAP/Delete_Messages/Delete_Messsages.ino"
         - "examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino"
@@ -41,6 +42,9 @@ jobs:
         - "examples/SMTP/Send_Enriched_Text/Send_Enriched_Text.ino"
         - "examples/SMTP/Send_Embedded_Message/Send_Embedded_Message.ino"
         - "examples/SMTP/Send_Attachment_File/Send_Attachment_File.ino"
+        - "examples/SMTP/Custom_Command/Basic_Auth/Basic_Auth.ino"
+        - "examples/SMTP/Custom_Command/Custom_Auth/Custom_Auth.ino"
+        - "examples/SMTP/Custom_Command/STARTTLS/STARTTLS.ino"
 
     steps:
     - uses: actions/checkout@v2
@@ -86,7 +90,8 @@ jobs:
       matrix:
         example: 
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
-        - "examples/IMAP/Custom_Command/Custom_Command.ino"
+        - "examples/IMAP/Custom_Command/Basic_Auth/Basic_Auth.ino"
+        - "examples/IMAP/Custom_Command/Custom_Auth/Custom_Auth.ino"
         - "examples/IMAP/DataStreamCallback/DataStreamCallback.ino"
         - "examples/IMAP/Delete_Messages/Delete_Messsages.ino"
         - "examples/IMAP/Mailbox_Changes_Notification/Mailbox_Changes_Notification.ino"
@@ -109,6 +114,9 @@ jobs:
         - "examples/SMTP/Send_Enriched_Text/Send_Enriched_Text.ino"
         - "examples/SMTP/Send_Embedded_Message/Send_Embedded_Message.ino"
         - "examples/SMTP/Send_Attachment_File/Send_Attachment_File.ino"
+        - "examples/SMTP/Custom_Command/Basic_Auth/Basic_Auth.ino"
+        - "examples/SMTP/Custom_Command/Custom_Auth/Custom_Auth.ino"
+        - "examples/SMTP/Custom_Command/STARTTLS/STARTTLS.ino"
         
     steps:
     - uses: actions/checkout@v2

@@ -1365,11 +1365,11 @@ public:
    * the server and log in details.
    * @param callback The callback function that accepts the SMTP_Response as parameter.
    * @param commandID The command identifier number that will pass to the callback.
-   * @return The boolean value indicates the success of operation.
+   * @return The int value of status code.
    *
    * @note If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
    */
-  int32 customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+  int customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
 
   /** Close the SMTP session.
    *

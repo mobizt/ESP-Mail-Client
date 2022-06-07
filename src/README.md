@@ -726,12 +726,12 @@ param **`callback`** The callback function that accepts the SMTP_Response as par
 
 param **`commandID`** The command identifier number that will pass to the callback.
 
-return **`The boolean`** value indicates the success of operation.
+return **`The int`** value of response code.
 
 If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
 
 ```cpp
-bool customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+int customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
 ```
 
 
