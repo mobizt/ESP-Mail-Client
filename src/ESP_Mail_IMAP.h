@@ -4181,7 +4181,7 @@ bool IMAPSession::connect(bool &ssl)
     bool secureMode = true;
 
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
-    if (_debug && !imap->_customCmdResCallback)
+    if (_debug && !_customCmdResCallback)
         client.setDebugCallback(esp_mail_debug);
 #elif defined(ESP8266) && defined(ESP8266_TCP_CLIENT)
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
