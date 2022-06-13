@@ -708,7 +708,7 @@ bool connect(ESP_Mail_Session *session);
 
 
 
-### Close the SMTP session.
+#### Close the SMTP session.
 
 ```cpp
 bool closeSession();
@@ -1595,6 +1595,27 @@ esp_mail_sesson_cert_config_t certificate;
 
 
 
+#### [Properties] SPI Ethernet Module config for ESP8266
+
+##### [ENC28J60lwIP *] enc28j60 - The ENC28J60 Ethernet module lwip interfac.
+
+##### [Wiznet5100lwIP *] w5100 - The W5100 Ethernet module lwip interfac.
+
+##### [Wiznet5500lwIP *] w5500 - The W5500 Ethernet module lwip interfac.
+
+```cpp
+esp_mail_spi_ethernet_module_t spi_ethernet_module;
+```
+
+
+
+#### [Properties] The callback function for WiFi connection
+
+```cpp
+NetworkConnectionHandler network_connection_handler;
+```
+
+
 
 ## IMAP_Config type data
 
@@ -1609,9 +1630,13 @@ control and store the operation result e.g. the messahe contents from search and
 
 #### [Properties] The config for fetching
 
-This property has the sub property
+This property has the sub properties
 
 ##### [const char *] uid - The UID of message to fetch.
+
+##### [const char *] number - The message sequence number to fetch.
+
+##### [const char *] set_seen - Set the message flag as seen.
 
 ```cpp
 esp_mail_imap_fetch_config_t fetch;
@@ -1762,18 +1787,12 @@ sp_mail_smtp_embed_message_type_inline = 1
 esp_mail_smtp_embed_message_type type;
 ```
 
-
-
-
-
-
 ## esp_mail_blob_message_content_t structured data
 
 
 The following properties are available from the esp_mail_blob_message_content_t data type.
 
 This data type is used for storing the blob info of message body.
-
 
 
 
@@ -1800,8 +1819,6 @@ size_t size;
 The following properties are available from the esp_mail_file_message_content_t data type.
 
 This data type is used for storing the file info of message body.
-
-
 
 
 ##### [Properties] The file path include its name.
@@ -1948,6 +1965,13 @@ const char *sender;
 ```
 
 
+#### [Properties] The charset of the sender Email (obsoleted)
+
+```cpp
+const char *senderCharset;
+```
+
+
 #### [Properties] The keywords or phrases, separated by commas
 
 ```cpp
@@ -1993,6 +2017,12 @@ const char *references;
 
 ```cpp
 const char *bcc;
+```
+
+#### [Properties] The charset of the Blind carbon-copy recipient mailbox header (obsoleted)
+
+```cpp
+const char *bccCharset;
 ```
 
 

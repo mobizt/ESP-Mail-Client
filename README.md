@@ -367,7 +367,7 @@ In ESP8266 and ESP32, when no attachments require for uploading and downloading,
 
 See [examples folder](/examples) for all usage examples.
 
-See [src/README.md](/src/README.md) for the function description.
+See [src/README.md](/src/README.md) for the functions descriptions.
 
 The usefull blogs that described how to send and read E-mail in detail can be found here.
 
