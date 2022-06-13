@@ -177,7 +177,7 @@ public:
     int connect(const char *host, uint16_t port, const char *pskIdent, const char *psKey);
 
     /**
-     * Read onet byte from Stream with time out.
+     * Read one byte from Stream with time out.
      * @return The byte of data that was successfully read or -1 for timed out.
      */
     int peek();

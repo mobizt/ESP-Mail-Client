@@ -97,7 +97,7 @@ public:
 
         DebugMsgCallback *_debugCallback = NULL;
 
-        // milliseconds handshake time out
+        // milliseconds SSL handshake time out
         unsigned long handshake_timeout;
     } ssl_data;
 
@@ -201,7 +201,7 @@ public:
     /**
      * The non-secure mode lwIP read function.
      *
-     * @param ssl The pointer to ssl data (context) which one its ssl->socket will be used.
+     * @param ssl The pointer to ssl data (context) which only its ssl->socket will be used.
      * @param buf The data to read.
      * @param bufLen The length of data to read.
      * @return size of data that was successfully read or negative value of error enum.

@@ -1,12 +1,12 @@
 /*
- * ESP32 TCP Client Library v1.0.8
+ * ESP32 TCP Client Library v1.0.9
  *
  * June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- * 
+ *
  * TCPClient Arduino library for ESP32
  *
  * Copyright (c) 2015 Markus Sattler. All rights reserved.
@@ -85,8 +85,11 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
 
             if (storageType == mb_fs_mem_storage_type_flash)
             {
+
+#if defined(MBFS_FLASH_FS)
                 fs::File file = mbfs->getFlashFile();
                 wcs->loadCACert(file, len);
+#endif
                 mbfs->close(storageType);
                 baseSetCertType(esp_mail_cert_type_file);
             }

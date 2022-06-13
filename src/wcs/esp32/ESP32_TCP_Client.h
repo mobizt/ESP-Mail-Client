@@ -1,5 +1,5 @@
 /*
- * ESP32 TCP Client Library v1.0.8
+ * ESP32 TCP Client Library v1.0.9
  *
  * June 13, 2022
  *
