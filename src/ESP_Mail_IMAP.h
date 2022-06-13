@@ -489,7 +489,11 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
             imap->_mbif._availableItems++;
 
-            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_number, imap->_mbif._msgCount});
+            esp_mail_imap_msg_num_t msg_num;
+            msg_num.type = esp_mail_imap_msg_num_type_number;
+            msg_num.value = (uint32_t)imap->_mbif._msgCount;
+
+            imap->_imap_msg_num.push_back(msg_num);
             imap->_headerOnly = false;
             imap->_config->fetch.number = imap->_mbif._msgCount;
         }
@@ -500,13 +504,23 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_config->fetch.uid.length() > 0)
         {
             imap->_mbif._availableItems++;
-            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_uid, (uint32_t)atoi(imap->_config->fetch.uid.c_str())});
+            
+            esp_mail_imap_msg_num_t msg_num;
+            msg_num.type = esp_mail_imap_msg_num_type_uid;
+            msg_num.value = (uint32_t)atoi(imap->_config->fetch.uid.c_str());
+
+            imap->_imap_msg_num.push_back(msg_num);
         }
 
         if (imap->_config->fetch.number.length() > 0)
         {
             imap->_mbif._availableItems++;
-            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_number, (uint32_t)atoi(imap->_config->fetch.number.c_str())});
+
+            esp_mail_imap_msg_num_t msg_num;
+            msg_num.type = esp_mail_imap_msg_num_type_number;
+            msg_num.value = (uint32_t)atoi(imap->_config->fetch.number.c_str());
+
+            imap->_imap_msg_num.push_back(msg_num);
         }
     }
 
@@ -1430,8 +1444,11 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLe
                     imap->_mbif._searchCount++;
                     if (imap->_config->enable.recent_sort)
                     {
+                        esp_mail_imap_msg_num_t msg_num;
+                        msg_num.type = imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number;
+                        msg_num.value = (uint32_t)atoi(buf);
 
-                        imap->_imap_msg_num.push_back({imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number, (uint32_t)atoi(buf)});
+                        imap->_imap_msg_num.push_back(msg_num);
 
                         if (imap->_imap_msg_num.size() > imap->_config->limit.search)
                             imap->_imap_msg_num.erase(imap->_imap_msg_num.begin());
@@ -1440,7 +1457,11 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLe
                     {
                         if (imap->_imap_msg_num.size() < imap->_config->limit.search)
                         {
-                            imap->_imap_msg_num.push_back({imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number, (uint32_t)atoi(buf)});
+                            esp_mail_imap_msg_num_t msg_num;
+                            msg_num.type = imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number;
+                            msg_num.value = (uint32_t)atoi(buf);
+
+                            imap->_imap_msg_num.push_back(msg_num);
                         }
                     }
 
