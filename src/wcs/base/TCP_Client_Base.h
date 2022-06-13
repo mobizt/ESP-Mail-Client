@@ -55,6 +55,7 @@ typedef enum
 class TCP_Client_Base
 {
     friend class ESP_Mail_Client;
+    friend class ESP32_WCS;
 
 public:
     TCP_Client_Base()

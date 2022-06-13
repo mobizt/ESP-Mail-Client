@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 7, 2022
+ * Created June 13, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -35,44 +35,6 @@
 #include "ESP_Mail_Client.h"
 
 #if defined(ENABLE_IMAP)
-
-int ESP_Mail_Client::readLine(IMAPSession *imap, char *buf, int bufLen, bool crlf, int &count)
-{
-    int ret = -1;
-    char c = 0;
-    char _c = 0;
-    int idx = 0;
-    if (!imap->client.connected())
-        return idx;
-    while (imap->client.available() && idx < bufLen)
-    {
-        ret = imap->client.read();
-        if (ret > -1)
-        {
-            count++;
-
-            c = (char)ret;
-            strcat_c(buf, c);
-            idx++;
-            if (_c == '\r' && c == '\n')
-            {
-                if (!crlf)
-                {
-                    buf[idx - 2] = 0;
-                    idx -= 2;
-                }
-                return idx;
-            }
-            _c = c;
-
-            if (idx >= bufLen - 1)
-                return idx;
-        }
-        if (!imap->client.connected())
-            return idx;
-    }
-    return idx;
-}
 
 int ESP_Mail_Client::decodeChar(const char *s)
 {
@@ -303,12 +265,12 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCa
 {
 
     MB_String cmd;
-    if (imap->_uidSearch || imap->_config->fetch.uid.length() > 0)
+    if (imap->_uidSearch || imap->_imap_msg_num[msgIndex].type == esp_mail_imap_msg_num_type_uid)
         cmd += imap->prependTag(esp_mail_str_27, esp_mail_str_142);
     else
         cmd += imap->prependTag(esp_mail_str_27, esp_mail_str_143);
 
-    cmd += imap->_msgUID[msgIndex];
+    cmd += imap->_imap_msg_num[msgIndex].value;
 
     cmd += esp_mail_str_147;
     if (!imap->_config->fetch.set_seen)
@@ -407,7 +369,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             imap->_headers[i].part_headers.clear();
         imap->_headers.clear();
 
-        if (imap->_config->fetch.uid.length() > 0)
+        if (imap->_config->fetch.uid.length() > 0 || imap->_config->fetch.number.length() > 0)
             imap->_headerOnly = false;
         else
             imap->_headerOnly = true;
@@ -415,7 +377,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
     imap->_rfc822_part_count = 0;
     imap->_mbif._availableItems = 0;
-    imap->_msgUID.clear();
+    imap->_imap_msg_num.clear();
     imap->_uidSearch = false;
     imap->_mbif._searchCount = 0;
 
@@ -503,7 +465,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 s += imap->_config->limit.search;
                 imapCB(imap, s.c_str(), false);
 
-                if (imap->_msgUID.size() > 0)
+                if (imap->_imap_msg_num.size() > 0)
                 {
 
                     s = esp_mail_str_69;
@@ -512,7 +474,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                     imapCB(imap, s.c_str(), false);
 
                     s = esp_mail_str_71;
-                    s += imap->_msgUID.size();
+                    s += imap->_imap_msg_num.size();
                     s += esp_mail_str_70;
                     imapCB(imap, s.c_str(), false);
                 }
@@ -526,12 +488,10 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 imapCBP(imap, esp_mail_str_73, false);
 
             imap->_mbif._availableItems++;
-            uint32_t uid = imap->getUID(imap->_mbif._msgCount);
 
-            imap->_msgUID.push_back(uid);
+            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_number, imap->_mbif._msgCount});
             imap->_headerOnly = false;
-            _uid = uid;
-            imap->_config->fetch.uid = _uid;
+            imap->_config->fetch.number = imap->_mbif._msgCount;
         }
     }
     else
@@ -539,13 +499,18 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         if (imap->_config->fetch.uid.length() > 0)
         {
-            uint32_t uid = atoi(imap->_config->fetch.uid.c_str());
             imap->_mbif._availableItems++;
-            imap->_msgUID.push_back(uid);
+            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_uid, (uint32_t)atoi(imap->_config->fetch.uid.c_str())});
+        }
+
+        if (imap->_config->fetch.number.length() > 0)
+        {
+            imap->_mbif._availableItems++;
+            imap->_imap_msg_num.push_back({esp_mail_imap_msg_num_type_number, (uint32_t)atoi(imap->_config->fetch.number.c_str())});
         }
     }
 
-    for (size_t i = 0; i < imap->_msgUID.size(); i++)
+    for (size_t i = 0; i < imap->_imap_msg_num.size(); i++)
     {
         imap->_cMsgIdx = i;
         imap->_totalRead++;
@@ -564,12 +529,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             MB_String s = esp_mail_str_74;
             s += imap->_totalRead;
 
-            if (imap->_uidSearch || imap->_config->fetch.uid.length() > 0)
+            if (imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid)
                 s += esp_mail_str_75;
             else
                 s += esp_mail_str_76;
 
-            s += imap->_msgUID[i];
+            s += imap->_imap_msg_num[i].value;
             imapCB(imap, "", false);
             imapCB(imap, s.c_str(), false);
         }
@@ -578,7 +543,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             debugInfoP(esp_mail_str_233);
 
         MB_String cmd;
-        if (imap->_uidSearch || imap->_config->fetch.uid.length() > 0)
+        if (imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid)
             cmd += imap->prependTag(esp_mail_str_27, esp_mail_str_142);
         else
             cmd += imap->prependTag(esp_mail_str_27, esp_mail_str_143);
@@ -586,7 +551,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_debug)
             debugInfoP(esp_mail_str_77);
 
-        cmd += imap->_msgUID[i];
+        cmd += imap->_imap_msg_num[i].value;
 
         cmd += esp_mail_str_147;
         if (!imap->_config->fetch.set_seen)
@@ -598,6 +563,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         cmd += esp_mail_str_144;
         cmd += esp_mail_str_219;
+
         if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
@@ -609,6 +575,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         if (!handleIMAPResponse(imap, err, closeSession))
             return false;
+
+        if (imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_number)
+        {
+
+            cHeader(imap)->message_uid = imap->getUID(cHeader(imap)->message_no);
+        }
 
         cHeader(imap)->flags = imap->getFlags(cHeader(imap)->message_no);
 
@@ -630,7 +602,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             }
             else
             {
-                // singlepart
+                // single part
                 if (imap->_debug)
                 {
                     MB_String s = esp_mail_str_81;
@@ -858,10 +830,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 saveHeader(imap, true);
             }
 
-            // save file list file
+            // save files list file
             if (imap->_sdFileList.length() > 0)
             {
-                if (mbfs->open(cMSG(imap), mbfs_type imap->_config->storage.type, mb_fs_open_mode_write) > -1)
+                MB_String filepath = cHeader(imap)->message_uid;
+                filepath += mimeinfo[3].endsWith; // .txt
+                if (mbfs->open(filepath, mbfs_type imap->_config->storage.type, mb_fs_open_mode_write) > -1)
                 {
                     mbfs->print(mbfs_type imap->_config->storage.type, imap->_sdFileList.c_str());
                     mbfs->close(mbfs_type imap->_config->storage.type);
@@ -882,10 +856,10 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
 out:
 
-    if (readCount < imap->_msgUID.size())
+    if (readCount < imap->_imap_msg_num.size())
     {
         imap->_mbif._availableItems = readCount;
-        imap->_msgUID.erase(imap->_msgUID.begin() + readCount, imap->_msgUID.end());
+        imap->_imap_msg_num.erase(imap->_imap_msg_num.begin() + readCount, imap->_imap_msg_num.end());
     }
 
     if (closeSession)
@@ -910,6 +884,7 @@ out:
 
     return true;
 }
+
 bool ESP_Mail_Client::getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_String &partText)
 {
     if (imap->_multipart_levels.size() == 0)
@@ -919,12 +894,12 @@ bool ESP_Mail_Client::getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_Stri
 
     cHeader(imap)->partNumStr.clear();
 
-    if (imap->_uidSearch || imap->_config->fetch.uid.length() > 0)
+    if (imap->_uidSearch || imap->_imap_msg_num[msgIdx].type == esp_mail_imap_msg_num_type_uid)
         partText = imap->prependTag(esp_mail_str_27, esp_mail_str_142);
     else
         partText = imap->prependTag(esp_mail_str_27, esp_mail_str_143);
 
-    partText += imap->_msgUID[msgIdx];
+    partText += imap->_imap_msg_num[msgIdx].value;
 
     partText += esp_mail_str_147;
     if (!imap->_config->fetch.set_seen)
@@ -961,13 +936,13 @@ bool ESP_Mail_Client::getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_Stri
     return true;
 }
 
-bool ESP_Mail_Client::multipartMember(const MB_String &part, const MB_String &check)
+bool ESP_Mail_Client::multipartMember(const MB_String &parent, const MB_String &child)
 {
-    if (part.length() > check.length())
+    if (parent.length() > child.length())
         return false;
 
-    for (size_t i = 0; i < part.length(); i++)
-        if (part[i] != check[i])
+    for (size_t i = 0; i < parent.length(); i++)
+        if (parent[i] != child[i])
             return false;
 
     return true;
@@ -1006,6 +981,8 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
             esp_mail_debug(s.c_str());
         }
 
+        // Try fetching the part and its sub parts hierarchically
+        // Some sub part may not exist at the current multipart level
         if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
@@ -1037,7 +1014,7 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
             {
                 if (rfc822_body_subtype)
                 {
-                    // to get additional rfc822 message header
+                    // Get additional rfc822 message header
                     imap->_multipart_levels[cLevel].fetch_rfc822_header = true;
                     fetchMultipartBodyHeader(imap, msgIdx);
                 }
@@ -1076,9 +1053,9 @@ bool ESP_Mail_Client::connected(IMAPSession *imap)
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 {
 
-init:
+non_authenticated:
 
-    if (!imap->checkCapability())
+    if (!imap->checkCapabilities())
         return false;
 
     // start TLS when needed or the server issue
@@ -1123,7 +1100,7 @@ init:
         imap->_secure = true;
 
         // check the capabilitiy again
-        goto init;
+        goto non_authenticated;
     }
 
     imap->clearMessageData();
@@ -1151,6 +1128,7 @@ init:
 
     if (xoauth_auth)
     {
+
         if (!imap->_auth_capability.xoauth2)
             return handleIMAPError(imap, IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
 
@@ -1158,7 +1136,7 @@ init:
             debugInfoP(esp_mail_str_291);
 
         MB_String cmd = imap->prependTag(esp_mail_str_27, esp_mail_str_292);
-        cmd += getEncodedToken(imap);
+        cmd += getXOAUTH2String(imap->_sesson_cfg->login.email, imap->_sesson_cfg->login.accessToken);
         if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
@@ -1186,6 +1164,7 @@ init:
     }
     else if (plain_auth)
     {
+
         if (imap->_debug)
             debugInfoP(esp_mail_str_290);
 
@@ -1211,17 +1190,6 @@ init:
     }
 
     return true;
-}
-
-MB_String ESP_Mail_Client::getEncodedToken(IMAPSession *imap)
-{
-    MB_String raw = esp_mail_str_285;
-    raw += imap->_sesson_cfg->login.email;
-    raw += esp_mail_str_286;
-    raw += imap->_sesson_cfg->login.accessToken;
-    raw += esp_mail_str_287;
-    MB_String s = encodeBase64Str((const unsigned char *)raw.c_str(), raw.length());
-    return s;
 }
 
 bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
@@ -1416,7 +1384,7 @@ void ESP_Mail_Client::imapCB(IMAPSession *imap, const char *info, bool success)
         imap->_readCallback(imap->_cbData);
 }
 
-int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
+int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
 {
     int ret = -1;
     char c = 0;
@@ -1462,17 +1430,17 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &ch
                     imap->_mbif._searchCount++;
                     if (imap->_config->enable.recent_sort)
                     {
-                        uint32_t uid = atoi(buf);
-                        imap->_msgUID.push_back(uid);
-                        if (imap->_msgUID.size() > imap->_config->limit.search)
-                            imap->_msgUID.erase(imap->_msgUID.begin());
+
+                        imap->_imap_msg_num.push_back({imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number, (uint32_t)atoi(buf)});
+
+                        if (imap->_imap_msg_num.size() > imap->_config->limit.search)
+                            imap->_imap_msg_num.erase(imap->_imap_msg_num.begin());
                     }
                     else
                     {
-                        if (imap->_msgUID.size() < imap->_config->limit.search)
+                        if (imap->_imap_msg_num.size() < imap->_config->limit.search)
                         {
-                            uint32_t uid = atoi(buf);
-                            imap->_msgUID.push_back(uid);
+                            imap->_imap_msg_num.push_back({imap->_uidSearch ? esp_mail_imap_msg_num_type_uid : esp_mail_imap_msg_num_type_number, (uint32_t)atoi(buf)});
                         }
                     }
 
@@ -1493,7 +1461,7 @@ int ESP_Mail_Client::getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &ch
                 {
 #if defined(MB_USE_STD_VECTOR)
                     if (imap->_config->enable.recent_sort)
-                        std::sort(imap->_msgUID.begin(), imap->_msgUID.end(), compFunc);
+                        std::sort(imap->_imap_msg_num.begin(), imap->_imap_msg_num.end(), compareMore);
 #endif
                     goto end_search;
                 }
@@ -1522,7 +1490,7 @@ struct esp_mail_message_header_t *ESP_Mail_Client::cHeader(IMAPSession *imap)
     return &imap->_headers[cIdx(imap)];
 }
 
-bool ESP_Mail_Client::getHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state)
+bool ESP_Mail_Client::parseHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state)
 {
     if (strcmpP(buf, 0, beginH, caseSensitive))
     {
@@ -1540,7 +1508,7 @@ bool ESP_Mail_Client::getHeaderState(IMAPSession *imap, const char *buf, PGM_P b
     return false;
 }
 
-void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive)
+void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive)
 {
     char *tmp = nullptr;
     if (chunkIdx == 0)
@@ -1570,52 +1538,52 @@ void ESP_Mail_Client::handleHeader(IMAPSession *imap, char *buf, int bufLen, int
 
         chunkIdx++;
 
-        if (getHeaderState(imap, buf, esp_mail_str_10, caseSensitive, header, headerState, esp_mail_imap_state_from))
+        if (parseHeaderState(imap, buf, esp_mail_str_10, caseSensitive, header, headerState, esp_mail_imap_state_from))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_150, caseSensitive, header, headerState, esp_mail_imap_state_sender))
+        if (parseHeaderState(imap, buf, esp_mail_str_150, caseSensitive, header, headerState, esp_mail_imap_state_sender))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_11, caseSensitive, header, headerState, esp_mail_imap_state_to))
+        if (parseHeaderState(imap, buf, esp_mail_str_11, caseSensitive, header, headerState, esp_mail_imap_state_to))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_12, caseSensitive, header, headerState, esp_mail_imap_state_cc))
+        if (parseHeaderState(imap, buf, esp_mail_str_12, caseSensitive, header, headerState, esp_mail_imap_state_cc))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_24, caseSensitive, header, headerState, esp_mail_imap_state_subject))
+        if (parseHeaderState(imap, buf, esp_mail_str_24, caseSensitive, header, headerState, esp_mail_imap_state_subject))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_46, caseSensitive, header, headerState, esp_mail_imap_state_return_path))
+        if (parseHeaderState(imap, buf, esp_mail_str_46, caseSensitive, header, headerState, esp_mail_imap_state_return_path))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_184, caseSensitive, header, headerState, esp_mail_imap_state_reply_to))
+        if (parseHeaderState(imap, buf, esp_mail_str_184, caseSensitive, header, headerState, esp_mail_imap_state_reply_to))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_109, caseSensitive, header, headerState, esp_mail_imap_state_in_reply_to))
+        if (parseHeaderState(imap, buf, esp_mail_str_109, caseSensitive, header, headerState, esp_mail_imap_state_in_reply_to))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_107, caseSensitive, header, headerState, esp_mail_imap_state_references))
+        if (parseHeaderState(imap, buf, esp_mail_str_107, caseSensitive, header, headerState, esp_mail_imap_state_references))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_134, caseSensitive, header, headerState, esp_mail_imap_state_comments))
+        if (parseHeaderState(imap, buf, esp_mail_str_134, caseSensitive, header, headerState, esp_mail_imap_state_comments))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_145, caseSensitive, header, headerState, esp_mail_imap_state_keywords))
+        if (parseHeaderState(imap, buf, esp_mail_str_145, caseSensitive, header, headerState, esp_mail_imap_state_keywords))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_172, caseSensitive, header, headerState, esp_mail_imap_state_content_transfer_encoding))
+        if (parseHeaderState(imap, buf, esp_mail_str_172, caseSensitive, header, headerState, esp_mail_imap_state_content_transfer_encoding))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_190, caseSensitive, header, headerState, esp_mail_imap_state_accept_language))
+        if (parseHeaderState(imap, buf, esp_mail_str_190, caseSensitive, header, headerState, esp_mail_imap_state_accept_language))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_191, caseSensitive, header, headerState, esp_mail_imap_state_content_language))
+        if (parseHeaderState(imap, buf, esp_mail_str_191, caseSensitive, header, headerState, esp_mail_imap_state_content_language))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_99, caseSensitive, header, headerState, esp_mail_imap_state_date))
+        if (parseHeaderState(imap, buf, esp_mail_str_99, caseSensitive, header, headerState, esp_mail_imap_state_date))
             return;
 
-        if (getHeaderState(imap, buf, esp_mail_str_101, caseSensitive, header, headerState, esp_mail_imap_state_msg_id))
+        if (parseHeaderState(imap, buf, esp_mail_str_101, caseSensitive, header, headerState, esp_mail_imap_state_msg_id))
             return;
 
         if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
@@ -1720,7 +1688,7 @@ bool ESP_Mail_Client::getDecodedHeader(const char *buf, PGM_P beginH, MB_String 
     return false;
 }
 
-void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive)
+void ESP_Mail_Client::parsePartHeaderResponse(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive)
 {
 
     char *tmp = nullptr;
@@ -2010,7 +1978,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
             if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched)
             {
 
-                if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+                if (getPartHeaderProperties(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
                 {
                     part.charset = value;
                     resetStringPtr(part);
@@ -2031,14 +1999,14 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
 
             if (part.charset.length() == 0)
             {
-                if (getPartSubHeader(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+                if (getPartHeaderProperties(buf, esp_mail_str_168, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
                 {
                     part.charset = value;
                     resetStringPtr(part);
                 }
             }
 
-            if (getPartSubHeader(buf, esp_mail_str_170, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+            if (getPartHeaderProperties(buf, esp_mail_str_170, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
             {
                 part.stringPtr = toAddr(part.name);
                 value.trim();
@@ -2053,7 +2021,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
         {
 
             // filename prop
-            if (getPartSubHeader(buf, esp_mail_str_176, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+            if (getPartHeaderProperties(buf, esp_mail_str_176, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
             {
                 part.stringPtr = toAddr(part.filename);
                 value.trim();
@@ -2062,7 +2030,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
             }
 
             // size prop
-            if (getPartSubHeader(buf, esp_mail_str_178, esp_mail_str_97, true, value, old_value, part.stringEnc, caseSensitive))
+            if (getPartHeaderProperties(buf, esp_mail_str_178, esp_mail_str_97, true, value, old_value, part.stringEnc, caseSensitive))
             {
                 part.attach_data_size = atoi(value.c_str());
                 cHeader(imap)->total_attach_data_size += part.attach_data_size;
@@ -2074,7 +2042,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
             }
 
             // creation date prop
-            if (getPartSubHeader(buf, esp_mail_str_179, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+            if (getPartHeaderProperties(buf, esp_mail_str_179, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
             {
                 part.creation_date = value;
                 if (!valueStored && old_value.length() > 0)
@@ -2083,7 +2051,7 @@ void ESP_Mail_Client::handlePartHeader(IMAPSession *imap, const char *buf, int &
             }
 
             // mod date prop
-            if (getPartSubHeader(buf, esp_mail_str_181, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
+            if (getPartHeaderProperties(buf, esp_mail_str_181, esp_mail_str_136, false, value, old_value, part.stringEnc, caseSensitive))
             {
                 part.modification_date = value;
                 if (!valueStored && old_value.length() > 0)
@@ -2149,7 +2117,7 @@ bool ESP_Mail_Client::storeStringPtr(uint32_t addr, MB_String &value, const char
     return false;
 }
 
-bool ESP_Mail_Client::getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive)
+bool ESP_Mail_Client::getPartHeaderProperties(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive)
 {
 
     MB_String str = p;
@@ -2445,7 +2413,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         if (imap->_imap_cmd == esp_mail_imap_cmd_search)
         {
             imap->_mbif._searchCount = 0;
-            imap->_msgUID.clear();
+            imap->_imap_msg_num.clear();
         }
 
         // response buffer
@@ -2479,14 +2447,14 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 {
                     MB_String s1 = esp_mail_imap_response_6;
                     MB_String s2 = esp_mail_str_92;
-                    readLen = getMSGNUM(imap, response, chunkBufSize, chunkIdx, endSearch, scnt, s1.c_str(), s2.c_str());
-                    imap->_mbif._availableItems = imap->_msgUID.size();
+                    readLen = parseSearchResponse(imap, response, chunkBufSize, chunkIdx, endSearch, scnt, s1.c_str(), s2.c_str());
+                    imap->_mbif._availableItems = imap->_imap_msg_num.size();
                 }
                 else
                 {
                     // response read as chunk ended with CRLF or complete buffer size
                     int o = octetCount;
-                    readLen = readLine(imap, response, chunkBufSize, crLF, octetCount);
+                    readLen = readLine(&(imap->client), response, chunkBufSize, crLF, octetCount);
                     if (readLen == 0 && o != octetCount && octetCount <= octetLength && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64 && cPart(imap)->xencoding != esp_mail_msg_xencoding_binary && cPart(imap)->xencoding != esp_mail_msg_xencoding_qp)
                     {
                         strcpy(response, "\r\n");
@@ -2526,7 +2494,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             // Try to read the next available response
                             memset(response, 0, chunkBufSize);
 
-                            readLen = readLine(imap, response, chunkBufSize, true, octetCount);
+                            readLen = readLine(&(imap->client), response, chunkBufSize, true, octetCount);
                             if (readLen)
                             {
                                 completedResponse = false;
@@ -2568,15 +2536,15 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                 completedResponse = true;
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_capability)
-                            handleCapability(imap, response, chunkIdx);
+                            parseCapabilityResponse(imap, response, chunkIdx);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_list)
-                            handleFolders(imap, response);
+                            parseFoldersResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_select || imap->_imap_cmd == esp_mail_imap_cmd_examine)
-                            handleExamine(imap, response);
+                            parseExamineResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
-                            handleGetUID(imap, response);
+                            parseGetUIDResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_flags)
-                            handleGetFlags(imap, response);
+                            parseGetFlagsResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_idle)
                         {
                             completedResponse = response[0] == '+';
@@ -2586,16 +2554,17 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header)
                         {
-                            if (headerState == 0)
-                                header.message_uid = cMSG(imap);
+
+                            if (headerState == 0 && cMSG(imap).type == esp_mail_imap_msg_num_type_uid)
+                                header.message_uid = cMSG(imap).value;
 
                             int _st = headerState;
-                            handleHeader(imap, response, readLen, chunkIdx, header, headerState, octetCount, imap->_config->enable.header_case_sensitive);
+                            parseHeaderResponse(imap, response, readLen, chunkIdx, header, headerState, octetCount, imap->_config->enable.header_case_sensitive);
                             if (_st == headerState && headerState > 0 && octetCount <= header.header_data_len)
                                 setHeader(imap, response, header, headerState);
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_mime)
-                            handlePartHeader(imap, response, chunkIdx, part, octetCount, imap->_config->enable.header_case_sensitive);
+                            parsePartHeaderResponse(imap, response, chunkIdx, part, octetCount, imap->_config->enable.header_case_sensitive);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text)
                             decodeText(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetLength, octetCount);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
@@ -2612,7 +2581,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                         strcpy(tmp, lastBuf);
                                         strcat(tmp, response);
                                         readLen = strlen(tmp);
-                                        tmo = handleAttachment(imap, tmp, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
+                                        tmo = parseAttachmentResponse(imap, tmp, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
                                         delP(&tmp);
                                         memset(lastBuf, 0, BASE64_CHUNKED_LEN + 1);
                                         if (!tmo)
@@ -2623,13 +2592,13 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                 }
                                 else
                                 {
-                                    tmo = handleAttachment(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
+                                    tmo = parseAttachmentResponse(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
                                     if (!tmo)
                                         break;
                                 }
                             }
                             else
-                                tmo = handleAttachment(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
+                                tmo = parseAttachmentResponse(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
                         }
 
                         dataTime = millis();
@@ -2972,14 +2941,14 @@ void ESP_Mail_Client::addHeaderItem(MB_String &str, esp_mail_message_header_t *h
     if (header->content_language.length() > 0)
         addHeader(s, "Content-Language", header->content_language, false, json);
 
-    addHeaders(s, &header->header_fields, json);
+    addRFC822Headers(s, &header->header_fields, json);
 
     for (size_t j = 0; j < header->part_headers.size(); j++)
     {
         if (header->part_headers[j].rfc822_part)
         {
             MB_String s1;
-            addHeaders(s1, &header->part_headers[j].rfc822_header, json);
+            addRFC822Headers(s1, &header->part_headers[j].rfc822_header, json);
 
             if (json)
             {
@@ -3069,7 +3038,7 @@ void ESP_Mail_Client::addHeaderItem(MB_String &str, esp_mail_message_header_t *h
     str += s;
 }
 
-void ESP_Mail_Client::addHeaders(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json)
+void ESP_Mail_Client::addRFC822Headers(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json)
 {
 
     if (header->messageID.length() > 0)
@@ -3152,7 +3121,7 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
     return esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
 }
 
-void ESP_Mail_Client::handleCapability(IMAPSession *imap, char *buf, int &chunkIdx)
+void ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx)
 {
     if (chunkIdx == 0)
     {
@@ -3180,7 +3149,7 @@ void ESP_Mail_Client::handleCapability(IMAPSession *imap, char *buf, int &chunkI
     }
 }
 
-void ESP_Mail_Client::handleFolders(IMAPSession *imap, char *buf)
+void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf)
 {
     struct esp_mail_folder_info_t fd;
     char *tmp = nullptr;
@@ -3237,7 +3206,7 @@ void ESP_Mail_Client::handleFolders(IMAPSession *imap, char *buf)
     }
 }
 
-bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
+bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
 {
 
     int chunkBufSize = 0;
@@ -3258,7 +3227,7 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
 
         int octetCount = 0;
 
-        int readLen = MailClient.readLine(imap, buf, chunkBufSize, false, octetCount);
+        int readLen = MailClient.readLine(&(imap->client), buf, chunkBufSize, false, octetCount);
 
         if (readLen > 0)
         {
@@ -3353,7 +3322,7 @@ bool ESP_Mail_Client::handleIdle(IMAPSession *imap)
     return true;
 }
 
-void ESP_Mail_Client::handleGetUID(IMAPSession *imap, char *buf)
+void ESP_Mail_Client::parseGetUIDResponse(IMAPSession *imap, char *buf)
 {
     char *tmp = nullptr;
     int p1 = strposP(buf, esp_mail_str_342, 0);
@@ -3368,7 +3337,7 @@ void ESP_Mail_Client::handleGetUID(IMAPSession *imap, char *buf)
     }
 }
 
-void ESP_Mail_Client::handleGetFlags(IMAPSession *imap, char *buf)
+void ESP_Mail_Client::parseGetFlagsResponse(IMAPSession *imap, char *buf)
 {
     char *tmp = nullptr;
     int p1 = strposP(buf, esp_mail_str_112, 0);
@@ -3383,7 +3352,7 @@ void ESP_Mail_Client::handleGetFlags(IMAPSession *imap, char *buf)
     }
 }
 
-void ESP_Mail_Client::handleExamine(IMAPSession *imap, char *buf)
+void ESP_Mail_Client::parseExamineResponse(IMAPSession *imap, char *buf)
 {
     char *tmp = NULL;
     int p1, p2;
@@ -3506,7 +3475,7 @@ void ESP_Mail_Client::prepareFileList(IMAPSession *imap, MB_String &filePath)
     if (!mbfs->longNameSupported())
     {
         cHeader(imap)->sd_alias_file_count++;
-        MB_String alias = cMSG(imap);
+        MB_String alias = cHeader(imap)->message_uid;
         alias += MBSTRING_FLASH_MCR("_");
         alias += cHeader(imap)->sd_alias_file_count;
 
@@ -3529,7 +3498,7 @@ void ESP_Mail_Client::prepareFileList(IMAPSession *imap, MB_String &filePath)
 #endif
 }
 
-bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength)
+bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength)
 {
     if (chunkIdx == 0)
     {
@@ -3557,7 +3526,7 @@ bool ESP_Mail_Client::handleAttachment(IMAPSession *imap, char *buf, int bufLen,
 
                     filePath += imap->_config->storage.saved_path;
                     filePath += esp_mail_str_202;
-                    filePath += cMSG(imap);
+                    filePath += cHeader(imap)->message_uid;
 
                     filePath += esp_mail_str_202;
 
@@ -3681,7 +3650,7 @@ void ESP_Mail_Client::downloadReport(IMAPSession *imap, int progress)
     {
         MB_String filePath = imap->_config->storage.saved_path;
         filePath += esp_mail_str_202;
-        filePath += cMSG(imap);
+        filePath += cHeader(imap)->message_uid;
         filePath += esp_mail_str_202;
         filePath += cPart(imap)->filename;
 
@@ -3741,9 +3710,9 @@ void ESP_Mail_Client::searchReport(int progress, const char *percent)
     }
 }
 
-int ESP_Mail_Client::cMSG(IMAPSession *imap)
+struct esp_mail_imap_msg_num_t ESP_Mail_Client::cMSG(IMAPSession *imap)
 {
-    return imap->_msgUID[cIdx(imap)];
+    return imap->_imap_msg_num[cIdx(imap)];
 }
 
 int ESP_Mail_Client::cIdx(IMAPSession *imap)
@@ -4011,7 +3980,7 @@ void ESP_Mail_Client::prepareFilePath(IMAPSession *imap, MB_String &filePath, bo
     bool rfc822_body_subtype = cPart(imap)->message_sub_type == esp_mail_imap_message_sub_type_rfc822;
     MB_String fpath = imap->_config->storage.saved_path;
     fpath += esp_mail_str_202;
-    fpath += cMSG(imap);
+    fpath += cHeader(imap)->message_uid;
 
     if (!header)
     {
@@ -4170,7 +4139,7 @@ bool IMAPSession::connect(bool &ssl)
 
     if (_config)
     {
-        if (_config->fetch.uid.length() > 0)
+        if (_config->fetch.uid.length() > 0 || _config->fetch.number.length() > 0)
             _headerOnly = false;
         else
             _headerOnly = true;
@@ -4246,7 +4215,7 @@ bool IMAPSession::connect(bool &ssl)
 #endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-    MailClient.setSecure(client, _sesson_cfg, _caCert);
+    MailClient.setCACert(client, _sesson_cfg, _caCert);
 #endif
 
     if (_debug && !_customCmdResCallback)
@@ -4639,7 +4608,7 @@ bool IMAPSession::mListen(bool recon)
             }
         }
 
-        return MailClient.handleIdle(this);
+        return MailClient.parseIdleResponse(this);
     }
 
     return true;
@@ -5055,7 +5024,7 @@ MB_String IMAPSession::prependTag(PGM_P tag, PGM_P cmd)
     return s;
 }
 
-bool IMAPSession::checkCapability()
+bool IMAPSession::checkCapabilities()
 {
     if (_readCallback)
     {
@@ -5210,7 +5179,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
         return false;
 
     _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
-    
+
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return false;
 
@@ -5227,7 +5196,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
         // set the secure mode
         if (_sesson_cfg)
             _sesson_cfg->secure.startTLS = false;
-            
+
         _secure = true;
     }
 
@@ -5354,7 +5323,7 @@ void IMAPSession::clearMessageData()
         _headers[i].part_headers.clear();
     }
     _headers.clear();
-    _msgUID.clear();
+    _imap_msg_num.clear();
     _folders.clear();
     _mbif._flags.clear();
     _mbif._searchCount = 0;

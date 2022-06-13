@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 7, 2022
+ * Created June 13, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -36,44 +36,6 @@
 
 #if defined(ENABLE_SMTP)
 
-int ESP_Mail_Client::readLine(SMTPSession *smtp, char *buf, int bufLen, bool crlf, int &count)
-{
-    int ret = -1;
-    char c = 0;
-    char _c = 0;
-    int idx = 0;
-    if (!smtp->client.connected())
-        return idx;
-    while (smtp->client.available() && idx < bufLen)
-    {
-        ret = smtp->client.read();
-        if (ret > -1)
-        {
-
-            c = (char)ret;
-            strcat_c(buf, c);
-            idx++;
-            count++;
-            if (_c == '\r' && c == '\n')
-            {
-                if (!crlf)
-                {
-                    buf[idx - 2] = 0;
-                    idx -= 2;
-                }
-                return idx;
-            }
-            _c = c;
-
-            if (idx >= bufLen - 1)
-                return idx;
-        }
-        if (!smtp->client.connected())
-            return idx;
-    }
-    return idx;
-}
-
 void ESP_Mail_Client::mimeFromFile(const char *name, MB_String &mime)
 {
     MB_String ext = name;
@@ -99,20 +61,10 @@ void ESP_Mail_Client::getMIME(const char *ext, MB_String &mime)
     }
 }
 
-MB_String ESP_Mail_Client::getEncodedToken(SMTPSession *smtp)
-{
-    MB_String raw = esp_mail_str_285;
-    raw += smtp->_sesson_cfg->login.email;
-    raw += esp_mail_str_286;
-    raw += smtp->_sesson_cfg->login.accessToken;
-    raw += esp_mail_str_287;
-    return encodeBase64Str((const unsigned char *)raw.c_str(), raw.length());
-}
-
 bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp, bool &ssl)
 {
 
-init:
+non_authenticated:
 
     // Sending greeting helo response
     if (smtp->_sendCallback)
@@ -194,7 +146,7 @@ init:
 
         // return to initial state if the response status is 220.
         if (smtp->_smtpStatus.respCode == esp_mail_smtp_status_code_220)
-            goto init;
+            goto non_authenticated;
     }
 
     bool creds = smtp->_sesson_cfg->login.email.length() > 0 && smtp->_sesson_cfg->login.password.length() > 0;
@@ -222,7 +174,7 @@ init:
             if (smtpSendP(smtp, esp_mail_str_289, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
-            if (smtpSend(smtp, getEncodedToken(smtp).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            if (smtpSend(smtp, getXOAUTH2String(smtp->_sesson_cfg->login.email, smtp->_sesson_cfg->login.accessToken).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
@@ -321,7 +273,7 @@ bool ESP_Mail_Client::connected(SMTPSession *smtp)
     return smtp->client.connected();
 }
 
-bool ESP_Mail_Client::setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result)
+bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result)
 {
     if (result)
         smtp->_sentSuccessCount++;
@@ -386,7 +338,7 @@ bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
     if (!validEmail(msg->sender.email.c_str()))
     {
         errorStatusCB(smtp, SMTP_STATUS_NO_VALID_SENDER_EXISTED);
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
     }
 
     for (uint8_t i = 0; i < msg->_rcp.size(); i++)
@@ -398,7 +350,7 @@ bool ESP_Mail_Client::checkEmail(SMTPSession *smtp, SMTP_Message *msg)
     if (!validRecipient)
     {
         errorStatusCB(smtp, SMTP_STATUS_NO_VALID_RECIPIENTS_EXISTED);
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
     }
 
     return true;
@@ -426,13 +378,13 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
         if (!smtp->connect(ssl))
         {
             closeTCPSession(smtp);
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
         }
 
         if (!smtpAuth(smtp, ssl))
         {
             closeTCPSession(smtp);
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
         }
         smtp->_sentSuccessCount = 0;
         smtp->_sentFailedCount = 0;
@@ -529,10 +481,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     }
 
     if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_sender, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_SENDER_FAILED))
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     // Construct 'To' header fields.
 
@@ -616,10 +568,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
         }
 
         if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
     }
 
     // Construct 'Cc' header field.
@@ -652,10 +604,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
         buf += esp_mail_str_15;
 
         if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
     }
 
     for (uint8_t i = 0; i < msg->_bcc.size(); i++)
@@ -667,10 +619,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
         buf += esp_mail_str_15;
 
         if (smtpSend(smtp, buf.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
     }
 
     if (smtp->_sendCallback)
@@ -685,20 +637,20 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     if (smtp->_send_capability.chunking && msg->enable.chunking)
     {
         smtp->_chunkedEnable = true;
-        if (!bdat(smtp, msg, buf2.length(), false))
+        if (!sendBDAT(smtp, msg, buf2.length(), false))
             return false;
     }
     else
     {
         if (smtpSendP(smtp, esp_mail_str_16, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_354, SMTP_STATUS_SEND_BODY_FAILED))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
     }
 
     if (smtpSend(smtp, buf2.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     MB_String s = esp_mail_str_24;
     s += esp_mail_str_131;
@@ -824,11 +776,11 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 
     s += esp_mail_str_3;
 
-    if (!bdat(smtp, msg, s.length(), false))
+    if (!sendBDAT(smtp, msg, s.length(), false))
         return false;
 
     if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     return sendMSGData(smtp, msg, closeSession, rfc822MSG);
 }
@@ -836,20 +788,20 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG)
 {
     MB_String s;
-    MB_String mixed = getBoundary(15);
-    MB_String alt = getBoundary(15);
+    MB_String mixed = getMIMEBoundary(15);
+    MB_String alt = getMIMEBoundary(15);
 
     if (numAtt(smtp, esp_mail_att_type_attachment, msg) == 0 && msg->_parallel.size() == 0 && msg->_rfc822.size() == 0)
     {
         if (msg->type == (esp_mail_msg_type_plain | esp_mail_msg_type_html | esp_mail_msg_type_enriched) || numAtt(smtp, esp_mail_att_type_inline, msg) > 0)
         {
             if (!sendMSG(smtp, msg, alt))
-                return setSendingResult(smtp, msg, false);
+                return addSendingResult(smtp, msg, false);
         }
         else if (msg->type != esp_mail_msg_type_none)
         {
             if (!sendPartText(smtp, msg, msg->type, ""))
-                return setSendingResult(smtp, msg, false);
+                return addSendingResult(smtp, msg, false);
         }
     }
     else
@@ -862,20 +814,20 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
         s += mixed;
         s += esp_mail_str_34;
 
-        if (!bdat(smtp, msg, s.length(), false))
+        if (!sendBDAT(smtp, msg, s.length(), false))
             return false;
 
         if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!sendMSG(smtp, msg, alt))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
-        if (!bdat(smtp, msg, 2, false))
+        if (!sendBDAT(smtp, msg, 2, false))
             return false;
 
         if (smtpSendP(smtp, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (smtp->_sendCallback)
         {
@@ -890,23 +842,23 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
             esp_mail_debug("");
 
         if (!sendAttachments(smtp, msg, mixed))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!sendParallelAttachments(smtp, msg, mixed))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         if (!sendRFC822Msg(smtp, msg, mixed, closeSession, msg->_rfc822.size() > 0))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
 
         s = esp_mail_str_33;
         s += mixed;
         s += esp_mail_str_33;
 
-        if (!bdat(smtp, msg, s.length(), false))
+        if (!sendBDAT(smtp, msg, s.length(), false))
             return false;
 
         if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
     }
 
     if (!rfc822MSG)
@@ -923,7 +875,7 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
         if (smtp->_chunkedEnable)
         {
 
-            if (!bdat(smtp, msg, 0, true))
+            if (!sendBDAT(smtp, msg, 0, true))
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_chunk_termination, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
@@ -932,13 +884,13 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
         else
         {
             if (smtpSendP(smtp, esp_mail_str_37, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-                return setSendingResult(smtp, msg, false);
+                return addSendingResult(smtp, msg, false);
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
-                return setSendingResult(smtp, msg, false);
+                return addSendingResult(smtp, msg, false);
         }
 
-        setSendingResult(smtp, msg, true);
+        addSendingResult(smtp, msg, true);
 
         if (closeSession)
             if (!smtp->closeSession())
@@ -960,7 +912,7 @@ bool ESP_Mail_Client::sendRFC822Msg(SMTPSession *smtp, SMTP_Message *msg, const 
 
         getRFC822MsgEnvelope(smtp, &msg->_rfc822[i], buf);
 
-        if (!bdat(smtp, msg, buf.length(), false))
+        if (!sendBDAT(smtp, msg, buf.length(), false))
             return false;
 
         if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1184,7 +1136,7 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     }
 }
 
-bool ESP_Mail_Client::bdat(SMTPSession *smtp, SMTP_Message *msg, int len, bool last)
+bool ESP_Mail_Client::sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bool last)
 {
     if (!smtp->_chunkedEnable || !msg->enable.chunking)
         return true;
@@ -1197,12 +1149,12 @@ bool ESP_Mail_Client::bdat(SMTPSession *smtp, SMTP_Message *msg, int len, bool l
         bdat += esp_mail_str_173;
 
     if (smtpSend(smtp, bdat.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     if (!smtp->_send_capability.pipelining)
     {
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
-            return setSendingResult(smtp, msg, false);
+            return addSendingResult(smtp, msg, false);
         smtp->_chunkCount = 0;
     }
     return true;
@@ -1268,7 +1220,7 @@ void ESP_Mail_Client::checkUnencodedData(SMTPSession *smtp, SMTP_Message *msg)
     }
 }
 
-bool ESP_Mail_Client::sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att)
+bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att)
 {
     if (strcmp(att->descr.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0 && strcmp(att->descr.transfer_encoding.c_str(), att->descr.content_encoding.c_str()) != 0)
     {
@@ -1297,7 +1249,7 @@ bool ESP_Mail_Client::sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
                     if (writeLen > att->blob.size - chunkSize)
                         chunkSize = att->blob.size - writeLen;
 
-                    if (!bdat(smtp, msg, chunkSize, false))
+                    if (!sendBDAT(smtp, msg, chunkSize, false))
                         break;
                     memcpy_P(buf, att->blob.data, chunkSize);
                     if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1363,7 +1315,7 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
                         break;
                     }
 
-                    if (!bdat(smtp, msg, chunkSize, false))
+                    if (!sendBDAT(smtp, msg, chunkSize, false))
                         break;
 
                     if (smtpSend(smtp, buf, chunkSize) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1389,7 +1341,7 @@ bool ESP_Mail_Client::sendParallelAttachments(SMTPSession *smtp, SMTP_Message *m
     if (msg->_parallel.size() == 0)
         return true;
 
-    MB_String parallel = getBoundary(15);
+    MB_String parallel = getMIMEBoundary(15);
     MB_String buf = esp_mail_str_33;
     buf += boundary;
     buf += esp_mail_str_34;
@@ -1398,24 +1350,24 @@ bool ESP_Mail_Client::sendParallelAttachments(SMTPSession *smtp, SMTP_Message *m
     buf += parallel;
     buf += esp_mail_str_35;
 
-    if (!bdat(smtp, msg, buf.length(), false))
+    if (!sendBDAT(smtp, msg, buf.length(), false))
         return false;
 
     if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     if (!sendAttachments(smtp, msg, parallel, true))
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     buf = esp_mail_str_33;
     buf += parallel;
     buf += esp_mail_str_33;
 
-    if (!bdat(smtp, msg, buf.length(), false))
+    if (!sendBDAT(smtp, msg, buf.length(), false))
         return false;
 
     if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
-        return setSendingResult(smtp, msg, false);
+        return addSendingResult(smtp, msg, false);
 
     return true;
 }
@@ -1473,16 +1425,16 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
                 buf.clear();
                 getAttachHeader(buf, boundary, att, att->blob.size);
 
-                if (!bdat(smtp, msg, buf.length(), false))
+                if (!sendBDAT(smtp, msg, buf.length(), false))
                     return false;
 
                 if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                     return false;
 
-                if (!sendBlob(smtp, msg, att))
+                if (!sendBlobAttachment(smtp, msg, att))
                     return false;
 
-                if (!bdat(smtp, msg, 2, false))
+                if (!sendBDAT(smtp, msg, 2, false))
                     return false;
 
                 if (smtpSendP(smtp, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1497,13 +1449,13 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
                     continue;
                 }
 
-                if (openFileRead(smtp, msg, att, s, buf, boundary, false))
+                if (openFileRead(smtp, msg, att, buf, boundary, false))
                 {
 
                     if (!sendFile(smtp, msg, att))
                         return false;
 
-                    if (!bdat(smtp, msg, 2, false))
+                    if (!sendBDAT(smtp, msg, 2, false))
                         return false;
 
                     if (smtpSendP(smtp, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1515,7 +1467,7 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
     return true;
 }
 
-bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &s, MB_String &buf, const MB_String &boundary, bool inlined)
+bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &buf, const MB_String &boundary, bool inlined)
 {
     int sz = -1;
     MB_String filepath;
@@ -1567,7 +1519,7 @@ bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_At
         else
             getAttachHeader(buf, boundary, att, sz);
 
-        if (!bdat(smtp, msg, buf.length(), false))
+        if (!sendBDAT(smtp, msg, buf.length(), false))
             return false;
 
         if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1655,7 +1607,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
     }
 
     MB_String buf;
-    MB_String related = getBoundary(15);
+    MB_String related = getMIMEBoundary(15);
     int cnt = 0;
     SMTP_Attachment *att = nullptr;
 
@@ -1667,7 +1619,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
     s += related;
     s += esp_mail_str_35;
 
-    if (!bdat(smtp, msg, s.length(), false))
+    if (!sendBDAT(smtp, msg, s.length(), false))
         return false;
 
     if (smtpSend(smtp, s.c_str()) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1718,16 +1670,16 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
                     buf.clear();
                     getInlineHeader(buf, related, att, att->blob.size);
 
-                    if (!bdat(smtp, msg, buf.length(), false))
+                    if (!sendBDAT(smtp, msg, buf.length(), false))
                         return false;
 
                     if (smtpSend(smtp, buf.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                         return false;
 
-                    if (!sendBlob(smtp, msg, att))
+                    if (!sendBlobAttachment(smtp, msg, att))
                         return false;
 
-                    if (!bdat(smtp, msg, 2, false))
+                    if (!sendBDAT(smtp, msg, 2, false))
                         return false;
 
                     if (smtpSendP(smtp, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1742,12 +1694,12 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
                         continue;
                     }
 
-                    if (openFileRead(smtp, msg, att, s, buf, related, true))
+                    if (openFileRead(smtp, msg, att, buf, related, true))
                     {
                         if (!sendFile(smtp, msg, att))
                             return false;
 
-                        if (!bdat(smtp, msg, 2, false))
+                        if (!sendBDAT(smtp, msg, 2, false))
                             return false;
 
                         if (smtpSendP(smtp, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -1764,7 +1716,7 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
     s += esp_mail_str_33;
     s += esp_mail_str_34;
 
-    if (!bdat(smtp, msg, s.length(), false))
+    if (!sendBDAT(smtp, msg, s.length(), false))
         return false;
 
     if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2055,7 +2007,7 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
     if (rawBlob || rawFile || nonCopyContent)
     {
-        if (!bdat(smtp, msg, header.length(), false))
+        if (!sendBDAT(smtp, msg, header.length(), false))
             return false;
 
         if (smtpSend(smtp, header.c_str()) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2082,7 +2034,7 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
     if (strlen(boundary) > 0)
         header += esp_mail_str_34;
 
-    if (!bdat(smtp, msg, header.length(), false))
+    if (!sendBDAT(smtp, msg, header.length(), false))
         return false;
 
     if (smtpSend(smtp, header.c_str()) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2152,7 +2104,7 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
         memcpy_P(buf, raw + pos, available);
 
-        if (!bdat(smtp, msg, available, false))
+        if (!sendBDAT(smtp, msg, available, false))
         {
             ret = false;
             break;
@@ -2226,7 +2178,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                     break;
                 }
 
-                if (!bdat(smtp, msg, chunkSize, false))
+                if (!sendBDAT(smtp, msg, chunkSize, false))
                 {
                     ret = false;
                     break;
@@ -2292,7 +2244,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                     break;
                 }
 
-                if (!bdat(smtp, msg, chunkSize, false))
+                if (!sendBDAT(smtp, msg, chunkSize, false))
                 {
                     ret = false;
                     break;
@@ -2535,7 +2487,7 @@ void ESP_Mail_Client::softBreak(MB_String &content, const char *quoteMarks)
 
 bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary)
 {
-    MB_String alt = getBoundary(15);
+    MB_String alt = getMIMEBoundary(15);
     MB_String s;
 
     if (numAtt(smtp, esp_mail_att_type_inline, msg) > 0)
@@ -2544,7 +2496,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
         s += alt;
         s += esp_mail_str_35;
 
-        if (!bdat(smtp, msg, s.length(), false))
+        if (!sendBDAT(smtp, msg, s.length(), false))
             return false;
 
         if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2568,7 +2520,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
         s += esp_mail_str_33;
         s += esp_mail_str_34;
 
-        if (!bdat(smtp, msg, s.length(), false))
+        if (!sendBDAT(smtp, msg, s.length(), false))
             return false;
 
         if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2590,7 +2542,7 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
             s += alt;
             s += esp_mail_str_35;
 
-            if (!bdat(smtp, msg, s.length(), false))
+            if (!sendBDAT(smtp, msg, s.length(), false))
                 return false;
 
             if (smtpSend(smtp, s.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2812,7 +2764,7 @@ bool ESP_Mail_Client::sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const 
 
         if (bufIndex + 1 >= chunkSize - size)
         {
-            if (!bdat(smtp, msg, bufIndex + 1, false))
+            if (!sendBDAT(smtp, msg, bufIndex + 1, false))
                 goto ex;
 
             if (smtpSend(smtp, buf, bufIndex + 1) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2898,7 +2850,7 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp
             {
                 byteSent += byteAdded;
 
-                if (!bdat(smtp, msg, byteAdded, false))
+                if (!sendBDAT(smtp, msg, byteAdded, false))
                     goto ex;
 
                 if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2926,7 +2878,7 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp
     mbfs->close(mbfs_type storageType);
     if (byteAdded > 0)
     {
-        if (!bdat(smtp, msg, byteAdded, false))
+        if (!sendBDAT(smtp, msg, byteAdded, false))
             goto ex;
 
         if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -2950,7 +2902,7 @@ bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp
         }
         buf[byteAdded++] = '=';
 
-        if (!bdat(smtp, msg, byteAdded, false))
+        if (!sendBDAT(smtp, msg, byteAdded, false))
             goto ex;
 
         if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -3030,7 +2982,7 @@ bool ESP_Mail_Client::sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, 
 
             if (bufIndex + 1 >= chunkSize - size)
             {
-                if (!bdat(smtp, msg, bufIndex + 1, false))
+                if (!sendBDAT(smtp, msg, bufIndex + 1, false))
                     goto ex;
 
                 if (smtpSend(smtp, buf, bufIndex + 1) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -3057,7 +3009,7 @@ ex:
     return ret;
 }
 
-void ESP_Mail_Client::handleAuth(SMTPSession *smtp, char *buf)
+void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
 {
     if (strposP(buf, esp_mail_smtp_response_1, 0) > -1)
     {
@@ -3157,7 +3109,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
             read_line:
 
-                readLen = readLine(smtp, response, chunkBufSize, false, count);
+                readLen = readLine(&(smtp->client), response, chunkBufSize, false, count);
 
                 if (readLen)
                 {
@@ -3192,7 +3144,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                         }
 
                         if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_greeting)
-                            handleAuth(smtp, response);
+                            parseAuthCapability(smtp, response);
                     }
 
                     getResponseStatus(response, respCode, 0, status);
@@ -3384,7 +3336,7 @@ void ESP_Mail_Client::uploadReport(const char *filename, int &lastProgress, int 
     }
 }
 
-MB_String ESP_Mail_Client::getBoundary(size_t len)
+MB_String ESP_Mail_Client::getMIMEBoundary(size_t len)
 {
     MB_String tmp = boundary_table;
     char *buf = (char *)newP(len);
@@ -3455,7 +3407,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const uns
         {
             byteSent += byteAdded;
 
-            if (!bdat(smtp, msg, byteAdded, false))
+            if (!sendBDAT(smtp, msg, byteAdded, false))
                 goto ex;
 
             if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -3471,7 +3423,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const uns
 
     if (byteAdded > 0)
     {
-        if (!bdat(smtp, msg, byteAdded, false))
+        if (!sendBDAT(smtp, msg, byteAdded, false))
             goto ex;
 
         if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -3511,7 +3463,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const uns
         }
         buf[byteAdded++] = '=';
 
-        if (!bdat(smtp, msg, byteAdded, false))
+        if (!sendBDAT(smtp, msg, byteAdded, false))
             goto ex;
 
         if (smtpSend(smtp, buf, byteAdded) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -3693,7 +3645,7 @@ bool SMTPSession::connect(bool &ssl)
 #endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-    MailClient.setSecure(client, _sesson_cfg, _caCert);
+    MailClient.setCACert(client, _sesson_cfg, _caCert);
 #endif
 
     if (_debug && !_customCmdResCallback)

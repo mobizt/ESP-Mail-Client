@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 7, 2022
+ * Created June 13, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -356,8 +356,45 @@ MB_String ESP_Mail_Client::mGetBase64(MB_StringPtr str)
   return encodeBase64Str((uint8_t *)(data.c_str()), data.length());
 }
 
+int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count)
+{
+  int ret = -1;
+  char c = 0;
+  char _c = 0;
+  int idx = 0;
+  if (!client->connected())
+    return idx;
+  while (client->available() && idx < bufLen)
+  {
+    ret = client->read();
+    if (ret > -1)
+    {
+      c = (char)ret;
+      strcat_c(buf, c);
+      idx++;
+      count++;
+      if (_c == '\r' && c == '\n')
+      {
+        if (!crlf)
+        {
+          buf[idx - 2] = 0;
+          idx -= 2;
+        }
+        return idx;
+      }
+      _c = c;
+
+      if (idx >= bufLen - 1)
+        return idx;
+    }
+    if (!client->connected())
+      return idx;
+  }
+  return idx;
+}
+
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
+void ESP_Mail_Client::setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
 {
 
   client.setMBFS(mbfs);
@@ -491,6 +528,16 @@ bool ESP_Mail_Client::authFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
     chunkIdx++;
   }
   return ret;
+}
+
+MB_String ESP_Mail_Client::getXOAUTH2String(const MB_String &email, const MB_String &accessToken)
+{
+  MB_String raw = esp_mail_str_285;
+  raw += email;
+  raw += esp_mail_str_286;
+  raw += accessToken;
+  raw += esp_mail_str_287;
+  return encodeBase64Str((const unsigned char *)raw.c_str(), raw.length());
 }
 
 unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t len, size_t *out_len)

@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.6
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.7
  *
- * Created May 22, 2022
+ * Created June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -55,58 +55,182 @@ public:
   ESP8266_TCP_Client();
   ~ESP8266_TCP_Client();
 
+  /**
+   * Set Root CA certificate to verify.
+   * @param caCert The certificate.
+   */
   void setCACert(const char *caCert);
 
+  /**
+   * Set Root CA certificate to verify.
+   * @param certFile The certificate file path.
+   * @param storageType The storage type mb_fs_mem_storage_type_flash or mb_fs_mem_storage_type_sd.
+   */
   void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
 
+  /**
+   * Set TCP connection time out in seconds.
+   * @param timeoutSec The time out in seconds.
+   */
   void setTimeout(uint32_t timeoutSec);
 
+  /**
+   * Get the ethernet link status.
+   * @return true for link up or false for link down.
+   */
   bool ethLinkUp();
 
+  /**
+   * Ethernet DNS workaround.
+   */
   void ethDNSWorkAround();
 
+  /**
+   * Get the network status.
+   * @return true for connected or false for not connected.
+   */
   bool networkReady();
 
+  /**
+   * Reconnect the network.
+   */
   void networkReconnect();
 
+  /**
+   * Disconnect the network.
+   */
   void networkDisconnect();
 
+  /**
+   * Get firmware version string.
+   * @return The firmware version string.
+   */
   String fwVersion();
 
+  /**
+   * Get the Client type.
+   * @return The esp_mail_client_type enum value.
+   */
   esp_mail_client_type type();
 
+  /**
+   * Get the Client initialization status.
+   * @return The initialization status.
+   */
   bool isInitialized();
 
+  /**
+   * Set Root CA certificate to verify.
+   * @param name The host name.
+   * @param ip The ip address result.
+   * @return 1 for success or 0 for failed.
+   */
   int hostByName(const char *name, IPAddress &ip);
 
+  /**
+   * Store the host name and port.
+   * @param host The host name to connect.
+   * @param port The port to connect.
+   * @return true.
+   */
   bool begin(const char *host, uint16_t port);
 
+  /**
+   * Start TCP connection using stored host name and port.
+   * @param secure The secure mode option.
+   * @param verify The Root CA certificate verification option.
+   * @return true for success or false for error.
+   */
   bool connect(bool secured, bool verify);
 
+  /**
+   * Upgrade the current connection by setting up the SSL and perform the SSL handshake.
+   *
+   * @param verify The Root CA certificate verification option
+   * @return operating result.
+   */
   bool connectSSL(bool verify);
 
+  /**
+   * Stop TCP connection.
+   */
   void stop();
 
+  /**
+   * Get the TCP connection status.
+   * @return true for connected or false for not connected.
+   */
   bool connected();
 
+  /**
+   * The TCP data write function.
+   * @param data The data to write.
+   * @param len The length of data to write.
+   * @return The size of data that was successfully written or 0 for error.
+   */
   int write(uint8_t *data, int len);
 
+  /**
+   * The TCP data send function.
+   * @param data The data to send.
+   * @return The size of data that was successfully sent or 0 for error.
+   */
   int send(const char *data);
 
+  /**
+   * The TCP data print function.
+   * @param data The data to print.
+   * @return The size of data that was successfully print or 0 for error.
+   */
   int print(const char *data);
 
+  /**
+   * The TCP data print function.
+   * @param data The data to print.
+   * @return The size of data that was successfully print or 0 for error.
+   */
   int print(int data);
 
+  /**
+   * The TCP data print with new line function.
+   * @param data The data to print.
+   * @return The size of data that was successfully print or 0 for error.
+   */
   int println(const char *data);
 
+  /**
+   * The TCP data print with new line function.
+   * @param data The data to print.
+   * @return The size of data that was successfully print or 0 for error.
+   */
   int println(int data);
 
+  /**
+   * Get available data size to read.
+   * @return The avaiable data size.
+   */
   int available();
 
+  /**
+   * The TCP data read function.
+   * @return The read value or -1 for error.
+   */
   int read();
 
+  /**
+   * The TCP data read function.
+   * @param buf The data buffer.
+   * @param len The length of data that read.
+   * @return The size of data that was successfully read or negative value for error.
+   */
   int readBytes(uint8_t *buf, int len);
 
+  /**
+   * The TCP data read function.
+   * @param buf The data buffer.
+   * @param len The length of data that read.
+   * @return The size of data that was successfully read or negative value for error.
+   */
   int readBytes(char *buf, int len);
 
   uint8_t sdPin = 15;

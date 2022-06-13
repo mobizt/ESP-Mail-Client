@@ -266,30 +266,23 @@ void loop()
             sign = -1;
         }
 
-        int uid = imap.getUID(msgNum);
+        /* Message number to fetch or read */
+        config.fetch.number = msgNum;
 
-        // UID must be greater than 0
-        if (uid > 0)
-        {
+        /* Set seen flag */
+        // config.fetch.set_seen = true;
 
-            /* Message UID to fetch or read */
-            config.fetch.uid = uid;
+        /** Read or search the Email and keep the TCP session to open
+         * The second parameter is for close the session.
+         */
 
-            /* Set seen flag */
-            // config.fetch.set_seen = true;
+        // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
+        // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
+        // to message, see the Set_Flags.ino example.
+        MailClient.readMail(&imap, false);
 
-            /** Read or search the Email and keep the TCP session to open
-             * The second parameter is for close the session.
-             */
-
-            // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
-            // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
-            // to message, see the Set_Flags.ino example.
-            MailClient.readMail(&imap, false);
-
-            /* Clear all stored data in IMAPSession object */
-            imap.empty();
-        }
+        /* Clear all stored data in IMAPSession object */
+        imap.empty();
 
         msgNum += sign;
     }

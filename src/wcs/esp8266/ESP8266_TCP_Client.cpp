@@ -1,13 +1,13 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.6
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.7
  *
- * Created May 22, 2022
+ * Created June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- *
+ * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -67,11 +67,11 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
       delete x509;
     x509 = new X509List(caCert);
     wcs->setTrustAnchors(x509);
-    wcs->setTA(true);
 #else
     wcs->setCACert_P(caCert, strlen_P(caCert));
 #endif
     baseSetCertType(esp_mail_cert_type_data);
+    wcs->setTA(true);
   }
   else
   {
@@ -120,7 +120,6 @@ void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
       baseSetCertType(esp_mail_cert_type_file);
     }
   }
-  wcs->setNoDelay(true);
 }
 
 void ESP8266_TCP_Client::setTimeout(uint32_t timeoutSec)

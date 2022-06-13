@@ -3,6 +3,6 @@
 
 #ifndef ESP_MAIL_VERSION
 
-#define ESP_MAIL_VERSION "2.4.0"
+#define ESP_MAIL_VERSION "2.4.1"
 
 #endif

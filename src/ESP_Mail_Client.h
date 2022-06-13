@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 7, 2022
+ * Created June 13, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -755,166 +755,442 @@ private:
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = ESP_MAIL_NETWORK_RECONNECT_TIMEOUT;
 
+  // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
+  int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count);
+
+  // String replacement
   char *strReplace(char *orig, char *rep, char *with);
+
+  // PGM string replacement
   char *strReplaceP(char *buf, PGM_P key, PGM_P value);
+
+  // Check for XOAUTH2 log in error response
   bool authFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
-  void createDirs(MB_String dirs);
+
+  // Get SASL XOAUTH2 string
+  MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  void setSecure(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert);
+  // Set Root CA cert or CA Cert for server authentication
+  void setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert);
 #endif
 
+  // Get the memory allocation block size of multiple of 4
   size_t getReservedLen(size_t len);
+
+  // Print PGM string with new line via debug port (println)
   void debugInfoP(PGM_P info);
+
+  // Check Email for valid format
   bool validEmail(const char *s);
+
+  // Get random UID for SMTP content ID and IMAP attachment default file name
   char *getRandomUID();
+
+  // Spit the string into token strings
   void splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim);
+
+  // Decode base64 encoded string
   unsigned char *decodeBase64(const unsigned char *src, size_t len, size_t *out_len);
+
+  // Decode base64 encoded string
   MB_String encodeBase64Str(const unsigned char *src, size_t len);
+
+  // Decode base64 encoded string
   MB_String encodeBase64Str(uint8_t *src, size_t len);
 
-  char *subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos = 0, bool caseSensitive = true);
-  void strcat_c(char *str, char c);
-  int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
-  void *newP(size_t len);
-  void delP(void *ptr);
-  char *newS(char *p, size_t len);
-  char *newS(char *p, size_t len, char *d);
-  bool strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive = true);
-  int strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive = true);
-  char *strP(PGM_P pgm);
-  void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
-  void setTimezone(const char *TZ_Var, const char *TZ_file);
-  void getTimezone(const char *TZ_file, MB_String &out);
-  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
-  void getExtfromMIME(const char *mime, MB_String &ext);
+  // Decode base64 encoded string
   MB_String mGetBase64(MB_StringPtr str);
+
+  // Sub string
+  char *subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos = 0, bool caseSensitive = true);
+
+  // Append char to the null terminated string buffer
+  void strcat_c(char *str, char c);
+
+  // Find string
+  int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
+
+  // Memory allocation
+  void *newP(size_t len);
+
+  // Memory deallocation
+  void delP(void *ptr);
+
+  // PGM string compare
+  bool strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive = true);
+
+  // Find PGM string
+  int strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive = true);
+
+  // Memory allocation for PGM string
+  char *strP(PGM_P pgm);
+
+  // Set or sync device system time with NTP server
+  void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
+
+  // Set the device time zone via TZ environment variable
+  void setTimezone(const char *TZ_Var, const char *TZ_file);
+
+  // Get TZ environment variable from file
+  void getTimezone(const char *TZ_file, MB_String &out);
+
+  // Get header content from response based on the field name
+  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+
+  // Get file extension with dot from MIME string
+  void getExtfromMIME(const char *mime, MB_String &ext);
 
 #endif
 
 #if defined(ENABLE_SMTP)
-  int readLine(SMTPSession *smtp, char *buf, int bufLen, bool crlf, int &count);
+
+  // Encode Quoted Printable string
   void encodeQP(const char *buf, char *out);
+
+  // Add the soft line break to the long text line rfc 3676
   void formatFlowedText(MB_String &content);
+
+  // Insert soft break
   void softBreak(MB_String &content, const char *quoteMarks);
+
+  // Get content type (MIME) from file extension
   void getMIME(const char *ext, MB_String &mime);
+
+  // Get content type (MIME) from file name
   void mimeFromFile(const char *name, MB_String &mime);
-  MB_String getBoundary(size_t len);
+
+  // Get MIME boundary string
+  MB_String getMIMEBoundary(size_t len);
+
+  // Send Email function
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
+
+  // Reconnect the network if it disconnected
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
+
+  // Close TCP session
   void closeTCPSession(SMTPSession *smtp);
+
+  // Send the error status callback
   void errorStatusCB(SMTPSession *smtp, int error);
+
+  // SMTP send PGM string
   size_t smtpSendP(SMTPSession *smtp, PGM_P v, bool newline = false);
+
+  // SMTP send data
   size_t smtpSend(SMTPSession *smtp, const char *data, bool newline = false);
+
+  // SMTP send data
   size_t smtpSend(SMTPSession *smtp, int data, bool newline = false);
+
+  // SMTP send data
   size_t smtpSend(SMTPSession *smtp, uint8_t *data, size_t size);
+
+  // Handle the error by sending callback and close session
   bool handleSMTPError(SMTPSession *smtp, int err, bool ret = false);
+
+  // Send parallel attachment RFC1521
   bool sendParallelAttachments(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary);
+
+  // Send attachment
   bool sendAttachments(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary, bool parallel = false);
+
+  // Send message data
   bool sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG);
+
+  // Send RFC 822 message
   bool sendRFC822Msg(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary, bool closeSession, bool rfc822MSG);
+
+  // Get RFC 822 message envelope
   void getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg, MB_String &buf);
-  bool bdat(SMTPSession *smtp, SMTP_Message *msg, int len, bool last);
+
+  // Send BDAT command RFC 3030
+  bool sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bool last);
+
+  // Set the unencoded xencoding enum for html, text and attachment from its xencoding string
   void checkUnencodedData(SMTPSession *smtp, SMTP_Message *msg);
-  bool sendBlob(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
+
+  // Send BLOB attachment
+  bool sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
+
+  // Send file content
   bool sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
-  bool openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &s, MB_String &buf, const MB_String &boundary, bool inlined);
+
+  // Open file to send an attachment
+  bool openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &buf, const MB_String &boundary, bool inlined);
+
+  // Open text file or html file for to send message
   bool openFileRead2(SMTPSession *smtp, SMTP_Message *msg, const char *path, esp_mail_file_storage_type storageType);
+
+  // Send inline attachments
   bool sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary, byte type);
+
+  // Send storage error callback
   void sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_storage_type storageType);
+
+  // Get numbers of attachment based on type
   size_t numAtt(SMTPSession *smtp, esp_mail_attach_type type, SMTP_Message *msg);
+
+  // Check for valid recipient Email
   bool checkEmail(SMTPSession *smtp, SMTP_Message *msg);
+
+  // Send text parts MIME message
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
+
+  // Send MIME message
   bool sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary);
+
+  // Get an attachment part header string
   void getAttachHeader(MB_String &header, const MB_String &boundary, SMTP_Attachment *attach, size_t size);
+
+  // Get RFC 8222 part header string
   void getRFC822PartHeader(SMTPSession *smtp, MB_String &header, const MB_String &boundary);
+
+  // Get an inline attachment header string
   void getInlineHeader(MB_String &header, const MB_String &boundary, SMTP_Attachment *inlineAttach, size_t size);
+
+  // Send BLOB type text part or html part MIME message
   bool sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
+
+  // Send file type text part or html part MIME message
   bool sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
+
+  // Base64 and QP encodings for text and html messages and replace embeded attachment file name with content ID
   void encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, MB_String &content);
+
+  // Send data as base64 encoded chunk
   bool sendBase64(SMTPSession *smtp, SMTP_Message *msg, const unsigned char *data, size_t len, bool flashMem, const char *filename, bool report);
+
+  // Send base64 encoded chunk
   bool sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report);
+
+  // Send file as base64 encoded chunk
   bool sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report);
+
+  // Send base64 encoded file chunk
   bool sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report);
+
+  // Send PGM data
   void smtpCBP(SMTPSession *smtp, PGM_P info, bool success = false);
+
+  // Send callback
   void smtpCB(SMTPSession *smtp, const char *info, bool success = false);
+
+  // Get SMTP response status (respCode and text)
   void getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
-  void handleAuth(SMTPSession *smtp, char *buf);
-  MB_String getEncodedToken(SMTPSession *smtp);
+
+  // Parse SMTP authentication capability
+  void parseAuthCapability(SMTPSession *smtp, char *buf);
+
+  // Get TCP connected status
   bool connected(SMTPSession *smtp);
-  bool setSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
+
+  // Add the sending result
+  bool addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
+
+  // Handle SMTP server authentication
   bool smtpAuth(SMTPSession *smtp, bool &ssl);
+
+  // Handle SMTP response
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
+
+  // Print the upload status to the debug port
   void uploadReport(const char *filename, int &lastProgress, int progress);
+
+  // Get MB_FS object pointer
   MB_FS *getMBFS();
+
+  // Set device system time
   int setTimestamp(time_t ts);
 #endif
 
 #if defined(ENABLE_IMAP)
 
   RFC2047_Decoder RFC2047Decoder;
-  int readLine(IMAPSession *imap, char *buf, int bufLen, bool crlf, int &count);
-  bool multipartMember(const MB_String &part, const MB_String &check);
+
+  // Check if child part (part number string) is a member of the parent part (part number string)
+  // part number string format: <part number>.<sub part number>.<sub part number>
+  bool multipartMember(const MB_String &parent, const MB_String &child);
+
+  // Decode string
   int decodeChar(const char *s);
+
+  // Decode Quoted Printable string
   void decodeQP(const char *buf, char *out);
+
+  // Decode 7 bit data
   char *decode7Bit(char *buf);
+
+  // Get encoding type from character set string
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
+
+  // Decode header field string
   void decodeHeader(MB_String &headerField);
+
+  // Decode Latin1 to UTF-8
   int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+
+  // Decode TIS620 to UTF-8
   void decodeTIS620_UTF8(char *out, const char *in, size_t len);
+
+  // Reconnect the network if it disconnected
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
+
+  // Close TCP session
   void closeTCPSession(IMAPSession *imap);
+
+  // Get multipart MIME fetch command
   bool getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_String &partText);
+
+  // Fetch multipart MIME body header
   bool fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx);
+
+  // Get TCP connected status
   bool connected(IMAPSession *imap);
+
+  // Handle IMAP server authentication
   bool imapAuth(IMAPSession *imap, bool &ssl);
+
+  // Send IMAP command
   bool sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCase);
+
+  // Send error callback
   void errorStatusCB(IMAPSession *imap, int error);
+
+  // Send PGM data
   size_t imapSendP(IMAPSession *imap, PGM_P v, bool newline = false);
+
+  // Send data
   size_t imapSend(IMAPSession *imap, const char *data, bool nwline = false);
+
+  // Send data
   size_t imapSend(IMAPSession *imap, int data, bool newline = false);
-  MB_String getEncodedToken(IMAPSession *imap);
+
+  // Log out
   bool imapLogout(IMAPSession *imap);
+
+  // Send PGM string to callback
   void imapCBP(IMAPSession *imap, PGM_P info, bool success);
+
+  // Send callback
   void imapCB(IMAPSession *imap, const char *info, bool success);
+
+  // Send storage error callback
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
-  int getMSGNUM(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
-  bool getHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
-  void handleHeader(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
+
+  // Parse search response
+  int parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
+
+  // Parse header state
+  bool parseHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
+
+  // Parse header response
+  void parseHeaderResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
+
+  // Set the header based on state parsed
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
+
+  // Get decoded header
   bool getDecodedHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
-  void handlePartHeader(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
+
+  // Parse part header response
+  void parsePartHeaderResponse(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
+
+  // Count char in string
   int countChar(const char *buf, char find);
+
+  // Store the value to string via its the pointer
   bool storeStringPtr(uint32_t addr, MB_String &value, const char *buf);
-  bool getPartSubHeader(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive);
+
+  // Get part header properties
+  bool getPartHeaderProperties(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive);
+
+  // Url decode for UTF-8 encoded header text
   char *urlDecode(const char *str);
+
+  // Reset the pointer to multiline response keeping string
   void resetStringPtr(struct esp_mail_message_part_info_t &part);
+
+  // Get current part
   struct esp_mail_message_part_info_t *cPart(IMAPSession *imap);
+
+  // Get current header
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
+
+  // Handle IMAP response
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
+
+  // Print the file download status via debug port
   void downloadReport(IMAPSession *imap, int progress);
+
+  // Print the message fetch status via debug port
   void fetchReport(IMAPSession *imap, int progress, bool html);
+
+  // Print the message search status via debug port
   void searchReport(int progress, const char *percent);
-  int cMSG(IMAPSession *imap);
+
+  // Get current message num item
+  struct esp_mail_imap_msg_num_t cMSG(IMAPSession *imap);
+
+  // Get current message Index
   int cIdx(IMAPSession *imap);
+
+  // Get IMAP response status e.g. OK, NO and Bad status enum value
   esp_mail_imap_response_status imapResponseStatus(IMAPSession *imap, char *response, PGM_P tag);
+
+  // Add header item to string buffer to save to file
   void addHeaderItem(MB_String &str, esp_mail_message_header_t *header, bool json);
-  void addHeaders(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json);
+
+  // Add RFC822 headers to string buffer save to file
+  void addRFC822Headers(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json);
+
+  // Add header string by name and value to string buffer to save to file
   void addHeader(MB_String &s, const char *name, const MB_String &value, bool trim, bool json);
+
+  // Add header string by name and value to string buffer to save to file
   void addHeader(MB_String &s, const char *name, int value, bool json);
+
+  // Save header string buffer to file
   void saveHeader(IMAPSession *imap, bool json);
+
+  // Send MIME stream to callback
   void sendStreamCB(IMAPSession *imap, void *buf, size_t len, int chunkIndex, bool hrdBrk);
+
+  // Prepare file path for saving
   void prepareFilePath(IMAPSession *imap, MB_String &filePath, bool header);
+
+  // Decode text and store it to buffer or file
   void decodeText(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetLength, int &readDataLen);
-  bool handleAttachment(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
-  void handleFolders(IMAPSession *imap, char *buf);
+
+  // Handle atachment parsing and download
+  bool parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
+
+  // Parse mailbox folder open response
+  void parseFoldersResponse(IMAPSession *imap, char *buf);
+
+  // Prepare alias (short name) file list for unsupported long file name filesystem
   void prepareFileList(IMAPSession *imap, MB_String &filePath);
-  void handleCapability(IMAPSession *imap, char *buf, int &chunkIdx);
-  bool handleIdle(IMAPSession *imap);
-  void handleGetUID(IMAPSession *imap, char *buf);
-  void handleGetFlags(IMAPSession *imap, char *buf);
-  void handleExamine(IMAPSession *imap, char *buf);
+
+  // Parse capability response
+  void parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx);
+
+  // Parse Idle response
+  bool parseIdleResponse(IMAPSession *imap);
+
+  // Parse Get UID response
+  void parseGetUIDResponse(IMAPSession *imap, char *buf);
+
+  // Parse Get Flags response
+  void parseGetFlagsResponse(IMAPSession *imap, char *buf);
+
+  // Parse examine response
+  void parseExamineResponse(IMAPSession *imap, char *buf);
+
+  // Handle the error by sending callback and close session
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
+
+  // Set Flag
   bool mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flags, uint8_t action, bool closeSession);
 
 #endif
@@ -1191,27 +1467,70 @@ public:
   friend class foldderList;
 
 private:
+ // Clear message data
   void clearMessageData();
+
+  // Check for valid UID or set wildcard * as UID
   void checkUID();
+
+  // Check for valid saving file path or prepend / 
   void checkPath();
+
+  // Get message item by index
   void getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg);
+
+  // Get RFC822 message item by index
   void getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg);
+
+  // Close mailbox
   bool closeMailbox();
+
+  // Open mailbox
   bool openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse);
+
+  // Get folders list
   bool getMailboxes(FoldersCollection &flders);
+
+  // Prepend TAG for response status parsing
   MB_String prependTag(PGM_P tag, PGM_P cmd);
-  bool checkCapability();
+
+  // Check capabilities
+  bool checkCapabilities();
+
+  // Listen mailbox changes
   bool mListen(bool recon);
+
+  // Stop listen mailbox
   bool mStopListen(bool recon);
+
+  // Send custom command
   bool mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback, MB_StringPtr tag);
+
+  // Delete folder
   bool mDeleteFolder(MB_StringPtr folderName);
+
+  // Create folder
   bool mCreateFolder(MB_StringPtr folderName);
+
+  // Copy message
   bool mCopyMessages(MessageList *toCopy, MB_StringPtr dest);
+
+  // Close folder
   bool mCloseFolder(MB_StringPtr folderName);
+
+  // Open folder
   bool mOpenFolder(MB_StringPtr folderName, bool readOnly);
+
+  // Select folder
   bool mSelectFolder(MB_StringPtr folderName, bool readOnly);
+
+  // Custom TCP connection
   bool mCustomConnect(ESP_Mail_Session *session, imapResponseCallback callback, MB_StringPtr tag);
+
+  // Handle connection
   bool handleConnection(ESP_Mail_Session *session, IMAP_Config *config, bool &ssl);
+
+  // Start TCP connection
   bool connect(bool &ssl);
 
   bool _tcpConnected = false;
@@ -1251,7 +1570,8 @@ private:
   imapResponseCallback _customCmdResCallback = NULL;
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
 
-  MB_VECTOR<uint32_t> _msgUID;
+  MB_VECTOR<struct esp_mail_imap_msg_num_t> _imap_msg_num;
+
   FoldersCollection _folders;
   SelectedFolderInfo _mbif;
   int _uid_tmp = 0;
@@ -1473,10 +1793,19 @@ private:
 
   ESP_MAIL_TCP_CLIENT client;
 
+  // Start TCP connection
   bool connect(bool &ssl);
+
+  // Handle TCP connection
   bool handleConnection(ESP_Mail_Session *config, bool &ssl);
+
+  // Send custom command
   int mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callback, int commandID = -1);
+
+  // Send data after sending DATA command
   bool mSendData(MB_StringPtr data);
+
+  // Send data after sending DATA command
   bool mSendData(uint8_t *data, size_t size);
 };
 

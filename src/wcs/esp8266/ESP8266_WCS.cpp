@@ -1,11 +1,11 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v1.0.3
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v1.0.4
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- *
+ * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to

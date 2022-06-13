@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.3.
+ * The custom TCP Client Class v1.0.4.
  *
- * May 22, 2022
+ * June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -45,6 +45,10 @@ public:
             wcs->stop();
     };
 
+    /**
+     * Set TCP connection time out in seconds.
+     * @param timeoutSec The time out in seconds.
+     */
     void setTimeout(uint32_t timeoutSec)
     {
         if (wcs)
@@ -53,10 +57,17 @@ public:
         baseSetTimeout(timeoutSec);
     }
 
+    /**
+     * Ethernet DNS workaround.
+     */
     void ethDNSWorkAround()
     {
     }
 
+    /**
+     * Get the network status.
+     * @return true for connected or false for not connected.
+     */
     bool networkReady()
     {
         if (network_status_cb)
@@ -64,26 +75,44 @@ public:
         return networkStatus;
     }
 
+    /**
+     * Reconnect the network.
+     */
     void networkReconnect()
     {
         if (network_connection_cb)
             network_connection_cb();
     }
 
+    /**
+     * Disconnect the network.
+     */
     void networkDisconnect()
     {
     }
 
+    /**
+     * Get firmware version string.
+     * @return The firmware version string.
+     */
     String fwVersion()
     {
         return String();
     }
 
+    /**
+     * Get the Client type.
+     * @return The esp_mail_client_type enum value.
+     */
     esp_mail_client_type type()
     {
         return esp_mail_client_type_custom;
     }
 
+    /**
+     * Get the Client initialization status.
+     * @return The initialization status.
+     */
     bool isInitialized()
     {
         bool rdy = false;
@@ -96,12 +125,24 @@ public:
         return rdy;
     }
 
+    /**
+     * Set Root CA certificate to verify.
+     * @param name The host name.
+     * @param ip The ip address result.
+     * @return 1 for success or 0 for failed.
+     */
     int hostByName(const char *name, IPAddress &ip)
     {
         // return WiFi.hostByName(name, ip);
         return 1;
     }
 
+    /**
+     * Start TCP connection using stored host name and port.
+     * @param secure The secure mode option.
+     * @param verify The Root CA certificate verification option.
+     * @return true for success or false for error.
+     */
     bool connect(bool secured, bool verify)
     {
         if (connected())
@@ -117,6 +158,12 @@ public:
         return connected();
     }
 
+    /**
+     * Upgrade the current connection by setting up the SSL and perform the SSL handshake.
+     *
+     * @param verify The Root CA certificate verification option
+     * @return operating result.
+     */
     bool connectSSL(bool verify)
     {
         if (!wcs)
@@ -128,12 +175,19 @@ public:
         return connected();
     }
 
+    /**
+     * Stop TCP connection.
+     */
     void stop()
     {
         if (connected())
             return wcs->stop();
     }
 
+    /**
+     * Get the TCP connection status.
+     * @return true for connected or false for not connected.
+     */
     bool connected()
     {
         if (wcs)
@@ -141,6 +195,12 @@ public:
         return false;
     }
 
+    /**
+     * The TCP data write function.
+     * @param data The data to write.
+     * @param len The length of data to write.
+     * @return The size of data that was successfully written or 0 for error.
+     */
     int write(uint8_t *data, int len)
     {
         if (!data)
@@ -171,11 +231,21 @@ public:
         return len;
     }
 
+    /**
+     * The TCP data send function.
+     * @param data The data to send.
+     * @return The size of data that was successfully send or 0 for error.
+     */
     int send(const char *data)
     {
         return write((uint8_t *)data, strlen(data));
     }
 
+    /**
+     * The TCP data print function.
+     * @param data The data to print.
+     * @return The size of data that was successfully print or 0 for error.
+     */
     int print(int data)
     {
         char *buf = (char *)mbfs->newP(64);
@@ -185,11 +255,21 @@ public:
         return ret;
     }
 
+    /**
+     * The TCP data print function.
+     * @param data The data to print.
+     * @return The size of data that was successfully print or 0 for error.
+     */
     int print(const char *data)
     {
         return send(data);
     }
 
+    /**
+     * The TCP data print with new line function.
+     * @param data The data to print.
+     * @return The size of data that was successfully print or 0 for error.
+     */
     int println(const char *data)
     {
         int len = send(data);
@@ -201,6 +281,11 @@ public:
         return len + sz;
     }
 
+    /**
+     * The TCP data print with new line function.
+     * @param data The data to print.
+     * @return The size of data that was successfully print or 0 for error.
+     */
     int println(int data)
     {
         char *buf = (char *)mbfs->newP(64);
@@ -210,6 +295,10 @@ public:
         return ret;
     }
 
+    /**
+     * Get available data size to read.
+     * @return The avaiable data size.
+     */
     int available()
     {
         if (!wcs)
@@ -218,6 +307,10 @@ public:
         return wcs->available();
     }
 
+    /**
+     * The TCP data read function.
+     * @return The read value or -1 for error.
+     */
     int read()
     {
         if (!wcs)
@@ -226,6 +319,12 @@ public:
         return wcs->read();
     }
 
+    /**
+     * The TCP data read function.
+     * @param buf The data buffer.
+     * @param len The length of data that read.
+     * @return The size of data that was successfully read or negative value for error.
+     */
     int readBytes(uint8_t *buf, int len)
     {
         if (!wcs)
@@ -234,36 +333,66 @@ public:
         return wcs->readBytes(buf, len);
     }
 
+    /**
+     * The TCP data read function.
+     * @param buf The data buffer.
+     * @param len The length of data that read.
+     * @return The size of data that was successfully read or negative value for error.
+     */
     int readBytes(char *buf, int len)
     {
         return readBytes((uint8_t *)buf, len);
     }
 
+    /**
+     * Set the Client for TCP connection.
+     * @param client The pointer to Client.
+     */
     void setClient(Client *client)
     {
         wcs = client;
     }
 
+    /**
+     * Set the connection request callback.
+     * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+     */
     void connectionRequestCallback(ConnectionRequestCallback connectCB)
     {
         this->connection_cb = connectCB;
     }
 
+    /**
+     * Set the connection upgrade request callback.
+     * @param upgradeCB The callback function to do the SSL setup and handshake.
+     */
     void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB)
     {
         this->connection_upgrade_cb = upgradeCB;
     }
 
+    /**
+     * Set the network connection request callback.
+     * @param networkConnectionCB The callback function that handles the network connection.
+     */
     void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
     {
         this->network_connection_cb = networkConnectionCB;
     }
 
+    /**
+     * Set the network status request callback.
+     * @param networkStatusCB The callback function that calls the setNetworkStatus function to set the network status.
+     */
     void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
     {
         this->network_status_cb = networkStatusCB;
     }
 
+    /**
+     * Set the network status which should call in side the networkStatusRequestCallback function.
+     * @param status The status of network.
+     */
     void setNetworkStatus(bool status)
     {
         networkStatus = status;

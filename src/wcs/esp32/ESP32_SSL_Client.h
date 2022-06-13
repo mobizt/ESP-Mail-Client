@@ -1,12 +1,12 @@
 /*
- * ESP32 SSL Client v1.0.3
+ * ESP32 SSL Client v1.0.4
  *
- * February 28, 2022
+ * June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- *
+ * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -80,7 +80,8 @@ public:
     ESP32_SSL_Client(){};
 
     typedef void (*DebugMsgCallback)(const char *msg);
-
+    
+    // The SSL context
     typedef struct ssl_data_t
     {
         int socket;
@@ -93,28 +94,152 @@ public:
         mbedtls_x509_crt ca_cert;
         mbedtls_x509_crt client_cert;
         mbedtls_pk_context client_key;
+
         DebugMsgCallback *_debugCallback = NULL;
 
+        // milliseconds handshake time out
         unsigned long handshake_timeout;
     } ssl_data;
 
     void ssl_init(ssl_data *ssl);
 
-    int start_socket(ssl_data *ssl, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
-    int start_ssl_client(ssl_data *ssl, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
-    void stop_ssl_socket(ssl_data *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+    /**
+     * Start the TCP connection.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param host The server host name to connect.
+     * @param port The server port to connect.
+     * @param timeout The connection time out in miiliseconds.
+     * @return The socket for success or -1 for error.
+     */
+    int start_tcp_connection(ssl_data *ssl, const char *host, uint32_t port, int timeout);
 
+    /**
+     * Upgrade the current connection by setting up the SSL and perform the SSL handshake.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param host The server host name.
+     * @param rootCABuff The server's root CA or CA cert.
+     * @param cli_cert The client cert.
+     * @param cli_key The private key.
+     * @param pskIdent The Pre Shared Key identity.
+     * @param psKey The Pre Shared Key.
+     * @param insecure The authentication by-pass option.
+     * @return The socket for success or -1 for error.
+     * @note The socket should be already open prior to calling this function or shared ssl context with start_tcp_connection.
+     */
+    int connect_ssl(ssl_data *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure);
+
+    /**
+     * Stop the TCP connection and release resources.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param rootCABuff The server's root CA or CA cert.
+     * @param cli_cert The client cert.
+     * @param cli_key The private key.
+     * @return The socket for success or -1 for error.
+     */
+    void stop_tcp_connection(ssl_data *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+
+    /**
+     * Get the available data size to read.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @return The avaiable data size or negative for error.
+     */
     int data_to_read(ssl_data *ssl);
+
+    /**
+     * Send ssl encrypted data.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param data The unencrypted data to send.
+     * @param len The length of data to send.
+     * @return size of data that was successfully send or negative for error.
+     */
     int send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t len);
+
+    /**
+     * Receive ssl decrypted data.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param data The data buffer to store decrypted data.
+     * @param length The length of decrypted data read.
+     * @return size of decrypted data that was successfully read or negative for error.
+     */
     int get_ssl_receive(ssl_data *ssl, uint8_t *data, int length);
+
+    /**
+     * Verify certificate's SHA256 fingerprint.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param fp The certificate's SHA256 fingerprint data to compare with server certificate's SHA256 fingerprint.
+     * @param domain_name The optional domain name to check in server certificate.
+     * @return verification result.
+     */
     bool verify_ssl_fingerprint(ssl_data *ssl, const char *fp, const char *domain_name);
+
+    /**
+     * Verify ssl domain name.
+     *
+     * @param ssl The pointer to ssl data (context).
+     * @param domain_name The domain name.
+     * @return verification result.
+     */
     bool verify_ssl_dn(ssl_data *ssl, const char *domain_name);
 
+    /**
+     * The non-secure mode lwIP write function.
+     *
+     * @param ssl The pointer to ssl data (context) which only its ssl->socket will be used.
+     * @param buf The data to write.
+     * @param bufLen The length of data to write.
+     * @return size of data that was successfully written or negative value of error enum.
+     */
     int ns_lwip_write(ssl_data *ssl, const uint8_t *buf, int bufLen);
+
+    /**
+     * The non-secure mode lwIP read function.
+     *
+     * @param ssl The pointer to ssl data (context) which one its ssl->socket will be used.
+     * @param buf The data to read.
+     * @param bufLen The length of data to read.
+     * @return size of data that was successfully read or negative value of error enum.
+     */
     int ns_lwip_read(ssl_data *ssl, uint8_t *buf, int bufLen);
+
+    /**
+     * Send the mbedTLS error info to the callback.
+     *
+     * @param ssl The pointer to ssl data (context) which its ssl->_debugCallback will be used.
+     * @param errNo The mbedTLS error number that will be translated to string via mbedtls_strerror.
+     */
     void ssl_client_send_mbedtls_error_cb(ssl_data *ssl, int errNo);
+
+    /**
+     * Send the predefined flash string error to the callback.
+     *
+     * @param ssl The pointer to ssl data (context) which its ssl->_debugCallback will be used.
+     * @param info The PROGMEM error string.
+     */
     void ssl_client_debug_pgm_send_cb(ssl_data *ssl, PGM_P info);
+
+    /**
+     * Convert Hex char to decimal number
+     *
+     * @param pb The Hex char.
+     * @param res The pointer to result data byte.
+     * @return The parsing result.
+     */
     bool parseHexNibble(char pb, uint8_t *res);
+
+    /**
+     * Compare a name from certificate and domain name
+     *
+     * @param name The name.
+     * @param domainName The domain name.
+     * @return The compare result. Return true if they match
+     */
     bool matchName(const std::string &name, const std::string &domainName);
 };
 

@@ -219,6 +219,13 @@ void setup()
      */
     config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
+    // or fetch via the message sequence number
+    // config.fetch.number = imap.selectedFolder().msgCount();
+
+    // if both config.fetch.uid and config.fetch.number were set, 
+    // then total 2 messages will be fetched i.e. one using uid and other using number. 
+
+
     /* Set seen flag */
 
     // The message with "Seen" flagged means the message was already read or seen by user.

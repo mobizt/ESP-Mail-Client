@@ -562,6 +562,13 @@ struct esp_mail_email_info_t
 
 #if defined(ENABLE_IMAP)
 
+enum esp_mail_imap_msg_num_type
+{
+    esp_mail_imap_msg_num_type_undefined,
+    esp_mail_imap_msg_num_type_uid,
+    esp_mail_imap_msg_num_type_number
+};
+
 enum esp_mail_char_decoding_scheme
 {
     esp_mail_char_decoding_scheme_default,
@@ -708,6 +715,17 @@ public:
         completed = false;
     }
 } IMAP_Response;
+
+struct esp_mail_imap_msg_num_t
+{
+    esp_mail_imap_msg_num_type type = esp_mail_imap_msg_num_type_undefined;
+    uint32_t value = 0;
+};
+
+__attribute__((used)) struct
+{
+    bool operator()(struct esp_mail_imap_msg_num_t a, struct esp_mail_imap_msg_num_t b) const { return a.value > b.value; }
+} compareMore;
 
 struct esp_mail_imap_capability_t
 {
@@ -1195,6 +1213,9 @@ struct esp_mail_imap_fetch_config_t
 {
     /* The UID of message to fetch */
     MB_String uid;
+
+    /* The message sequence number to fetch */
+    MB_String number;
 
     /* Set the message flag as seen */
     bool set_seen = false;
@@ -1944,17 +1965,14 @@ static const char esp_mail_str_351[] PROGMEM = "File not found.";
 
 static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-__attribute__((used)) static bool compFunc(uint32_t i, uint32_t j)
-{
-    return (i > j);
-}
-
+// Print debug message with new line to debug port
 static void __attribute__((used)) esp_mail_debug(const char *msg)
 {
     delay(0);
     ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
 }
 
+// Print debug message w/wo new line to debug port
 static void __attribute__((used))
 esp_mail_debug_line(const char *msg, bool newline)
 {

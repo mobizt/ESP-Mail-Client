@@ -1,11 +1,11 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.3
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.4
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- *
+ * 
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -44,8 +44,6 @@
 
 #include "extras/MB_String.h"
 
-#define MB_String MB_String
-
 #ifdef DEBUG_ESP_SSL
 #if defined(DEBUG_ESP_PORT)
 #define DEBUG_BSSL(fmt, ...) DEBUG_ESP_PORT.printf_P((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
@@ -63,52 +61,198 @@
 #endif
 #define WC_CLASS WiFiClient
 
+#ifdef ESP8266_CORE_SDK_V3_X_X
+#define OVERRIDING override;
+#else
+#define OVERRIDING
+#endif
+
 class ESP8266_WCS : public WCS_CLASS
 {
 public:
   ESP8266_WCS();
-#ifdef ESP8266_CORE_SDK_V3_X_X
-  ~ESP8266_WCS() override;
-  int connect(const char *name, uint16_t port) override;
-  uint8_t connected() override;
-  int available() override;
-  int read() override;
-  int read(uint8_t *buf, size_t size) override;
-  size_t write(const uint8_t *buf, size_t size) override;
-  size_t write_P(PGM_P buf, size_t size) override;
-  int peek() override;
-  size_t peekBytes(uint8_t *buffer, size_t length) override;
-#else
-  ~ESP8266_WCS();
-  int connect(const char *name, uint16_t port);
-  uint8_t connected();
-  int available();
-  int read();
-  int read(uint8_t *buf, size_t size);
-  size_t write(const uint8_t *buf, size_t size);
-  size_t write_P(PGM_P buf, size_t size);
-  int peek();
-  size_t peekBytes(uint8_t *buffer, size_t length);
-#endif
+  ~ESP8266_WCS() OVERRIDING;
 
+  /**
+   * Connect to server.
+   * @param name The server host name to connect.
+   * @param port The server port to connecte.
+   * @return 1 for success or 0 for error.
+   */
+  int connect(const char *name, uint16_t port) OVERRIDING;
+
+  /**
+   * Get TCP connection status.
+   * @return 1 for connected or 0 for not connected.
+   */
+  uint8_t connected() OVERRIDING;
+
+  /**
+   * Get available data size to read.
+   * @return The avaiable data size.
+   */
+  int available() OVERRIDING;
+
+  /**
+   * The TCP data read function.
+   * @return A byte data that was successfully read or -1 for error.
+   */
+  int read() OVERRIDING;
+
+  /**
+   * The TCP data read function.
+   * @param buf The data buffer.
+   * @param size The length of data that read.
+   * @return The size of data that was successfully read or -1 for error.
+   */
+  int read(uint8_t *buf, size_t size) OVERRIDING;
+
+  /**
+   * The TCP data write function.
+   * @param buf The data to write.
+   * @param size The length of data to write.
+   * @return The size of data that was successfully written or 0 for error.
+   */
+  size_t write(const uint8_t *buf, size_t size) OVERRIDING;
+
+  /**
+   * The TCP data write function.
+   * @param buf The data to write.
+   * @param size The length of data to write.
+   * @return The size of data that was successfully written or 0 for error.
+   */
+  size_t write_P(PGM_P buf, size_t size) OVERRIDING;
+
+  /**
+   * Read one byte from stream.
+   * @return The data that was successfully read or -1 for error.
+   */
+  int peek() override;
+
+  /**
+   * Read data from Stream with time out.
+   * @param buffer The data buffer.
+   * @param length The length of data read.
+   * @return The size of data that was successfully read.
+   */
+  size_t peekBytes(uint8_t *buffer, size_t length) OVERRIDING;
+
+
+  /**
+   * Set the status which used when certificates were installed and ready to verify.
+   * @param hasTA The status to set.
+   */
   void setTA(bool hasTA);
+
+  /**
+   * Set the secure TCP connection mode.
+   * @param secure The secure option.
+   */
   void setSecure(bool secure);
+
+  /**
+   * Set the Root CA certificate verification.
+   * @param verify The Root CA certificate verification option.
+   */
   void setVerify(bool verify);
+
+  /**
+   * Get the secure mode connection status.
+   * @return The secure mode connection status.
+   */
   bool isSecure();
+
+  /**
+   * Get the Root CA certificate verification mode status.
+   * @return The Root CA certificate verification mode status.
+   */
   bool isVerify();
+
+  /**
+   * Upgrade the current connection by setting up the SSL and perform the SSL handshake.
+   *
+   * @param verify The Root CA certificate verification option
+   * @return operating result.
+   */
   bool connectSSL(bool verify);
 
 private:
+  /**
+   * The non-secure mode TCP data write function.
+   * @param b The data to write.
+   * @return 1 for success or 0 for error.
+   */
   size_t ns_write(uint8_t b);
+
+  /**
+   * The non-secure mode TCP data write function.
+   * @param buf The data to write.
+   * @param size The length of data to write.
+   * @return The size of data that was successfully written or 0 for error.
+   */
   size_t ns_write(const uint8_t *buf, size_t size);
+
+  /**
+   * The non-secure mode TCP data write function.
+   * @param stream The Stream to write until timed out.
+   * @param unused Unused param.
+   * @return The size of data that was successfully written until timed out.
+   */
   size_t ns_write(Stream &stream, size_t unused);
+
+  /**
+   * The non-secure mode TCP data write function.
+   * @param stream The Stream to write.
+   * @return The size of data that was successfully written.
+   */
   size_t ns_write(Stream &stream);
+
+  /**
+   * The non-secure mode TCP data write function.
+   * @param buf The data to write.
+   * @param size The length of data to write.
+   * @return The size of data that was successfully written or 0 for error.
+   */
   size_t ns_write_P(PGM_P buf, size_t size);
+
+  /**
+   * Get the non-secure mode available data size to read.
+   * @return The avaiable data size.
+   */
   int ns_available();
+
+  /**
+   * The non-secure mode TCP data read function.
+   * @return The read value or -1 for error.
+   */
   int ns_read();
+
+  /**
+   * The non-secure mode TCP data read function.
+   * @param buf The data buffer.
+   * @param size The length of data that read.
+   * @return The size of data that was successfully read or 0 for error.
+   */
   int ns_read(uint8_t *buf, size_t size);
+
+  /**
+   * Non-secure mode read one byte from stream.
+   * @return The data that was successfully read or -1 for error.
+   */
   int ns_peek();
+
+  /**
+   * Non-secure mode read data from Stream with time out.
+   * @param buffer The data buffer.
+   * @param length The length of data read.
+   * @return The size of data that was successfully read.
+   */
   size_t ns_peekBytes(uint8_t *buffer, size_t length);
+
+  /**
+   * Get non-secure TCP connection status.
+   * @return 1 for connected or 0 for not connected.
+   */
   uint8_t ns_connected();
 
   bool _secured = false;

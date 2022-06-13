@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v1.0.3
+ * ESP32 SSL Client v1.0.4
  *
- * February 28, 2022
+ * June 13, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -83,15 +83,8 @@ void ESP32_SSL_Client::ssl_init(ssl_data *ssl)
     mbedtls_ctr_drbg_init(&ssl->drbg_ctx);
 }
 
-int ESP32_SSL_Client::start_socket(ssl_data *ssl, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+int ESP32_SSL_Client::start_tcp_connection(ssl_data *ssl, const char *host, uint32_t port, int timeout)
 {
-
-    if (rootCABuff == NULL && pskIdent == NULL && psKey == NULL && !insecure)
-    {
-        if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_27);
-        return -1;
-    }
 
     int enable = 1;
 
@@ -164,8 +157,14 @@ int ESP32_SSL_Client::start_socket(ssl_data *ssl, const char *host, uint32_t por
     return ssl->socket;
 }
 
-int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t port, int timeout, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+int ESP32_SSL_Client::connect_ssl(ssl_data *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
 {
+    if (rootCABuff == NULL && pskIdent == NULL && psKey == NULL && !insecure)
+    {
+        if (ssl->_debugCallback)
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_27);
+        return -1;
+    }
 
     char buf[512];
     int ret, flags;
@@ -196,7 +195,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
         return esp32_ssl_handle_error(ret);
     }
 
-    // MBEDTLS_SSL_VERIFY_REQUIRED if a CA certificate is defined on Arduino IDE and
+    // MBEDTLS_SSL_VERIFY_REQUIRED if a CA certificate is defined and
     // MBEDTLS_SSL_VERIFY_NONE if not.
 
     if (insecure)
@@ -387,7 +386,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
         memset(buf, 0, sizeof(buf));
         mbedtls_x509_crt_verify_info(buf, sizeof(buf), "  ! ", flags);
         log_e("Failed to verify peer certificate! verification info: %s", buf);
-        stop_ssl_socket(ssl, rootCABuff, cli_cert, cli_key); // It's not safe continue.
+        stop_tcp_connection(ssl, rootCABuff, cli_cert, cli_key); // It's not safe continue.
         return esp32_ssl_handle_error(ret);
     }
     else
@@ -415,7 +414,7 @@ int ESP32_SSL_Client::start_ssl_client(ssl_data *ssl, const char *host, uint32_t
     return ssl->socket;
 }
 
-void ESP32_SSL_Client::stop_ssl_socket(ssl_data *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+void ESP32_SSL_Client::stop_tcp_connection(ssl_data *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_22);
@@ -453,7 +452,7 @@ int ESP32_SSL_Client::data_to_read(ssl_data *ssl)
 
 int ESP32_SSL_Client::send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t len)
 {
-    log_v("Writing HTTP request with %d bytes...", len); // for low level debug
+    log_v("Writing request with %d bytes...", len); // for low level debug
     int ret = -1;
 
     while ((ret = mbedtls_ssl_write(&ssl->ssl_ctx, data, len)) <= 0)
@@ -642,6 +641,7 @@ bool ESP32_SSL_Client::verify_ssl_dn(ssl_data *ssl, const char *domain_name)
 
 int ESP32_SSL_Client::ns_lwip_write(ssl_data *ssl, const uint8_t *buf, int bufLen)
 {
+    // return ssize_t or signed size_t for error
     return lwip_write(ssl->socket, buf, bufLen);
 }
 
@@ -668,6 +668,7 @@ int ESP32_SSL_Client::ns_lwip_read(ssl_data *ssl, uint8_t *buf, int bufLen)
     if (ret < 0)
         return ret;
 
+    // return ssize_t or signed size_t for error
     return read(ssl->socket, buf, bufLen);
 }
 
