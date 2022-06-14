@@ -1,4 +1,4 @@
-![ESP Mail](/media/images/esp-mail-client.svg)
+![ESP Mail](https://raw.githubusercontent.com/mobizt/ESP-Mail-Client/master/media/images/esp-mail-client.svg)
 
 
 ![Compile](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_library.yml/badge.svg) ![Examples](https://github.com/mobizt/ESP-Mail-Client/actions/workflows/compile_examples.yml/badge.svg) [![Github Stars](https://img.shields.io/github/stars/mobizt/ESP-Mail-Client?logo=github)](https://github.com/mobizt/ESP-Mail-Client/stargazers) ![Github Issues](https://img.shields.io/github/issues/mobizt/ESP-Mail-Client?logo=github)
@@ -97,6 +97,26 @@ See [Use external Arduino Clients interfaces](#use-external-arduino-clients-inte
  * Teensy 3.1 to 4.1
  * Arduino Nano RP2040 Connect
  * Raspberry Pi Pico 
+
+ ### Gmail SMTP and IMAP required App Passwords to sign in
+
+From May 30, 2022, Google no longer supports the use of third-party apps or devices which ask you to sign in to your  GoogleAccount using only your username and password.
+
+This means the Gmail account credentials i.e. account Email and account password can't be used to sign in with Google SMTP andIMAP servers. This prevents the third party apps hack to Gmail user account.
+
+To use Gmail with this library, you need to use App Passwords instead.
+
+For setting up the App Passwords, please read [here](https://support.google.com/accounts/answer/185833).
+
+After you created App Password, you can use Gmail Email address and App Password created to sign in as the following.
+
+```cpp
+session.login.email = "<your email>;
+session.login.password = "<your app password>";
+```
+ 
+
+
 
 
 ## Prerequisites

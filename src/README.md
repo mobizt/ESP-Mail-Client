@@ -1,4 +1,4 @@
-# ESP Mail Client Arduino Library for ESP32, ESP8266, SAMD21
+# ESP Mail Client Arduino Library
 
 
 The description of the available functions in the current reease are shown below.
