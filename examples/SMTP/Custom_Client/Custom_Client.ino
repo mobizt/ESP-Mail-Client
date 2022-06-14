@@ -114,15 +114,9 @@ void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
 
-    // Required for SMTP on port 587.
-
-    // Connection upgrade code here...
-
-    // The most client library does not allow user to upgrade the existing connection to secure mode since it
-    // was connected to server in non-secure mode.
-
-    // You may need to edit the clients sources to make this.
+    // Call custom client connection upgrade function here
 }
+
 
 void setup()
 {
@@ -228,7 +222,7 @@ void setup()
     // Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
 
-    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+    // smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
     smtp.networkConnectionRequestCallback(networkConnection);
 

@@ -208,7 +208,7 @@ void setClient(Client *client);
 param **`connectionCB`** The function that handles the server connection.
 
 ```cpp
-void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
 ```
 
 
@@ -217,7 +217,7 @@ void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 param **`upgradeCB`** The function that handles existing connection upgrade.
 
 ```cpp
-void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgradeCB);
 ```
 
 
@@ -227,7 +227,7 @@ void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB
 param **`networkConnectionCB`** The function that handles the network connection.
 
 ```cpp
-void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback networkConnectionCB);
 ```
 
 
@@ -236,7 +236,7 @@ void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkCo
 param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
 
 ```cpp
-void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+void networkStatusRequestsCallback(NetworkStatusRequestsCallback networkStatusCB);
 ```
 
 
@@ -650,7 +650,7 @@ void setClient(Client *client);
 param **`connectionCB`** The function that handles the server connection.
 
 ```cpp
-void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
 ```
 
 
@@ -659,7 +659,7 @@ void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 param **`upgradeCB`** The function that handles existing connection upgrade.
 
 ```cpp
-void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgradeCB);
 ```
 
 
@@ -668,7 +668,7 @@ void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB
 param **`networkConnectionCB`** The function that handles the network connection.
 
 ```cpp
-void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback networkConnectionCB);
 ```
 
 
@@ -677,7 +677,7 @@ void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkCo
 param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
 
 ```cpp
-void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+void networkStatusRequestsCallback(NetworkStatusRequestsCallback networkStatusCB);
 ```
 
 

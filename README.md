@@ -67,7 +67,7 @@ With external Clients, you needed to set the callback functions to hanle the the
 
 Some ports e.g. 587 for SMTP and 143 for IMAP require the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
 
-This connection upgrade process is generally not available from Clients, if possible, you need to modify the Clients to make it available.
+This connection upgrade process is generally not available from general Arduino Clients and you need to make your custom client version that supports connection upgrade.
 
 See [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section for how to use external Clients.
 
@@ -111,7 +111,7 @@ For setting up the App Passwords, please read [here](https://support.google.com/
 After you created App Password, you can use Gmail Email address and App Password created to sign in as the following.
 
 ```cpp
-session.login.email = "<your email>;
+session.login.email = "<your email>";
 session.login.password = "<your app password>";
 ```
  
@@ -629,6 +629,8 @@ See [Custom_Command.ino](/examples/IMAP/Custom_Command/Custom_Command.ino) for t
 
 ### Use external Arduino Clients interfaces
 
+The Arduino Clients for network interfaces (WiFiClient, EthernetClient and GSMClient) which support non-secure network connection can be used as external client.
+
 
 By default, the built-in Clients will be used when you compile the library for devices e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module and custom (external) Client will be used for other Arduino compatible devices 
 
@@ -638,14 +640,86 @@ You can change from built-in Clients to external Clients in case of ESP32, ESP82
 #define ENABLE_CUSTOM_CLIENT
 ```
 
+#### Arduino Clients used for plain text (non-secure) connection
+
+The following code is the example for using **GSMClient** to connect to **SMTP Server via port 25** and **IMAP server via port 143**.
+
+
+```cpp
+GSMClient gsmClient; // non-secure external client
+
+SMTPSession smtp(&gsmClient); //for SMTP server via port 25
+```
+
+
+#### Arduino Clients used for SSL connection
+
+
+For this case the third party **SSLClient** library is required to use as external client.
+
+The following code is the example for using **GSMClient** and third party **SSLClient** library to connect to **SMTP Server via port 465** and **IMAP server via port 993**
+
+
+
+```cpp
+GSMClient gsmClient;
+
+SSLClient client(gsmClient); // sercure external client
+
+SMTPSession smtp(&client); //for SMTP server via port 465
+```
+
+
+#### Arduino Clients used for TLS connection via STARTTLS
+
+
+For this case the connection begins in the plain text (non-secure) mode and upgrade to secure mode later when TLS needed.
+
+The STARTTLS command will be sent when the device connected to the **SMTP Server via port 587** or when the TLS needed for the connections to **SMTP Server via port 25** and **IMAP server via port 143**.
+
+This required the custom client code that can be upgraded the non-secure connection to secure connection.
+
+The custom client code involved the following tasks.
+
+ * Create TCP connection using lwIP and this opened socket will be used later during SSL setup. 
+ * Send/Receive non-encrypted data via lwIP. 
+ * Setting up the SSL and perform the SSL handshake using the opened soccket and SSL engine library port for Arduino devices (e.g. bearSSL, mbedTLS and wolfSSL). This is the connection upgrade process. 
+ * Send/Receive encrypted data using the SSL engine via TLS protocol. 
+
+
+When the connection upgrades needed, call the custom client connection upgrade code inside the connectionUpgradeRequestCallback function.
+
+
+```cpp
+
+// Define the callback function to handle server connection upgrades.
+// This required when connect to port 587 which requires TLS
+void connectionUpgradeRequestCallback()
+{
+    Serial.println("> U: Upgrad the connection...");
+
+    // Call custom client connection upgrade function here
+}
+
+void serup()
+{
+    /**
+     * Other setup codes
+     * 
+     */
+    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+}
+
+
+```
+
+
 For Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong WiFi compilation, please set the lib_ldf_mode in platformio.ini as this.
 
 ```ini
 lib_ldf_mode = chain+
 ```
 
-
-In your sketch, you need to pass the Client's object pointer to the IMAPSession or SMTPSession constructor.
 
 The below example will use Arduino MKR 1000 and set WiFi101 for Client.
 
@@ -656,7 +730,7 @@ The example will send message using Gmail, then you need to add Gmail server cet
 #include <WiFi101.h>
 
 // Define the global used Client object
-WiFiSSLClient client;
+WiFiSSLClient client; // secure external client
 
 // Define the global used smtp object 
 SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
@@ -711,21 +785,7 @@ void connectionRequestCallback(const char *host, int port)
     Serial.println("success.");
 }
 
-// Define the callback function to handle server connection upgrade.
-// This required when connect to port 587 which requires TLS
-void connectionUpgradeRequestCallback()
-{
-    Serial.println("> U: Upgrad the connection...");
 
-    // Required for SMTP on port 587.
-
-    // Connection upgrade code here...
-
-    // The most client library does not allow user to upgrade the existing connection 
-    // to secure mode since it was connected to server in non-secure mode.
-
-    // You may need to edit the clients sources to make this.
-}
 
 
 void setup()
@@ -737,7 +797,7 @@ void setup()
 
   // Set the session config
   session.server.host_name = "smtp.gmail.com"; //for gmail.com
-  session.server.port = 465;
+  session.server.port = 465; // SSL
   session.login.email = "your Email address"; //set to empty for no SMTP Authentication
   session.login.password = "your Email password"; //set to empty for no SMTP Authentication
   session.login.user_domain = "client domain or ip e.g. mydomain.com";
@@ -761,8 +821,6 @@ void setup()
   
   // Set the callback functions to hadle the required tasks.
   smtp.connectionRequestCallback(connectionRequestCallback);
-
-  smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
   smtp.networkConnectionRequestCallback(networkConnection);
 
