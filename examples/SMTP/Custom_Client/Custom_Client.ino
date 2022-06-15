@@ -1,7 +1,9 @@
 
 
 /**
- * This example shows how to send Email using custom Clients.
+ * This example shows how to send Email using custom Clients (EthernetClient).
+ *
+ * This example used ESP32 and WIZnet W5500 Ethernet module
  *
  * Created by K. Suwatchai (Mobizt)
  *
@@ -15,21 +17,27 @@
 
 #include <Arduino.h>
 
-#if defined(ARDUINO_ARCH_SAMD)
-#include <WiFiNINA.h>
-#endif
-
 #include <ESP_Mail_Client.h>
 
-#define WIFI_SSID "<ssid>"
-#define WIFI_PASSWORD "<password>"
+// https://github.com/OPEnSLab-OSU/EthernetLarge
+// #include <EthernetLarge.h>
 
-/** For Gmail, to send Email via port 465 (SSL), less secure app option
- * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
- *
- * Some Gmail user still not able to sign in using account password even above option was set up,
- * for this case, use "App Password" to sign in instead.
- * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+#include <Ethernet.h>
+
+// For NTP client
+#include <EthernetUdp.h>
+#include <extras/MB_NTP.h>
+
+// Forked version of SSLClient
+// https://github.com/mobizt/SSLClient
+#include <SSLClient.h>
+
+// Trus anchors for the server i.e. gmail.com for this case
+// https://github.com/mobizt/SSLClient/blob/master/TrustAnchors.md
+#include "trust_anchors.h"
+
+/** For Gmail, the app password will be used for log in
+ *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
  *
  * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
  * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
@@ -46,58 +54,97 @@
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
  */
-#define SMTP_PORT esp_mail_smtp_port_465 // port 465 is not available for Outlook.com
+#define SMTP_PORT esp_mail_smtp_port_587
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Define the Client object */
-WiFiSSLClient client;
+#define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
+#define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
+#define WIZNET_MISO_PIN 19  // Connect W5500 MISO pin to GPIO 19 of ESP32
+#define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
+#define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
+
+// For NTP client
+EthernetUDP udpClient;
+
+MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* port */);
+
+unsigned long timestamp = 0;
+
+unsigned long sentMillis = 0;
+
+const int analog_pin = 34; // ESP32 GPIO 34 (Analog pin)
+
+uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
+
+IPAddress Eth_IP(192, 168, 1, 104);
+
+EthernetClient client;
+
+SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, analog_pin);
 
 /* The SMTP Session object used for Email sending */
-SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
+SMTPSession smtp(&ssl_client); // or assign the Client later with smtp.setClient(&ssl_client);
 
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
+void sendNTPpacket(const char *address);
+
+void getTime();
+
+void ResetEthernet()
+{
+    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
+    pinMode(WIZNET_RESET_PIN, OUTPUT);
+    digitalWrite(WIZNET_RESET_PIN, HIGH);
+    delay(200);
+    digitalWrite(WIZNET_RESET_PIN, LOW);
+    delay(50);
+    digitalWrite(WIZNET_RESET_PIN, HIGH);
+    delay(200);
+}
+
 void networkConnection()
 {
-    // Reset the network connection
-    WiFi.disconnect();
 
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    Serial.print("Connecting to Wi-Fi");
-    unsigned long ms = millis();
-    while (WiFi.status() != WL_CONNECTED)
+    Ethernet.init(WIZNET_CS_PIN);
+
+    ResetEthernet();
+
+    Serial.println("Starting Ethernet connection...");
+    Ethernet.begin(Eth_MAC, Eth_IP);
+
+    unsigned long to = millis();
+
+    while (Ethernet.linkStatus() == LinkOFF || millis() - to < 2000)
     {
-        Serial.print(".");
-        delay(300);
-        if (millis() - ms >= 5000)
-        {
-            Serial.println(" failed!");
-            return;
-        }
+        delay(100);
     }
-    Serial.println();
-    Serial.print("Connected with IP: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
+
+    if (Ethernet.linkStatus() == LinkON)
+    {
+        Serial.print("Connected with IP ");
+        Serial.println(Ethernet.localIP());
+    }
+    else
+    {
+        Serial.println("Can't connected");
+    }
 }
 
 // Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
     // Set the network status
-    smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
+    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
 }
 
 // Define the callback function to handle server connection
 void connectionRequestCallback(const char *host, int port)
 {
-    // You may need to set the system timestamp in case of custom client
-    // time is used to set the date header while sending email.
-    smtp.setSystemTime(WiFi.getTime());
 
     Serial.print("> U: Connecting to server via custom Client... ");
     if (!client.connect(host, port))
@@ -109,39 +156,26 @@ void connectionRequestCallback(const char *host, int port)
 }
 
 // Define the callback function to handle server connection upgrade.
-// This required when connect to port 587 which requires TLS
 void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
 
-    // Call custom client connection upgrade function here
+#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
+    // The host and port parameters will be ignored and can be any for this case.
+    ssl_client.connectSSL(SMTP_HOST, SMTP_PORT); // or ssl_client.connectSSL("", 0);
+#endif
 }
 
-
-void setup()
+void sendEmail()
 {
+    // Get time from NTP server
+    if (timestamp == 0)
+    {
+        timestamp = ntpClient.getTime(500 /* wait 500 ms */);
 
-    Serial.begin(115200);
-
-#if defined(ARDUINO_ARCH_SAMD)
-    while (!Serial)
-        ;
-#endif
-
-    Serial.println();
-
-    networkConnection();
-
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
-    smtp.debug(1);
-
-    /* Set the callback function to get the sending results */
-    smtp.callback(smtpCallback);
+        if (timestamp > 0)
+            smtp.setSystemTime(timestamp);
+    }
 
     /* Declare the session config data */
     ESP_Mail_Session session;
@@ -160,6 +194,8 @@ void setup()
     message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
     message.subject = F("Test sending plain text Email");
+
+    // Please don't forget to change the recipient email address.
     message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
     String textMsg = "This is simple plain text message";
@@ -195,34 +231,13 @@ void setup()
      */
     message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
-    // message.response.reply_to = "someone@somemail.com";
-    // message.response.return_path = "someone@somemail.com";
-
-    /** The Delivery Status Notifications e.g.
-     * esp_mail_smtp_notify_never
-     * esp_mail_smtp_notify_success
-     * esp_mail_smtp_notify_failure
-     * esp_mail_smtp_notify_delay
-     * The default value is esp_mail_smtp_notify_never
-     */
-    // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
-
     /* Set the custom message header */
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
-
-    // For Root CA certificate verification (ESP8266 and ESP32 only)
-    // session.certificate.cert_data = rootCACert;
-    // or
-    // session.certificate.cert_file = "/path/to/der/file";
-    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-    // session.certificate.verify = true;
-
-    // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
     // Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
 
-    // smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
     smtp.networkConnectionRequestCallback(networkConnection);
 
@@ -242,8 +257,37 @@ void setup()
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
+void setup()
+{
+
+    Serial.begin(115200);
+
+    Serial.println();
+
+    networkConnection();
+
+    /** Enable the debug via Serial port
+     * 0 for no debugging
+     * 1 for basic level debugging
+     *
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     */
+    smtp.debug(1);
+
+    /* Set the callback function to get the sending results */
+    smtp.callback(smtpCallback);
+
+    // Begin NTP client
+    ntpClient.begin();
+}
+
 void loop()
 {
+    if (millis() - sentMillis > 120000 || sentMillis == 0)
+    {
+        sentMillis = millis();
+        sendEmail();
+    }
 }
 
 /* Callback function to get the Email sending status */

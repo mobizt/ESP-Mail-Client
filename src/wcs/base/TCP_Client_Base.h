@@ -75,7 +75,7 @@ public:
     virtual time_t getTime()
     {
         time_t tm = now;
-
+      
 #if defined(MB_MCU_ESP) || defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
         if (tm < ESP_MAIL_CLIENT_VALID_TS)
             tm = time(nullptr);
@@ -88,17 +88,18 @@ public:
 
     virtual bool setSystemTime(time_t ts)
     {
+
 #if defined(ESP8266) || defined(ESP32)
 
-        if (setTimestamp(ts) == 0)
-        {
-            this->now = time(nullptr);
-            return true;
-        }
+            if (setTimestamp(ts) == 0)
+            {
+                this->now = time(nullptr);
+                return true;
+            }
 
 #else
-        if (ts > ESP_MAIL_CLIENT_VALID_TS)
-            this->now = ts - (millis() / 1000);
+            if (ts > ESP_MAIL_CLIENT_VALID_TS)
+                this->now = ts - (millis() / 1000);
 
 #endif
 

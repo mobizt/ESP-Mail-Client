@@ -3072,7 +3072,8 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             return false;
         if (!connected(smtp))
         {
-            errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+            if (cmd != esp_mail_smtp_cmd_logout)
+                errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
             return false;
         }
         chunkBufSize = smtp->client.available();
@@ -3092,7 +3093,8 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
             if (!connected(smtp))
             {
-                errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+                if (cmd != esp_mail_smtp_cmd_logout)
+                    errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
                 return false;
             }
 
@@ -3714,7 +3716,7 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
     if (MailClient.strposP(_cmd.c_str(), esp_mail_smtp_response_5, 0, false) == 0)
     {
         bool verify = false;
-        
+
         if (_sesson_cfg)
             verify = _sesson_cfg->certificate.verify;
 
@@ -3724,7 +3726,7 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
         // set the secure mode
         if (_sesson_cfg)
             _sesson_cfg->secure.startTLS = false;
-            
+
         _secure = true;
     }
 
@@ -3905,13 +3907,17 @@ bool SMTPSession::closeSession()
 
 /* Sign out */
 #if !defined(ESP8266)
-    /**
-     * The strange behavior in ESP8266 SSL client, BearSSLWiFiClientSecure
-     * The client disposed without memory released after the server close
-     * the connection due to QUIT command, which caused the memory leaks.
-     */
-    MailClient.smtpSendP(this, esp_mail_str_7, true);
-    ret = MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
+    
+    // QUIT command asks SMTP server to close the TCP session.
+    // The connection may drop immediately.
+
+    // There is memory leaks bug in ESP8266 BearSSLWiFiClientSecure class when the remote server
+    // drops the connection.
+
+    ret = MailClient.smtpSendP(this, esp_mail_str_7, true) > 0;
+
+    // This may return false due to connection drops before get any response.
+    MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
 #endif
 
     if (ret)

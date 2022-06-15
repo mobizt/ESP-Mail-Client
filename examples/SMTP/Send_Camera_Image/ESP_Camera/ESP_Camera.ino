@@ -30,12 +30,8 @@
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
-/** For Gmail, to send Email via port 465 (SSL), less secure app option
- * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
- *
- * Some Gmail user still not able to sign in using account password even above option was set up,
- * for this case, use "App Password" to sign in instead.
- * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
+/** For Gmail, the app password will be used for log in
+ *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
  *
  * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
  * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc

@@ -640,65 +640,48 @@ You can change from built-in Clients to external Clients in case of ESP32, ESP82
 #define ENABLE_CUSTOM_CLIENT
 ```
 
-#### Arduino Clients used for plain text (non-secure) connection
+Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient provided the basic connection to server without SSL.  You can use these clients as external client in this library unless they work only for SMTP port 25 and IMAP port 143.
 
-The following code is the example for using **GSMClient** to connect to **SMTP Server via port 25** and **IMAP server via port 143**.
-
-
-```cpp
-GSMClient gsmClient; // non-secure external client
-
-SMTPSession smtp(&gsmClient); //for SMTP server via port 25
-```
+Some Email servers require the connection upgrade before authentication.
 
 
-#### Arduino Clients used for SSL connection
+#### Arduino Clients via TLS
 
+The `STARTTLS` command will be sent when the device connected to the **SMTP Server via port 587** and the TLS is required before log in.
 
-For this case the third party **SSLClient** library is required to use as external client.
+This required the Client to upgrade from non-secure connection to secure connection after STARTTLS command sent.
 
-The following code is the example for using **GSMClient** and third party **SSLClient** library to connect to **SMTP Server via port 465** and **IMAP server via port 993**
+You can use the [upgradable SSLClient](https://github.com/mobizt/SSLClient) that can handle this upgrade process.
 
+When the connection upgrades needed, the callback function assigned to function `connectionUpgradeRequestCallback` will be called which you can place the connection upgrade code inside this callback function.
 
-
-```cpp
-GSMClient gsmClient;
-
-SSLClient client(gsmClient); // sercure external client
-
-SMTPSession smtp(&client); //for SMTP server via port 465
-```
-
-
-#### Arduino Clients used for TLS connection via STARTTLS
-
-
-For this case the connection begins in the plain text (non-secure) mode and upgrade to secure mode later when TLS needed.
-
-The STARTTLS command will be sent when the device connected to the **SMTP Server via port 587** or when the TLS needed for the connections to **SMTP Server via port 25** and **IMAP server via port 143**.
-
-This required the custom client code that can be upgraded the non-secure connection to secure connection.
-
-The custom client code involved the following tasks.
-
- * Create TCP connection using lwIP and this opened socket will be used later during SSL setup. 
- * Send/Receive non-encrypted data via lwIP. 
- * Setting up the SSL and perform the SSL handshake using the opened soccket and SSL engine library port for Arduino devices (e.g. bearSSL, mbedTLS and wolfSSL). This is the connection upgrade process. 
- * Send/Receive encrypted data using the SSL engine via TLS protocol. 
-
-
-When the connection upgrades needed, call the custom client connection upgrade code inside the connectionUpgradeRequestCallback function.
+This is the example code show how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
 
 
 ```cpp
 
-// Define the callback function to handle server connection upgrades.
-// This required when connect to port 587 which requires TLS
+GSMClient client; // basic non-secure client
+
+/** The parameters passed to the SSLClient constructor
+ * TAs is Trust anchors used in the verification of the SSL server certificate. 
+ * Check out https://github.com/mobizt/SSLClient/blob/master/TrustAnchors.md for more info.
+ * TAs_NUM is the number of objects in the trust_anchors array.
+ * rand_pin is an analog pin to pull random bytes from, used in seeding the RNG.
+ */
+SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, rand_pin); 
+
+SMTPSession smtp(&ssl_client); 
+
 void connectionUpgradeRequestCallback()
 {
-    Serial.println("> U: Upgrad the connection...");
+    // Upgrade the connection
+    // The host and port parameters will be ignored for this case and can be any
+    ssl_client.connectSSL("" /* host */, 0 /* port */);
+}
 
-    // Call custom client connection upgrade function here
+void connectionRequestCallback(const char *host, int port)
+{
+    client.connect(host, port)
 }
 
 void serup()
@@ -707,11 +690,18 @@ void serup()
      * Other setup codes
      * 
      */
+
+    // Set the callback function for server connection.
+    smtp.connectionRequestCallback(connectionRequestCallback);
+    
+    // Set the callback function for connection upgrade
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+
 }
 
 
 ```
+
 
 
 For Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong WiFi compilation, please set the lib_ldf_mode in platformio.ini as this.
@@ -721,19 +711,27 @@ lib_ldf_mode = chain+
 ```
 
 
-The below example will use Arduino MKR 1000 and set WiFi101 for Client.
+The below example will use Arduino MKR 1000 and set WiFi101 for SSLClient.
+
 
 The example will send message using Gmail, then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
+
+
+See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for complete Client example.
+
 
 ```cpp
 
 #include <WiFi101.h>
 
 // Define the global used Client object
-WiFiSSLClient client; // secure external client
+WiFiSSLClient ssl_client; // secured client
 
 // Define the global used smtp object 
-SMTPSession smtp(&client); // or assign the Client later with smtp.setClient(&client);
+SMTPSession smtp(&ssl_client); // or assign the Client later with smtp.setClient(&ssl_client);
+
+// Since we use WiFiSSLClient that supported SSL and no basic non-secure client can be pass to its constructor,
+// only SMTP port 465 works in the following code.
 
 // Define the global used session config data which used to store the TCP session configuration
 ESP_Mail_Session session;
@@ -784,9 +782,6 @@ void connectionRequestCallback(const char *host, int port)
     }
     Serial.println("success.");
 }
-
-
-
 
 void setup()
 {

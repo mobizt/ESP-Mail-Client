@@ -10,7 +10,9 @@
  */
 
 /** This example shows how to read E-mail with external Client.
+ * 
  * This example used SAMD21 device and WiFiNINA as the client.
+ * 
  * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
  */
 
