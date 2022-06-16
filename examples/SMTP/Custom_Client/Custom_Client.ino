@@ -69,7 +69,7 @@
 // For NTP client
 EthernetUDP udpClient;
 
-MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* port */);
+MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, 0 /* timezone offset in seconds */ );
 
 unsigned long timestamp = 0;
 
@@ -171,7 +171,7 @@ void sendEmail()
     // Get time from NTP server
     if (timestamp == 0)
     {
-        timestamp = ntpClient.getTime(500 /* wait 500 ms */);
+        timestamp = ntpClient.getTime(2000 /* wait 2000 ms */);
 
         if (timestamp > 0)
             smtp.setSystemTime(timestamp);

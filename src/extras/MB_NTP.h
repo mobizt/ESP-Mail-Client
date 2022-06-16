@@ -1,6 +1,6 @@
 /**
- * Mobizt's UDP NTP Time Client, version 1.0.0
- * 
+ * Mobizt's UDP NTP Time Client, version 1.0.1
+ *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
@@ -35,13 +35,13 @@ class MB_NTP
 public:
     MB_NTP();
 
-    MB_NTP(UDP *client, const char *host, uint16_t port);
+    MB_NTP(UDP *client, const char *host, uint16_t port, int timeZoneOffset = 0);
 
     ~MB_NTP();
 
     bool begin();
 
-    bool begin(UDP *client, const char *host, uint16_t port);
+    bool begin(UDP *client, const char *host, uint16_t port, int timeZoneOffset = 0);
 
     uint32_t getTime(uint16_t waitMillisec = 0);
 
@@ -49,13 +49,14 @@ private:
     UDP *udp = NULL;
     String host;
     uint16_t port = 0;
+    int timeZoneOffset = 0;
     bool udpStarted = false;
     uint16_t intPort = 55432;
     unsigned long timeout = 2000;
     unsigned long lastRequestMs = 0;
     uint32_t ts = 0;
-    uint8_t payload[48] = {227, 0, 6, 236, 0, 0, 0, 0, 0, 0, 0, 0, 49, 78, 49, 52, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
+    const uint8_t ntpPacketSize = 48;
+    uint8_t packet[48];
     bool sendRequest();
     bool getResponse();
 };
@@ -68,16 +69,17 @@ MB_NTP::~MB_NTP()
 {
 }
 
-MB_NTP::MB_NTP(UDP *client, const char *host, uint16_t port)
+MB_NTP::MB_NTP(UDP *client, const char *host, uint16_t port, int timeZoneOffset)
 {
-    begin(client, host, port);
+    begin(client, host, port, timeZoneOffset);
 }
 
-bool MB_NTP::begin(UDP *client, const char *host, uint16_t port)
+bool MB_NTP::begin(UDP *client, const char *host, uint16_t port, int timeZoneOffset)
 {
     this->udp = client;
     this->host = host;
     this->port = port;
+    this->timeZoneOffset = timeZoneOffset;
 
     return this->begin();
 }
@@ -101,10 +103,26 @@ bool MB_NTP::sendRequest()
     {
         lastRequestMs = millis();
 
-        if (!udp->beginPacket(host.c_str(), 123))
+        if (!udp->beginPacket(host.c_str(), port))
             return false;
 
-        if (udp->write(payload, 48) != 48)
+        memset(packet, 0, ntpPacketSize);
+
+        // https://datatracker.ietf.org/doc/html/rfc5905
+        packet[0] = 0b11100011; // leap indicator[0-1], version number[2-4], mode[5-7]
+        packet[1] = 0;          // stratum 0 is unspecified or invalid
+        packet[2] = 6;          // polling interval in log2 seconds
+        packet[3] = 236;       // precision in log2 seconds
+
+        // 4 bytes for Root Delay
+        // 4 bytes for Root Dispersion
+        // 4 bytes for Reference ID (kiss code)
+        // 8 bytes for Reference Timestamp
+        // 8 bytes for Origin Timestamp
+        // 8 bytes for Receive Timestamp
+        // 8 bytes for Transmit Timestamp
+
+        if (udp->write(packet, ntpPacketSize) != ntpPacketSize)
             return false;
 
         if (!udp->endPacket())
@@ -123,18 +141,16 @@ bool MB_NTP::getResponse()
     if (!udp->parsePacket())
         return false;
 
-    uint8_t buf[48];
+    memset(packet, 0, ntpPacketSize);
 
-    memset(buf, 0, 48);
-
-    if (udp->read(buf, 48) > 0)
+    if (udp->read(packet, ntpPacketSize) > 0)
     {
-        unsigned long highWord = word(buf[40], buf[41]);
-        unsigned long lowWord = word(buf[42], buf[43]);
+        unsigned long highWord = word(packet[40], packet[41]);
+        unsigned long lowWord = word(packet[42], packet[43]);
 
         unsigned long s1900 = highWord << 16 | lowWord;
 
-        ts = s1900- 2208988800UL;
+        ts = s1900 - 2208988800UL + timeZoneOffset;
 
         return true;
     }
