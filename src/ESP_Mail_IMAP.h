@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 13, 2022
+ * Created June 16, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -504,7 +504,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_config->fetch.uid.length() > 0)
         {
             imap->_mbif._availableItems++;
-            
+
             esp_mail_imap_msg_num_t msg_num;
             msg_num.type = esp_mail_imap_msg_num_type_uid;
             msg_num.value = (uint32_t)atoi(imap->_config->fetch.uid.c_str());
@@ -1303,6 +1303,39 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
 {
     MB_String s = data;
     return imapSendP(imap, s.c_str(), newline);
+}
+
+size_t ESP_Mail_Client::imapSend(IMAPSession *imap, uint8_t *data, size_t size)
+{
+    int sent = 0;
+
+    if (!reconnect(imap))
+    {
+        closeTCPSession(imap);
+        return sent;
+    }
+
+    if (!connected(imap))
+    {
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+        return sent;
+    }
+
+    if (!imap->_tcpConnected)
+    {
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
+        return sent;
+    }
+
+    sent = imap->client.write(data, size);
+
+    if (sent != (int)size)
+    {
+        errorStatusCB(imap, sent);
+        sent = 0;
+    }
+
+    return sent;
 }
 
 bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flag, uint8_t action, bool closeSession)
@@ -2538,6 +2571,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             imapResp = imapResponseStatus(imap, response, imap->_imapStatus.tag.c_str());
 
                             if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+                                completedResponse = true;
+
+                            if (strpos(imap->_cmd.c_str(), "APPEND", 0, false) > -1)
                                 completedResponse = true;
 
                             imap->_imapStatus.text = response;
@@ -5170,7 +5206,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
 
     _customCmdResCallback = callback;
 
-    MB_String _cmd = cmd;
+    _cmd = cmd;
 
     _cmd.trim();
 
@@ -5219,6 +5255,47 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
             _sesson_cfg->secure.startTLS = false;
 
         _secure = true;
+    }
+
+    return true;
+}
+
+bool IMAPSession::mSendData(MB_StringPtr data, bool lastData)
+{
+
+    MB_String _data = data;
+
+    if (MailClient.imapSend(this, _data.c_str(), lastData) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    if(lastData)
+    {
+        _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
+        _cmd.clear();
+        
+        if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+            return false;
+    }
+
+    return true;
+}
+
+bool IMAPSession::mSendData(uint8_t *data, size_t size, bool lastData)
+{
+
+    if (MailClient.imapSend(this, data, size) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    if (lastData)
+    {
+        if (MailClient.imapSend(this, "\r\n", false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            return false;
+
+        _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
+        _cmd.clear();
+
+        if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+            return false;
     }
 
     return true;

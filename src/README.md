@@ -448,6 +448,44 @@ bool sendCustomCommand(<string> cmd, imapResponseCallback callback, <string> tag
 
 
 
+
+#### Send the custom IMAP command data string.
+
+param **`data`** The string data.
+
+param **`lastData`** The flag represents the last data to send (optional).
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+Should be used after calling sendCustomCommand("APPEND xxxxxx");
+
+```cpp
+bool sendCustomData(T data, bool lastData = false);
+```
+
+
+
+
+
+#### Send the custom IMAP command data.
+
+param **`data`** The byte data.
+
+param **`size`** The data size.
+
+param **`lastData`** The flag represents the last data to send (optional).
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+Should be used after calling ssendCustomCommand("APPEND xxxxxx");
+
+```cpp
+bool sendCustomData(uint8_t *data, size_t size, bool lastData = false);
+```
+
+
+
+
 #### Begin the IMAP server connection without authentication.
 
 param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.

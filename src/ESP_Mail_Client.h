@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 13, 2022
+ * Created June 16, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1067,6 +1067,9 @@ private:
   // Send data
   size_t imapSend(IMAPSession *imap, int data, bool newline = false);
 
+// Send data
+  size_t imapSend(IMAPSession *imap, uint8_t *data, size_t size);
+
   // Log out
   bool imapLogout(IMAPSession *imap);
 
@@ -1368,6 +1371,28 @@ public:
   template <typename T1 = const char *, typename T2 = const char *>
   bool sendCustomCommand(T1 cmd, imapResponseCallback callback, T2 tag = "") { return mSendCustomCommand(toStringPtr(cmd), callback, toStringPtr(tag)); }
 
+  /** Send the custom IMAP command data string.
+   *
+   * @param data The string data.
+   * @param last The flag represents the last data to send (optional).
+   * @return The boolean value which indicates the success of operation.
+   *
+   * @note Should be used after calling sendCustomCommand("APPEND xxxxxx");
+   */
+  template <typename T = const char *>
+  bool sendCustomData(T data, bool lastData = false) { return mSendData(toStringPtr(data), lastData); }
+
+  /** Send the custom IMAP command data.
+   *
+   * @param data The byte data.
+   * @param size The data size.
+   * @param lastData The flag represents the last data to send (optional).
+   * @return The boolean value which indicates the success of operation.
+   *
+   * @note Should be used after calling ssendCustomCommand("APPEND xxxxxx");
+   */
+  bool sendCustomData(uint8_t *data, size_t size, bool lastData = false) { return mSendData(data, size, lastData); }
+
   /** Copy the messages to the defined mailbox folder.
    *
    * @param toCopy The pointer to the MessageListList class that contains the
@@ -1506,6 +1531,12 @@ private:
   // Send custom command
   bool mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback, MB_StringPtr tag);
 
+  // Send data after sending APPEND command
+  bool mSendData(MB_StringPtr data, bool lastData);
+
+  // Send data after sending APPEND command
+  bool mSendData(uint8_t *data, size_t size, bool lastData);
+
   // Delete folder
   bool mDeleteFolder(MB_StringPtr folderName);
 
@@ -1543,6 +1574,7 @@ private:
   MB_VECTOR<struct esp_mail_message_header_t> _headers;
 
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
+  MB_String _cmd;
   MB_VECTOR<struct esp_mail_imap_multipart_level_t> _multipart_levels;
   int _rfc822_part_count = 0;
   bool _unseen = false;
