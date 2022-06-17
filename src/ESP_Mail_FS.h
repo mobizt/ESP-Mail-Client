@@ -84,6 +84,9 @@ static SdFat sd_fat_fs;   //should declare as static here
 // Enable SMTP class
 #define ENABLE_SMTP // comment this line to disable or exclude it
 
+// In case you want to use external client instead of buil-in client in ESP8266, ESP32, 
+// SAMD21 and Arduino Nano RP2040 Connect.
+
 //#define ENABLE_CUSTOM_CLIENT
 
 #endif

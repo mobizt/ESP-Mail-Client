@@ -655,7 +655,8 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_done,
     esp_mail_imap_cmd_get_uid,
     esp_mail_imap_cmd_get_flags,
-    esp_mail_imap_cmd_custom,
+    esp_mail_imap_cmd_append,
+    esp_mail_imap_cmd_custom
 };
 
 enum esp_mail_imap_mime_fetch_type

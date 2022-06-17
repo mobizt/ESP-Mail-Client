@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 16, 2022
+ * Created June 17, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1036,6 +1036,9 @@ private:
 
   // Reconnect the network if it disconnected
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
+  
+  // Get the TCP connection status
+  bool connected(IMAPSession *imap);
 
   // Close TCP session
   void closeTCPSession(IMAPSession *imap);
@@ -1045,9 +1048,6 @@ private:
 
   // Fetch multipart MIME body header
   bool fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx);
-
-  // Get TCP connected status
-  bool connected(IMAPSession *imap);
 
   // Handle IMAP server authentication
   bool imapAuth(IMAPSession *imap, bool &ssl);
@@ -1270,6 +1270,12 @@ public:
    * @return The boolean value which indicates the success of operation.
    */
   bool closeSession();
+
+  /** Get TCP connection status.
+   *
+   * @return The boolean value indicates the connection status.
+   */
+  bool connected();
 
   /** Set to enable the debug.
    *
@@ -1574,6 +1580,9 @@ private:
   MB_VECTOR<struct esp_mail_message_header_t> _headers;
 
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
+  esp_mail_imap_command _imap_custom_cmd = esp_mail_imap_cmd_custom;
+  esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
+  bool _idle = false;
   MB_String _cmd;
   MB_VECTOR<struct esp_mail_imap_multipart_level_t> _multipart_levels;
   int _rfc822_part_count = 0;
@@ -1727,6 +1736,12 @@ public:
    *
    */
   bool closeSession();
+
+  /** Get TCP connection status.
+   *
+   * @return The boolean value indicates the connection status.
+   */
+  bool connected();
 
   /** Send the custom SMTP command and get the result via callback.
    *

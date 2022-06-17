@@ -3939,6 +3939,11 @@ bool SMTPSession::closeSession()
     return MailClient.handleSMTPError(this, 0, ret);
 }
 
+bool SMTPSession::connected()
+{
+    return client.connected();
+}
+
 void SMTPSession::callback(smtpStatusCallback smtpCallback)
 {
     _sendCallback = smtpCallback;

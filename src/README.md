@@ -277,6 +277,16 @@ bool closeSession();
 
 
 
+#### Get TCP connection status.
+
+return **`boolean`** The boolean value indicates the connection status.
+
+```cpp
+bool connected();
+```
+
+
+
 
 
 
@@ -752,6 +762,15 @@ bool connect(ESP_Mail_Session *session);
 bool closeSession();
 ```
 
+
+
+#### Get TCP connection status.
+
+return **`boolean`** The boolean value indicates the connection status.
+
+```cpp
+bool connected();
+```
 
 
 
