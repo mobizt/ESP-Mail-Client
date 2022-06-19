@@ -23,6 +23,25 @@ bool sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 
 
 
+#### Append message to the mailbox
+
+param **`imap`** The pointer to IMAP sesssion object which holds the data and the TCP client.
+
+param **`msg`** The pointer to SMTP_Message class which contains the header, body, and attachments.
+
+param **`lastAppend`** The last message to append (optional). In case MULTIAPPEND extension 
+
+is supported, set this to false will append messages in single APPEND command.
+
+param **`flags`** The flags to set to this message.
+
+ param **`dateTime`** The date/time to set to this message (optional).
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+bool appendMessage(IMAPSession *imap, SMTP_Message *msg, T flags = "");
+```
 
 
 #### Reading Email through IMAP server.

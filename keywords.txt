@@ -29,6 +29,7 @@ MessageList   KEYWORD1
 ###############################################
 
 sendMail    KEYWORD2
+appendMessage   KEYWORD2
 readMail    KEYWORD2
 setFlag KEYWORD2
 addFlag KEYWORD2

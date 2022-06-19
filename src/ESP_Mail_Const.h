@@ -31,7 +31,7 @@
 #define ESP_MAIL_PROGRESS_REPORT_STEP 5
 #define ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED 0
 #define ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE 256
-#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 512
+#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 1024 // should be 1k or more
 #define ESP_MAIL_CLIENT_VALID_TS 1577836800
 
 #endif
@@ -519,6 +519,7 @@ struct esp_mail_smtp_msg_type_t
 
 enum esp_mail_smtp_command
 {
+    esp_mail_smtp_cmd_undefined,
     esp_mail_smtp_cmd_initial_state,
     esp_mail_smtp_cmd_greeting,
     esp_mail_smtp_cmd_start_tls,
@@ -656,6 +657,7 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_get_uid,
     esp_mail_imap_cmd_get_flags,
     esp_mail_imap_cmd_append,
+    esp_mail_imap_cmd_append_last,
     esp_mail_imap_cmd_custom
 };
 
@@ -730,10 +732,17 @@ __attribute__((used)) struct
 
 struct esp_mail_imap_capability_t
 {
+    bool auto_caps = false;
     bool imap4 = false;
     bool imap4rev1 = false;
     // rfc2177
     bool idle = false;
+    bool literal_plus = false;
+    bool literal_minus = false;
+    bool multiappend = false;
+    bool uidplus = false;
+    bool acl = false;
+    bool binary = false;
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -1504,6 +1513,12 @@ typedef struct esp_mail_smtp_send_status_t SMTP_Result;
 typedef struct esp_mail_attachment_t SMTP_Attachment;
 #endif
 
+#if defined(ENABLE_SMTP) && defined(ENABLE_IMAP)
+
+typedef struct esp_mail_attachment_t ESP_Mail_Attachment;
+
+#endif
+
 #if defined(ENABLE_IMAP)
 /* The info of the selected or open mailbox folder e.g. name, attributes and
  * delimiter */
@@ -1645,7 +1660,7 @@ static const char boundary_table[] PROGMEM = "=_abcdefghijklmnopqrstuvwxyz012345
 #if defined(ENABLE_IMAP)
 
 static const char esp_mail_str_2[] PROGMEM = "CAPABILITY";
-static const char esp_mail_str_27[] PROGMEM = "$";
+static const char esp_mail_str_27[] PROGMEM = "A0";
 static const char esp_mail_str_31[] PROGMEM = "base64";
 
 static const char esp_mail_str_41[] PROGMEM = "AUTHENTICATE PLAIN ";
@@ -1854,6 +1869,13 @@ static const char esp_mail_imap_response_16[] PROGMEM = "DIGEST-MD5";
 static const char esp_mail_imap_response_17[] PROGMEM = "IDLE"; // rfc2177
 static const char esp_mail_imap_response_18[] PROGMEM = "IMAP4";
 static const char esp_mail_imap_response_19[] PROGMEM = "IMAP4rev1";
+static const char esp_mail_imap_response_20[] PROGMEM = "CAPABILITY ";
+static const char esp_mail_imap_response_21[] PROGMEM = "ACL";
+static const char esp_mail_imap_response_22[] PROGMEM = "BINARY";
+static const char esp_mail_imap_response_23[] PROGMEM = "MULTIAPPEND";
+static const char esp_mail_imap_response_24[] PROGMEM = "UIDPLUS";
+static const char esp_mail_imap_response_25[] PROGMEM = "LITERAL+";
+static const char esp_mail_imap_response_26[] PROGMEM = "LITERAL-";
 
 static const char imap_7bit_key1[] PROGMEM = "=20";
 static const char imap_7bit_val1[] PROGMEM = " ";
@@ -1953,6 +1975,11 @@ static const char esp_mail_str_355[] PROGMEM = "> C: Wait for NTP server time sy
 static const char esp_mail_str_356[] PROGMEM = "NTP server time synching timed out";
 static const char esp_mail_str_357[] PROGMEM = "not connected";
 static const char esp_mail_str_358[] PROGMEM = "8bit";
+static const char esp_mail_str_360[] PROGMEM = "APPEND";
+static const char esp_mail_str_361[] PROGMEM = "Appending message...";
+static const char esp_mail_str_362[] PROGMEM = "> C: apend message";
+static const char esp_mail_str_363[] PROGMEM = "Message append successfully";
+static const char esp_mail_str_364[] PROGMEM = "> c: Message append successfully";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)

@@ -17,6 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         example: 
+        - "examples/IMAP/Append_Message/Append_Message.ino"
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
         - "examples/IMAP/Custom_Command/Append_Message/Append_Message.ino"
         - "examples/IMAP/Custom_Command/Idle/Idle.ino"
@@ -91,6 +92,7 @@ jobs:
       fail-fast: false
       matrix:
         example: 
+        - "examples/IMAP/Append_Message/Append_Message.ino"
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
         - "examples/IMAP/Custom_Command/Append_Message/Append_Message.ino"
         - "examples/IMAP/Custom_Command/Idle/Idle.ino"

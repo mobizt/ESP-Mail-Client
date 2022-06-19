@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 13, 2022
+ * Created June 19, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -217,6 +217,112 @@ void ESP_Mail_Client::debugInfoP(PGM_P info)
 {
   MB_String s1 = info;
   esp_mail_debug(s1.c_str());
+}
+
+bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend, MB_StringPtr flags, MB_StringPtr dateTime)
+{
+  this->imap = imap;
+  calDataLen = true;
+  dataLen = 0;
+  imap_ts = 0;
+
+  MB_String _flags = flags;
+  _flags.trim();
+
+  MB_String _dt = dateTime;
+  _dt.trim();
+
+  bool rfc822MSG = false;
+
+  sendContent(nullptr, msg, false, rfc822MSG);
+
+  MB_String cmd;
+
+  if (!imap->_read_capability.multiappend)
+  {
+    lastAppend = true;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+  }
+
+  if (imap->_prev_imap_cmd != esp_mail_imap_cmd_append)
+  {
+    cmd = esp_mail_str_27;
+    cmd += esp_mail_str_131;
+    cmd += esp_mail_str_360;
+    cmd += esp_mail_str_131;
+    cmd += imap->_currentFolder;
+  }
+  cmd += esp_mail_str_131;
+
+  if (_flags.length() > 0)
+  {
+    cmd += esp_mail_str_198;
+    cmd += _flags;
+    cmd += esp_mail_str_192;
+    cmd += esp_mail_str_131;
+  }
+
+  if (_dt.length() > 0)
+  {
+    cmd += esp_mail_str_136;
+    cmd += _dt;
+    cmd += esp_mail_str_136;
+    cmd += esp_mail_str_131;
+  }
+
+  cmd += esp_mail_str_193;
+  cmd += dataLen;
+  cmd += esp_mail_str_194;
+
+  if (imapSendP(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+  {
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    return false;
+  }
+
+  imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_append;
+
+  if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
+  {
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    return false;
+  }
+
+  calDataLen = false;
+
+  rfc822MSG = false;
+
+  if (!sendContent(nullptr, msg, false, rfc822MSG))
+  {
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    return false;
+  }
+
+  if (lastAppend)
+  {
+    if (imapSendP(imap, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    {
+      imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+      return false;
+    }
+
+    imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_append_last;
+
+    if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
+    {
+      imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+      return false;
+    }
+
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+  }
+
+  if (!lastAppend)
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_append;
+  else
+    altSendCallback(nullptr, esp_mail_str_363, esp_mail_str_364, true, false);
+
+  return true;
 }
 
 char *ESP_Mail_Client::getRandomUID()
@@ -686,7 +792,6 @@ MB_String ESP_Mail_Client::encodeBase64Str(uint8_t *src, size_t len)
 }
 
 #endif
-
 
 ESP_Mail_Client MailClient = ESP_Mail_Client();
 

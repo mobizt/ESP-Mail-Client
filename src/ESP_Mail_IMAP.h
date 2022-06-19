@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 17, 2022
+ * Created June 19, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1200,6 +1200,13 @@ non_authenticated:
 
         imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
         if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, true))
+            return false;
+    }
+
+    // auto capabilities after login?
+    if (!imap->_read_capability.auto_caps)
+    {
+        if (!imap->checkCapabilities())
             return false;
     }
 
@@ -2490,12 +2497,12 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         {
             delay(0);
 
-            if (imap->_imap_custom_cmd == esp_mail_imap_cmd_append && imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback)
+            if (imap->_imap_cmd == esp_mail_imap_cmd_append || (imap->_imap_custom_cmd == esp_mail_imap_cmd_append && imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback))
             {
-                // No waiting time out for custom cmd APPEND
-                 dataTime = millis();
+                // No waiting time out for APPEND
+                dataTime = millis();
             }
-            
+
             if (!reconnect(imap, dataTime) || !connected(imap))
             {
 
@@ -2550,30 +2557,39 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         // We've got the right response,
                         // prepare to exit
 
+                        completedResponse = true;
+
                         if (imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
                         {
                             if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
                                 esp_mail_debug((const char *)response);
                         }
 
-                        if (imap->_imap_cmd == esp_mail_imap_cmd_close)
-                            completedResponse = true;
-                        else
+                        // auto capabilities?
+                        if (imap->_imap_cmd == esp_mail_imap_cmd_login || imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_auth)
                         {
-                            // Some IMAP servers advertise CAPABILITY in their responses
-                            // Try to read the next available response
-                            memset(response, 0, chunkBufSize);
+                            int i = 0;
+                            if (parseCapabilityResponse(imap, response, i))
+                                imap->_read_capability.auto_caps = true;
+                        }
 
+                        while (imap->client.available())
+                        {
                             readLen = readLine(&(imap->client), response, chunkBufSize, true, octetCount);
                             if (readLen)
                             {
-                                completedResponse = false;
-                                imapResp = imapResponseStatus(imap, response, esp_mail_str_27);
-                                if (imap->_customCmdResCallback || imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
-                                    completedResponse = true;
+                                if (imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
+                                {
+                                    if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
+                                        esp_mail_debug((const char *)response);
+                                }
+                                // auto capabilities?
+                                if (imap->_imap_cmd == esp_mail_imap_cmd_login || imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_auth)
+                                {
+                                    int i = 0;
+                                    parseCapabilityResponse(imap, response, i);
+                                }
                             }
-                            else
-                                completedResponse = true;
                         }
                     }
                     else
@@ -2587,7 +2603,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             imapResp = imapResponseStatus(imap, response, imap->_imapStatus.tag.c_str());
 
                             // get response or custom cmd APPEND or custom cmd IDLE?
-                            if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown || strpos(imap->_cmd.c_str(), "APPEND", 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
+                            if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown || strposP(imap->_cmd.c_str(), esp_mail_str_360, 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
                                 completedResponse = true;
 
                             imap->_imapStatus.text = response;
@@ -2600,6 +2616,11 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                 delP(&lastBuf);
                                 return true;
                             }
+                        }
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_append)
+                        {
+                            imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_ok;
+                            completedResponse = true;
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_auth)
                         {
@@ -3192,11 +3213,11 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
     return esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
 }
 
-void ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx)
+bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx)
 {
     if (chunkIdx == 0)
     {
-        if (strposP(buf, esp_mail_imap_response_10, 0) > -1)
+        if (strposP(buf, esp_mail_imap_response_10, 0) > -1 || strposP(buf, esp_mail_imap_response_20, 0) > -1)
         {
             if (strposP(buf, esp_mail_imap_response_11, 0) > -1)
                 imap->_auth_capability.login = true;
@@ -3216,8 +3237,24 @@ void ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int 
                 imap->_read_capability.imap4 = true;
             if (strposP(buf, esp_mail_imap_response_19, 0) > -1)
                 imap->_read_capability.imap4rev1 = true;
+            if (strposP(buf, esp_mail_imap_response_21, 0) > -1)
+                imap->_read_capability.acl = true;
+            if (strposP(buf, esp_mail_imap_response_22, 0) > -1)
+                imap->_read_capability.binary = true;
+            if (strposP(buf, esp_mail_imap_response_23, 0) > -1)
+                imap->_read_capability.multiappend = true;
+            if (strposP(buf, esp_mail_imap_response_24, 0) > -1)
+                imap->_read_capability.uidplus = true;
+            if (strposP(buf, esp_mail_imap_response_25, 0) > -1)
+                imap->_read_capability.literal_plus = true;
+            if (strposP(buf, esp_mail_imap_response_26, 0) > -1)
+                imap->_read_capability.literal_minus = true;
+
+            return true;
         }
     }
+
+    return false;
 }
 
 void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf)
@@ -4119,6 +4156,9 @@ IMAPSession::~IMAPSession()
 
 bool IMAPSession::closeSession()
 {
+    _prev_imap_cmd = esp_mail_imap_cmd_login;
+    _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
+
     if (!_tcpConnected)
         return false;
 
@@ -5299,7 +5339,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
     return true;
 }
 
-bool IMAPSession::mSendData(MB_StringPtr data, bool lastData)
+bool IMAPSession::mSendData(MB_StringPtr data, bool lastData, esp_mail_imap_command cmd)
 {
 
     MB_String _data = data;
@@ -5309,7 +5349,7 @@ bool IMAPSession::mSendData(MB_StringPtr data, bool lastData)
 
     if (lastData)
     {
-        _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
+        _imap_cmd = cmd;
         _cmd.clear();
 
         if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
@@ -5319,7 +5359,7 @@ bool IMAPSession::mSendData(MB_StringPtr data, bool lastData)
     return true;
 }
 
-bool IMAPSession::mSendData(uint8_t *data, size_t size, bool lastData)
+bool IMAPSession::mSendData(uint8_t *data, size_t size, bool lastData, esp_mail_imap_command cmd)
 {
 
     if (MailClient.imapSend(this, data, size) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -5330,7 +5370,7 @@ bool IMAPSession::mSendData(uint8_t *data, size_t size, bool lastData)
         if (MailClient.imapSend(this, "\r\n", false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
-        _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_custom;
+        _imap_cmd = cmd;
         _cmd.clear();
 
         if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))

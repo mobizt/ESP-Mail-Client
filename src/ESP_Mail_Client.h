@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 17, 2022
+ * Created June 19, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -616,6 +616,23 @@ public:
   bool sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 #endif
 
+#if defined(ENABLE_SMTP) && defined(ENABLE_IMAP)
+  /** Append message to the mailbox
+   *
+   * @param imap The pointer to IMAP session object which holds the data and the
+   * TCP client.
+   * @param msg The pointer to SMTP_Message class which contains the header,
+   * body, and attachments.
+   * @param lastAppend The last message to append (optional). In case of MULTIAPPEND extension 
+   * is supported, set this to false will append messages in single APPEND command.
+   * @param flags The flags to set to this message (optional).
+   * @param dateTime The date/time to set to this message (optional).
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool appendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend = true, T1 flags = "", T2 dateTime = "") { return mAppendMessage(imap, msg, lastAppend, toStringPtr(flags), toStringPtr(dateTime)); }
+#endif
+
 #if defined(ENABLE_IMAP)
   /** Reading Email through IMAP server.
    *
@@ -749,6 +766,17 @@ private:
   MB_FS *mbfs = nullptr;
   bool _clockReady = false;
   time_t ts = 0;
+
+#if defined(ENABLE_IMAP)
+#define IMAP_SESSION IMAPSession
+#else
+#define IMAP_SESSION void
+#endif
+
+  IMAP_SESSION *imap = nullptr;
+  bool calDataLen = false;
+  uint32_t dataLen = 0;
+  uint32_t imap_ts = 0;
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
@@ -896,6 +924,12 @@ private:
   // Send attachment
   bool sendAttachments(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary, bool parallel = false);
 
+  // Send message content
+  bool sendContent(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG);
+
+  // Send imap or smtp callback
+  void altSendCallback(SMTPSession *smtp, PGM_P s1, PGM_P s2, bool newline1, bool newline2);
+
   // Send message data
   bool sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG);
 
@@ -911,11 +945,20 @@ private:
   // Set the unencoded xencoding enum for html, text and attachment from its xencoding string
   void checkUnencodedData(SMTPSession *smtp, SMTP_Message *msg);
 
+  // Check imap or smtp has callback set
+  bool altIsCB(SMTPSession *smtp);
+
+  // Check imap or smtp has debug set
+  bool altIsDebug(SMTPSession *smtp);
+
   // Send BLOB attachment
   bool sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
 
   // Send file content
   bool sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att);
+
+  // Send imap or smtp storage error callback
+  void altSendStorageErrorCB(SMTPSession *smtp, int err);
 
   // Open file to send an attachment
   bool openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &buf, const MB_String &boundary, bool inlined);
@@ -928,6 +971,9 @@ private:
 
   // Send storage error callback
   void sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_storage_type storageType);
+  
+  // Append message
+  bool mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend, MB_StringPtr flags, MB_StringPtr dateTime);
 
   // Get numbers of attachment based on type
   size_t numAtt(SMTPSession *smtp, esp_mail_attach_type type, SMTP_Message *msg);
@@ -937,6 +983,12 @@ private:
 
   // Send text parts MIME message
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
+
+  // Send imap APPEND data or smtp data
+  bool altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
+
+  // Send imap APPEND data or smtp data
+  bool altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
 
   // Send MIME message
   bool sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary);
@@ -964,6 +1016,9 @@ private:
 
   // Send base64 encoded chunk
   bool sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report);
+
+  // Get imap or smtp report progress var pointer
+  uint32_t altProgressPtr(SMTPSession *smtp);
 
   // Send file as base64 encoded chunk
   bool sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report);
@@ -996,7 +1051,7 @@ private:
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
 
   // Print the upload status to the debug port
-  void uploadReport(const char *filename, int &lastProgress, int progress);
+  void uploadReport(const char *filename, uint32_t pgAddr, int progress);
 
   // Get MB_FS object pointer
   MB_FS *getMBFS();
@@ -1036,7 +1091,7 @@ private:
 
   // Reconnect the network if it disconnected
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
-  
+
   // Get the TCP connection status
   bool connected(IMAPSession *imap);
 
@@ -1062,12 +1117,12 @@ private:
   size_t imapSendP(IMAPSession *imap, PGM_P v, bool newline = false);
 
   // Send data
-  size_t imapSend(IMAPSession *imap, const char *data, bool nwline = false);
+  size_t imapSend(IMAPSession *imap, const char *data, bool newline = false);
 
   // Send data
   size_t imapSend(IMAPSession *imap, int data, bool newline = false);
 
-// Send data
+  // Send data
   size_t imapSend(IMAPSession *imap, uint8_t *data, size_t size);
 
   // Log out
@@ -1176,7 +1231,7 @@ private:
   void prepareFileList(IMAPSession *imap, MB_String &filePath);
 
   // Parse capability response
-  void parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx);
+  bool parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx);
 
   // Parse Idle response
   bool parseIdleResponse(IMAPSession *imap);
@@ -1386,7 +1441,7 @@ public:
    * @note Should be used after calling sendCustomCommand("APPEND xxxxxx");
    */
   template <typename T = const char *>
-  bool sendCustomData(T data, bool lastData = false) { return mSendData(toStringPtr(data), lastData); }
+  bool sendCustomData(T data, bool lastData = false) { return mSendData(toStringPtr(data), lastData, esp_mail_imap_cmd_custom); }
 
   /** Send the custom IMAP command data.
    *
@@ -1397,7 +1452,7 @@ public:
    *
    * @note Should be used after calling ssendCustomCommand("APPEND xxxxxx");
    */
-  bool sendCustomData(uint8_t *data, size_t size, bool lastData = false) { return mSendData(data, size, lastData); }
+  bool sendCustomData(uint8_t *data, size_t size, bool lastData = false) { return mSendData(data, size, lastData, esp_mail_imap_cmd_custom); }
 
   /** Copy the messages to the defined mailbox folder.
    *
@@ -1498,13 +1553,13 @@ public:
   friend class foldderList;
 
 private:
- // Clear message data
+  // Clear message data
   void clearMessageData();
 
   // Check for valid UID or set wildcard * as UID
   void checkUID();
 
-  // Check for valid saving file path or prepend / 
+  // Check for valid saving file path or prepend /
   void checkPath();
 
   // Get message item by index
@@ -1538,10 +1593,10 @@ private:
   bool mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback callback, MB_StringPtr tag);
 
   // Send data after sending APPEND command
-  bool mSendData(MB_StringPtr data, bool lastData);
+  bool mSendData(MB_StringPtr data, bool lastData, esp_mail_imap_command cmd);
 
   // Send data after sending APPEND command
-  bool mSendData(uint8_t *data, size_t size, bool lastData);
+  bool mSendData(uint8_t *data, size_t size, bool lastData, esp_mail_imap_command cmd);
 
   // Delete folder
   bool mDeleteFolder(MB_StringPtr folderName);
@@ -1580,6 +1635,7 @@ private:
   MB_VECTOR<struct esp_mail_message_header_t> _headers;
 
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
+  esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
   esp_mail_imap_command _imap_custom_cmd = esp_mail_imap_cmd_custom;
   esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
   bool _idle = false;
@@ -1854,6 +1910,17 @@ private:
 
   // Send data after sending DATA command
   bool mSendData(uint8_t *data, size_t size);
+};
+
+#endif
+
+#if defined(ENABLE_SMTP) && defined(ENABLE_IMAP)
+
+class ESP_Mail_Message : public SMTP_Message
+{
+public:
+  ESP_Mail_Message(){};
+  ~ESP_Mail_Message(){};
 };
 
 #endif
