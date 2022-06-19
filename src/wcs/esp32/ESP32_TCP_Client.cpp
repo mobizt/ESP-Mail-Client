@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.9
+ * ESP32 TCP Client Library v1.0.10
  *
- * June 13, 2022
+ * June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -321,6 +321,15 @@ int ESP32_TCP_Client::readBytes(uint8_t *buf, int len)
 int ESP32_TCP_Client::readBytes(char *buf, int len)
 {
     return readBytes((uint8_t *)buf, len);
+}
+
+void ESP32_TCP_Client::flush()
+{
+    if (!wcs)
+        return;
+
+    while (wcs->available() > 0)
+        wcs->read();
 }
 
 #endif // ESP32

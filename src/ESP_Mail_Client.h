@@ -1138,7 +1138,7 @@ private:
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
 
   // Parse search response
-  int parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc);
+  int parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc);
 
   // Parse header state
   bool parseHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);

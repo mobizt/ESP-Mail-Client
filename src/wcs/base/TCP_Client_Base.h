@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 1.0.2
+ * TCP Client Base class, version 1.0.3
  *
- * February 28, 2022
+ * June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -151,6 +151,8 @@ public:
     virtual int readBytes(uint8_t *buf, int len) { return 0; }
 
     virtual int readBytes(char *buf, int len) { return 0; }
+
+    virtual void flush(){}
 
     void baseSetCertType(esp_mail_cert_type type) { certType = type; }
 

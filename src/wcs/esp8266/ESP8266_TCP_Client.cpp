@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.7
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.8
  *
- * Created June 13, 2022
+ * Created June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -393,6 +393,15 @@ int ESP8266_TCP_Client::readBytes(uint8_t *buf, int len)
 int ESP8266_TCP_Client::readBytes(char *buf, int len)
 {
   return readBytes((uint8_t *)buf, len);
+}
+
+void ESP8266_TCP_Client::flush()
+{
+  if (!wcs)
+    return;
+
+  while (wcs->available() > 0)
+    wcs->read();
 }
 
 #endif /* ESP8266 */

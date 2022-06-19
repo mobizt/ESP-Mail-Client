@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.4.
+ * The custom TCP Client Class v1.0.5
  *
- * June 13, 2022
+ * June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -342,6 +342,18 @@ public:
     int readBytes(char *buf, int len)
     {
         return readBytes((uint8_t *)buf, len);
+    }
+
+    /**
+     * Wait to all receive buffer read.
+     */
+    void flush()
+    {
+        if (!wcs)
+            return;
+
+        while (wcs->available() > 0)
+            wcs->read();
     }
 
     /**

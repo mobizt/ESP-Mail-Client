@@ -1,8 +1,8 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.7
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.8
  *
  *
- * June 13, 2022
+ * June 19, 2022
  *
  * Add support Arduino Nano RP2040 Connect
  *
@@ -234,6 +234,11 @@ public:
    * @return The size of data that was successfully read or negative value for error.
    */
   int readBytes(char *buf, int len);
+
+  /**
+   * Wait to all receive buffer read.
+   */
+  void flush();
 
 private:
   WiFiSSLClient *wcs = nullptr;

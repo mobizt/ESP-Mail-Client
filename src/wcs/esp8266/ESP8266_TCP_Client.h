@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.7
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.8
  *
- * Created June 13, 2022
+ * Created June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -232,6 +232,11 @@ public:
    * @return The size of data that was successfully read or negative value for error.
    */
   int readBytes(char *buf, int len);
+
+  /**
+   * Wait to all receive buffer read.
+   */
+  void flush();
 
   uint8_t sdPin = 15;
   uint16_t bsslRxSize = 1024;

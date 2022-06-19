@@ -412,9 +412,18 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
             command += esp_mail_str_139;
 
+            imap->_config->search.criteria.trim();
+
+            MB_String tag = esp_mail_str_27;
+            tag += esp_mail_str_131;
+            
+            //Remove reserved tag used internal
+            if (strpos(imap->_config->search.criteria.c_str(), tag.c_str(), 0, true) == 0)
+                imap->_config->search.criteria.erase(0, tag.length());
+
             for (size_t i = 0; i < imap->_config->search.criteria.length(); i++)
             {
-                if (imap->_config->search.criteria[i] != ' ' && imap->_config->search.criteria[i] != '\r' && imap->_config->search.criteria[i] != '\n' && imap->_config->search.criteria[i] != '$')
+                if (imap->_config->search.criteria[i] != ' ' && imap->_config->search.criteria[i] != '\r' && imap->_config->search.criteria[i] != '\n')
                     buf.append(1, imap->_config->search.criteria[i]);
 
                 if (imap->_config->search.criteria[i] == ' ')
@@ -1438,12 +1447,16 @@ void ESP_Mail_Client::imapCB(IMAPSession *imap, const char *info, bool success)
         imap->_readCallback(imap->_cbData);
 }
 
-int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, bool &endSearch, int &nump, const char *key, const char *pc)
+int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc)
 {
     int ret = -1;
     char c = 0;
     int idx = 0;
     int num = 0;
+
+    size_t tagLen = strlen_P(tag);
+    MB_String _tag = tag;
+
     while (imap->client.available() > 0 && idx < bufLen)
     {
         delay(0);
@@ -1518,13 +1531,16 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLe
                     chunkIdx++;
                     return idx;
                 }
-                else if (c == '$')
+                else if (idx >= tagLen)
                 {
+                    if (strpos(buf, _tag.c_str(), 0, false) > -1)
+                    {
 #if defined(MB_USE_STD_VECTOR)
-                    if (imap->_config->enable.recent_sort)
-                        std::sort(imap->_imap_msg_num.begin(), imap->_imap_msg_num.end(), compareMore);
+                        if (imap->_config->enable.recent_sort)
+                            std::sort(imap->_imap_msg_num.begin(), imap->_imap_msg_num.end(), compareMore);
 #endif
-                    goto end_search;
+                        goto end_search;
+                    }
                 }
             }
         }
@@ -1536,9 +1552,8 @@ end_search:
 
     endSearch = true;
     int read = imap->client.available();
-    idx = imap->client.readBytes(buf + idx, read);
-
-    return idx;
+    read = imap->client.readBytes(buf + idx, read);
+    return idx + read;
 }
 
 struct esp_mail_message_part_info_t *ESP_Mail_Client::cPart(IMAPSession *imap)
@@ -2524,7 +2539,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 {
                     MB_String s1 = esp_mail_imap_response_6;
                     MB_String s2 = esp_mail_str_92;
-                    readLen = parseSearchResponse(imap, response, chunkBufSize, chunkIdx, endSearch, scnt, s1.c_str(), s2.c_str());
+                    readLen = parseSearchResponse(imap, response, chunkBufSize, chunkIdx, esp_mail_str_27, endSearch, scnt, s1.c_str(), s2.c_str());
                     imap->_mbif._availableItems = imap->_imap_msg_num.size();
                 }
                 else

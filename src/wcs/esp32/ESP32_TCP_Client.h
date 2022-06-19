@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.9
+ * ESP32 TCP Client Library v1.0.10
  *
- * June 13, 2022
+ * June 19, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -235,6 +235,11 @@ public:
    * @return The size of data that was successfully read or negative value for error.
    */
   int readBytes(char *buf, int len);
+
+  /**
+   * Wait to all receive buffer read.
+   */
+  void flush();
 
 private:
   DebugMsgCallback debugCallback = NULL;
