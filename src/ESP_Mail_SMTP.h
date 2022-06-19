@@ -732,6 +732,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         }
         else if (imap)
         {
+#if defined(ENABLE_IMAP)
             if (calDataLen)
             {
                 imap->client.setSystemTime(Time.getCurrentTimestamp());
@@ -740,6 +741,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             }
             else
                 ts = imap_ts;
+#endif
         }
 
         if (ts > ESP_MAIL_CLIENT_VALID_TS)
@@ -844,6 +846,7 @@ void ESP_Mail_Client::altSendCallback(SMTPSession *smtp, PGM_P s1, PGM_P s2, boo
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
         if (imap->_readCallback)
         {
             if (newline1)
@@ -856,6 +859,7 @@ void ESP_Mail_Client::altSendCallback(SMTPSession *smtp, PGM_P s1, PGM_P s2, boo
 
         if (imap->_readCallback && newline2)
             esp_mail_debug("");
+#endif
     }
 }
 
@@ -1002,6 +1006,7 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
         }
         else if (imap)
         {
+#if defined(ENABLE_IMAP)
             if (calDataLen)
             {
                 imap->client.setSystemTime(Time.getCurrentTimestamp());
@@ -1010,6 +1015,7 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
             }
             else
                 now = imap_ts;
+#endif
         }
 
         if (now > ESP_MAIL_CLIENT_VALID_TS)
@@ -1304,7 +1310,11 @@ bool ESP_Mail_Client::altIsCB(SMTPSession *smtp)
     if (smtp)
         cb = smtp->_sendCallback != NULL;
     else if (imap && !calDataLen)
+    {
+#if defined(ENABLE_IMAP)
         cb = imap->_readCallback != NULL;
+#endif
+    }
 
     return cb;
 }
@@ -1315,7 +1325,11 @@ bool ESP_Mail_Client::altIsDebug(SMTPSession *smtp)
     if (smtp)
         dbg = smtp->_debug;
     else if (imap && !calDataLen)
+    {
+#if defined(ENABLE_IMAP)
         dbg = imap->_debug;
+#endif
+    }
 
     return dbg;
 }
@@ -1587,6 +1601,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
         if (imap->_readCallback)
             debugInfoP(esp_mail_str_158);
 
@@ -1599,6 +1614,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
             e += imap->errorReason().c_str();
             esp_mail_debug_line(e.c_str(), true);
         }
+#endif
     }
 }
 
@@ -1830,7 +1846,11 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
     if (smtp)
         smtp->_smtpStatus.statusCode = error;
     else if (imap && !calDataLen)
+    {
+#if defined(ENABLE_IMAP)
         imap->_imapStatus.statusCode = error;
+#endif
+    }
 
     MB_String s;
 
@@ -1852,6 +1872,7 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
         if (imap->_readCallback && !imap->_customCmdResCallback)
         {
             s += esp_mail_str_53;
@@ -1865,6 +1886,7 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
             s += imap->errorReason().c_str();
             esp_mail_debug(s.c_str());
         }
+#endif
     }
 }
 
@@ -1969,8 +1991,10 @@ bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
         if (imap->_tcpConnected)
             closeTCPSession(imap);
+#endif
     }
 
     return ret;
@@ -3021,8 +3045,10 @@ uint32_t ESP_Mail_Client::altProgressPtr(SMTPSession *smtp)
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
         imap->_lastProgress = -1;
         addr = toAddr(imap->_lastProgress);
+#endif
     }
 
     return addr;

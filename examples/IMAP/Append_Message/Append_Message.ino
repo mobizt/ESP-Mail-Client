@@ -30,6 +30,8 @@
 
 #include <ESP_Mail_Client.h>
 
+// required IMAP and SMTP
+#if defined(ENABLE_IMAP) && defined(ENABLE_SMTP)
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -70,10 +72,15 @@ void imapCallback(IMAP_Status status)
     Serial.println(status.info());
 }
 
+#endif
+
 void setup()
 {
 
     Serial.begin(115200);
+
+// required IMAP and SMTP
+#if defined(ENABLE_IMAP) && defined(ENABLE_SMTP)
 
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
@@ -166,6 +173,8 @@ void setup()
         Serial.println("Error appending message, " + imap.errorReason());
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+
+#endif
 }
 
 void loop()

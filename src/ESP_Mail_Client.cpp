@@ -219,6 +219,7 @@ void ESP_Mail_Client::debugInfoP(PGM_P info)
   esp_mail_debug(s1.c_str());
 }
 
+#if defined(ENABLE_SMTP) && defined(ENABLE_IMAP)
 bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend, MB_StringPtr flags, MB_StringPtr dateTime)
 {
   this->imap = imap;
@@ -325,6 +326,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   return true;
 }
 
+#endif
 char *ESP_Mail_Client::getRandomUID()
 {
   char *tmp = (char *)newP(36);

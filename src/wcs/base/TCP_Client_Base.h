@@ -1,5 +1,5 @@
 /*
- * TCP Client Base class, version 1.0.3
+ * TCP Client Base class, version 1.0.4
  *
  * June 19, 2022
  *
@@ -75,14 +75,14 @@ public:
     virtual time_t getTime()
     {
         time_t tm = now;
-      
+#if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
 #if defined(MB_MCU_ESP) || defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
         if (tm < ESP_MAIL_CLIENT_VALID_TS)
             tm = time(nullptr);
 #else
         tm += millis() / 1000;
 #endif
-
+#endif
         return tm;
     }
 
