@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 19, 2022
+ * Created June 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -581,44 +581,15 @@ char *ESP_Mail_Client::strP(PGM_P pgm)
   return buf;
 }
 
-char *ESP_Mail_Client::strReplace(char *orig, char *rep, char *with)
-{
-  char *result = nullptr;
-  char *ins = nullptr;
-  char *tmp = nullptr;
-  int len_rep;
-  int len_with;
-  int len_front;
-  int count;
-
-  len_with = strlen(with);
-  len_rep = strlen(rep);
-
-  ins = orig;
-  for (count = 0; (tmp = strstr(ins, rep)); ++count)
-    ins = tmp + len_rep;
-
-  tmp = result = (char *)newP(strlen(orig) + (len_with - len_rep) * count + 1);
-  while (count--)
-  {
-    ins = strstr(orig, rep);
-    len_front = ins - orig;
-    tmp = strncpy(tmp, orig, len_front) + len_front;
-    tmp = strcpy(tmp, with) + len_with;
-    orig += len_front + len_rep;
-  }
-  strcpy(tmp, orig);
-  return result;
-}
-
-char *ESP_Mail_Client::strReplaceP(char *buf, PGM_P name, PGM_P value)
+void ESP_Mail_Client::strReplaceP(MB_String &buf, PGM_P name, PGM_P value)
 {
   char *n = strP(name);
   char *v = strP(value);
-  char *out = strReplace(buf, n, v);
+
+  buf.replaceAll(n, v);
+
   delP(&n);
   delP(&v);
-  return out;
 }
 
 bool ESP_Mail_Client::authFailed(char *buf, int bufLen, int &chunkIdx, int ofs)

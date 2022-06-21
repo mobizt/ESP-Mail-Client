@@ -575,7 +575,8 @@ enum esp_mail_char_decoding_scheme
     esp_mail_char_decoding_scheme_default,
     esp_mail_char_decoding_scheme_iso8859_1,
     esp_mail_char_decoding_scheme_tis620,
-    esp_mail_char_decoding_scheme_utf_8
+    esp_mail_char_decoding_scheme_utf_8,
+    esp_mail_char_decoding_scheme_custom
 };
 
 enum esp_mail_imap_port
@@ -878,6 +879,7 @@ typedef struct esp_mail_imap_mime_data_stream_info_t
 {
     /* message UID */
     uint32_t uid = 0;
+
     /* content type */
     const char *type = "";
 
@@ -931,6 +933,31 @@ typedef struct esp_mail_imap_mime_data_stream_info_t
     bool isLastData = false;
 
 } MIME_Data_Stream_Info;
+
+typedef struct esp_mail_imap_decoding_info
+{
+    enum message_part_type
+    {
+        message_part_type_header,
+        message_part_type_text
+    };
+
+    /* The character set of the string to decode */
+    const char *charset = "";
+
+    /* The string to decode */
+    const char *data = "";
+
+    /* The decoded string to be processed */
+    MB_String decodedString;
+
+    /** The type of data that currently processed
+     *  0 or IMAP_Decoding_Info::message_part_type_header
+     *  1 or IMAP_Decoding_Info::message_part_type_text
+     */
+    message_part_type type = message_part_type_header;
+
+} IMAP_Decoding_Info;
 
 struct esp_mail_imap_media_text_sub_type_t
 {
@@ -1877,33 +1904,6 @@ static const char esp_mail_imap_response_24[] PROGMEM = "UIDPLUS";
 static const char esp_mail_imap_response_25[] PROGMEM = "LITERAL+";
 static const char esp_mail_imap_response_26[] PROGMEM = "LITERAL-";
 
-static const char imap_7bit_key1[] PROGMEM = "=20";
-static const char imap_7bit_val1[] PROGMEM = " ";
-static const char imap_7bit_key2[] PROGMEM = "=2C";
-static const char imap_7bit_val2[] PROGMEM = ",";
-static const char imap_7bit_key3[] PROGMEM = "=E2=80=99";
-static const char imap_7bit_val3[] PROGMEM = "'";
-static const char imap_7bit_key4[] PROGMEM = "=0A";
-static const char imap_7bit_val4[] PROGMEM = "\r\n";
-static const char imap_7bit_key5[] PROGMEM = "=0D";
-static const char imap_7bit_val5[] PROGMEM = "\r\n";
-static const char imap_7bit_key6[] PROGMEM = "=A0";
-static const char imap_7bit_val6[] PROGMEM = " ";
-static const char imap_7bit_key7[] PROGMEM = "=B9";
-static const char imap_7bit_val7[] PROGMEM = "$sup1";
-static const char imap_7bit_key8[] PROGMEM = "=C2=A0";
-static const char imap_7bit_val8[] PROGMEM = " ";
-static const char imap_7bit_key9[] PROGMEM = "=\r\n";
-static const char imap_7bit_val9[] PROGMEM = "";
-static const char imap_7bit_key10[] PROGMEM = "=E2=80=A6";
-static const char imap_7bit_val10[] PROGMEM = "&hellip;";
-static const char imap_7bit_key11[] PROGMEM = "=E2=80=A2";
-static const char imap_7bit_val11[] PROGMEM = "&bull;";
-static const char imap_7bit_key12[] PROGMEM = "=E2=80=93";
-static const char imap_7bit_val12[] PROGMEM = "&ndash;";
-static const char imap_7bit_key13[] PROGMEM = "=E2=80=94";
-static const char imap_7bit_val13[] PROGMEM = "&mdash;";
-
 #endif
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
@@ -1980,6 +1980,7 @@ static const char esp_mail_str_361[] PROGMEM = "Appending message...";
 static const char esp_mail_str_362[] PROGMEM = "> C: apend message";
 static const char esp_mail_str_363[] PROGMEM = "Message append successfully";
 static const char esp_mail_str_364[] PROGMEM = "> c: Message append successfully";
+static const char esp_mail_str_365[] PROGMEM = "binary";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)

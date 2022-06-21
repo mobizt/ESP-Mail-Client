@@ -620,6 +620,15 @@ void callback(imapStatusCallback imapCallback);
 
 
 
+#### Assign the callback function to decode the string based on the character set.
+
+param **`callback`** The function that accepts the pointer to IMAP_Decoding_Info as parameter.
+
+```cpp
+void characterDecodingCallback(imapCharacterDecodingCallback callback);
+```
+
+
 
 #### Assign the callback function that returns the MIME data stream from fetching or reading the Email.
 
@@ -1438,6 +1447,35 @@ size_t size();
 
 
 
+## SMTP_Response type data
+
+The following properties are available from the SMTP_Response data type.
+
+This data type obtains the response from sending custom SMTP commands.
+
+
+#### [Properties] The command identifier
+
+```cpp
+int id;
+```
+
+#### [Properties] The response text
+
+```cpp
+MB_String text;
+```
+
+
+#### [Properties] The response code
+
+```cpp
+int respCode;
+```
+
+
+
+
 ## FoldersCollection class functions
 
 
@@ -1914,7 +1952,6 @@ esp_mail_file_storage_type type;
 
 
 
-
 ## IMAP_MSG_Item type data
 
 
@@ -2121,6 +2158,204 @@ std::vector<IMAP_Attach_Item> attachments;
 std::vector<IMAP_MSG_Item> rfc822;
 ```
 
+
+
+
+## IMAP_Response type data
+
+The following properties are available from the IMAP_Response data type.
+
+This data type obtains the response from sending custom IMAP commands.
+
+
+#### [Properties] The status tag
+
+```cpp
+MB_String tag;
+```
+
+#### [Properties] The status text
+
+```cpp
+MB_String text;
+```
+
+
+#### [Properties] The completion of response
+
+```cpp
+bool completed;
+```
+
+
+
+
+
+
+## MIME_Data_Stream_Info type data
+
+The following properties are available from the MIME_Data_Stream_Info data type.
+
+This data type obtains the IMAP multipart body or MIME stream data via the callback function.
+
+
+#### [Properties] The message UID
+
+```cpp
+uint32_t uid;
+```
+
+#### [Properties] The content type of the message part
+
+```cpp
+const char *type;
+```
+
+#### [Properties] The content disposition of the message part
+
+```cpp
+const char *disposition;
+```
+
+
+#### [Properties] The content character set of the message part
+
+```cpp
+const char *charSet;
+```
+
+
+#### [Properties] The text content flowed format parameter of the message part
+
+```cpp
+bool flowed;
+```
+
+
+#### [Properties] The text content format DelSp parameter of the message part
+
+```cpp
+bool delsp;
+```
+
+
+#### [Properties] The content transfer encoding of the message part
+
+```cpp
+const char *transfer_encoding;
+```
+
+
+#### [Properties] The content ID of the inline attachment type message part
+
+```cpp
+const char *cid;
+```
+
+
+#### [Properties] The content description of the message part
+
+```cpp
+const char *description;
+```
+
+#### [Properties] The file name of the attachment type message part
+
+```cpp
+const char *filename;
+```
+
+
+#### [Properties] The name of the attachment type message part
+
+```cpp
+const char *name;
+```
+
+
+#### [Properties] The creation date of the message part
+
+```cpp
+const char *date;
+```
+
+#### [Properties] The size of the attachment (unencoded) type message part
+
+```cpp
+size_t size;
+```
+
+
+#### [Properties] The total octet of the message part
+
+```cpp
+size_t octet_size;
+```
+
+#### [Properties] The current octet count of the message part that currently parses
+
+```cpp
+int octet_count;
+```
+
+#### [Properties] The size of content (unencoded) of message part
+
+```cpp
+size_t data_size;
+```
+
+
+#### [Properties] The data buffer of message part that currently parses
+
+```cpp
+void *data;
+```
+
+
+#### [Properties] The flag that states the first chunk data of message part that currently parses
+
+```cpp
+bool isFirstData;
+```
+
+#### [Properties] The flag that states the final chunk data of message part that currently parses
+
+```cpp
+bool isLastData;
+```
+
+
+
+
+## IMAP_Decoding_Info type data
+
+The following properties are available from the IMAP_Decoding_Info data type.
+
+This data type obtains the IMAP header and text (plain and html) strings to be decoded via the callback function based on its character set.
+
+
+#### [Properties] The character set of the string to decode
+
+```cpp
+const char *charset;
+```
+
+#### [Properties] The string to decode
+
+```cpp
+const char *data;
+```
+
+
+#### [Properties] The type of data that currently processed
+
+0 or IMAP_Decoding_Info::message_part_type_header
+
+1 or IMAP_Decoding_Info::message_part_type_text
+
+```cpp
+message_part_type type;
+```
 
 
 

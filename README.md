@@ -32,6 +32,7 @@ External Arduino Client can be used which this allows other devices (with minimu
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
 * Support IMAP MIME data stream callback for external reader.
+* support IMAP custom character decoding callback based on the character set.
 * Support custom commands for both IMAP and SMTP.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD, SdFat and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
@@ -668,15 +669,23 @@ GSMClient client; // basic non-secure client
  * TAs_NUM is the number of objects in the trust_anchors array.
  * rand_pin is an analog pin to pull random bytes from, used in seeding the RNG.
  */
+// https://github.com/mobizt/SSLClient
 SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, rand_pin); 
 
 SMTPSession smtp(&ssl_client); 
 
 void connectionUpgradeRequestCallback()
 {
+
+    //To make sure that upgradable SSLClient https://github.com/mobizt/SSLClient was installed instead of
+    // the original version
+#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
+
     // Upgrade the connection
     // The host and port parameters will be ignored for this case and can be any
     ssl_client.connectSSL("" /* host */, 0 /* port */);
+    
+#endif
 }
 
 void connectionRequestCallback(const char *host, int port)
@@ -686,6 +695,13 @@ void connectionRequestCallback(const char *host, int port)
 
 void serup()
 {
+
+    session.server.host_name = "smtp.gmail.com"; //for gmail.com
+    session.server.port = 587; // requires connection upgrade via STARTTLS
+    session.login.email = "your Email address"; //set to empty for no SMTP Authentication
+    session.login.password = "your Email password"; //set to empty for no SMTP Authentication
+    session.login.user_domain = "client domain or ip e.g. mydomain.com";
+
     /**
      * Other setup codes
      * 
@@ -714,7 +730,10 @@ lib_ldf_mode = chain+
 The below example will use Arduino MKR 1000 and set WiFi101 for SSLClient.
 
 
-The example will send message using Gmail, then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
+The example will send message using Gmail via port 465 which is already using SSL (no connection upgrade required), then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
+
+
+For SSL ports, e.g. SMTP port 465 and IMAP port 993, you can use SSL ready client e.g. WiFiClientSecure and SSLClient to connect to these ports normally wich no connection upgrade code required unless port 587 on SMTP server.
 
 
 See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for complete Client example.
@@ -792,7 +811,7 @@ void setup()
 
   // Set the session config
   session.server.host_name = "smtp.gmail.com"; //for gmail.com
-  session.server.port = 465; // SSL
+  session.server.port = 465; // SSL 
   session.login.email = "your Email address"; //set to empty for no SMTP Authentication
   session.login.password = "your Email password"; //set to empty for no SMTP Authentication
   session.login.user_domain = "client domain or ip e.g. mydomain.com";

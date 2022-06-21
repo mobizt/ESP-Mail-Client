@@ -120,6 +120,8 @@ networkConnectionRequestCallback    KEYWORD2
 networkStatusRequestCallback    KEYWORD2
 setSystemTime   KEYWORD2
 mimeDataStreamCallback  KEYWORD2
+characterDecodingCallback   KEYWORD2
+
 
 #######################################
 # Struct (KEYWORD3)

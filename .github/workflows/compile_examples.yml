@@ -19,6 +19,7 @@ jobs:
         example: 
         - "examples/IMAP/Append_Message/Append_Message.ino"
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
+        - "examples/IMAP/Custom_Character_Decoding/Custom_Character_Decoding.ino"
         - "examples/IMAP/Custom_Command/Append_Message/Append_Message.ino"
         - "examples/IMAP/Custom_Command/Idle/Idle.ino"
         - "examples/IMAP/Custom_Command/Basic_Auth/Basic_Auth.ino"
@@ -94,6 +95,7 @@ jobs:
         example: 
         - "examples/IMAP/Append_Message/Append_Message.ino"
         - "examples/IMAP/Copy_Messages/Copy_Messsages.ino"
+        - "examples/IMAP/Custom_Character_Decoding/Custom_Character_Decoding.ino"
         - "examples/IMAP/Custom_Command/Append_Message/Append_Message.ino"
         - "examples/IMAP/Custom_Command/Idle/Idle.ino"
         - "examples/IMAP/Custom_Command/Basic_Auth/Basic_Auth.ino"

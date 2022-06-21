@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 19, 2022
+ * Created June 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -254,6 +254,7 @@ public:
 typedef void (*imapStatusCallback)(IMAP_Status);
 typedef void (*imapResponseCallback)(IMAP_Response);
 typedef void (*MIMEDataStreamCallback)(MIME_Data_Stream_Info);
+typedef void (*imapCharacterDecodingCallback)(IMAP_Decoding_Info *);
 
 #endif
 
@@ -434,22 +435,7 @@ public:
     att._int.flash_blob = true;
     att._int.parallel = false;
     att._int.att_type = esp_mail_att_type_inline;
-    char *tmp;
-#if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-
-    if ((tmp = (char *)ps_malloc(36)) == 0)
-      return;
-
-#else
-
-    if ((tmp = (char *)malloc(36)) == 0)
-      return;
-
-#endif
-    memset(tmp, 0, 36);
-    sprintf(tmp, (const char *)MBSTRING_FLASH_MCR("%d"), (int)random(2000, 4000));
-    att._int.cid = tmp;
-    free(tmp);
+    att._int.cid = random(2000, 4000);
     _att.push_back(att);
   };
 
@@ -623,7 +609,7 @@ public:
    * TCP client.
    * @param msg The pointer to SMTP_Message class which contains the header,
    * body, and attachments.
-   * @param lastAppend The last message to append (optional). In case of MULTIAPPEND extension 
+   * @param lastAppend The last message to append (optional). In case of MULTIAPPEND extension
    * is supported, set this to false will append messages in single APPEND command.
    * @param flags The flags to set to this message (optional).
    * @param dateTime The date/time to set to this message (optional).
@@ -786,11 +772,8 @@ private:
   // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
   int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count);
 
-  // String replacement
-  char *strReplace(char *orig, char *rep, char *with);
-
   // PGM string replacement
-  char *strReplaceP(char *buf, PGM_P key, PGM_P value);
+  void strReplaceP(MB_String &buf, PGM_P key, PGM_P value);
 
   // Check for XOAUTH2 log in error response
   bool authFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
@@ -971,7 +954,7 @@ private:
 
   // Send storage error callback
   void sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_storage_type storageType);
-  
+
   // Append message
   bool mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend, MB_StringPtr flags, MB_StringPtr dateTime);
 
@@ -1062,6 +1045,7 @@ private:
 
 #if defined(ENABLE_IMAP)
 
+  // handle rfc2047 Q (quoted printable) and B (base64) decodings
   RFC2047_Decoder RFC2047Decoder;
 
   // Check if child part (part number string) is a member of the parent part (part number string)
@@ -1072,16 +1056,19 @@ private:
   int decodeChar(const char *s);
 
   // Decode Quoted Printable string
-  void decodeQP(const char *buf, char *out);
+  void decodeQP_UTF8(const char *buf, char *out);
 
-  // Decode 7 bit data
-  char *decode7Bit(char *buf);
+  // Actually not decode because 7bit string is enencode string unless prepare valid 7bit string and do qp decoding
+  char *decode7Bit_UTF8(char *buf);
+
+  // Actually not decode because 8bit string is enencode string unless prepare valid 8bit string
+  char *decode8Bit_UTF8(char *buf);
 
   // Get encoding type from character set string
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
 
   // Decode header field string
-  void decodeHeader(MB_String &headerField);
+  void decodeHeader(IMAPSession *imap, MB_String &headerField);
 
   // Decode Latin1 to UTF-8
   int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
@@ -1150,7 +1137,7 @@ private:
   void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
 
   // Get decoded header
-  bool getDecodedHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
 
   // Parse part header response
   void parsePartHeaderResponse(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
@@ -1159,10 +1146,10 @@ private:
   int countChar(const char *buf, char find);
 
   // Store the value to string via its the pointer
-  bool storeStringPtr(uint32_t addr, MB_String &value, const char *buf);
+  bool storeStringPtr(IMAPSession *imap, uint32_t addr, MB_String &value, const char *buf);
 
   // Get part header properties
-  bool getPartHeaderProperties(const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive);
+  bool getPartHeaderProperties(IMAPSession *imap, const char *buf, PGM_P p, PGM_P e, bool num, MB_String &value, MB_String &old_value, esp_mail_char_decoding_scheme &scheme, bool caseSensitive);
 
   // Url decode for UTF-8 encoded header text
   char *urlDecode(const char *str);
@@ -1496,6 +1483,12 @@ public:
    */
   void callback(imapStatusCallback imapCallback);
 
+  /** Assign the callback function to decode the string based on the character set.
+   *
+   * @param callback The function that accepts the pointer to IMAP_Decoding_Info as parameter.
+   */
+  void characterDecodingCallback(imapCharacterDecodingCallback callback);
+
   /** Assign the callback function that returns the MIME data stream from
    * fetching or reading the Email.
    *
@@ -1548,6 +1541,7 @@ public:
    * @param ts The current timestamp.
    */
   void setSystemTime(time_t ts);
+
 
   friend class ESP_Mail_Client;
   friend class foldderList;
@@ -1666,6 +1660,7 @@ private:
   imapStatusCallback _readCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
+  imapCharacterDecodingCallback _charDecCallback = NULL;
 
   MB_VECTOR<struct esp_mail_imap_msg_num_t> _imap_msg_num;
 
