@@ -5,6 +5,7 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
+#include "MB_FS.h"
 
 #if defined(ESP32)
 #if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
@@ -58,15 +59,12 @@ class RFC2047_Decoder
 public:
     RFC2047_Decoder();
     ~RFC2047_Decoder();
-    void rfc2047Decode(char *d, const char *s, size_t dlen);
+    void decode(MB_FS *mbfs, char *d, const char *s, size_t dlen);
 
 private:
     void rfc2047DecodeWord(char *d, const char *s, size_t dlen);
-    void *safe_calloc(size_t nmemb, size_t size);
-    void *safe_malloc(unsigned int siz);
-    void safe_realloc(void **p, size_t siz);
-    void safe_free(void *ptr);
     char *safe_strdup(const char *s);
+    MB_FS *mbfs = nullptr;
 };
 
 #endif // RFC2047_H

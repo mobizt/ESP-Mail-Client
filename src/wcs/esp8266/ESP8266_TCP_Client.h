@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.8
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.9
  *
- * Created June 19, 2022
+ * Created June 21, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -234,7 +234,7 @@ public:
   int readBytes(char *buf, int len);
 
   /**
-   * Wait to all receive buffer read.
+   * Wait for all receive buffer data read.
    */
   void flush();
 

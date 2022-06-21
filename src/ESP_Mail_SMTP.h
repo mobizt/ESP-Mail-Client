@@ -4205,7 +4205,6 @@ bool SMTPSession::closeSession()
 
     if (ret)
     {
-
         if (_sendCallback)
         {
             MailClient.smtpCB(this, "");

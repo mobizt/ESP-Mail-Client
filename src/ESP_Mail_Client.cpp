@@ -643,32 +643,18 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
 
   if (count == 0)
     goto exit;
+
   extra_pad = (4 - count % 4) % 4;
 
   olen = (count + extra_pad) / 4 * 3;
 
-#if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-
-  pos = out = (unsigned char *)ps_malloc(olen);
-
-#else
-
-#if defined(ESP8266_USE_EXTERNAL_HEAP)
-  ESP.setExternalHeap();
-#endif
-
-  pos = out = (unsigned char *)malloc(olen);
-
-#if defined(ESP8266_USE_EXTERNAL_HEAP)
-  ESP.resetHeap();
-#endif
-
-#endif
+  pos = out = (unsigned char *)newP(olen);
 
   if (out == NULL)
     goto exit;
 
   count = 0;
+  
   for (i = 0; i < len + extra_pad; i++)
   {
     unsigned char val;

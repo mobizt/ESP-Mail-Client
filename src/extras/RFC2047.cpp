@@ -6,8 +6,12 @@
 RFC2047_Decoder::RFC2047_Decoder() {}
 RFC2047_Decoder::~RFC2047_Decoder() {}
 
-void RFC2047_Decoder::rfc2047Decode(char *d, const char *s, size_t dlen)
+void RFC2047_Decoder::decode(MB_FS *mbfs, char *d, const char *s, size_t dlen)
 {
+  if (!mbfs)
+    return;
+
+  this->mbfs = mbfs;
 
   const char *p, *q;
   size_t n;
@@ -55,6 +59,9 @@ void RFC2047_Decoder::rfc2047Decode(char *d, const char *s, size_t dlen)
 
 void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
 {
+
+  if (!mbfs)
+    return;
 
   char *p = safe_strdup(s);
   char *pp = p;
@@ -140,7 +147,7 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
     }
     pp = 0;
   }
-  safe_free(&p);
+  mbfs->delP(&p);
   if (filter)
   {
 
@@ -155,110 +162,19 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
   return;
 }
 
-void *RFC2047_Decoder::safe_calloc(size_t nmemb, size_t size)
-{
-  void *p;
-
-  if (!nmemb || !size)
-    return NULL;
-
-#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
-  if (!(p = ps_calloc(nmemb, size)))
-  {
-    // out of memory
-    return NULL;
-  }
-#else
-  if (!(p = calloc(nmemb, size)))
-  {
-    // out of memory
-    return NULL;
-  }
-#endif
-  return p;
-}
-
-void *RFC2047_Decoder::safe_malloc(unsigned int siz)
-{
-  void *p;
-
-  if (siz == 0)
-    return 0;
-
-#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
-  if ((p = (void *)ps_malloc(siz)) == 0)
-  {
-    // out of memory
-    return NULL;
-  }
-#else
-  if ((p = (void *)malloc(siz)) == 0)
-  {
-    // out of memory
-    return NULL;
-  }
-#endif
-  return (p);
-}
-
-void RFC2047_Decoder::safe_realloc(void **p, size_t siz)
-{
-  void *r;
-
-  if (siz == 0)
-  {
-    if (*p)
-    {
-      free(*p);
-      *p = NULL;
-    }
-    return;
-  }
-
-#if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)
-  if (*p)
-    r = (void *)ps_realloc(*p, siz);
-  else
-  {
-    r = (void *)ps_malloc(siz);
-  }
-#else
-  if (*p)
-    r = (void *)realloc(*p, siz);
-  else
-  {
-    r = (void *)malloc(siz);
-  }
-#endif
-
-  if (!r)
-  {
-    // out of memory
-    return;
-  }
-
-  *p = r;
-}
-
-void RFC2047_Decoder::safe_free(void *ptr)
-{
-  void **p = (void **)ptr;
-  if (*p)
-  {
-    free(*p);
-    *p = 0;
-  }
-}
-
 char *RFC2047_Decoder::safe_strdup(const char *s)
 {
+  
+  if (!mbfs)
+    return 0;
+
   char *p;
   size_t l;
 
   if (!s || !*s)
     return 0;
   l = strlen(s) + 1;
-  p = (char *)safe_malloc(l);
+  p = (char *)mbfs->newP(l);
   memcpy(p, s, l);
   return (p);
 }

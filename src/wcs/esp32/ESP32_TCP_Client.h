@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.10
+ * ESP32 TCP Client Library v1.0.11
  *
- * June 19, 2022
+ * June 21, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -237,7 +237,7 @@ public:
   int readBytes(char *buf, int len);
 
   /**
-   * Wait to all receive buffer read.
+   * Wait for all receive buffer data read.
    */
   void flush();
 

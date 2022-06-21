@@ -1687,7 +1687,7 @@ static const char boundary_table[] PROGMEM = "=_abcdefghijklmnopqrstuvwxyz012345
 #if defined(ENABLE_IMAP)
 
 static const char esp_mail_str_2[] PROGMEM = "CAPABILITY";
-static const char esp_mail_str_27[] PROGMEM = "XMailer";
+static const char esp_mail_str_27[] PROGMEM = "Xmail";
 static const char esp_mail_str_31[] PROGMEM = "base64";
 
 static const char esp_mail_str_41[] PROGMEM = "AUTHENTICATE PLAIN ";

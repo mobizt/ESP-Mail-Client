@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.5
+ * The custom TCP Client Class v1.0.6
  *
- * June 19, 2022
+ * June 21, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -147,8 +147,7 @@ public:
     {
         if (connected())
         {
-            while (wcs->available() > 0)
-                wcs->read();
+            flush();
             return true;
         }
 
@@ -345,15 +344,12 @@ public:
     }
 
     /**
-     * Wait to all receive buffer read.
+     * Wait for all receive buffer data read.
      */
     void flush()
     {
-        if (!wcs)
-            return;
-
-        while (wcs->available() > 0)
-            wcs->read();
+        while (available() > 0)
+            read();
     }
 
     /**

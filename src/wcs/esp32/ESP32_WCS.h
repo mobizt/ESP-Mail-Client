@@ -1,7 +1,7 @@
 /*
- *ESP32 WiFi Client Secure v1.0.4
+ *ESP32 WiFi Client Secure v1.0.5
  *
- * June 13, 2022
+ * June 21, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -223,9 +223,9 @@ public:
     int read(uint8_t *buf, size_t size);
 
     /**
-     * Waiting for data to read from rx buffer (not implemented).
+     * Wait for all receive buffer data read.
      */
-    void flush() {}
+    void flush();
 
     /**
      * Stop the TCP connection and release resources.

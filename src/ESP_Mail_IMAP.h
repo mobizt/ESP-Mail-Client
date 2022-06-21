@@ -128,16 +128,15 @@ void ESP_Mail_Client::decodeHeader(IMAPSession *imap, MB_String &headerField)
         }
     }
 
-    int bufSize = 512;
+    int bufSize = headerField.length()+ 10;
     char *buf = (char *)newP(bufSize);
     
     // Content Q and B decodings
-    RFC2047Decoder.rfc2047Decode(buf, headerField.c_str(), bufSize);
+    RFC2047Decoder.decode(mbfs, buf, headerField.c_str(), bufSize);
     
     // Char set decoding
     if (imap->_charDecCallback)
     {
-
         IMAP_Decoding_Info decoding;
 
         decoding.charset = headerEnc.c_str();
@@ -5588,6 +5587,7 @@ void IMAPSession::clearMessageData()
 IMAP_Status::IMAP_Status()
 {
 }
+
 IMAP_Status::~IMAP_Status()
 {
     empty();
