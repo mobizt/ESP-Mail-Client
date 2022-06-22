@@ -3572,7 +3572,7 @@ ex:
     delP(&buf);
     delP(&rawChunk);
     
-    if (!base64)
+    if (!ret)
         closeChunk(data_info);
 
     return ret;
