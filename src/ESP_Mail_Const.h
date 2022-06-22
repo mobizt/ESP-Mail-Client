@@ -517,6 +517,16 @@ struct esp_mail_smtp_msg_type_t
     int rfc822Idx = 0;
 };
 
+struct esp_mail_smtp_send_base64_data_info_t
+{
+    esp_mail_file_storage_type storageType = esp_mail_file_storage_type_none;
+    const char *filename = "";
+    const uint8_t *rawPtr = nullptr;
+    bool flashMem = false;
+    size_t size = 0;
+    size_t dataIndex = 0;
+};
+
 enum esp_mail_smtp_command
 {
     esp_mail_smtp_cmd_undefined,

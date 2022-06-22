@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 20, 2022
+ * Created June 22, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1341,9 +1341,16 @@ bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, S
 
     if (strcmp(att->descr.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0 && strcmp(att->descr.transfer_encoding.c_str(), att->descr.content_encoding.c_str()) != 0)
     {
+        esp_mail_smtp_send_base64_data_info_t data_info;
 
-        if (!sendBase64(smtp, msg, (const unsigned char *)att->blob.data, att->blob.size, att->_int.flash_blob, att->descr.filename.c_str(), cb))
+        data_info.rawPtr = att->blob.data;
+        data_info.size = att->blob.size;
+        data_info.flashMem = att->_int.flash_blob;
+        data_info.filename = att->descr.filename.c_str();
+
+        if (!sendBase64(smtp, msg, data_info, true, cb))
             return false;
+
         return true;
     }
     else
@@ -1352,8 +1359,16 @@ bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, S
         {
             if (strcmp(att->descr.content_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
             {
-                if (!sendBase64Raw(smtp, msg, att->blob.data, att->blob.size, att->_int.flash_blob, att->descr.filename.c_str(), cb))
+                esp_mail_smtp_send_base64_data_info_t data_info;
+
+                data_info.rawPtr = att->blob.data;
+                data_info.size = att->blob.size;
+                data_info.flashMem = att->_int.flash_blob;
+                data_info.filename = att->descr.filename.c_str();
+
+                if (!sendBase64(smtp, msg, data_info, false, cb))
                     return false;
+
                 return true;
             }
             else
@@ -1398,8 +1413,14 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
 
     if (strcmp(att->descr.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0 && strcmp(att->descr.transfer_encoding.c_str(), att->descr.content_encoding.c_str()) != 0)
     {
-        if (!sendBase64Stream(smtp, msg, att->file.storage_type, att->descr.filename.c_str(), cb))
+        esp_mail_smtp_send_base64_data_info_t data_info;
+
+        data_info.filename = att->descr.filename.c_str();
+        data_info.storageType = att->file.storage_type;
+
+        if (!sendBase64(smtp, msg, data_info, true, cb))
             return false;
+
         return true;
     }
     else
@@ -1408,8 +1429,14 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
         {
             if (strcmp(att->descr.content_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
             {
-                if (!sendBase64StreamRaw(smtp, msg, att->file.storage_type, att->descr.filename.c_str(), cb))
+                esp_mail_smtp_send_base64_data_info_t data_info;
+
+                data_info.filename = att->descr.filename.c_str();
+                data_info.storageType = att->file.storage_type;
+
+                if (!sendBase64(smtp, msg, data_info, false, cb))
                     return false;
+
                 return true;
             }
             else
@@ -2254,7 +2281,15 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
     if (base64)
     {
         MB_String s1 = esp_mail_str_325;
-        return sendBase64(smtp, msg, (const unsigned char *)raw, len, true, s1.c_str(), cb);
+
+        esp_mail_smtp_send_base64_data_info_t data_info;
+
+        data_info.flashMem = true;
+        data_info.filename = s1.c_str();
+        data_info.rawPtr = raw;
+        data_info.size = len;
+
+        return sendBase64(smtp, msg, data_info, true, cb);
     }
 
     int available = len;
@@ -2317,7 +2352,13 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (strcmp(msg->text.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
             {
                 MB_String s1 = esp_mail_str_326;
-                return sendBase64Stream(smtp, msg, msg->text.file.type, s1.c_str(), cb);
+
+                esp_mail_smtp_send_base64_data_info_t data_info;
+
+                data_info.filename = s1.c_str();
+                data_info.storageType = msg->text.file.type;
+
+                return sendBase64(smtp, msg, data_info, true, cb);
             }
         }
 
@@ -2385,7 +2426,13 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (strcmp(msg->html.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_base64) == 0)
             {
                 MB_String s1 = esp_mail_str_326;
-                return sendBase64Stream(smtp, msg, msg->html.file.type, s1.c_str(), cb);
+
+                esp_mail_smtp_send_base64_data_info_t data_info;
+
+                data_info.filename = s1.c_str();
+                data_info.storageType = msg->html.file.type;
+
+                return sendBase64(smtp, msg, data_info, true, cb);
             }
         }
 
@@ -2963,75 +3010,6 @@ void ESP_Mail_Client::smtpCB(SMTPSession *smtp, const char *info, bool success)
     }
 }
 
-bool ESP_Mail_Client::sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report)
-{
-    bool ret = false;
-
-    uint32_t addr = altProgressPtr(smtp);
-
-    size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
-    size_t bufIndex = 0;
-    size_t dataIndex = 0;
-
-    if (len < chunkSize)
-        chunkSize = len;
-
-    uint8_t *buf = (uint8_t *)newP(chunkSize);
-    memset(buf, 0, chunkSize);
-
-    if (report)
-        uploadReport(filename, addr, dataIndex);
-
-    while (dataIndex < len - 1)
-    {
-
-        size_t size = 4;
-        if (dataIndex + size > len - 1)
-            size = len - dataIndex;
-
-        if (flashMem)
-            memcpy_P(buf + bufIndex, data + dataIndex, size);
-        else
-            memcpy(buf + bufIndex, data + dataIndex, size);
-
-        dataIndex += size;
-        bufIndex += size;
-
-        if (bufIndex + 1 == BASE64_CHUNKED_LEN)
-        {
-            if (bufIndex + 2 < chunkSize)
-            {
-                buf[bufIndex++] = 0x0d;
-                buf[bufIndex++] = 0x0a;
-            }
-        }
-
-        if (bufIndex + 1 >= chunkSize - size)
-        {
-            if (!sendBDAT(smtp, msg, bufIndex + 1, false))
-                goto ex;
-
-            if (!altSendData(buf, bufIndex + 1, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-                goto ex;
-
-            bufIndex = 0;
-        }
-
-        if (report)
-            uploadReport(filename, addr, 100 * dataIndex / len);
-    }
-
-    if (report)
-        uploadReport(filename, addr, 100);
-
-    ret = true;
-ex:
-    if (report)
-        esp_mail_debug("");
-    delP(&buf);
-    return ret;
-}
-
 uint32_t ESP_Mail_Client::altProgressPtr(SMTPSession *smtp)
 {
     uint32_t addr = 0;
@@ -3049,227 +3027,6 @@ uint32_t ESP_Mail_Client::altProgressPtr(SMTPSession *smtp)
     }
 
     return addr;
-}
-
-bool ESP_Mail_Client::sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report)
-{
-    bool ret = false;
-
-    uint32_t addr = altProgressPtr(smtp);
-
-    int fileSize = mbfs->size(mbfs_type storageType);
-
-    if (!fileSize)
-    {
-        errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
-        return false;
-    }
-
-    size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
-    size_t byteAdded = 0;
-    size_t byteSent = 0;
-
-    unsigned char *buf = (unsigned char *)newP(chunkSize);
-    memset(buf, 0, chunkSize);
-
-    size_t len = fileSize;
-    size_t fbufIndex = 0;
-    unsigned char *fbuf = (unsigned char *)newP(3);
-
-    int dByte = 0;
-    int bcnt = 0;
-
-    if (report)
-        uploadReport(filename, addr, bcnt);
-
-    while (mbfs->available(mbfs_type storageType))
-    {
-        memset(fbuf, 0, 3);
-        if (len - fbufIndex >= 3)
-        {
-            bcnt += 3;
-            size_t readLen = mbfs->read(mbfs_type storageType, fbuf, 3);
-            if (readLen != 3)
-            {
-                errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
-                break;
-            }
-
-            buf[byteAdded++] = b64_index_table[fbuf[0] >> 2];
-            buf[byteAdded++] = b64_index_table[((fbuf[0] & 0x03) << 4) | (fbuf[1] >> 4)];
-            buf[byteAdded++] = b64_index_table[((fbuf[1] & 0x0f) << 2) | (fbuf[2] >> 6)];
-            buf[byteAdded++] = b64_index_table[fbuf[2] & 0x3f];
-            dByte += 4;
-            if (dByte == BASE64_CHUNKED_LEN)
-            {
-                if (byteAdded + 1 < chunkSize)
-                {
-                    buf[byteAdded++] = 0x0d;
-                    buf[byteAdded++] = 0x0a;
-                }
-                dByte = 0;
-            }
-            if (byteAdded >= chunkSize - 4)
-            {
-                byteSent += byteAdded;
-
-                if (!sendBDAT(smtp, msg, byteAdded, false))
-                    goto ex;
-
-                if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-                    goto ex;
-
-                memset(buf, 0, chunkSize);
-                byteAdded = 0;
-            }
-            fbufIndex += 3;
-
-            if (report)
-                uploadReport(filename, addr, 100 * bcnt / len);
-        }
-        else
-        {
-            size_t readLen = mbfs->read(mbfs_type storageType, fbuf, len - fbufIndex);
-            if (readLen != len - fbufIndex)
-            {
-                errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
-                break;
-            }
-        }
-    }
-
-    mbfs->close(mbfs_type storageType);
-    if (byteAdded > 0)
-    {
-        if (!sendBDAT(smtp, msg, byteAdded, false))
-            goto ex;
-
-        if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-            goto ex;
-    }
-
-    if (len - fbufIndex > 0)
-    {
-        memset(buf, 0, chunkSize);
-        byteAdded = 0;
-        buf[byteAdded++] = b64_index_table[fbuf[0] >> 2];
-        if (len - fbufIndex == 1)
-        {
-            buf[byteAdded++] = b64_index_table[(fbuf[0] & 0x03) << 4];
-            buf[byteAdded++] = '=';
-        }
-        else
-        {
-            buf[byteAdded++] = b64_index_table[((fbuf[0] & 0x03) << 4) | (fbuf[1] >> 4)];
-            buf[byteAdded++] = b64_index_table[(fbuf[1] & 0x0f) << 2];
-        }
-        buf[byteAdded++] = '=';
-
-        if (!sendBDAT(smtp, msg, byteAdded, false))
-            goto ex;
-
-        if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-            goto ex;
-    }
-    ret = true;
-
-    if (report)
-        uploadReport(filename, addr, 100);
-
-ex:
-    delP(&buf);
-    delP(&fbuf);
-    mbfs->close(mbfs_type storageType);
-    return ret;
-}
-
-bool ESP_Mail_Client::sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report)
-{
-    bool ret = false;
-
-    uint32_t addr = altProgressPtr(smtp);
-
-    int fileSize = mbfs->size(mbfs_type storageType);
-
-    if (!fileSize)
-    {
-        errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
-        return false;
-    }
-
-    size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
-    size_t bufIndex = 0;
-    size_t dataIndex = 0;
-
-    size_t len = fileSize;
-
-    if (len < chunkSize)
-        chunkSize = len;
-
-    uint8_t *buf = (uint8_t *)newP(chunkSize);
-    memset(buf, 0, chunkSize);
-
-    uint8_t *fbuf = (uint8_t *)newP(4);
-
-    if (report)
-        uploadReport(filename, addr, bufIndex);
-
-    while (mbfs->available(mbfs_type storageType))
-    {
-
-        if (dataIndex < len - 1)
-        {
-            size_t size = 4;
-            if (dataIndex + size > len - 1)
-                size = len - dataIndex;
-
-            size_t readLen = mbfs->read(mbfs_type storageType, fbuf, size);
-            if (readLen != size)
-            {
-                errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
-                break;
-            }
-
-            memcpy(buf + bufIndex, fbuf, size);
-
-            bufIndex += size;
-
-            if (bufIndex + 1 == BASE64_CHUNKED_LEN)
-            {
-                if (bufIndex + 2 < chunkSize)
-                {
-                    buf[bufIndex++] = 0x0d;
-                    buf[bufIndex++] = 0x0a;
-                }
-            }
-
-            if (bufIndex + 1 >= chunkSize - size)
-            {
-                if (!sendBDAT(smtp, msg, bufIndex + 1, false))
-                    goto ex;
-
-                if (!altSendData(buf, bufIndex + 1, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-                    goto ex;
-
-                bufIndex = 0;
-            }
-
-            if (report)
-                uploadReport(filename, addr, 100 * dataIndex / len);
-        }
-    }
-
-    mbfs->close(mbfs_type storageType);
-    ret = true;
-
-    if (report)
-        uploadReport(filename, addr, 100);
-
-ex:
-    delP(&buf);
-    delP(&fbuf);
-    mbfs->close(mbfs_type storageType);
-    return ret;
 }
 
 void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
@@ -3640,131 +3397,225 @@ MB_String ESP_Mail_Client::getMIMEBoundary(size_t len)
     return s;
 }
 
-bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, const unsigned char *data, size_t len, bool flashMem, const char *filename, bool report)
+int ESP_Mail_Client::chunkAvailable(SMTPSession *smtp, esp_mail_smtp_send_base64_data_info_t &data_info)
 {
-    bool ret = false;
-    uint32_t addr = altProgressPtr(smtp);
-    const unsigned char *end, *in;
+    if (!data_info.rawPtr)
+    {
+        int fileSize = mbfs->size(mbfs_type data_info.storageType);
+        if (!fileSize)
+        {
+            errorStatusCB(smtp, MB_FS_ERROR_FILE_IO_ERROR);
+            return -1;
+        }
 
-    end = data + len;
-    in = data;
+        return mbfs->available(mbfs_type data_info.storageType);
+    }
+
+    return data_info.size - data_info.dataIndex;
+}
+
+int ESP_Mail_Client::getChunk(SMTPSession *smtp, esp_mail_smtp_send_base64_data_info_t &data_info, unsigned char *rawChunk, bool base64)
+{
+    int available = chunkAvailable(smtp, data_info);
+
+    if (available <= 0)
+        return available;
+
+    size_t size = base64 ? 3 : 4;
+
+    if (data_info.dataIndex + size > data_info.size)
+        size = data_info.size - data_info.dataIndex;
+
+    if (!data_info.rawPtr)
+    {
+
+        int readLen = mbfs->read(mbfs_type data_info.storageType, rawChunk, size);
+
+        if (readLen >= 0)
+            data_info.dataIndex += readLen;
+
+        return readLen;
+    }
+
+    if (data_info.flashMem)
+        memcpy_P(rawChunk, data_info.rawPtr + data_info.dataIndex, size);
+    else
+        memcpy(rawChunk, data_info.rawPtr + data_info.dataIndex, size);
+
+    data_info.dataIndex += size;
+
+    return size;
+}
+
+void ESP_Mail_Client::closeChunk(esp_mail_smtp_send_base64_data_info_t &data_info)
+{
+    if (!data_info.rawPtr)
+    {
+        mbfs->close(mbfs_type data_info.storageType);
+    }
+}
+
+bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_smtp_send_base64_data_info_t &data_info, bool base64, bool report)
+{
+    int size = chunkAvailable(smtp, data_info);
+
+    if (size <= 0)
+        return false;
+
+    data_info.size = size;
+
+    bool ret = false;
+
+    uint32_t addr = altProgressPtr(smtp);
 
     size_t chunkSize = (BASE64_CHUNKED_LEN * UPLOAD_CHUNKS_NUM) + (2 * UPLOAD_CHUNKS_NUM);
-    size_t byteAdded = 0;
-    size_t byteSent = 0;
+    int bufIndex = 0;
+    bool dataReady = false;
+    int encodedCount = 0;
+    int read = 0;
 
-    int dByte = 0;
-    unsigned char *buf = (unsigned char *)newP(chunkSize);
+    if (!base64)
+    {
+        if (data_info.size < chunkSize)
+            chunkSize = data_info.size;
+    }
+
+    uint8_t *buf = (uint8_t *)newP(chunkSize);
     memset(buf, 0, chunkSize);
 
-    unsigned char *tmp = (unsigned char *)newP(3);
-    int bcnt = 0;
+    uint8_t *rawChunk = (uint8_t *)newP(base64 ? 3 : 4);
 
     if (report)
-        uploadReport(filename, addr, bcnt);
+        uploadReport(data_info.filename, addr, data_info.dataIndex / data_info.size);
 
-    while (end - in >= 3)
+    while (chunkAvailable(smtp, data_info))
     {
-        memset(tmp, 0, 3);
-        if (flashMem)
-            memcpy_P(tmp, in, 3);
-        else
-            memcpy(tmp, in, 3);
-        bcnt += 3;
 
-        buf[byteAdded++] = b64_index_table[tmp[0] >> 2];
-        buf[byteAdded++] = b64_index_table[((tmp[0] & 0x03) << 4) | (tmp[1] >> 4)];
-        buf[byteAdded++] = b64_index_table[((tmp[1] & 0x0f) << 2) | (tmp[2] >> 6)];
-        buf[byteAdded++] = b64_index_table[tmp[2] & 0x3f];
-        dByte += 4;
-        if (dByte == BASE64_CHUNKED_LEN)
+        if (chunkAvailable(smtp, data_info) >= base64 ? 3 : 1)
         {
-            if (byteAdded + 1 < chunkSize)
+
+            read = getChunk(smtp, data_info, rawChunk, base64);
+
+            if (!read)
+                goto ex;
+
+            getBuffer(base64, buf, rawChunk, encodedCount, bufIndex, dataReady, read, chunkSize);
+
+            if (dataReady)
             {
-                buf[byteAdded++] = 0x0d;
-                buf[byteAdded++] = 0x0a;
+
+                if (!sendBDAT(smtp, msg, base64 ? bufIndex : bufIndex + 1, false))
+                    goto ex;
+
+                if (!altSendData(buf, base64 ? bufIndex : bufIndex + 1, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
+                    goto ex;
+
+                memset(buf, 0, chunkSize);
+                bufIndex = 0;
             }
-            dByte = 0;
+
+            if (report)
+                uploadReport(data_info.filename, addr, 100 * data_info.dataIndex / data_info.size);
         }
-        if (byteAdded >= chunkSize - 4)
+        else if (base64)
         {
-            byteSent += byteAdded;
+            read = getChunk(smtp, data_info, rawChunk, base64);
+            if (!read)
+                goto ex;
+        }
+    }
 
-            if (!sendBDAT(smtp, msg, byteAdded, false))
+    closeChunk(data_info);
+
+    if (base64)
+    {
+        if (bufIndex > 0)
+        {
+            if (!sendBDAT(smtp, msg, bufIndex, false))
                 goto ex;
 
-            if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
+            if (!altSendData(buf, bufIndex, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
                 goto ex;
+        }
 
+        if (read)
+        {
             memset(buf, 0, chunkSize);
-            byteAdded = 0;
-        }
-        in += 3;
-
-        if (report)
-            uploadReport(filename, addr, 100 * bcnt / len);
-    }
-
-    if (byteAdded > 0)
-    {
-        if (!sendBDAT(smtp, msg, byteAdded, false))
-            goto ex;
-
-        if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-            goto ex;
-    }
-
-    if (end - in)
-    {
-        memset(buf, 0, chunkSize);
-        byteAdded = 0;
-        memset(tmp, 0, 3);
-        if (flashMem)
-        {
-            if (end - in == 1)
-                memcpy_P(tmp, in, 1);
+            bufIndex = 0;
+            buf[bufIndex++] = b64_index_table[rawChunk[0] >> 2];
+            if (read == 1)
+            {
+                buf[bufIndex++] = b64_index_table[(rawChunk[0] & 0x03) << 4];
+                buf[bufIndex++] = '=';
+            }
             else
-                memcpy_P(tmp, in, 2);
-        }
-        else
-        {
-            if (end - in == 1)
-                memcpy(tmp, in, 1);
-            else
-                memcpy(tmp, in, 2);
-        }
+            {
+                buf[bufIndex++] = b64_index_table[((rawChunk[0] & 0x03) << 4) | (rawChunk[1] >> 4)];
+                buf[bufIndex++] = b64_index_table[(rawChunk[1] & 0x0f) << 2];
+            }
+            buf[bufIndex++] = '=';
 
-        buf[byteAdded++] = b64_index_table[tmp[0] >> 2];
-        if (end - in == 1)
-        {
-            buf[byteAdded++] = b64_index_table[(tmp[0] & 0x03) << 4];
-            buf[byteAdded++] = '=';
+            if (!sendBDAT(smtp, msg, bufIndex, false))
+                goto ex;
+
+            if (!altSendData(buf, bufIndex, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
+                goto ex;
         }
-        else
-        {
-            buf[byteAdded++] = b64_index_table[((tmp[0] & 0x03) << 4) | (tmp[1] >> 4)];
-            buf[byteAdded++] = b64_index_table[(tmp[1] & 0x0f) << 2];
-        }
-        buf[byteAdded++] = '=';
-
-        if (!sendBDAT(smtp, msg, byteAdded, false))
-            goto ex;
-
-        if (!altSendData(buf, byteAdded, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
-            goto ex;
-
-        memset(buf, 0, chunkSize);
     }
-
-    uploadReport(filename, addr, 100);
 
     ret = true;
-ex:
+
     if (report)
-        esp_mail_debug("");
-    delP(&tmp);
+        uploadReport(data_info.filename, addr, 100);
+
+ex:
     delP(&buf);
+    delP(&rawChunk);
+    if (!true)
+        closeChunk(data_info);
     return ret;
+}
+
+void ESP_Mail_Client::getBuffer(bool base64, uint8_t *out, uint8_t *in, int &encodedCount, int &bufIndex, bool &dataReady, int &size, size_t chunkSize)
+{
+    if (base64)
+    {
+        size = 0;
+        out[bufIndex++] = b64_index_table[in[0] >> 2];
+        out[bufIndex++] = b64_index_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
+        out[bufIndex++] = b64_index_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
+        out[bufIndex++] = b64_index_table[in[2] & 0x3f];
+
+        encodedCount += 4;
+
+        if (encodedCount == BASE64_CHUNKED_LEN)
+        {
+            if (bufIndex + 1 < chunkSize)
+            {
+                out[bufIndex++] = 0x0d;
+                out[bufIndex++] = 0x0a;
+            }
+            encodedCount = 0;
+        }
+
+        dataReady = bufIndex >= chunkSize - 4;
+    }
+    else
+    {
+        memcpy(out + bufIndex, in, size);
+        bufIndex += size;
+
+        if (bufIndex + 1 == BASE64_CHUNKED_LEN)
+        {
+            if (bufIndex + 2 < chunkSize)
+            {
+                out[bufIndex++] = 0x0d;
+                out[bufIndex++] = 0x0a;
+            }
+        }
+
+        dataReady = bufIndex + 1 >= chunkSize - size;
+    }
 }
 
 MB_FS *ESP_Mail_Client::getMBFS()

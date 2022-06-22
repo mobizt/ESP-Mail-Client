@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 20, 2022
+ * Created June 22, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -993,21 +993,24 @@ private:
 
   // Base64 and QP encodings for text and html messages and replace embeded attachment file name with content ID
   void encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, MB_String &content);
+ 
+  // Blob or Stream available
+  int chunkAvailable(SMTPSession *smtp, esp_mail_smtp_send_base64_data_info_t &data_info);
 
-  // Send data as base64 encoded chunk
-  bool sendBase64(SMTPSession *smtp, SMTP_Message *msg, const unsigned char *data, size_t len, bool flashMem, const char *filename, bool report);
+  // Read chunk data of blob or file
+  int getChunk(SMTPSession *smtp, esp_mail_smtp_send_base64_data_info_t &data_info, unsigned char *rawChunk, bool base64);
 
-  // Send base64 encoded chunk
-  bool sendBase64Raw(SMTPSession *smtp, SMTP_Message *msg, const uint8_t *data, size_t len, bool flashMem, const char *filename, bool report);
+  // Terminate chunk reading
+  void closeChunk(esp_mail_smtp_send_base64_data_info_t &data_info);
+  
+  // Get base64 encoded buffer or raw buffer
+  void getBuffer(bool base64, uint8_t *out, uint8_t *in, int &encodedCount, int &bufIndex, bool &dataReady, int &size, size_t chunkSize);
+
+  // Send blob or file as base64 encoded chunk
+  bool sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_smtp_send_base64_data_info_t &data_info, bool base64, bool report);
 
   // Get imap or smtp report progress var pointer
   uint32_t altProgressPtr(SMTPSession *smtp);
-
-  // Send file as base64 encoded chunk
-  bool sendBase64Stream(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report);
-
-  // Send base64 encoded file chunk
-  bool sendBase64StreamRaw(SMTPSession *smtp, SMTP_Message *msg, esp_mail_file_storage_type storageType, const char *filename, bool report);
 
   // Send PGM data
   void smtpCBP(SMTPSession *smtp, PGM_P info, bool success = false);

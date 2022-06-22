@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 20, 2022
+ * Created June 22, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -71,7 +71,7 @@ char *ESP_Mail_Client::decode7Bit_UTF8(char *buf)
 
     // only non NULL and 7-bit ASCII are allowed
 
-    //  rfc2045 section 2.7
+    // rfc2045 section 2.7
 
     size_t len = buf ? strlen(buf) : 0;
 
@@ -94,7 +94,7 @@ char *ESP_Mail_Client::decode8Bit_UTF8(char *buf)
 
     // only non NULL and less than 998 octet length are allowed
 
-    //  rfc2045 section 2.8
+    // rfc2045 section 2.8
 
     size_t len = buf ? strlen(buf) : 0;
 
@@ -969,7 +969,8 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
         return false;
     }
     int cLevel = 0;
-
+    
+    // slower than BODYSTRUCTURE parsing but sure
     do
     {
 
@@ -1652,7 +1653,7 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufL
 
         if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
         {
-            headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_type;
+            headerState = esp_mail_imap_state_content_type;
             tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, caseSensitive);
             if (tmp)
             {
@@ -1678,61 +1679,61 @@ void ESP_Mail_Client::setHeader(IMAPSession *imap, char *buf, struct esp_mail_me
 
     switch (state)
     {
-    case esp_mail_imap_header_state::esp_mail_imap_state_from:
+    case esp_mail_imap_state_from:
         header.header_fields.from += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_sender:
+    case esp_mail_imap_state_sender:
         header.header_fields.sender += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_to:
+    case esp_mail_imap_state_to:
         header.header_fields.to += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_cc:
+    case esp_mail_imap_state_cc:
         header.header_fields.cc += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_subject:
+    case esp_mail_imap_state_subject:
         header.header_fields.subject += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_content_type:
+    case esp_mail_imap_state_content_type:
         header.content_type += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_content_transfer_encoding:
+    case esp_mail_imap_state_content_transfer_encoding:
         header.content_transfer_encoding += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_accept_language:
+    case esp_mail_imap_state_accept_language:
         header.accept_language += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_content_language:
+    case esp_mail_imap_state_content_language:
         header.content_language += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_date:
+    case esp_mail_imap_state_date:
         header.header_fields.date += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_msg_id:
+    case esp_mail_imap_state_msg_id:
         header.header_fields.messageID += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_return_path:
+    case esp_mail_imap_state_return_path:
         header.header_fields.return_path += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_reply_to:
+    case esp_mail_imap_state_reply_to:
         header.header_fields.reply_to += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_in_reply_to:
+    case esp_mail_imap_state_in_reply_to:
         header.header_fields.in_reply_to += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_references:
+    case esp_mail_imap_state_references:
         header.header_fields.references += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_comments:
+    case esp_mail_imap_state_comments:
         header.header_fields.comments += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_keywords:
+    case esp_mail_imap_state_keywords:
         header.header_fields.keywords += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_char_set:
+    case esp_mail_imap_state_char_set:
         header.char_set += &buf[i];
         break;
-    case esp_mail_imap_header_state::esp_mail_imap_state_boundary:
+    case esp_mail_imap_state_boundary:
         header.boundary += &buf[i];
         break;
     default:
@@ -2305,7 +2306,6 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
     return false;
 }
 
-/* Function: urlDecode */
 char *ESP_Mail_Client::urlDecode(const char *str)
 {
     int d = 0; /* whether or not the string is decoded */
@@ -2446,7 +2446,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     if (!reconnect(imap))
         return false;
 
-    esp_mail_imap_response_status imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
+    esp_mail_imap_response_status imapResp = esp_mail_imap_resp_unknown;
     char *response = nullptr;
     int readLen = 0;
     long dataTime = millis();
@@ -2582,7 +2582,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                     if (imap->_imap_cmd != esp_mail_imap_cmd_search || (imap->_imap_cmd == esp_mail_imap_cmd_search && endSearch))
                         imapResp = imapResponseStatus(imap, response, esp_mail_str_27);
 
-                    if (imapResp != esp_mail_imap_response_status::esp_mail_imap_resp_unknown)
+                    if (imapResp != esp_mail_imap_resp_unknown)
                     {
 
                         // We've got the right response,
@@ -2634,7 +2634,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             imapResp = imapResponseStatus(imap, response, imap->_imapStatus.tag.c_str());
 
                             // get response or custom cmd APPEND or custom cmd IDLE?
-                            if (imapResp > esp_mail_imap_response_status::esp_mail_imap_resp_unknown || strposP(imap->_cmd.c_str(), esp_mail_str_360, 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
+                            if (imapResp > esp_mail_imap_resp_unknown || strposP(imap->_cmd.c_str(), esp_mail_str_360, 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
                                 completedResponse = true;
 
                             imap->_imapStatus.text = response;
@@ -2650,7 +2650,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_append)
                         {
-                            imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_ok;
+                            imapResp = esp_mail_imap_resp_ok;
                             completedResponse = true;
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_auth)
@@ -2671,7 +2671,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_idle)
                         {
                             completedResponse = response[0] == '+';
-                            imapResp = esp_mail_imap_response_status::esp_mail_imap_resp_ok;
+                            imapResp = esp_mail_imap_resp_ok;
 
                             imap->_last_host_check_ms = millis();
                         }
@@ -2746,11 +2746,11 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             delP(&lastBuf);
     }
 
-    if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && header.header_data_len == 0) || imapResp == esp_mail_imap_response_status::esp_mail_imap_resp_no)
+    if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && header.header_data_len == 0) || imapResp == esp_mail_imap_resp_no)
     {
         // We don't get any response
 
-        if (imapResp == esp_mail_imap_response_status::esp_mail_imap_resp_no)
+        if (imapResp == esp_mail_imap_resp_no)
             imap->_imapStatus.statusCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
         else
             imap->_imapStatus.statusCode = IMAP_STATUS_NO_MESSAGE;
@@ -2774,7 +2774,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
     // We've got OK or NO responses
 
-    if (imapResp == esp_mail_imap_response_status::esp_mail_imap_resp_ok)
+    if (imapResp == esp_mail_imap_resp_ok)
     {
         // Response OK
 
@@ -2789,7 +2789,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, false);
             if (tmp)
             {
-                headerState = esp_mail_imap_header_state::esp_mail_imap_state_content_type;
+                headerState = esp_mail_imap_state_content_type;
                 setHeader(imap, tmp, header, headerState);
                 delP(&tmp);
 
@@ -2837,7 +2837,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 tmp = subStr(buf, esp_mail_str_169, NULL, 0, -1, false);
                 if (tmp)
                 {
-                    headerState = esp_mail_imap_header_state::esp_mail_imap_state_char_set;
+                    headerState = esp_mail_imap_state_char_set;
                     setHeader(imap, tmp, header, headerState);
                     delP(&tmp);
                 }
@@ -2849,7 +2849,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         tmp = subStr(buf, esp_mail_str_277, esp_mail_str_136, 0, 0, false);
                         if (tmp)
                         {
-                            headerState = esp_mail_imap_header_state::esp_mail_imap_state_boundary;
+                            headerState = esp_mail_imap_state_boundary;
                             setHeader(imap, tmp, header, headerState);
                             delP(&tmp);
                         }
@@ -3218,7 +3218,7 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
         s1.trim();
         imap->_imapStatus.status = s1;
         imap->_imapStatus.completed = true;
-        return esp_mail_imap_response_status::esp_mail_imap_resp_ok;
+        return esp_mail_imap_resp_ok;
     }
     else if (strpos(response, s2.c_str(), 0) > -1)
     {
@@ -3228,7 +3228,7 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
         s2.trim();
         imap->_imapStatus.status = s2;
         imap->_imapStatus.completed = true;
-        return esp_mail_imap_response_status::esp_mail_imap_resp_no;
+        return esp_mail_imap_resp_no;
     }
     else if (strpos(response, s3.c_str(), 0) > -1)
     {
@@ -3239,9 +3239,9 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
         s3.trim();
         imap->_imapStatus.status = s3;
         imap->_imapStatus.completed = true;
-        return esp_mail_imap_response_status::esp_mail_imap_resp_bad;
+        return esp_mail_imap_resp_bad;
     }
-    return esp_mail_imap_response_status::esp_mail_imap_resp_unknown;
+    return esp_mail_imap_resp_unknown;
 }
 
 bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx)
