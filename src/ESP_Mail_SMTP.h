@@ -3571,8 +3571,10 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
 ex:
     delP(&buf);
     delP(&rawChunk);
-    if (!true)
+    
+    if (!base64)
         closeChunk(data_info);
+
     return ret;
 }
 
