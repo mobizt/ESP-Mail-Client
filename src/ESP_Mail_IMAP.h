@@ -4350,7 +4350,9 @@ bool IMAPSession::connect(bool &ssl)
 #endif
     }
 
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
     bool validTime = false;
+#endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
     validTime = strlen(_sesson_cfg->certificate.cert_file) > 0 || _caCert != nullptr;

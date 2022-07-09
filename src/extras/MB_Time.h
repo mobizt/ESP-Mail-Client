@@ -44,13 +44,13 @@
 #include "MB_String.h"
 #include "MB_List.h"
 
-#if (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
-#include "../../wcs/samd/lib/WiFiNINA.h"
+#if defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
+#include "../wcs/samd/lib/WiFiNINA.h"
 #endif
 
 #define ESP_TIME_DEFAULT_TS 1577836800
 
-#if defined(__AVR__)
+#if defined(__AVR__) || MB_MCU_TEENSY_ARM
 #define MB_TIME_PGM_ATTR
 #else
 #define MB_TIME_PGM_ATTR PROGMEM
