@@ -122,7 +122,13 @@ session.login.password = "<your app password>";
 
 ## Prerequisites
 
-This section is for the built-in Client to update the Core SDK or install the firmware for full functionality supports.
+### PlatformIO IDE Compile Options
+
+For ESP8266 and Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong headers compilation, please set the lib_ldf_mode in platformio.ini as this.
+
+```ini
+lib_ldf_mode = chain+
+```
 
 ### Third party SD library must be removed
 
@@ -137,7 +143,7 @@ The [SdFat](https://github.com/greiman/SdFat) is already implemented as wrapper 
 For Arduino IDE, the SdFat library should be removed from libraries folder when you compile this library for ESP8266 because of conclicts with core library SDFS.h.
 
 
-### ESP32 and ESP8266
+### ESP32 and ESP8266 SDKs
 
 For Espressif's ESP32 and ESP8266 based boards, this library requires Arduino's ESP32 or ESP8266 Core SDK to be installed.
 
@@ -145,7 +151,7 @@ The latest Core SDK is recommended. For ESP8266, the Core SDK version 3.x.x or l
 
 The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
-### SAMD21
+### SAMD21 custom build firmware
 
 For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) is needed to be installed instead of official Arduino WiFiNINA firmware.
 
@@ -723,14 +729,6 @@ void serup()
 }
 
 
-```
-
-
-
-For Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong WiFi compilation, please set the lib_ldf_mode in platformio.ini as this.
-
-```ini
-lib_ldf_mode = chain+
 ```
 
 

@@ -80,7 +80,7 @@ jobs:
         
     - name: Run PlatformIO Examples
       run: |
-        pio ci --board=d1_mini \
+        pio ci --project-option="lib_ldf_mode=chain+" --board=d1_mini \
         --lib=examples/SMTP/Send_RFC822_Attachment/image.h \
         --lib=examples/SMTP/Send_Parallel_Attachment/data.h \
         --lib=examples/SMTP/Send_Attachment_Blob/blob_data.h

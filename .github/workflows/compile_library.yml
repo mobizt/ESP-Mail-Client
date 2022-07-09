@@ -91,5 +91,5 @@ jobs:
         echo "void loop() {}" >> src/main.ino
 
     - name: Run PlatformIO
-      run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board }} src
+      run: pio ci --board=${{ matrix.board }} src
 
