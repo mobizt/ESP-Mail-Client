@@ -19,9 +19,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        board: 
+        board1: 
           - "d1_mini"
           - "nodemcuv2"
+          - "nanorp2040connect"
+          
+        board2: 
           - "esp32dev"
           - "lolin32"
           - "mkrwifi1010"
@@ -55,5 +58,8 @@ jobs:
         echo "void setup() {}" >> src/main.ino
         echo "void loop() {}" >> src/main.ino
 
-    - name: Run PlatformIO
-      run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board }} src
+    - name: Run boards1 PlatformIO
+      run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board1 }} src
+
+    - name: Run boards2 PlatformIO
+      run: pio ci --board=${{ matrix.board2 }} src
