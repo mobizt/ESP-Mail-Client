@@ -111,7 +111,7 @@ void setup()
         if (ESP_MAIL_DEFAULT_FLASH_FS.exists("/base64Img.jpg"))
             ESP_MAIL_DEFAULT_FLASH_FS.remove("/base64Img.jpg");
 
-        Serial.println("Preparing ESP_MAIL_DEFAULT_FLASH_FS attachments...");
+        Serial.println("Preparing flash file attachments...");
 
 #if defined(ESP32)
         File file = ESP_MAIL_DEFAULT_FLASH_FS.open("/base64Img.jpg", FILE_WRITE);
@@ -131,9 +131,12 @@ void setup()
     }
     else
     {
-        Serial.println("ESP_MAIL_DEFAULT_FLASH_FS Monting Failed");
+        Serial.println("Flash filesystem monting Failed");
     }
 #endif
+
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
 
     /** Enable the debug via Serial port
      * 0 for no debugging

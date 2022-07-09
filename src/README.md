@@ -121,35 +121,62 @@ bool removeFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSess
 
 
 
+#### Reconnect WiFi or network if lost connection.
 
-#### Initialize the SD card with the SPI port.
-
-param **`sck`** The SPI Clock pin (ESP32 only).
-
-param **`miso`** The SPI MISO pin (ESSP32 only).
-
-param **`mosi`** The SPI MOSI pin (ESP32 only).
-
-param **`ss`** The SPI Chip/Slave Select pin (ESP32 and ESP8266).
-
-aram **`frequency`** The SPI frequency (ESP32 only).
-
-return **`boolean`** The boolean value indicates the success of operation.
+param **`reconnect`** The boolean to set/unset WiFi AP reconnection.
 
 ```cpp
-bool sdBegin(uint8_t sck, uint8_t miso, uint8_t mosi, uint8_t ss, uint32_t frequency = 4000000);
+void networkReconnect(bool reconnect);
 ```
 
 
 
 
-#### SD card config with chip select and SPI configuration (ESP32 only)
+#### Initiate SD card with SPI port configuration.
 
 param **`ss`** The SPI Chip/Slave Select pin.
 
-aram **`spiConfig`** The pointer to SPIClass object for SPI configuartion.
+param **`sck`** The SPI Clock pin.
+
+param **`miso`** The SPI MISO pin.
+
+param **`mosi`** The SPI MOSI pin.
 
 aram **`frequency`** The SPI frequency.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+bool sdBegin(int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1, uint32_t frequency = 4000000);
+```
+
+
+
+
+
+#### Initiate SD card with SD FS configurations (ESP8266 only).
+
+param **`ss`** SPI Chip/Slave Select pin.
+
+param **`sdFSConfig`** The pointer to SDFSConfig object (ESP8266 only).
+
+return **`boolean`** type status indicates the success of the operation.
+
+```cpp
+  bool sdBegin(SDFSConfig *sdFSConfig);
+```
+
+
+
+
+
+#### Initiate SD card with chip select and SPI configuration (ESP32 only).
+
+param **`ss`** The SPI Chip/Slave Select pin.
+
+param **`spiConfig`** The pointer to SPIClass object for SPI configuartion.
+
+param **`frequency`** The SPI frequency.
 
 return **`boolean`** The boolean value indicates the success of operation.
 
@@ -157,6 +184,41 @@ return **`boolean`** The boolean value indicates the success of operation.
 bool sdBegin(int8_t ss, SPIClass *spiConfig = nullptr, uint32_t frequency = 4000000);
 ```
 
+
+
+
+
+#### Initiate SD card with SdFat SPI and pins configurations (with SdFat included only).
+
+param **`sdFatSPIConfig`** The pointer to SdSpiConfig object for SdFat SPI configuration.
+
+param **`ss`** The SPI Chip/Slave Select pin.
+
+param **`sck`** The SPI Clock pin.
+
+param **`miso`** The SPI MISO pin.
+
+param **`mosi`** The SPI MOSI pin.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+ bool sdBegin(SdSpiConfig *sdFatSPIConfig, int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
+```
+
+
+
+
+
+#### Initiate SD card with SdFat SDIO configuration (with SdFat included only).
+
+param **`sdFatSDIOConfig`** The pointer to SdioConfig object for SdFat SDIO configuration.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+ bool sdBegin(SdioConfig *sdFatSDIOConfig);
+```
 
 
 
@@ -185,19 +247,6 @@ return **`int`** Free memory amount in byte.
 ```cpp
 int getFreeHeap();
 ```
-
-
-
-
-
-#### Initialize the SD card with the default SPI port.
-
-return **`boolean`** The boolean value which indicates the success of operation.
-
-```cpp
-bool sdBegin(void);
-```
-
 
 
 
@@ -2505,20 +2554,6 @@ bool setClock(float gmtOffset, float daylightOffset);
 
 
 
-
-#### Get the Unix time.
-
-return **`uint32_t`** The value of current Unix time.
-
-```cpp
-uint32_t getUnixTime();
-```
-
-
-
-
-
-
 #### Get the timestamp from the year, month, date, hour, minute, and second provided.
 
 param **`year`** The year.
@@ -2542,8 +2577,6 @@ time_t getTimestamp(int year, int mon, int date, int hour, int mins, int sec);
 
 
 
-
-
 #### Get the timestamp from the time string.
 
 param **`gmt`** Return GMT time.
@@ -2559,202 +2592,12 @@ time_t getTimestamp(const char* timeString, bool gmt = false);
 
 
 
-#### Get the current year.
-
-return **`int`** The value of current year.
-
-```cpp
-int getYear();
-```
-
-
-
-
-
-
-#### Get the current month.
-
-return **`int`** The value of current month.
-
-```cpp
-int getMonth();
-```
-
-
-
-
-
-#### Get the current date.
-
-return **`int`** The value of current date.
-
-```cpp
-int getDay();
-```
-
-
-
-
-
-
-#### Get the current day of week.
-
-return **`int`** The value of day of week.
-
-1 for sunday and 7 for saturday
-
-```cpp
-int getDayOfWeek();
-```
-
-
-
-
-
-#### Get the current day of week in String.
-
-return **`String`** The value of day of week.
-
-Returns sunday, monday, tuesday, wednesday, thurseday, friday and saturday.
-
-```cpp
-String getDayOfWeekString();
-```
-
-
-
-
-
-
-#### Get the current hour.
-
-return **`int`** The value of current hour (0 to 23).
-
-```cpp
-int getHour();
-```
-
-
-
-
-
-
-#### Get the current minute.
-
-return **`int`** The value of current minute (0 to 59).
-
-```cpp
-int getMin();
-```
-
-
-
-
-
-
-#### Get the current second.
-
-return **`int`** The value of current second (0 to 59).
-
-```cpp
-int getSecond();
-```
-
-
-
-
-
-
-
-#### Get the total days of current year.
-
-return **`int`** The value of total days of current year.
-
-```cpp
-int getNumberOfDayThisYear();
-```
-
-
-
-
-
-
-#### Get the total days of from January 1, 1970 to specific date.
-
-param **`year`** The years from 1970.
-
-param **`mon`** The months from 1 to 12.
-
-param **`date`** The dates.
-
-return **`int`** The value of total days.
-
-```cpp
-int getTotalDays(int year, int month, int day);
-```
-
-
-
-
-
-#### Get the day of week from specific date.
-
-param **`year`** The years.
-
-param **`month`** The months from 1 to 12.
-
-param **`day`** The dates.
-
-return **`int`** The value of day of week.
-
-1 for sunday and 7 for saturday
-
-```cpp
-int dayofWeek(int year, int month, int day);
-```
-
-
-
-
-
-
-#### Get the second of current hour.
-
-return **`int`** The value of current second.
-
-```cpp
-int getCurrentSecond();
-```
-
-
-
-
-
 #### Get the current timestamp.
 
 return **`uint64_t`** The value of current timestamp.
 
 ```cpp
 uint64_t getCurrentTimestamp();
-```
-
-
-
-
-
-
-#### Get the date and time from second counted from January 1, 1970.
-
-param **`sec`** The seconds from January 1, 1970 00.00.
-
-return **`tm`** The tm structured data.
-
-The returned structured data tm has the members e.g.
-
-tm_year (from 1900), tm_mon (from 0 to 11), tm_mday, tm_hour, tm_min and tm_sec.
-
-```cpp
-struct tm getTimeFromSec(int secCount);
 ```
 
 

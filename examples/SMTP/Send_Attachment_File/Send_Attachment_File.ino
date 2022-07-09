@@ -174,6 +174,9 @@ void setup()
 
 #endif
 
+  /*  Set the network reconnection option */
+  MailClient.networkReconnect(true);
+
   /** Enable the debug via Serial port
    * 0 for no debugging
    * 1 for basic level debugging

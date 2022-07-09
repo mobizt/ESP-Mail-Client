@@ -93,6 +93,9 @@ void setup()
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   Serial.println();
+  
+  /*  Set the network reconnection option */
+  MailClient.networkReconnect(true);
 
   /** Enable the debug via Serial port
    * 0 for no debugging

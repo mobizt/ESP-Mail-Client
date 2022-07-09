@@ -193,6 +193,7 @@ protected:
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
     ESP_Mail_Session *session = nullptr;
 #endif
+
 };
 
 #endif

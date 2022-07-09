@@ -1,7 +1,7 @@
 /*
  * Just a simple dynamic array implementation, MB_List v1.0.2
  *
- * February 1, 2022
+ * Created July 9, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -35,13 +35,7 @@
 #define MB_VECTOR MB_List
 #endif
 
-#if defined(__AVR__) // #if __cplusplus < 201103
-#define MB_LIST_NULL NULL
-#else
-#define MB_LIST_NULL nullptr
-#endif
-
-template <class eType>
+template <class T>
 class MB_List
 {
 public:
@@ -55,24 +49,26 @@ public:
         clear();
     }
 
-    void push_back(eType &e)
+    void push_back(T &data)
     {
-        add(&e, eSize, 1);
+        add(&data, current, 1);
     }
 
-    void insert(int position, eType &e)
+    void insert(int position, T &data)
     {
-        add(&e, position, 1);
+        add(&data, position, 1);
     }
 
-    void insert(int position, int size, eType &e)
+    void insert(int position, int size, T &data)
     {
-        add(&e, position, size);
+        add(&data, position, size);
     }
 
     void pop_back()
     {
-        remove(eSize - 1, 1);
+        current--;
+        if (current < 0)
+            current = 0;
     }
 
     void erase(int beginIndex, int endIndex)
@@ -96,78 +92,92 @@ public:
 
     int end()
     {
-        if (eSize > 0)
-            return eSize - 1;
+        if (current > 0)
+            return current - 1;
         return 0;
     }
 
     void clear()
     {
-        if (e)
-            delete[] e;
-        e = MB_LIST_NULL;
-        eSize = 0;
+        if (arr)
+            delete[] arr;
+        arr = NULL;
+        current = 0;
     }
 
     size_t size()
     {
-        return eSize;
+        return current;
     }
 
-    eType &operator[](int index)
+    T &operator[](int index)
     {
-        if (index < eSize && index >= 0)
-            return e[index];
-        return e[0];
+        if (index < current && index >= 0)
+            return arr[index];
+        return arr[0];
     }
 
 private:
-    eType *e = NULL;
-    int eSize = 0;
 
-    void add(eType *e, int index, int size)
+    T *arr = NULL;
+    int current = 0;
+    int capacity = 0;
+
+    void add(T *data, int index, int size)
     {
 
-        if (index > eSize)
+        if (index > current)
             return;
 
-        if (eSize == 0)
+        if (current == 0)
         {
-            this->e = new eType[1];
-            if (this->e)
+            arr = new T[1];
+            if (arr)
             {
-                eSize = 1;
-                this->e[0] = *e;
+                current = 1;
+                arr[0] = *data;
+                capacity = 1;
             }
         }
         else
         {
-            eType *tmp = new eType[eSize];
-
-            if (tmp)
+            if (current + size >= capacity)
             {
+                T *tmp = new T[current];
 
-                for (int i = 0; i < eSize; i++)
-                    tmp[i] = this->e[i];
-
-                delete[] this->e;
-
-                this->e = new eType[eSize + size];
-                if (this->e)
+                if (tmp)
                 {
-                    for (int i = 0; i < index; i++)
-                        this->e[i] = tmp[i];
+                    for (int i = 0; i < current; i++)
+                        tmp[i] = arr[i];
 
-                    for (int i = index; i < index + size; i++)
-                        this->e[i] = *e;
+                    delete[] arr;
 
-                    for (int i = index; i < eSize; i++)
-                        this->e[i + size] = tmp[i];
+                    capacity = current + size;
+                    capacity *= 2;
 
-                    eSize += size;
+                    arr = new T[capacity];
+                    if (arr)
+                    {
+                        for (int i = 0; i < index; i++)
+                            arr[i] = tmp[i];
+
+                        for (int i = index; i < index + size; i++)
+                            arr[i] = *data;
+
+                        for (int i = index; i < current; i++)
+                            arr[i + size] = tmp[i];
+
+                        current += size;
+                    }
+
+                    delete[] tmp;
                 }
-
-                delete[] tmp;
+            }
+            else
+            {
+                for (int i = index; i < index + size; i++)
+                    arr[i] = *data;
+                current += size;
             }
         }
     }
@@ -175,32 +185,35 @@ private:
     void remove(int index, int size)
     {
 
-        if (eSize == 0 || index < 0)
+        if (current == 0 || index < 0)
             return;
 
-        if (index + size > eSize)
-            size = eSize - index;
+        if (index + size > current)
+            size = current - index;
 
-        eType *tmp = new eType[eSize];
+        T *tmp = new T[current];
 
         if (tmp)
         {
 
-            for (int i = 0; i < eSize; i++)
-                tmp[i] = this->e[i];
+            for (int i = 0; i < current; i++)
+                tmp[i] = arr[i];
 
-            delete[] this->e;
+            delete[] arr;
 
-            this->e = new eType[eSize - size];
-            if (this->e)
+            capacity = current - size;
+            capacity *= 2;
+
+            arr = new T[capacity];
+            if (arr)
             {
                 for (int i = 0; i < index; i++)
-                    this->e[i] = tmp[i];
+                    arr[i] = tmp[i];
 
-                for (int i = index; i < eSize - size; i++)
-                    this->e[i] = tmp[i + size];
+                for (int i = index; i < current - size; i++)
+                    arr[i] = tmp[i + size];
 
-                eSize -= size;
+                current -= size;
             }
 
             delete[] tmp;

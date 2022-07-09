@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v1.0.4
+ * ESP32 SSL Client v1.0.5
  *
- * June 13, 2022
+ * Junly 4, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -681,7 +681,7 @@ void ESP32_SSL_Client::ssl_client_send_mbedtls_error_cb(ssl_data *ssl, int errNo
     mbedtls_strerror(errNo, error_buf, 100);
     strcat(buf, error_buf);
     DebugMsgCallback cb = *ssl->_debugCallback;
-    cb(buf);
+    cb(buf, true);
     delete[] error_buf;
     delete[] buf;
 }
@@ -693,7 +693,7 @@ void ESP32_SSL_Client::ssl_client_debug_pgm_send_cb(ssl_data *ssl, PGM_P info)
     memset(dbgInfo, 0, dbgInfoLen);
     strcpy_P(dbgInfo, info);
     DebugMsgCallback cb = *ssl->_debugCallback;
-    cb(dbgInfo);
+    cb(dbgInfo, true);
     delete[] dbgInfo;
 }
 

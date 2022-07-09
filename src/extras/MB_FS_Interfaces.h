@@ -41,14 +41,16 @@
 #define MBFS_USE_FILE_STORAGE
 #endif
 
-#if defined(ESP32) && defined(SD_FAT_VERSION) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
+// Only SdFat library from Bill Greiman
+#if defined(ESP32) && defined(SD_FAT_VERSION) && defined(SD_FAT_VERSION_STR) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 #define MBFS_ESP32_SDFAT_ENABLED
 #ifndef ESP_MAIL_USE_SDFAT
 #define ESP_MAIL_USE_SDFAT
 #endif
 #endif
 
-#if !defined(ESP32) && !defined(ESP8266) && defined(SD_FAT_VERSION) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
+// Only SdFat library from Bill Greiman
+#if !defined(ESP32) && !defined(ESP8266) && defined(SD_FAT_VERSION) && defined(SD_FAT_VERSION_STR) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 #define MBFS_SDFAT_ENABLED
 #ifndef ESP_MAIL_USE_SDFAT
 #define ESP_MAIL_USE_SDFAT

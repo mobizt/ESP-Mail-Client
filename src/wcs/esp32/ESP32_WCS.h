@@ -1,7 +1,7 @@
 /*
- *ESP32 WiFi Client Secure v1.0.5
+ *ESP32 WiFi Client Secure v1.0.6
  *
- * June 21, 2022
+ * July 4, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -56,7 +56,7 @@
 #include "ESP32_SSL_Client.h"
 #include <WiFiClient.h>
 
-typedef void (*DebugMsgCallback)(const char *msg);
+typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
 
 class ESP32_WCS : public WiFiClient
 {

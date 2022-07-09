@@ -99,6 +99,9 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
 #if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
     // Mount SD card.
     SD_Card_Mounting(); // See src/addons/SDHelper.h
@@ -157,7 +160,7 @@ void setup()
     config.enable.html = true;
     config.enable.text = true;
 
-    /* Set to enable the sort the result by message UID in the ascending order */
+    /* Set to enable the sort the result by message UID in the decending order */
     config.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */

@@ -126,9 +126,16 @@ This section is for the built-in Client to update the Core SDK or install the fi
 
 ### Third party SD library must be removed
 
-In Arduino IDE, all third party SD libraries installed in libraries folder **MUST BE UNINSTALLED**.
+In Arduino IDE, all third party SD libraries installed in libraries folder must be reboved.
 
 The Core SD library was used instead of third party SD libraries.
+
+### SdFat conflicts in ESP8266 and must be removed
+
+The [SdFat](https://github.com/greiman/SdFat) is already implemented as wrapper class in ESP8266 core library.
+
+For Arduino IDE, the SdFat library should be removed from libraries folder when you compile this library for ESP8266 because of conclicts with core library SDFS.h.
+
 
 ### ESP32 and ESP8266
 

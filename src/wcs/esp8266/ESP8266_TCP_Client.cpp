@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.9
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.10
  *
- * Created June 21, 2022
+ * Created July 9, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -152,7 +152,7 @@ bool ESP8266_TCP_Client::ethLinkUp()
     goto ex;
   }
 #endif
-#if defined(INC_W5100_LWIP)
+#if defined(INC_W5500_LWIP)
   if (session->spi_ethernet_module.w5500)
   {
     ret = session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
@@ -186,7 +186,7 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
   if (session->spi_ethernet_module.w5100)
     goto ex;
 #endif
-#if defined(INC_W5100_LWIP)
+#if defined(INC_W5500_LWIP)
   if (session->spi_ethernet_module.w5500)
     goto ex;
 #endif

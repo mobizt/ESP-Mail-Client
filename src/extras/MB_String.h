@@ -2,9 +2,10 @@
 /**
  * Mobizt's SRAM/PSRAM supported String, version 1.2.6
  *
- * Created May 18, 2022
+ * Created July 5, 2022
  *
  * Changes Log
+ * 
  * 
  * v1.2.6
  * - Update trim() function
@@ -77,7 +78,9 @@
 
 #define MB_STRING_MAJOR 1
 #define MB_STRING_MINOR 2
-#define MB_STRING_PATCH 5
+#define MB_STRING_PATCH 6
+
+
 
 #if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
 #include <umm_malloc/umm_malloc.h>

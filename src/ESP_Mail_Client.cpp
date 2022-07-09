@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 20, 2022
+ * Created July 4, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -36,6 +36,14 @@
 #include "ESP_Mail_IMAP.h"
 #include "ESP_Mail_SMTP.h"
 
+void ESP_Mail_Client::networkReconnect(bool reconnect)
+{
+#if defined(ESP32) || defined(ESP8266)
+  WiFi.setAutoReconnect(reconnect);
+#endif
+  networkAutoReconnect = reconnect;
+}
+
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
 bool ESP_Mail_Client::sdBegin(int8_t ss, int8_t sck, int8_t miso, int8_t mosi, uint32_t frequency)
@@ -62,6 +70,11 @@ bool ESP_Mail_Client::sdBegin(int8_t ss, SPIClass *spiConfig, uint32_t frequency
 bool ESP_Mail_Client::sdBegin(SdSpiConfig *sdFatSPIConfig, int8_t ss, int8_t sck, int8_t miso, int8_t mosi)
 {
   return mbfs->sdFatBegin(sdFatSPIConfig, ss, sck, miso, mosi);
+}
+
+bool ESP_Mail_Client::sdBegin(SdioConfig *sdFatSDIOConfig)
+{
+  return mbfs->sdFatBegin(sdFatSDIOConfig);
 }
 #endif
 
@@ -213,12 +226,6 @@ bool ESP_Mail_Client::validEmail(const char *s)
   return (at != MB_String::npos) && (dot != MB_String::npos);
 }
 
-void ESP_Mail_Client::debugInfoP(PGM_P info)
-{
-  MB_String s1 = info;
-  esp_mail_debug(s1.c_str());
-}
-
 #if defined(ENABLE_SMTP) && defined(ENABLE_IMAP)
 bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool lastAppend, MB_StringPtr flags, MB_StringPtr dateTime)
 {
@@ -275,7 +282,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   cmd += dataLen;
   cmd += esp_mail_str_194;
 
-  if (imapSendP(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+  if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
   {
     imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
     return false;
@@ -301,7 +308,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
   if (lastAppend)
   {
-    if (imapSendP(imap, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+    if (imapSend(imap, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
     {
       imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
       return false;
@@ -334,8 +341,8 @@ char *ESP_Mail_Client::getRandomUID()
   return tmp;
 }
 
-/* Safe string splitter to avoid strsep bugs*/
-void ESP_Mail_Client::splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim)
+/* Safe string splitter to avoid strsep bugs */
+void ESP_Mail_Client::splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim)
 {
   uint32_t current, previous = 0;
   current = str.find(delim, previous);
@@ -470,10 +477,12 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
   char c = 0;
   char _c = 0;
   int idx = 0;
-  if (!client->connected())
-    return idx;
-  while (client->available() && idx < bufLen)
+
+  while (client->connected() && client->available() && idx < bufLen)
   {
+    
+    mbfs->feed();
+
     ret = client->read();
     if (ret > -1)
     {
@@ -495,8 +504,6 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
       if (idx >= bufLen - 1)
         return idx;
     }
-    if (!client->connected())
-      return idx;
   }
   return idx;
 }
@@ -654,7 +661,7 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
     goto exit;
 
   count = 0;
-  
+
   for (i = 0; i < len + extra_pad; i++)
   {
     unsigned char val;

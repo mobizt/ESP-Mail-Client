@@ -71,10 +71,10 @@ void printAllMailboxesInfo(IMAPSession &imap);
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder);
 
 /* Print all messages from the message list */
-void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly);
+void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 
 /* Print all attachments info from the message */
-void printAttacements(std::vector<IMAP_Attach_Item> &atts);
+void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
 /* The IMAP Session object used for Email reading */
 IMAPSession imap;
@@ -108,6 +108,9 @@ void setup()
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
+
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
 
 #if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
     // Mount SD card.
@@ -175,7 +178,7 @@ void setup()
     config.enable.html = true;
     config.enable.text = true;
 
-    /* Set to enable the sort the result by message UID in the ascending order */
+    /* Set to enable the sort the result by message UID in the decending order */
     config.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */
@@ -297,7 +300,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
 }
 
-void printAttacements(std::vector<IMAP_Attach_Item> &atts)
+void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
 {
     ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", atts.size());
     for (size_t j = 0; j < atts.size(); j++)
@@ -313,7 +316,7 @@ void printAttacements(std::vector<IMAP_Attach_Item> &atts)
     Serial.println();
 }
 
-void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
+void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
 
     /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and

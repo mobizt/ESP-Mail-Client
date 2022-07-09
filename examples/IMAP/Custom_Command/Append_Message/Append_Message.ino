@@ -120,6 +120,9 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
     /* Declare the session config data */
     ESP_Mail_Session session;
 

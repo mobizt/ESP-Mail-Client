@@ -120,6 +120,9 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
     /* Setup the configuration for searching or fetching operation and its result */
     IMAP_Config config;
 

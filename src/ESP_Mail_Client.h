@@ -40,7 +40,7 @@
 #include <vector>
 #endif
 
-#include "extras/ESPTimeHelper/ESPTimeHelper.h"
+#include "extras/MB_Time.h"
 #include "extras/MIMEInfo.h"
 
 #if defined(ESP32) || defined(ESP8266)
@@ -224,11 +224,8 @@ private:
   {
     for (size_t i = 0; i < _folders.size(); i++)
     {
-      if (_folders[i].name.length() > 0)
         _folders[i].name.clear();
-      if (_folders[i].attributes.length() > 0)
         _folders[i].attributes.clear();
-      if (_folders[i].delimiter.length() > 0)
         _folders[i].delimiter.clear();
     }
     _folders.clear();
@@ -668,9 +665,15 @@ public:
   bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 2, closeSession); }
 #endif
 
+  /** Reconnect WiFi or network if lost connection.
+   *
+   * @param reconnect The boolean to set/unset WiFi AP reconnection.
+   */
+  void networkReconnect(bool reconnect);
+
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
-  /** SD card config with GPIO pins.
+  /** Initiate SD card with SPI port configuration.
    *
    * @param ss SPI Chip/Slave Select pin.
    * @param sck SPI Clock pin.
@@ -683,7 +686,7 @@ public:
 
 #if defined(ESP8266)
 
-  /** SD card config with SD FS configurations (ESP8266 only).
+  /** Initiate SD card with SD FS configurations (ESP8266 only).
    *
    * @param ss SPI Chip/Slave Select pin.
    * @param sdFSConfig The pointer to SDFSConfig object (ESP8266 only).
@@ -694,7 +697,7 @@ public:
 #endif
 
 #if defined(ESP32)
-  /** SD card config with chip select and SPI configuration (ESP32 only).
+  /** Initiate SD card with chip select and SPI configuration (ESP32 only).
    *
    * @param ss SPI Chip/Slave Select pin.
    * @param spiConfig The pointer to SPIClass object for SPI configuartion.
@@ -705,7 +708,7 @@ public:
 #endif
 
 #if defined(MBFS_ESP32_SDFAT_ENABLED) || defined(MBFS_SDFAT_ENABLED)
-  /** SD card config with SdFat SPI and pins configurations (ESP32 with SdFat included only).
+  /** Initiate SD card with SdFat SPI and pins configurations (with SdFat included only).
    *
    * @param sdFatSPIConfig The pointer to SdSpiConfig object for SdFat SPI configuration.
    * @param ss SPI Chip/Slave Select pin.
@@ -715,6 +718,14 @@ public:
    * @return Boolean type status indicates the success of the operation.
    */
   bool sdBegin(SdSpiConfig *sdFatSPIConfig, int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1);
+
+  /** Initiate SD card with SdFat SDIO configuration (with SdFat included only).
+   *
+   * @param sdFatSDIOConfig The pointer to SdioConfig object for SdFat SDIO configuration.
+   * @return Boolean type status indicates the success of the operation.
+   */
+  bool sdBegin(SdioConfig *sdFatSDIOConfig);
+
 #endif
 
 #endif
@@ -743,7 +754,7 @@ public:
   template <typename T = const char *>
   String toBase64(T str) { return mGetBase64(toStringPtr(str)).c_str(); }
 
-  ESPTimeHelper Time;
+  MB_Time Time;
 
 private:
   friend class SMTPSession;
@@ -752,6 +763,7 @@ private:
   MB_FS *mbfs = nullptr;
   bool _clockReady = false;
   time_t ts = 0;
+  bool networkAutoReconnect = true;
 
 #if defined(ENABLE_IMAP)
 #define IMAP_SESSION IMAPSession
@@ -789,9 +801,6 @@ private:
   // Get the memory allocation block size of multiple of 4
   size_t getReservedLen(size_t len);
 
-  // Print PGM string with new line via debug port (println)
-  void debugInfoP(PGM_P info);
-
   // Check Email for valid format
   bool validEmail(const char *s);
 
@@ -799,7 +808,7 @@ private:
   char *getRandomUID();
 
   // Spit the string into token strings
-  void splitTk(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim);
+  void splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim);
 
   // Decode base64 encoded string
   unsigned char *decodeBase64(const unsigned char *src, size_t len, size_t *out_len);
@@ -886,11 +895,8 @@ private:
   // Send the error status callback
   void errorStatusCB(SMTPSession *smtp, int error);
 
-  // SMTP send PGM string
-  size_t smtpSendP(SMTPSession *smtp, PGM_P v, bool newline = false);
-
   // SMTP send data
-  size_t smtpSend(SMTPSession *smtp, const char *data, bool newline = false);
+  size_t smtpSend(SMTPSession *smtp, PGM_P data, bool newline = false);
 
   // SMTP send data
   size_t smtpSend(SMTPSession *smtp, int data, bool newline = false);
@@ -1012,11 +1018,8 @@ private:
   // Get imap or smtp report progress var pointer
   uint32_t altProgressPtr(SMTPSession *smtp);
 
-  // Send PGM data
-  void smtpCBP(SMTPSession *smtp, PGM_P info, bool success = false);
-
   // Send callback
-  void smtpCB(SMTPSession *smtp, const char *info, bool success = false);
+  void smtpCB(SMTPSession *smtp, PGM_P info = "", bool prependCRLF = false, bool success = false);
 
   // Get SMTP response status (respCode and text)
   void getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
@@ -1103,11 +1106,8 @@ private:
   // Send error callback
   void errorStatusCB(IMAPSession *imap, int error);
 
-  // Send PGM data
-  size_t imapSendP(IMAPSession *imap, PGM_P v, bool newline = false);
-
   // Send data
-  size_t imapSend(IMAPSession *imap, const char *data, bool newline = false);
+  size_t imapSend(IMAPSession *imap, PGM_P data, bool newline = false);
 
   // Send data
   size_t imapSend(IMAPSession *imap, int data, bool newline = false);
@@ -1118,11 +1118,8 @@ private:
   // Log out
   bool imapLogout(IMAPSession *imap);
 
-  // Send PGM string to callback
-  void imapCBP(IMAPSession *imap, PGM_P info, bool success);
-
   // Send callback
-  void imapCB(IMAPSession *imap, const char *info, bool success);
+  void imapCB(IMAPSession *imap, PGM_P info = "", bool prependCRLF = false, bool success = false);
 
   // Send storage error callback
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
@@ -1166,6 +1163,11 @@ private:
   // Get current header
   struct esp_mail_message_header_t *cHeader(IMAPSession *imap);
 
+#if !defined(MB_USE_STD_VECTOR)
+  // Decending sort
+  void numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr);
+#endif
+
   // Handle IMAP response
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
 
@@ -1176,7 +1178,7 @@ private:
   void fetchReport(IMAPSession *imap, int progress, bool html);
 
   // Print the message search status via debug port
-  void searchReport(int progress, const char *percent);
+  void searchReport(IMAPSession *imap, int progress, const char *percent);
 
   // Get current message num item
   struct esp_mail_imap_msg_num_t cMSG(IMAPSession *imap);

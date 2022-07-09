@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v1.0.4
+ * ESP32 SSL Client v1.0.5
  *
- * June 13, 2022
+ * July 4, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -79,8 +79,8 @@ class ESP32_SSL_Client
 public:
     ESP32_SSL_Client(){};
 
-    typedef void (*DebugMsgCallback)(const char *msg);
-    
+    typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
+
     // The SSL context
     typedef struct ssl_data_t
     {

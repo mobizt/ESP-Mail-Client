@@ -73,10 +73,10 @@ bool SD_Card_Mounting()
 
 #elif defined(ESP8266)
 
-    if (!MailClient.sdBegin(SPI_CS_PIN)) // or Firebase.sdBegin(&sdFSConfig)
+    if (!MailClient.sdBegin(SPI_CS_PIN))
 
 #else
-    if (!MailClient.sdBegin(SPI_CS_PIN)) // or Firebase.sdBegin(&sdFSConfig)
+    if (!MailClient.sdBegin(SPI_CS_PIN))
 #endif
     {
         Serial.println("failed\n");

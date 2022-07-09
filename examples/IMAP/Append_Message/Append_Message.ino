@@ -107,7 +107,16 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    imap.debug(esp_mail_debug_level_developer);
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
+    /** Enable the debug via Serial port
+     * 0 for no debugging
+     * 1 for basic level debugging
+     *
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     */
+    imap.debug(1);
 
     /* Set the callback function to get the reading results */
     imap.callback(imapCallback);

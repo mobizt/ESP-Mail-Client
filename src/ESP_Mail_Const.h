@@ -1,3 +1,5 @@
+// Created July 4, 2022
+
 #pragma once
 
 #ifndef ESP_MAIL_CONST_H
@@ -17,10 +19,6 @@
 
 #include "extras/MB_List.h"
 
-#if defined(ESP8266)
-#include "extras/SDK_Version_Common.h"
-#endif
-
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
 #define MAX_EMAIL_SEARCH_LIMIT 1000
@@ -31,7 +29,7 @@
 #define ESP_MAIL_PROGRESS_REPORT_STEP 5
 #define ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED 0
 #define ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE 256
-#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 1024 // should be 1k or more
+#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 1024 // should be 1 k or more
 #define ESP_MAIL_CLIENT_VALID_TS 1577836800
 
 #endif
@@ -1953,7 +1951,7 @@ static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";
 static const char esp_mail_str_196[] PROGMEM = "> C: Send STARTTLS command";
 static const char esp_mail_str_201[] PROGMEM = "Port > ";
-static const char esp_mail_str_204[] PROGMEM = "/esp.32";
+// static const char esp_mail_str_204[] PROGMEM = "";
 static const char esp_mail_str_221[] PROGMEM = "connection closed";
 static const char esp_mail_str_202[] PROGMEM = "/";
 static const char esp_mail_str_209[] PROGMEM = "Send command, STARTTLS";
@@ -1987,9 +1985,9 @@ static const char esp_mail_str_357[] PROGMEM = "not connected";
 static const char esp_mail_str_358[] PROGMEM = "8bit";
 static const char esp_mail_str_360[] PROGMEM = "APPEND";
 static const char esp_mail_str_361[] PROGMEM = "Appending message...";
-static const char esp_mail_str_362[] PROGMEM = "> C: apend message";
+static const char esp_mail_str_362[] PROGMEM = "> C: append message";
 static const char esp_mail_str_363[] PROGMEM = "Message append successfully";
-static const char esp_mail_str_364[] PROGMEM = "> c: Message append successfully";
+static const char esp_mail_str_364[] PROGMEM = "> C: Message append successfully";
 static const char esp_mail_str_365[] PROGMEM = "binary";
 #endif
 
@@ -2004,19 +2002,12 @@ static const char esp_mail_str_351[] PROGMEM = "File not found.";
 
 static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-// Print debug message with new line to debug port
-static void __attribute__((used)) esp_mail_debug(const char *msg)
-{
-    delay(0);
-    ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
-}
-
 // Print debug message w/wo new line to debug port
 static void __attribute__((used))
-esp_mail_debug_line(const char *msg, bool newline)
+esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 {
     delay(0);
-    if (newline)
+    if (newLine)
         ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
     else
         ESP_MAIL_DEFAULT_DEBUG_PORT.print(msg);
