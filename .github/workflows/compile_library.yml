@@ -51,7 +51,7 @@ jobs:
     - name: Run PlatformIO
       run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board }} src
 
-  without_ldf_option:
+  without_project_options:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
