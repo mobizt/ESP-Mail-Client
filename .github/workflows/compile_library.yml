@@ -54,7 +54,7 @@ jobs:
         echo "void loop() {}" >> src/main.ino
 
     - name: Run boards1 PlatformIO
-      run: pio ci --project-option="lib_ldf_mode=chain+" --board=$d1_mini --board=$nodemcuv2 --board=$nanorp2040connect src
+      run: pio ci --project-option="lib_ldf_mode=chain+" --board=d1_mini --board=nodemcuv2 --board=nanorp2040connect src
 
     - name: Run boards2 PlatformIO
       run: pio ci --board=${{ matrix.board }} src
