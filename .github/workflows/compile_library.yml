@@ -51,18 +51,3 @@ jobs:
     - name: Run PlatformIO
       run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board }} src
 
-  without_project_options:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-          - "esp32dev"
-          - "lolin32"
-          - "mkrwifi1010"
-          - "bluepill_f103c8_128k"
-          - "mkr1000USB"
-          - "teensy36"
-          - "teensy41"
-    steps:
-    - name: Run PlatformIO
-      run: pio ci --board=${{ matrix.board }} src
