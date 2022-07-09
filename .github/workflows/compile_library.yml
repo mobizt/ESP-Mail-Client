@@ -12,21 +12,16 @@ on:
       - '.github/workflows/compile_examples.yml'
       - 'examples/**'
 
-jobs:
+jobs1:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        board:
-          - "esp32dev"
-          - "lolin32"
-          - "mkrwifi1010"
-          - "bluepill_f103c8_128k"
-          - "mkr1000USB"
-          - "teensy36"
-          - "teensy41"
+        board: 
+          - "d1_mini"
+          - "nodemcuv2"
+          - "nanorp2040connect"
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip
@@ -53,8 +48,23 @@ jobs:
         echo "void setup() {}" >> src/main.ino
         echo "void loop() {}" >> src/main.ino
 
-    - name: Run boards1 PlatformIO
-      run: pio ci --project-option="lib_ldf_mode=chain+" --board=d1_mini --board=nodemcuv2 --board=nanorp2040connect src
+    - name: Run PlatformIO
+      run: pio ci --project-option="lib_ldf_mode=chain+" --board=${{ matrix.board }} src
 
-    - name: Run boards2 PlatformIO
+
+jobs2:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+          - "esp32dev"
+          - "lolin32"
+          - "mkrwifi1010"
+          - "bluepill_f103c8_128k"
+          - "mkr1000USB"
+          - "teensy36"
+          - "teensy41"
+
+    - name: Run PlatformIO
       run: pio ci --board=${{ matrix.board }} src
