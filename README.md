@@ -118,8 +118,6 @@ session.login.password = "<your app password>";
  
 
 
-
-
 ## Prerequisites
 
 ### PlatformIO IDE Compile Options
