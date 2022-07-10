@@ -33,15 +33,23 @@
 #if defined(ESP8266)
 #include <ESP8266WiFi.h>
 #endif
-#include <ESP_Mail_Client.h>
 
 // To use only SMTP functions, you can exclude the IMAP from compilation, see ESP_Mail_FS.h.
 
-#ifdef ESP8266_CORE_SDK_V3_X_X
+
 #include <ENC28J60lwIP.h>
 //#include <W5100lwIP.h>
 //#include <W5500lwIP.h>
-#endif
+
+/** For W5100 ethernet module, uncomment this line in ESP_Mail_FS.h
+  #define ENABLE_ESP8266_W5100_ETH
+*/
+
+/** For W5100 ethernet module and PlatformIO IDE, please set the lib_ldf_mode in platformio.ini as this
+  lib_ldf_mode = chain+
+*/
+
+#include <ESP_Mail_Client.h>
 
 /** For Gmail, the app password will be used for log in
  *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in

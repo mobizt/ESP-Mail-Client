@@ -89,4 +89,7 @@ static SdFat sd_fat_fs;   //should declare as static here
 
 //#define ENABLE_CUSTOM_CLIENT
 
+// For ESP8266 W5100 Ethernet module
+// #define ENABLE_ESP8266_W5100_ETH
+
 #endif

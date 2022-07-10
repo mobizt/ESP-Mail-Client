@@ -124,7 +124,7 @@ session.login.password = "<your app password>";
 
 ### PlatformIO IDE Compile Options
 
-For ESP8266 and Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong headers compilation, please set the lib_ldf_mode in platformio.ini as this.
+For Arduino Nano RP2040 Connect board, using PlatformIO IDE, to prevent the compile error due to wrong headers compilation, please set the lib_ldf_mode in platformio.ini as this.
 
 ```ini
 lib_ldf_mode = chain+
