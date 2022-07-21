@@ -1,7 +1,7 @@
 
 
 /**
- *  The Supported Protocols based on the devices and usage opttions
+ *  Supported Protocols based on the devices and usage options
  *
  *  |:: Devices and Usage options ::::::::::::::::::::::|:::::::: Plain ::::::::|:::::::: SSL ::::::::|:::::::: TLS ::::::::|
  *
