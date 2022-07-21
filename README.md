@@ -656,7 +656,7 @@ See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for comp
 In case of external Clients used as the following examples, please see the above table for supported protocols and its requirements.
 
 
-The following example show how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
+The following example showed how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
 
 
 ```cpp
