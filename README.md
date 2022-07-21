@@ -47,12 +47,12 @@ External Arduino Client can be used which this allows other devices (with minimu
 | ------------- | ------------- | ------------- | ------------- |
 | ESP8266/ESP32 or SAMD21/RPI2040 + Custom NINA Firmware | ✔️ | ✔️ | ✔️ |
 | ESP8266/ESP32 + External basic Client (4) | ✔️(1) | ✔️(1)  | ✔️(1) |
-| ESP8266/ESP32 + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+| ESP8266/ESP32 + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
 | SAMD21/RPI2040 w/o Custom NINA Firmware | ✔️ | ✔️ | ❌ |
 | SAMD21/RPI2040 + External basic Client | ✔️(1) | ❌ | ❌ |
-| SAMD21/RPI2040 + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+| SAMD21/RPI2040 + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
 | Other Arduino devices (5) + External basic Client | ✔️(1) | ❌ | ❌ |
-| Other Arduino devices (5) + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+| Other Arduino devices (5) + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
 
 #### Notes
 
