@@ -36,10 +36,35 @@ External Arduino Client can be used which this allows other devices (with minimu
 * Support custom commands for both IMAP and SMTP.
 * Support full debuging.
 * Support flash memory (ESP32 and ESP8266), SD, SdFat and SD_MMC (ESP32) for file storages which can be changed in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
-* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules).
+* Support Ethernet (ESP32 using LAN8720, TLK110 and IP101 Ethernet modules, and ESP8266 (Arduino Core SDK v3.x.x and later) using ENC28J60, W5100 and W5500 Ethernet modules) or via external Client.
 * Customizable configurations (see the examples for the usages)
 
 
+
+## The Supported Protocols based on the devices and usage opttions
+
+| Devices and Usage options | Plain | SSL | TLS |
+| ------------- | ------------- | ------------- | ------------- |
+| ESP8266/ESP32 or SAMD21/RPI2040 + Custom NINA Firmware | ✔️ | ✔️ | ✔️ |
+| ESP8266/ESP32 + External basic Client (4) | ✔️(1) | ✔️(1)  | ✔️(1) |
+| ESP8266/ESP32 + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+| SAMD21/RPI2040 w/o Custom NINA Firmware | ✔️ | ✔️ | ❌ |
+| SAMD21/RPI2040 + External basic Client | ✔️(1) | ❌ | ❌ |
+| SAMD21/RPI2040 + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+| Other Arduino devices (5) + External basic Client | ✔️(1) | ❌ | ❌ |
+| Other Arduino devices (5) + External SSL Client | ❌ or ✔️(2) | ✔️ | ❌ or ✔️(3) |
+
+#### Notes
+
+ 1) Required connection callback function.
+
+ 2) Required connection callback function and use SSL Client that supports plain text connection e.g. https://github.com/mobizt/SSLClient
+
+ 3) Required both connection callback function and connection upgrade callback function and use SSL Client that supports connection upgrade e.g. https://github.com/mobizt/SSLClient
+
+ 4) If macro `ESP_MAIL_USE_SDK_SSL_ENGINE` was assigned in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+ 5) Arduino Devices with at least 80 k program memory
 
 
 
@@ -59,34 +84,6 @@ This following devices are supported.
  * W5100 SPI Ethernet module
  * W5500 SPI Ethernet module
 
-
-## Support other Arduino devices using external Clients.
-
-Since version 2.0.0, library allows you to use custom (external) Arduino Clients interfaces e.g. WiFiClient, EthernetClient and GSMClient, the devices that support C++ and have enough flash (> 80k) and RAM can now use this library.
-
-With external Clients, you needed to set the callback functions to hanle the the server connection and connection upgrade tasks.
-
-Some ports e.g. 587 for SMTP and 143 for IMAP require the TLS then the external Clients should be able to upgrade the connection from existing plain (non-secure) to secure connection and some SMTP port e.g. 25 may require upgrade too.
-
-This connection upgrade process is generally not available from general Arduino Clients and you need to make your custom client version that supports connection upgrade.
-
-See [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section for how to use external Clients.
-
-
-## Tested Devices
-
-### This following devices were tested.
-
- * Sparkfun ESP32 Thing
- * NodeMCU-32
- * WEMOS LOLIN32
- * TTGO T8 V1.8
- * M5Stack ESP32
- * NodeMCU ESP8266
- * Wemos D1 Mini (ESP8266)
- * Arduino MKR WiFi 1010
- * LAN8720 Ethernet PHY
- * ENC28J60 SPI Ethernet module
 
 ### Supposted Devices with flash size > 80k, using custom Clients.
 
@@ -151,21 +148,10 @@ The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
 ### SAMD21 custom build firmware
 
-For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) is needed to be installed instead of official Arduino WiFiNINA firmware.
+For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) should be installed instead of official Arduino WiFiNINA firmware.
 
 This requirement is optional and has more advantages over the standard Arduino WiFiNINA firmware.
 
-#### Comparison between custom build and official WiFiNINA firmwares.
-
-| Options | Custom Build Firmware | Arduino Official Firmware |
-| ------------- | ------------- | ------------- |
-| Plain connection via port 25, 143  | Yes  | Yes  |
-| Secure (SSL) connection via port 465, 993  | Yes  | Yes  |
-| Upgradable (STARTTLS) via port 25, 587, 143  | Yes  | No  |
-| Require Email Server Root Certificate installation  | Optional, not required by default  | *Yes  |
-| Require WiFiNINA library installation  | No (already built-in)  | Yes  |
-
-*Require root certificate of Email server which is available in Arduino IDE's WiFi101 /WiFiNINA Firmware Updater tool.
 
 
 ### Install Custom Build WiFiNINA Firmware
@@ -204,6 +190,8 @@ If the custom build WiFiNINA firmware was installed, the debug message will show
 ```
 > C: ESP Mail Client v2.x.x, Fw v1.4.8+21120
 ```
+
+
 
 ## Library Instalation
 
@@ -643,31 +631,32 @@ See [Custom_Command.ino](/examples/IMAP/Custom_Command/Custom_Command.ino) for t
 
 The Arduino Clients for network interfaces (WiFiClient, EthernetClient and GSMClient) which support non-secure network connection can be used as external client.
 
+These network interface Clients are refered to as "bsic Clients" which only handle the network communication.
 
-By default, the built-in Clients will be used when you compile the library for devices e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module and custom (external) Client will be used for other Arduino compatible devices 
+The Clients that have ability to handle SSL/TLS encryption/decryption of data from basic Client or to basic Client are refered to as "SSL Clients".
 
-You can change from built-in Clients to external Clients in case of ESP32, ESP8266 and SAMD21 with NINA-W102 by define the following macro in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+The Arduino devices that don't have on-board WiFi, the external Client library is needed and no additional setup required.
+
+
+In boards that have WiFi e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module, the built-in client will be used by default.
+
+
+To use custom (external) Client for such WiFi capable devices, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
 ```cpp
 #define ENABLE_CUSTOM_CLIENT
 ```
 
-Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient provided the basic connection to server without SSL.  You can use these clients as external client in this library unless they work only for SMTP port 25 and IMAP port 143.
 
-Some Email servers require the connection upgrade before authentication.
+See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for complete Client example.
 
 
-#### Arduino Clients via TLS
 
-The `STARTTLS` command will be sent when the device connected to the **SMTP Server via port 587** and the TLS is required before log in.
+In case of external Clients used as the following examples, please see the above table for supported protocols and its requirements.
 
-This required the Client to upgrade from non-secure connection to secure connection after STARTTLS command sent.
 
-You can use the [upgradable SSLClient](https://github.com/mobizt/SSLClient) that can handle this upgrade process.
-
-When the connection upgrades needed, the callback function assigned to function `connectionUpgradeRequestCallback` will be called which you can place the connection upgrade code inside this callback function.
-
-This is the example code show how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
+The following example show how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
 
 
 ```cpp
@@ -683,7 +672,7 @@ GSMClient client; // basic non-secure client
 // https://github.com/mobizt/SSLClient
 SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, rand_pin); 
 
-SMTPSession smtp(&ssl_client); 
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic); // set the Client type as basic client due to port 587 required non-secure connection during greeting and upgrade to TLS later with STARTTLS command. 
 
 void connectionUpgradeRequestCallback()
 {
@@ -730,16 +719,7 @@ void serup()
 ```
 
 
-The below example will use Arduino MKR 1000 and set WiFi101 for SSLClient.
-
-
-The example will send message using Gmail via port 465 which is already using SSL (no connection upgrade required), then you need to add Gmail server cetificate to the board using Arduino IDE's WiFi101/WiFiNINA Firmware Updater tool.
-
-
-For SSL ports, e.g. SMTP port 465 and IMAP port 993, you can use SSL ready client e.g. WiFiClientSecure and SSLClient to connect to these ports normally wich no connection upgrade code required unless port 587 on SMTP server.
-
-
-See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for complete Client example.
+The below example will use Arduino MKR 1000 and WiFi101 library.
 
 
 ```cpp
@@ -749,8 +729,9 @@ See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for comp
 // Define the global used Client object
 WiFiSSLClient ssl_client; // secured client
 
-// Define the global used smtp object 
-SMTPSession smtp(&ssl_client); // or assign the Client later with smtp.setClient(&ssl_client);
+// Define the global used smtp object
+// SSL required for port 465
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl); // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_ssl);
 
 // Since we use WiFiSSLClient that supported SSL and no basic non-secure client can be pass to its constructor,
 // only SMTP port 465 works in the following code.
@@ -852,6 +833,58 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
+
+}
+
+
+```
+
+
+The below example will use ESP32 and GSMClient library.
+
+
+```cpp
+
+GSMClient client; // basic non-secure client
+
+SMTPSession smtp(&client, esp_mail_external_client_type_basic); // We can assign basic Client directly in ESP8266 and ESP32 as library will handle the connection upgrade (if needed in case of SMTP port 587) using Core SDK SSL engine.
+
+
+void connectionRequestCallback(const char *host, int port)
+{
+    client.connect(host, port)
+}
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+    // Set the network status
+    bool networkConnected;
+
+    // networkConnected = modem.isNetworkConnected();
+
+    smtp.setNetworkStatus(networkConnected);
+}
+
+void serup()
+{
+
+    session.server.host_name = "smtp.gmail.com"; //for gmail.com
+    session.server.port = 587; // requires connection upgrade via STARTTLS
+    session.login.email = "your Email address"; //set to empty for no SMTP Authentication
+    session.login.password = "your Email password"; //set to empty for no SMTP Authentication
+    session.login.user_domain = "client domain or ip e.g. mydomain.com";
+
+    /**
+     * Other setup codes
+     * 
+     */
+
+    // Set the callback function for server connection.
+    smtp.connectionRequestCallback(connectionRequestCallback);
+
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+  
 
 }
 

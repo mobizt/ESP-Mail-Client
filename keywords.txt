@@ -118,6 +118,7 @@ setClient   KEYWORD2
 connectionRequestCallback   KEYWORD2
 connectionUpgradeRequestCallback    KEYWORD2
 networkConnectionRequestCallback    KEYWORD2
+networkDisconnectionRequestCallback KEYWORD2
 networkStatusRequestCallback    KEYWORD2
 setSystemTime   KEYWORD2
 mimeDataStreamCallback  KEYWORD2

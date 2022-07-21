@@ -1,5 +1,5 @@
 /**
- * Created February 28, 2022
+ * Created July 20, 2022
  */
 
 #ifndef ESP_TCP_CLIENTS_H
@@ -17,7 +17,7 @@
 #endif
 #endif
 
-#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT)
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
 #include "custom/Custom_TCP_Client.h"
 #define ESP_MAIL_TCP_CLIENT Custom_TCP_Client
 #else

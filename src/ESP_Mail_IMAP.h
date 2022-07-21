@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 4, 2022
+ * Created July 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1048,6 +1048,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 
 non_authenticated:
 
+    // capabilities may change after TLS negotiation
     if (!imap->checkCapabilities())
         return false;
 
@@ -1065,6 +1066,7 @@ non_authenticated:
 
         imapSend(imap, s.c_str(), false);
 
+        // rfc2595 section 3.1
         imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_starttls;
         if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
             return false;
@@ -1073,7 +1075,7 @@ non_authenticated:
             esp_mail_debug_print(esp_mail_str_310, true);
 
         // connect in secure mode
-        // do ssl handshake
+        // do TLS handshake
 
         if (!imap->client.connectSSL(imap->_sesson_cfg->certificate.verify))
             return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
@@ -1083,7 +1085,7 @@ non_authenticated:
         ssl = true;
         imap->_secure = true;
 
-        // check the capabilitiy again
+        // check the capabilitiy again to prevent the man in the middle attack
         goto non_authenticated;
     }
 
@@ -1111,7 +1113,10 @@ non_authenticated:
     {
 
         if (!imap->_auth_capability.xoauth2)
-            return handleIMAPError(imap, IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
+        {
+            handleIMAPError(imap, IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
+            return false;
+        }
 
         if (imap->_debug)
             esp_mail_debug_print(esp_mail_str_291, true);
@@ -2356,7 +2361,6 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
         {
 
             closeTCPSession(imap);
-
             if (imap->_headers.size() > 0)
             {
                 if (downloadRequest)
@@ -2371,6 +2375,12 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
                     cHeader(imap)->error_msg = imap->errorReason().c_str();
                 }
             }
+            else
+            {
+                if (imap->_debug)
+                    esp_mail_debug_print(esp_mail_str_371, true);
+            }
+
             return false;
         }
     }
@@ -2412,7 +2422,10 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
             else
             {
                 if (MailClient.networkAutoReconnect)
+                {
+                    imap->client.networkDisconnect();
                     imap->client.networkReconnect();
+                }
             }
 
             _lastReconnectMillis = millis();
@@ -2422,6 +2435,40 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
     }
 
     return status;
+}
+
+// Check if response from basic client is actually TLS alert
+// This response may return after basic Client sent plain text packet over SSL/TLS
+void ESP_Mail_Client::checkTLSAlert(IMAPSession *imap, const char *response)
+{
+
+    /**
+     * SSL Record Byte 0
+     *
+     * SSL3_RT_CHANGE_CIPHER_SPEC      0x14
+     * SSL3_RT_ALERT                   0x15
+     * SSL3_RT_HANDSHAKE               0x16
+     * SSL3_RT_APPLICATION_DATA        0x17
+     * TLS1_RT_HEARTBEAT               0x18
+     *
+     * SSL Record Alert Value
+     * SSL3_AD_CLOSE_NOTIFY            0x00
+     * TLS1_AD_PROTOCOL_VERSION        0x46
+     *
+     */
+    uint8_t data0 = response[0];
+    if (!imap->client.tlsErr() && data0 == 0x15)
+    {
+        imap->client.set_tlsErrr(true);
+
+        int proto = imap->client.getProtocol(imap->_sesson_cfg->server.port);
+
+        if (proto == (int)esp_mail_protocol_ssl || proto == (int)esp_mail_protocol_tls)
+        {
+            if (imap->_debug)
+                esp_mail_debug_print(esp_mail_str_204, true);
+        }
+    }
 }
 
 bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession)
@@ -2468,12 +2515,18 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
     while (imap->_tcpConnected && chunkBufSize <= 0)
     {
+
         if (!reconnect(imap, dataTime))
             return false;
 
         if (!connected(imap))
         {
+#if defined(ESP32)
+            if (imap->_imap_cmd == esp_mail_imap_cmd_logout) // suppress the error due to server closes the connection immediately in ESP32 core v2.0.4
+                return true;
+#endif
             errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+
             return false;
         }
         chunkBufSize = imap->client.available();
@@ -2524,6 +2577,12 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
                 if (!connected(imap))
                 {
+
+#if defined(ESP32)
+                    if (imap->_imap_cmd == esp_mail_imap_cmd_logout) // suppress the error due to server closes the connection immediately in ESP32 core v2.0.4
+                        return true;
+#endif
+
                     errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
                     return false;
                 }
@@ -2557,6 +2616,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
                 if (readLen)
                 {
+                    checkTLSAlert(imap, response);
 
                     if (imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
                     {
@@ -3217,14 +3277,18 @@ esp_mail_imap_response_status ESP_Mail_Client::imapResponseStatus(IMAPSession *i
     return esp_mail_imap_resp_unknown;
 }
 
-bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx)
+bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf, int &chunkIdx)
 {
     if (chunkIdx == 0)
     {
+
         if (strposP(buf, esp_mail_imap_response_10, 0) > -1 || strposP(buf, esp_mail_imap_response_20, 0) > -1)
         {
             if (strposP(buf, esp_mail_imap_response_11, 0) > -1)
-                imap->_auth_capability.login = true;
+            {
+                imap->_auth_capability.login = false;
+                imap->_read_capability.logindisable = true;
+            }
             if (strposP(buf, esp_mail_imap_response_12, 0) > -1)
                 imap->_auth_capability.plain = true;
             if (strposP(buf, esp_mail_imap_response_13, 0) > -1)
@@ -4179,9 +4243,9 @@ void ESP_Mail_Client::sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_
 #endif
 }
 
-IMAPSession::IMAPSession(Client *client)
+IMAPSession::IMAPSession(Client *client, esp_mail_external_client_type type)
 {
-    setClient(client);
+    setClient(client, type);
 }
 
 IMAPSession::IMAPSession()
@@ -4296,6 +4360,8 @@ bool IMAPSession::connect(bool &ssl)
 
 #endif
 
+    client.reset_tlsErr();
+
     if (_config)
     {
         if (_config->fetch.uid.length() > 0 || _config->fetch.number.length() > 0)
@@ -4321,13 +4387,19 @@ bool IMAPSession::connect(bool &ssl)
     }
 #endif
 
-    if (_sesson_cfg->server.port == esp_mail_imap_port_143)
+    if (!_sesson_cfg->ports_functions.list)
     {
-        _secure = false;
-        secureMode = false;
+        _sesson_cfg->ports_functions.list = new port_function[2];
+        _sesson_cfg->ports_functions.size = 2;
+
+        _sesson_cfg->ports_functions.list[0].port = 143;
+        _sesson_cfg->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
+
+        _sesson_cfg->ports_functions.list[1].port = 993;
+        _sesson_cfg->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
     }
-    else
-        secureMode = !_sesson_cfg->secure.startTLS;
+
+    MailClient.getPortFunction(_sesson_cfg->server.port, _sesson_cfg->ports_functions, _secure, secureMode, ssl, _sesson_cfg->secure.startTLS);
 
     if (_readCallback && !_customCmdResCallback)
         MailClient.imapCB(this, esp_mail_str_50, false, false);
@@ -4399,6 +4471,7 @@ bool IMAPSession::connect(bool &ssl)
     if (!client.connect(secureMode, _sesson_cfg->certificate.verify))
         return MailClient.handleIMAPError(this, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 
+    // server connected
     _tcpConnected = true;
 
     client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
@@ -4454,11 +4527,13 @@ void IMAPSession::debug(int level)
     {
         _debugLevel = level;
         _debug = true;
+        client.setDebugLevel(level);
     }
     else
     {
         _debugLevel = esp_mail_debug_level_none;
         _debug = false;
+        client.setDebugLevel(0);
     }
 }
 
@@ -4574,10 +4649,12 @@ bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
     return true;
 }
 
-void IMAPSession::setClient(Client *client)
+void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)
 {
-#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+#if (defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) || defined(ESP_MAIL_USE_SDK_SSL_ENGINE)) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    
     this->client.setClient(client);
+    this->client.setExtClientType(type);
 #endif
 }
 
@@ -4599,6 +4676,13 @@ void IMAPSession::networkConnectionRequestCallback(NetworkConnectionRequestCallb
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     this->client.networkConnectionRequestCallback(networkConnectionCB);
+#endif
+}
+
+void IMAPSession::networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+{
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    this->client.networkDisconnectionRequestCallback(networkDisconnectionCB);
 #endif
 }
 

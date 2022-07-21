@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 1.0.4
+ * TCP Client Base class, version 2.0.0
  *
- * June 19, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -52,6 +52,13 @@ typedef enum
 
 } esp_mail_client_type;
 
+typedef enum
+{
+    esp_mail_external_client_type_none,
+    esp_mail_external_client_type_basic,
+    esp_mail_external_client_type_ssl
+} esp_mail_external_client_type;
+
 class TCP_Client_Base
 {
     friend class ESP_Mail_Client;
@@ -91,15 +98,15 @@ public:
 
 #if defined(ESP8266) || defined(ESP32)
 
-            if (setTimestamp(ts) == 0)
-            {
-                this->now = time(nullptr);
-                return true;
-            }
+        if (setTimestamp(ts) == 0)
+        {
+            this->now = time(nullptr);
+            return true;
+        }
 
 #else
-            if (ts > ESP_MAIL_CLIENT_VALID_TS)
-                this->now = ts - (millis() / 1000);
+        if (ts > ESP_MAIL_CLIENT_VALID_TS)
+            this->now = ts - (millis() / 1000);
 
 #endif
 
@@ -116,13 +123,6 @@ public:
     virtual bool isInitialized() { return false; }
 
     virtual int hostByName(const char *name, IPAddress &ip) { return 0; }
-
-    virtual bool begin(const char *host, uint16_t port)
-    {
-        this->host = host;
-        this->port = port;
-        return true;
-    };
 
     virtual bool connect(bool secured, bool verify) { return false; }
 
@@ -152,7 +152,9 @@ public:
 
     virtual int readBytes(char *buf, int len) { return 0; }
 
-    virtual void flush(){}
+    virtual void flush() {}
+
+    virtual void setDebugLevel(int debug) { debugLevel = debug; }
 
     void baseSetCertType(esp_mail_cert_type type) { certType = type; }
 
@@ -167,6 +169,30 @@ public:
         return -1;
     }
 
+    esp_mail_cert_type getCertType() { return certType; }
+
+    int getProtocol(uint16_t port)
+    {
+        if (session)
+        {
+            if (session->ports_functions.list)
+            {
+                for (int i = 0; i < session->ports_functions.size; i++)
+                {
+                    if (session->ports_functions.list[i].port == port)
+                            return (int)session->ports_functions.list[i].protocol;
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    esp_mail_external_client_type extClientType()
+    {
+        return ext_client_type;
+    }
+
 private:
     void setMBFS(MB_FS *mbfs) { this->mbfs = mbfs; }
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
@@ -179,21 +205,22 @@ private:
     {
         return tmo;
     }
-    esp_mail_cert_type getCertType() { return certType; }
-    esp_mail_cert_type certType = esp_mail_cert_type_undefined;
 
 protected:
-    MB_String host;
-    uint16_t port = 0;
+
     MB_FS *mbfs = nullptr;
     int chunkSize = 4096;
     int tmo = 40000; // 40 sec
     bool clockReady = false;
     time_t now = 0;
+    bool tls_required = false;
+    bool tls_error = false;
+    bool debugLevel = 0;
+    esp_mail_cert_type certType = esp_mail_cert_type_undefined;
+    esp_mail_external_client_type ext_client_type = esp_mail_external_client_type_basic;
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
     ESP_Mail_Session *session = nullptr;
 #endif
-
 };
 
 #endif

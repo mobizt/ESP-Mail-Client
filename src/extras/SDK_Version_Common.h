@@ -11,7 +11,11 @@
 
 #ifdef __GNUC__
 #if __GNUC__ > 4 || __GNUC__ == 10
+#if defined(ARDUINO_ESP8266_GIT_VER)
+#if ARDUINO_ESP8266_GIT_VER > 0
 #define ESP8266_CORE_SDK_V3_X_X
+#endif
+#endif
 #endif
 #endif
 

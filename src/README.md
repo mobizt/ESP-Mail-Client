@@ -265,8 +265,9 @@ This class used for controlling IMAP transports and retrieving the data from the
 
 param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
 
+param **`type`** The type of external Client e.g. `esp_mail_external_client_type_basic` and `esp_mail_external_client_type_ssl`
 ```cpp
-void setClient(Client *client);
+void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
 ```
 
 
@@ -276,7 +277,7 @@ void setClient(Client *client);
 param **`connectionCB`** The function that handles the server connection.
 
 ```cpp
-void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
+void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 ```
 
 
@@ -285,7 +286,7 @@ void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
 param **`upgradeCB`** The function that handles existing connection upgrade.
 
 ```cpp
-void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgradeCB);
+void connectionUpgradeRequetsCallback(ConnectionUpgradeRequestCallback upgradeCB);
 ```
 
 
@@ -295,7 +296,16 @@ void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgrade
 param **`networkConnectionCB`** The function that handles the network connection.
 
 ```cpp
-void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback networkConnectionCB);
+void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+```
+
+
+#### Assign the callback function to handle the network disconnection for custom Client.
+
+param **`networkDisconnectionCB`** The function that handles the network disconnection.
+
+```cpp
+void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 ```
 
 
@@ -304,7 +314,7 @@ void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback network
 param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
 
 ```cpp
-void networkStatusRequestsCallback(NetworkStatusRequestsCallback networkStatusCB);
+void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 ```
 
 
@@ -764,8 +774,9 @@ and retrieving the data from the SMTP server.
 
 param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
 
+param **`type`** The type of external Client e.g. `esp_mail_external_client_type_basic` and `esp_mail_external_client_type_ssl`
 ```cpp
-void setClient(Client *client);
+void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
 ```
 
 
@@ -775,7 +786,7 @@ void setClient(Client *client);
 param **`connectionCB`** The function that handles the server connection.
 
 ```cpp
-void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
+void connectionRequestCallback(ConnectionRequestCallback connectionCB);
 ```
 
 
@@ -784,7 +795,7 @@ void connectionRequestsCallback(ConnectionRequestsCallback connectionCB);
 param **`upgradeCB`** The function that handles existing connection upgrade.
 
 ```cpp
-void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgradeCB);
+void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
 ```
 
 
@@ -793,8 +804,18 @@ void connectionUpgradeRequestsCallback(ConnectionUpgradeRequestsCallback upgrade
 param **`networkConnectionCB`** The function that handles the network connection.
 
 ```cpp
-void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback networkConnectionCB);
+void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
 ```
+
+
+#### Assign the callback function to handle the network disconnection for custom Client.
+
+param **`networkDisconnectionCB`** The function that handles the network disconnection.
+
+```cpp
+void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
+```
+
 
 
 #### Assign the callback function to handle the network connection status acknowledgement.
@@ -802,7 +823,7 @@ void networkConnectionRequestsCallback(NetworkConnectionRequestsCallback network
 param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
 
 ```cpp
-void networkStatusRequestsCallback(NetworkStatusRequestsCallback networkStatusCB);
+void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 ```
 
 

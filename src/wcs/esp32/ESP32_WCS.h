@@ -1,7 +1,7 @@
 /*
- *ESP32 WiFi Client Secure v1.0.6
+ * ESP32 WiFi Client Secure v2.0.0
  *
- * July 4, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -53,25 +53,31 @@
 
 #include "Arduino.h"
 #include "IPAddress.h"
+#include "ESP_Mail_FS.h"
 #include "ESP32_SSL_Client.h"
 #include <WiFiClient.h>
+#include "./wcs/base/TCP_Client_Base.h"
 
 typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
 
-class ESP32_WCS : public WiFiClient
+#define WCS_CLASS ESP32_SSL_Client
+#define WC_CLASS ESP32_SSL_Client
+
+#include "./wcs/base/TCP_Client_Base.h"
+
+#if defined(WCS_USE_BEARSSL) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+#define OVERRIDING override
+#else
+#define OVERRIDING
+#endif
+
+class ESP32_WCS : public WCS_CLASS, public TCP_Client_Base
 {
     friend class ESP32_TCP_Client;
 
 protected:
-
-    // The SSL context
-    ESP32_SSL_Client::ssl_data *ssl;
-    
     // The mbedTLS last error code.
     int _lastError = 0;
-
-    // The tempolary next avalible byte data from Stream.
-    int _peek = -1;
 
     // milliseconds time out
     int _timeout = 0;
@@ -91,14 +97,22 @@ public:
     // The default class constructor
     ESP32_WCS();
 
-    // The class constructor with current socket
-    ESP32_WCS(int socket);
-
-    // The class constructor with secure connection option
-    ESP32_WCS(bool secured);
-
     // The class deconstructor
     ~ESP32_WCS();
+
+    /**
+     * Store the host name and port.
+     * @param host The host name to connect.
+     * @param port The port to connect.
+     * @return true.
+     */
+    bool begin(const char *host, uint16_t port);
+
+    /**
+     * Set the client.
+     * @param client The Client interface.
+     */
+    void setClient(Client *client);
 
     /**
      * Connect to server.
@@ -236,7 +250,7 @@ public:
      * Get TCP connection status.
      * @return 1 for connected or 0 for not connected.
      */
-    uint8_t connected();
+    bool connected();
 
     /**
      * Get mbedTLS last error info.
@@ -249,7 +263,7 @@ public:
     /**
      * Disable certificate verification and ignore the authentication.
      */
-    void setInsecure();                                            // Don't validate the chain, just accept whatever is given.  VERY INSECURE!
+    void setInsecure(); // Don't validate the chain, just accept whatever is given.  VERY INSECURE!
 
     /**
      * Set the Pre Shared Key and its identity.
@@ -379,45 +393,49 @@ public:
         return !this->operator==(rhs);
     };
 
-    int socket()
+    void setExtClientType(esp_mail_external_client_type type)
     {
-        return ssl->socket = -1;
+        ext_client_type = type;
     }
 
+    esp_mail_external_client_type getExtClientType()
+    {
+        return ext_client_type;
+    }
+
+#if defined(ENABLE_CUSTOM_CLIENT) && defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    /**
+     * Set the connection request callback.
+     * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+     */
+    void connectionRequestCallback(_ConnectionRequestCallback connectCB)
+    {
+        connection_cb = connectCB;
+    }
+
+#endif
+
 private:
-    ESP32_SSL_Client esp32_ssl_client;
+
+    MB_String _host;
+    uint16_t _port;
+    ssl_ctx *_ssl;
     char *_streamLoad(Stream &stream, size_t size);
-    bool _secured = true;
+    bool _secured = false;
+    bool _use_external_sslclient = false;
     bool _withCert = false;
     bool _withKey = false;
-    MB_String _host;
-    MB_String _rxBuf;
-    int _port;
+
+    Client *_client = nullptr;
+
+    bool _use_internal_basic_client = false;
 
     /**
-     * Get the non-secure mode available data size to read.
-     * @return The avaiable data size.
+     * Prepare internal basic client
      */
-    int ns_available();
+    void prepareBasicClient();
 
-    /**
-     * The non-secure mode TCP data write function.
-     * @param buf The data to write.
-     * @param size The length of data to write.
-     * @return The size of data that was successfully written or 0 for error.
-     */
-    size_t ns_write(const uint8_t *buf, size_t size);
-
-    /**
-     * The non-secure mode TCP data read function.
-     * @param buf The data buffer.
-     * @param size The length of data that read.
-     * @return The size of data that was successfully read or 0 for error.
-     */
-    size_t ns_read(uint8_t *buf, size_t size);
-
-    // friend class WiFiServer;
-    using Print::write;
+    int _connect(const char *host, uint16_t port);
 };
 
 #endif // ESP32

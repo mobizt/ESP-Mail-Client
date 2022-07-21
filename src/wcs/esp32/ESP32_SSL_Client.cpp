@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v1.0.5
+ * ESP32 SSL Client v2.0.0
  *
- * Junly 4, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -39,18 +39,9 @@
 #ifdef ESP32
 
 #include <Arduino.h>
-
-#include <esp32-hal-log.h>
-#include <lwip/err.h>
-#include <lwip/sockets.h>
-#include <lwip/sys.h>
-#include <lwip/netdb.h>
 #include <mbedtls/sha256.h>
 #include <mbedtls/oid.h>
-#include <algorithm>
-#include <string>
 #include "ESP32_SSL_Client.h"
-#include <WiFi.h>
 
 #if !defined(MBEDTLS_KEY_EXCHANGE__SOME__PSK_ENABLED) && !defined(MBEDTLS_KEY_EXCHANGE_SOME_PSK_ENABLED)
 #error "Please configure IDF framework to include mbedTLS -> Enable pre-shared-key ciphersuites and activate at least one cipher"
@@ -76,89 +67,98 @@ static int _esp32_ssl_handle_error(int err, const char *file, int line)
 
 #define esp32_ssl_handle_error(e) _esp32_ssl_handle_error(e, __FUNCTION__, __LINE__)
 
-void ESP32_SSL_Client::ssl_init(ssl_data *ssl)
+void ESP32_SSL_Client::ssl_init(ssl_ctx *ssl)
 {
     mbedtls_ssl_init(&ssl->ssl_ctx);
     mbedtls_ssl_config_init(&ssl->ssl_conf);
     mbedtls_ctr_drbg_init(&ssl->drbg_ctx);
 }
 
-int ESP32_SSL_Client::start_tcp_connection(ssl_data *ssl, const char *host, uint32_t port, int timeout)
+/**
+ * \brief          Callback type: send data on the network.
+ *
+ * \note           That callback may be either blocking or non-blocking.
+ *
+ * \param ctx      Context for the send callback (typically a file descriptor)
+ * \param buf      Buffer holding the data to send
+ * \param len      Length of the data to send
+ *
+ * \return         The callback must return the number of bytes sent if any,
+ *                 or a non-zero error code.
+ *                 If performing non-blocking I/O, \c MBEDTLS_ERR_SSL_WANT_WRITE
+ *                 must be returned when the operation would block.
+ *
+ * \note           The callback is allowed to send fewer bytes than requested.
+ *                 It must always return the number of bytes actually sent.
+ */
+static int esp_mail_esp32_basic_client_send(void *ctx, const unsigned char *buf, size_t len)
 {
+    Client *client = (Client *)ctx;
 
-    int enable = 1;
-
-    if (ssl->_debugCallback)
-        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_2);
-
-    log_v("Free internal heap before TLS %u", ESP.getFreeHeap());
-
-    log_v("Starting socket");
-    ssl->socket = -1;
-
-    ssl->socket = lwip_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (ssl->socket < 0)
-    {
-        if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_3);
-        log_e("ERROR opening socket");
-        return ssl->socket;
-    }
-
-    IPAddress srv((uint32_t)0);
-    if (!WiFiGenericClass::hostByName(host, srv))
-    {
-        if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_4);
+    if (!client)
         return -1;
-    }
 
-    struct sockaddr_in serv_addr;
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = srv;
-    serv_addr.sin_port = htons(port);
+    int res = client->write(buf, len);
 
-    if (ssl->_debugCallback)
-        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_5);
-
-    if (lwip_connect(ssl->socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0)
-    {
-        if (timeout <= 0)
-        {
-            timeout = 30000; // Milli seconds.
-        }
-        timeval so_timeout = {.tv_sec = timeout / 1000, .tv_usec = (timeout % 1000) * 1000};
-
-#define ROE(x, msg)                                         \
-    {                                                       \
-        if (((x) < 0))                                      \
-        {                                                   \
-            log_e("LWIP Socket config of " msg " failed."); \
-            return -1;                                      \
-        }                                                   \
-    }
-        ROE(lwip_setsockopt(ssl->socket, SOL_SOCKET, SO_RCVTIMEO, &so_timeout, sizeof(so_timeout)), "SO_RCVTIMEO");
-        ROE(lwip_setsockopt(ssl->socket, SOL_SOCKET, SO_SNDTIMEO, &so_timeout, sizeof(so_timeout)), "SO_SNDTIMEO");
-
-        ROE(lwip_setsockopt(ssl->socket, IPPROTO_TCP, TCP_NODELAY, &enable, sizeof(enable)), "TCP_NODELAY");
-        ROE(lwip_setsockopt(ssl->socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)), "SO_KEEPALIVE");
-    }
-    else
-    {
-        if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_7);
-        log_e("Connect to Server failed!");
-        return -1;
-    }
-
-    fcntl(ssl->socket, F_SETFL, fcntl(ssl->socket, F_GETFL, 0) | O_NONBLOCK);
-
-    return ssl->socket;
+    return res;
 }
 
-int ESP32_SSL_Client::connect_ssl(ssl_data *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+/**
+ * \brief          Callback type: receive data from the network, with timeout
+ *
+ * \note           That callback must block until data is received, or the
+ *                 timeout delay expires, or the operation is interrupted by a
+ *                 signal.
+ *
+ * \param ctx      Context for the receive callback (typically a file descriptor)
+ * \param buf      Buffer to write the received data to
+ * \param len      Length of the receive buffer
+ * \param timeout  Maximum number of milliseconds to wait for data
+ *                 0 means no timeout (potentially waiting forever)
+ *
+ * \return         The callback must return the number of bytes received,
+ *                 or a non-zero error code:
+ *                 \c MBEDTLS_ERR_SSL_TIMEOUT if the operation timed out,
+ *                 \c MBEDTLS_ERR_SSL_WANT_READ if interrupted by a signal.
+ *
+ * \note           The callback may receive fewer bytes than the length of the
+ *                 buffer. It must always return the number of bytes actually
+ *                 received and written to the buffer.
+ */
+static int esp_mail_esp32_basic_client_recv_timeout(void *ctx, unsigned char *buf, size_t len, uint32_t timeout)
 {
+    Client *client = (Client *)ctx;
+
+    if (!client)
+        return -1;
+
+    int available = client->available();
+
+    int res = 0;
+
+    unsigned long to = millis();
+    while (millis() - to < timeout && available < len)
+    {
+        delay(0);
+        available = client->available();
+        if (millis() - to >= timeout)
+            res = MBEDTLS_ERR_SSL_TIMEOUT;
+    };
+
+    res = client->read(buf, len);
+
+    if (res < len)
+        return MBEDTLS_ERR_SSL_WANT_READ;
+
+    return res;
+}
+
+int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
+{
+
+    if (!ssl->client)
+        return -1;
+
     if (rootCABuff == NULL && pskIdent == NULL && psKey == NULL && !insecure)
     {
         if (ssl->_debugCallback)
@@ -343,7 +343,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_data *ssl, const char *host, const char *r
         return esp32_ssl_handle_error(ret);
     }
 
-    mbedtls_ssl_set_bio(&ssl->ssl_ctx, &ssl->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
+    mbedtls_ssl_set_bio(&ssl->ssl_ctx, ssl->client, esp_mail_esp32_basic_client_send, NULL, esp_mail_esp32_basic_client_recv_timeout);
 
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_18);
@@ -360,7 +360,8 @@ int ESP32_SSL_Client::connect_ssl(ssl_data *ssl, const char *host, const char *r
         }
         if ((millis() - handshake_start_time) > ssl->handshake_timeout)
             return -1;
-        vTaskDelay(2); // 2 ticks
+
+        vTaskDelay(2 / portTICK_PERIOD_MS);
     }
 
     if (cli_cert != NULL && cli_key != NULL)
@@ -411,21 +412,16 @@ int ESP32_SSL_Client::connect_ssl(ssl_data *ssl, const char *host, const char *r
 
     log_v("Free internal heap after TLS %u", ESP.getFreeHeap());
 
-    return ssl->socket;
+    return 1;
 }
 
-void ESP32_SSL_Client::stop_tcp_connection(ssl_data *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+void ESP32_SSL_Client::stop_tcp_connection(ssl_ctx *ssl, const char *rootCABuff, const char *cli_cert, const char *cli_key)
 {
+
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_22);
 
     log_v("Cleaning SSL connection.");
-
-    if (ssl->socket >= 0)
-    {
-        close(ssl->socket);
-        ssl->socket = -1;
-    }
 
     mbedtls_ssl_free(&ssl->ssl_ctx);
     mbedtls_ssl_config_free(&ssl->ssl_conf);
@@ -433,7 +429,7 @@ void ESP32_SSL_Client::stop_tcp_connection(ssl_data *ssl, const char *rootCABuff
     mbedtls_entropy_free(&ssl->entropy_ctx);
 }
 
-int ESP32_SSL_Client::data_to_read(ssl_data *ssl)
+int ESP32_SSL_Client::data_to_read(ssl_ctx *ssl)
 {
     int ret, res;
     ret = mbedtls_ssl_read(&ssl->ssl_ctx, NULL, 0);
@@ -450,7 +446,7 @@ int ESP32_SSL_Client::data_to_read(ssl_data *ssl)
     return res;
 }
 
-int ESP32_SSL_Client::send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t len)
+int ESP32_SSL_Client::send_ssl_data(ssl_ctx *ssl, const uint8_t *data, size_t len)
 {
     log_v("Writing request with %d bytes...", len); // for low level debug
     int ret = -1;
@@ -469,7 +465,7 @@ int ESP32_SSL_Client::send_ssl_data(ssl_data *ssl, const uint8_t *data, size_t l
     return ret;
 }
 
-int ESP32_SSL_Client::get_ssl_receive(ssl_data *ssl, uint8_t *data, int length)
+int ESP32_SSL_Client::get_ssl_receive(ssl_ctx *ssl, uint8_t *data, int length)
 {
 
     // log_d( "Reading HTTP response...");   //for low level debug
@@ -533,7 +529,7 @@ bool ESP32_SSL_Client::matchName(const std::string &name, const std::string &dom
 }
 
 // Verifies certificate provided by the peer to match specified SHA256 fingerprint
-bool ESP32_SSL_Client::verify_ssl_fingerprint(ssl_data *ssl, const char *fp, const char *domain_name)
+bool ESP32_SSL_Client::verify_ssl_fingerprint(ssl_ctx *ssl, const char *fp, const char *domain_name)
 {
     // Convert hex string to byte array
     uint8_t fingerprint_local[32];
@@ -592,7 +588,7 @@ bool ESP32_SSL_Client::verify_ssl_fingerprint(ssl_data *ssl, const char *fp, con
 }
 
 // Checks if peer certificate has specified domain in CN or SANs
-bool ESP32_SSL_Client::verify_ssl_dn(ssl_data *ssl, const char *domain_name)
+bool ESP32_SSL_Client::verify_ssl_dn(ssl_ctx *ssl, const char *domain_name)
 {
     log_d("domain name: '%s'", (domain_name) ? domain_name : "(null)");
     std::string domain_name_str(domain_name);
@@ -639,40 +635,7 @@ bool ESP32_SSL_Client::verify_ssl_dn(ssl_data *ssl, const char *domain_name)
     return false;
 }
 
-int ESP32_SSL_Client::ns_lwip_write(ssl_data *ssl, const uint8_t *buf, int bufLen)
-{
-    // return ssize_t or signed size_t for error
-    return lwip_write(ssl->socket, buf, bufLen);
-}
-
-int ESP32_SSL_Client::ns_lwip_read(ssl_data *ssl, uint8_t *buf, int bufLen)
-{
-    fd_set readset;
-    fd_set writeset;
-    fd_set errset;
-
-    struct timeval tv;
-
-    FD_ZERO(&readset);
-    FD_SET(ssl->socket, &readset);
-    FD_ZERO(&writeset);
-    FD_SET(ssl->socket, &writeset);
-
-    FD_ZERO(&errset);
-    FD_SET(ssl->socket, &errset);
-
-    tv.tv_sec = 1;
-    tv.tv_usec = 0;
-    int ret = lwip_select(ssl->socket, &readset, &writeset, &errset, &tv);
-
-    if (ret < 0)
-        return ret;
-
-    // return ssize_t or signed size_t for error
-    return read(ssl->socket, buf, bufLen);
-}
-
-void ESP32_SSL_Client::ssl_client_send_mbedtls_error_cb(ssl_data *ssl, int errNo)
+void ESP32_SSL_Client::ssl_client_send_mbedtls_error_cb(ssl_ctx *ssl, int errNo)
 {
     char *buf = new char[512];
     char *error_buf = new char[100];
@@ -686,7 +649,7 @@ void ESP32_SSL_Client::ssl_client_send_mbedtls_error_cb(ssl_data *ssl, int errNo
     delete[] buf;
 }
 
-void ESP32_SSL_Client::ssl_client_debug_pgm_send_cb(ssl_data *ssl, PGM_P info)
+void ESP32_SSL_Client::ssl_client_debug_pgm_send_cb(ssl_ctx *ssl, PGM_P info)
 {
     size_t dbgInfoLen = strlen_P(info) + 10;
     char *dbgInfo = new char[dbgInfoLen];

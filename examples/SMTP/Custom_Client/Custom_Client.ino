@@ -28,13 +28,7 @@
 #include <EthernetUdp.h>
 #include <extras/MB_NTP.h>
 
-// Forked version of SSLClient
-// https://github.com/mobizt/SSLClient
-#include <SSLClient.h>
 
-// Trus anchors for the server i.e. gmail.com for this case
-// https://github.com/mobizt/SSLClient/blob/master/TrustAnchors.md
-#include "trust_anchors.h"
 
 /** For Gmail, the app password will be used for log in
  *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
@@ -83,10 +77,8 @@ IPAddress Eth_IP(192, 168, 1, 104);
 
 EthernetClient client;
 
-SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, analog_pin);
-
 /* The SMTP Session object used for Email sending */
-SMTPSession smtp(&ssl_client); // or assign the Client later with smtp.setClient(&ssl_client);
+SMTPSession smtp(&client, esp_mail_external_client_type_basic /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */); // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
 
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
@@ -153,17 +145,6 @@ void connectionRequestCallback(const char *host, int port)
         return;
     }
     Serial.println("success.");
-}
-
-// Define the callback function to handle server connection upgrade.
-void connectionUpgradeRequestCallback()
-{
-    Serial.println("> U: Upgrad the connection...");
-
-#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
-    // The host and port parameters will be ignored and can be any for this case.
-    ssl_client.connectSSL(SMTP_HOST, SMTP_PORT); // or ssl_client.connectSSL("", 0);
-#endif
 }
 
 void sendEmail()
@@ -236,8 +217,6 @@ void sendEmail()
 
     // Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
-
-    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
     smtp.networkConnectionRequestCallback(networkConnection);
 

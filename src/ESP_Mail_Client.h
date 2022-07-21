@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 22, 2022
+ * Created July 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -43,10 +43,11 @@
 #include "extras/MB_Time.h"
 #include "extras/MIMEInfo.h"
 
+#include "ESP_Mail_Print.h"
+
 #if defined(ESP32) || defined(ESP8266)
 
 #define UPLOAD_CHUNKS_NUM 12
-#define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf
 
 #if defined(ESP32)
 
@@ -68,16 +69,6 @@
 #undef max
 #define ESP_MAIL_MIN_MEM 3000
 #define UPLOAD_CHUNKS_NUM 5
-
-#include "extras/mb_print/mb_print.h"
-
-extern "C" __attribute__((weak)) void
-mb_print_putchar(char c)
-{
-  ESP_MAIL_DEFAULT_DEBUG_PORT.print(c);
-}
-
-#define ESP_MAIL_PRINTF mb_print_printf
 
 #ifdef __arm__
 // should use uinstd.h to define sbrk but Due causes a conflict
@@ -861,12 +852,15 @@ private:
   // Get file extension with dot from MIME string
   void getExtfromMIME(const char *mime, MB_String &ext);
 
+  // Get operation config based on port and its protocol
+  void getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls);
+
 #endif
 
 #if defined(ENABLE_SMTP)
 
-  // Encode Quoted Printable string
-  void encodeQP(const char *buf, char *out);
+      // Encode Quoted Printable string
+      void encodeQP(const char *buf, char *out);
 
   // Add the soft line break to the long text line rfc 3676
   void formatFlowedText(MB_String &content);
@@ -1036,6 +1030,10 @@ private:
   // Handle SMTP server authentication
   bool smtpAuth(SMTPSession *smtp, bool &ssl);
 
+  // Check if response from basic client is actually TLS alert header
+  // This is the response returns after basic Client sent plain text packet over SSL/TLS 
+  void checkTLSAlert(SMTPSession *smtp, const char *response);
+
   // Handle SMTP response
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
 
@@ -1168,6 +1166,10 @@ private:
   void numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr);
 #endif
 
+  // Check if response from basic client is actually TLS alert
+  // This response may return after basic Client sent plain text packet over SSL/TLS
+  void checkTLSAlert(IMAPSession *imap, const char *response);
+
   // Handle IMAP response
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
 
@@ -1223,7 +1225,7 @@ private:
   void prepareFileList(IMAPSession *imap, MB_String &filePath);
 
   // Parse capability response
-  bool parseCapabilityResponse(IMAPSession *imap, char *buf, int &chunkIdx);
+  bool parseCapabilityResponse(IMAPSession *imap, const char *buf, int &chunkIdx);
 
   // Parse Idle response
   bool parseIdleResponse(IMAPSession *imap);
@@ -1251,15 +1253,16 @@ private:
 class IMAPSession
 {
 public:
-  IMAPSession(Client *client);
+  IMAPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
   IMAPSession();
   ~IMAPSession();
 
   /** Assign custom Client from Arduino Clients.
    *
    * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
+   * @param type The type of external Client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
    */
-  void setClient(Client *client);
+  void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
 
   /** Assign the callback function to handle the server connection for custom Client.
    *
@@ -1278,6 +1281,12 @@ public:
    * @param networkConnectionCB The function that handles the network connection.
    */
   void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+
+  /** Assign the callback function to handle the network disconnection for custom Client.
+   *
+   * @param networkDisconnectionCB The function that handles the network disconnection.
+   */
+  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 
   /** Assign the callback function to handle the network connection status acknowledgement.
    *
@@ -1728,15 +1737,16 @@ public:
 class SMTPSession
 {
 public:
-  SMTPSession(Client *client);
+  SMTPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
   SMTPSession();
   ~SMTPSession();
 
   /** Assign custom Client from Arduino Clients.
    *
    * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
+   * @param type The type of external Client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
    */
-  void setClient(Client *client);
+  void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
 
   /** Assign the callback function to handle the server connection for custom Client.
    *
@@ -1755,6 +1765,12 @@ public:
    * @param networkConnectionCB The function that handles the network connection.
    */
   void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
+
+  /** Assign the callback function to handle the network disconnection for custom Client.
+   *
+   * @param networkDisconnectionCB The function that handles the network disconnection.
+   */
+  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 
   /** Assign the callback function to handle the network connection status acknowledgement.
    *
@@ -1924,6 +1940,27 @@ public:
 };
 
 #endif
+
+static void __attribute__((used)) esp_mail_dump_blob(unsigned char *buf, size_t len)
+{
+
+  size_t u;
+
+  for (u = 0; u < len; u++)
+  {
+    if ((u & 15) == 0)
+    {
+      ESP_MAIL_PRINTF("\n%08lX  ", (unsigned long)u);
+    }
+    else if ((u & 7) == 0)
+    {
+      Serial.print(" ");
+    }
+    ESP_MAIL_PRINTF(" %02x", buf[u]);
+  }
+
+  ESP_MAIL_PRINTF("\n");
+}
 
 extern ESP_Mail_Client MailClient;
 

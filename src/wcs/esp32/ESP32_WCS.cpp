@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v1.0.6
+ * ESP32 WiFi Client Secure v2.0.0
  *
- * July 4, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -62,54 +62,13 @@
 
 ESP32_WCS::ESP32_WCS()
 {
-    _connected = false;
+    _ssl = new ssl_ctx;
+    ssl_init(_ssl);
 
-    ssl = new ESP32_SSL_Client::ssl_data;
-    esp32_ssl_client.ssl_init(ssl);
-    ssl->socket = -1;
-    ssl->handshake_timeout = 120000;
+    setClient(nullptr);
+
+    _ssl->handshake_timeout = 120000;
     _use_insecure = false;
-    _CA_cert = NULL;
-    _cert = NULL;
-    _private_key = NULL;
-    _pskIdent = NULL;
-    _psKey = NULL;
-    next = NULL;
-}
-
-ESP32_WCS::ESP32_WCS(int sock)
-{
-    _connected = false;
-    _timeout = 0;
-
-    ssl = new ESP32_SSL_Client::ssl_data;
-    esp32_ssl_client.ssl_init(ssl);
-    ssl->socket = sock;
-    ssl->handshake_timeout = 120000;
-
-    if (sock >= 0)
-    {
-        _connected = true;
-    }
-
-    _CA_cert = NULL;
-    _cert = NULL;
-    _private_key = NULL;
-    _pskIdent = NULL;
-    _psKey = NULL;
-    next = NULL;
-}
-
-ESP32_WCS::ESP32_WCS(bool secured)
-{
-    _connected = false;
-
-    ssl = new ESP32_SSL_Client::ssl_data;
-    esp32_ssl_client.ssl_init(ssl);
-    ssl->socket = -1;
-    ssl->handshake_timeout = 120000;
-    _use_insecure = !secured;
-    _secured = secured;
     _CA_cert = NULL;
     _cert = NULL;
     _private_key = NULL;
@@ -121,27 +80,50 @@ ESP32_WCS::ESP32_WCS(bool secured)
 ESP32_WCS::~ESP32_WCS()
 {
     stop();
-    delete ssl;
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    if (_client && _use_internal_basic_client)
+    {
+        delete _client;
+        _ssl->client = nullptr;
+        _use_internal_basic_client = false;
+    }
+#endif
+    _use_external_sslclient = false;
+    delete _ssl;
+}
+
+void ESP32_WCS::setClient(Client *client)
+{
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    _ssl->client = client;
+#endif
 }
 
 ESP32_WCS &ESP32_WCS::operator=(const ESP32_WCS &other)
 {
     stop();
-    ssl->socket = other.ssl->socket;
-    _connected = other._connected;
+    _ssl->client = other._ssl->client;
+    _use_insecure = other._use_insecure;
+    _secured = other._secured;
     return *this;
+}
+
+bool ESP32_WCS::begin(const char *host, uint16_t port)
+{
+    _host = host;
+    _port = port;
+    return true;
 }
 
 void ESP32_WCS::stop()
 {
-    if (ssl->socket >= 0)
-    {
-        close(ssl->socket);
-        ssl->socket = -1;
-        _connected = false;
-        _peek = -1;
-    }
-    esp32_ssl_client.stop_tcp_connection(ssl, _CA_cert, _cert, _private_key);
+    _host.clear();
+
+    if (!_use_external_sslclient)
+        stop_tcp_connection(_ssl, _CA_cert, _cert, _private_key);
+
+    if (_ssl->client)
+        _ssl->client->stop();
 }
 
 int ESP32_WCS::connect(IPAddress ip, uint16_t port)
@@ -175,40 +157,72 @@ int ESP32_WCS::connect(IPAddress ip, uint16_t port, const char *CA_cert, const c
     return connect(ip.toString().c_str(), port, CA_cert, cert, private_key);
 }
 
-int ESP32_WCS::connect(const char *host, uint16_t port, const char *CA_cert, const char *cert, const char *private_key)
+int ESP32_WCS::_connect(const char *host, uint16_t port)
 {
-    _host = host;
-    _port = port;
-    _withCert = true;
+    prepareBasicClient();
+
+    if (!_ssl->client)
+        return -1;
+
+    _use_external_sslclient = (_ssl->client && _secured && ext_client_type == esp_mail_external_client_type_ssl) ? true : false;
 
     if (_timeout > 0)
     {
-        ssl->handshake_timeout = _timeout;
+        _ssl->handshake_timeout = _timeout;
     }
 
-    int ret = esp32_ssl_client.start_tcp_connection(ssl, host, port, _timeout);
+    _ssl->client->setTimeout(_timeout);
 
+#if defined(ENABLE_CUSTOM_CLIENT)
+    if (connection_cb)
+        connection_cb(host, port);
+#else
+    _ssl->client->connect(host, port);
+#endif
+
+    if (!_ssl->client->connected())
+    {
+        stop();
+        return -1;
+    }
+
+    _host = host;
+    _port = port;
+
+    return 1;
+}
+
+int ESP32_WCS::connect(const char *host, uint16_t port, const char *CA_cert, const char *cert, const char *private_key)
+{
+
+    _withCert = true;
+
+    if (!_connect(host, port))
+        return 0;
+
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+    // if external SSL Client successfully connected to ssl port
+    if (_secured && _use_external_sslclient && ext_client_type == esp_mail_external_client_type_ssl)
+        return true;
+
+#endif
+
+    if (!_secured)
+        return 1;
+
+    // in case secure connection required and internal client was used or
+    // secure connection required and basic external client type was assigned
+
+    int ret = connect_ssl(_ssl, host, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
     _lastError = ret;
     if (ret < 0)
     {
-        log_e("ESP32_WCS Error: start connection, %d", ret);
+        log_e("ESP32_WCS Error: upgrade connection, %d", ret);
         stop();
         return 0;
     }
 
-    if (_secured)
-    {
-        ret = esp32_ssl_client.connect_ssl(ssl, host, CA_cert, cert, private_key, NULL, NULL, _use_insecure);
-        _lastError = ret;
-        if (ret < 0)
-        {
-            log_e("ESP32_WCS Error: upgrade connection, %d", ret);
-            stop();
-            return 0;
-        }
-    }
-
-    _connected = true;
     return 1;
 }
 
@@ -219,48 +233,87 @@ int ESP32_WCS::connect(IPAddress ip, uint16_t port, const char *pskIdent, const 
 
 int ESP32_WCS::connect(const char *host, uint16_t port, const char *pskIdent, const char *psKey)
 {
-    _host = host;
-    _port = port;
+
     _withKey = true;
 
     log_v("ESP32_WCS connect with PSK");
-    if (_timeout > 0)
-    {
-        ssl->handshake_timeout = _timeout;
-    }
 
-    int ret = esp32_ssl_client.start_tcp_connection(ssl, host, port, _timeout);
+    if (!_connect(host, port))
+        return 0;
+
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+    // if external SSL Client successfully connected to ssl port
+    if (_secured && ext_client_type == esp_mail_external_client_type_ssl)
+        return true;
+
+#endif
+
+    if (!_secured)
+        return 1;
+
+    // in case secure connection required and internal client was used or
+    // secure connection required and basic external client type was assigned
+
+    int ret = connect_ssl(_ssl, host, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
     _lastError = ret;
     if (ret < 0)
     {
-        log_e("ESP32_WCS Error: start connection, %d", ret);
+        log_e("ESP32_WCS Error: upgrade connection, %d", ret);
         stop();
         return 0;
     }
 
-    if (_secured)
-    {
-        ret = esp32_ssl_client.connect_ssl(ssl, host, NULL, NULL, NULL, pskIdent, psKey, _use_insecure);
-        _lastError = ret;
-        if (ret < 0)
-        {
-            log_e("ESP32_WCS Error: upgrade connection, %d", ret);
-            stop();
-            return 0;
-        }
-    }
-    _connected = true;
     return 1;
+}
+
+bool ESP32_WCS::connectSSL(bool verify)
+{
+
+    if (!_ssl->client || !_ssl->client->connected())
+        return false;
+
+
+    setVerify(verify);
+
+    int ret = 0;
+    if (_withCert)
+        ret = connect_ssl(_ssl, _host.c_str(), _CA_cert, _cert, _private_key, NULL, NULL, _use_insecure);
+    else if (_withKey)
+        ret = connect_ssl(_ssl, _host.c_str(), NULL, NULL, NULL, _pskIdent, _psKey, _use_insecure);
+
+    _lastError = ret;
+    if (ret < 0)
+    {
+        log_e("ESP32_WCS Error: upgrade connection, %d", ret);
+        stop();
+        return 0;
+    }
+
+    _secured = true;
+
+    return 1;
+}
+
+void ESP32_WCS::prepareBasicClient()
+{
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    if (!_ssl->client && !_use_internal_basic_client)
+    {
+        _client = new WiFiClient();
+        _ssl->client = _client;
+        _use_internal_basic_client = true;
+        _use_external_sslclient = false;
+    }
+#endif
 }
 
 int ESP32_WCS::peek()
 {
-    if (_peek >= 0)
-    {
-        return _peek;
-    }
-    _peek = timedRead();
-    return _peek;
+    if (!_ssl->client->connected())
+        return 0;
+
+    return _ssl->client->peek();
 }
 
 size_t ESP32_WCS::write(uint8_t data)
@@ -281,10 +334,10 @@ int ESP32_WCS::read()
 
 size_t ESP32_WCS::write(const uint8_t *buf, size_t size)
 {
-    if (!_connected)
+    if (!_ssl->client->connected())
         return 0;
 
-    int res = (!_secured) ? ns_write(buf, size) : esp32_ssl_client.send_ssl_data(ssl, buf, size);
+    int res = (!_secured || _use_external_sslclient) ? _ssl->client->write(buf, size) : send_ssl_data(_ssl, buf, size);
     if (res < 0)
     {
         stop();
@@ -295,65 +348,37 @@ size_t ESP32_WCS::write(const uint8_t *buf, size_t size)
 
 int ESP32_WCS::read(uint8_t *buf, size_t size)
 {
-    int peeked = 0;
-    int avail = available();
-    if ((!buf && size) || avail <= 0)
-    {
-        return -1;
-    }
-    if (!size)
-    {
+    if (!_ssl->client->connected())
         return 0;
-    }
-    if (_peek >= 0)
-    {
-        buf[0] = _peek;
-        _peek = -1;
-        size--;
-        avail--;
-        if (!size || !avail)
-        {
-            return 1;
-        }
-        buf++;
-        peeked = 1;
-    }
 
-    int res = (!_secured) ? ns_read(buf, size) : esp32_ssl_client.get_ssl_receive(ssl, buf, size);
+    int res = (!_secured || _use_external_sslclient) ? _ssl->client->read(buf, size) : get_ssl_receive(_ssl, buf, size);
+
     if (res < 0)
-    {
         stop();
-        return peeked ? peeked : res;
-    }
-    return res + peeked;
+
+    return res;
 }
 
 int ESP32_WCS::available()
 {
-    int peeked = (_peek >= 0);
-    if (!_connected)
-    {
-        return peeked;
-    }
+    if (!_ssl->client->connected())
+        return 0;
 
-    int res = (!_secured) ? ns_available() : esp32_ssl_client.data_to_read(ssl);
+    int res = (!_secured || _use_external_sslclient) ? _ssl->client->available() : data_to_read(_ssl);
+
     if (res < 0)
-    {
         stop();
-        return peeked ? peeked : res;
-    }
-    return res + peeked;
+
+    return res;
 }
 
-uint8_t ESP32_WCS::connected()
+bool ESP32_WCS::connected()
 {
-    if (!_secured)
-        return ssl->socket >= 0;
 
-    uint8_t dummy = 0;
-    read(&dummy, 0);
+    if (!_ssl->client)
+        return 0;
 
-    return _connected;
+    return _ssl->client->connected();
 }
 
 void ESP32_WCS::setInsecure()
@@ -389,10 +414,10 @@ void ESP32_WCS::setPreSharedKey(const char *pskIdent, const char *psKey)
 
 bool ESP32_WCS::verify(const char *fp, const char *domain_name)
 {
-    if (!ssl)
+    if (!_ssl)
         return false;
 
-    return esp32_ssl_client.verify_ssl_fingerprint(ssl, fp, domain_name);
+    return verify_ssl_fingerprint(_ssl, fp, domain_name);
 }
 
 char *ESP32_WCS::_streamLoad(Stream &stream, size_t size)
@@ -460,7 +485,8 @@ int ESP32_WCS::lastError(char *buf, const size_t size)
 
 void ESP32_WCS::setHandshakeTimeout(unsigned long handshake_timeout)
 {
-    ssl->handshake_timeout = handshake_timeout * 1000;
+    if (_ssl)
+        _ssl->handshake_timeout = handshake_timeout * 1000;
 }
 
 void ESP32_WCS::setSecure(bool secure)
@@ -486,77 +512,8 @@ bool ESP32_WCS::isVerify()
 
 void ESP32_WCS::setDebugCB(DebugMsgCallback *cb)
 {
-    ssl->_debugCallback = cb;
-}
-
-int ESP32_WCS::ns_available()
-{
-    if (ssl->socket < 0)
-        return false;
-
-    if (_rxBuf.length() == 0)
-    {
-        int bufLen = 1024;
-        uint8_t *tmp = new uint8_t[bufLen];
-        memset(tmp, 0, bufLen);
-        int ret = esp32_ssl_client.ns_lwip_read(ssl, tmp, bufLen);
-        if (ret > 0)
-            _rxBuf += (char *)tmp;
-        delete[] tmp;
-    }
-
-    int result = _rxBuf.length();
-
-    if (!result)
-    {
-        optimistic_yield(100);
-    }
-    return result;
-}
-
-size_t ESP32_WCS::ns_write(const uint8_t *buf, size_t size)
-{
-    if (ssl->socket < 0 || !size)
-        return 0;
-    return esp32_ssl_client.ns_lwip_write(ssl, buf, size);
-}
-
-size_t ESP32_WCS::ns_read(uint8_t *buf, size_t size)
-{
-    if (_rxBuf.length() == 0)
-        return esp32_ssl_client.ns_lwip_read(ssl, buf, size);
-    else
-    {
-        size_t sz = size;
-        if (sz > _rxBuf.length())
-            sz = _rxBuf.length();
-        memcpy(buf, _rxBuf.c_str(), sz);
-        _rxBuf.erase(0, sz);
-        return sz;
-    }
-}
-
-bool ESP32_WCS::connectSSL(bool verify)
-{
-    setVerify(verify);
-
-    int ret = 0;
-    if (_withCert)
-        ret = esp32_ssl_client.connect_ssl(ssl, _host.c_str(), _CA_cert, _cert, _private_key, NULL, NULL, _use_insecure);
-    else if (_withKey)
-        ret = esp32_ssl_client.connect_ssl(ssl, _host.c_str(), NULL, NULL, NULL, _pskIdent, _psKey, _use_insecure);
-
-    _lastError = ret;
-    if (ret < 0)
-    {
-        log_e("ESP32_WCS Error: upgrade connection, %d", ret);
-        stop();
-        return 0;
-    }
-
-    _secured = true;
-
-    return 1;
+    if (_ssl)
+        _ssl->_debugCallback = cb;
 }
 
 void ESP32_WCS::flush()

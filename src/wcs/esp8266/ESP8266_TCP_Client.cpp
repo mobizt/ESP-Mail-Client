@@ -1,13 +1,13 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v1.0.10
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.0
  *
- * Created July 9, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- * 
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -29,7 +29,6 @@
 #ifndef ESP8266_TCP_Client_CPP
 #define ESP8266_TCP_Client_CPP
 
-
 #ifdef ESP8266
 
 #include "ESP8266_TCP_Client.h"
@@ -40,6 +39,7 @@ ESP8266_TCP_Client::ESP8266_TCP_Client()
 
 ESP8266_TCP_Client::~ESP8266_TCP_Client()
 {
+  _host.clear();
   if (wcs)
   {
     wcs->stop();
@@ -47,30 +47,39 @@ ESP8266_TCP_Client::~ESP8266_TCP_Client()
     wcs.release();
   }
 
-#ifndef USING_AXTLS
+#if defined(WCS_USE_BEARSSL)
   if (x509)
     delete x509;
 #endif
 }
 
+void ESP8266_TCP_Client::setClient(Client *client)
+{
+  wcs->setClient(client);
+}
+
 void ESP8266_TCP_Client::setCACert(const char *caCert)
 {
 
-#ifndef USING_AXTLS
+#if defined(WCS_USE_BEARSSL)
   wcs->setBufferSizes(bsslRxSize, bsslTxSize);
 #endif
 
   if (caCert)
   {
-#ifndef USING_AXTLS
+#if defined(WCS_USE_BEARSSL)
     if (x509)
       delete x509;
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    x509 = new BearSSL_X509List(caCert);
+#else
     x509 = new X509List(caCert);
+#endif
     wcs->setTrustAnchors(x509);
 #else
     wcs->setCACert_P(caCert, strlen_P(caCert));
 #endif
-    baseSetCertType(esp_mail_cert_type_data);
+    wcs->baseSetCertType(esp_mail_cert_type_data);
     wcs->setTA(true);
   }
   else
@@ -78,7 +87,7 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
 #ifndef USING_AXTLS
     wcs->setInsecure();
 #endif
-    baseSetCertType(esp_mail_cert_type_none);
+    wcs->baseSetCertType(esp_mail_cert_type_none);
     wcs->setTA(false);
   }
 }
@@ -86,14 +95,14 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
 void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
 {
 
-#ifndef USING_AXTLS
+#if defined(WCS_USE_BEARSSL)
   wcs->setBufferSizes(bsslRxSize, bsslTxSize);
 #endif
 
-  if (!mbfs)
+  if (!wcs->mbfs)
     return;
 
-  if (clockReady && strlen(certFile) > 0)
+  if (wcs->clockReady && strlen(certFile) > 0)
   {
     MB_String filename = certFile;
     if (filename.length() > 0)
@@ -102,60 +111,67 @@ void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
         filename.prepend('/');
     }
 
-    int len = mbfs->open(filename, storageType, mb_fs_open_mode_read);
+    int len = wcs->mbfs->open(filename, storageType, mb_fs_open_mode_read);
     if (len > -1)
     {
-      uint8_t *der = (uint8_t *)mbfs->newP(len);
-      if (mbfs->available(storageType))
-        mbfs->read(storageType, der, len);
-      mbfs->close(storageType);
+      uint8_t *der = (uint8_t *)wcs->mbfs->newP(len);
+      if (wcs->mbfs->available(storageType))
+        wcs->mbfs->read(storageType, der, len);
+      wcs->mbfs->close(storageType);
 
+#if defined(WCS_USE_BEARSSL)
       if (x509)
         delete x509;
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+      x509 = new BearSSL_X509List(der, len);
+#else
       x509 = new X509List(der, len);
+#endif
       wcs->setTrustAnchors(x509);
-      wcs->setTA(true);
-      mbfs->delP(&der);
+#endif
 
-      baseSetCertType(esp_mail_cert_type_file);
+      wcs->setTA(true);
+      wcs->mbfs->delP(&der);
+
+      wcs->baseSetCertType(esp_mail_cert_type_file);
     }
   }
 }
 
 void ESP8266_TCP_Client::setTimeout(uint32_t timeoutSec)
 {
-  if (wcs)
-    wcs->setTimeout(timeoutSec * 1000);
 
-  baseSetTimeout(timeoutSec);
+  wcs->setTimeout(timeoutSec * 1000);
+
+  wcs->baseSetTimeout(timeoutSec);
 }
 
 bool ESP8266_TCP_Client::ethLinkUp()
 {
-  if (!session)
+  if (!wcs->session)
     return false;
 
   bool ret = false;
 #if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
 
 #if defined(INC_ENC28J60_LWIP)
-  if (session->spi_ethernet_module.enc28j60)
+  if (wcs->session->spi_ethernet_module.enc28j60)
   {
-    ret = session->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
+    ret = wcs->session->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
 #if defined(INC_W5100_LWIP)
-  if (session->spi_ethernet_module.w5100)
+  if (wcs->session->spi_ethernet_module.w5100)
   {
-    ret = session->spi_ethernet_module.w5100->status() == WL_CONNECTED;
+    ret = wcs->session->spi_ethernet_module.w5100->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
 #if defined(INC_W5500_LWIP)
-  if (session->spi_ethernet_module.w5500)
+  if (wcs->session->spi_ethernet_module.w5500)
   {
-    ret = session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
+    ret = wcs->session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
@@ -173,21 +189,21 @@ ex:
 void ESP8266_TCP_Client::ethDNSWorkAround()
 {
 
-  if (!session)
+  if (!wcs->session)
     return;
 
 #if defined(ESP8266_CORE_SDK_V3_X_X)
 
 #if defined(INC_ENC28J60_LWIP)
-  if (session->spi_ethernet_module.enc28j60)
+  if (wcs->session->spi_ethernet_module.enc28j60)
     goto ex;
 #endif
 #if defined(INC_W5100_LWIP)
-  if (session->spi_ethernet_module.w5100)
-    goto ex;
+  if wcs
+    ->(session->spi_ethernet_module.w5100) goto ex;
 #endif
 #if defined(INC_W5500_LWIP)
-  if (session->spi_ethernet_module.w5500)
+  if (wcs->session->spi_ethernet_module.w5500)
     goto ex;
 #endif
 
@@ -195,24 +211,42 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
 
 ex:
   WiFiClient client;
-  client.connect(session->server.host_name.c_str(), session->server.port);
+  client.connect(wcs->session->server.host_name.c_str(), wcs->session->server.port);
   client.stop();
 #endif
 }
 
 bool ESP8266_TCP_Client::networkReady()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+  if (network_status_cb)
+    network_status_cb();
+
+  return networkStatus;
+#else
   return WiFi.status() == WL_CONNECTED || ethLinkUp();
+#endif
 }
 
 void ESP8266_TCP_Client::networkReconnect()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+  if (network_connection_cb)
+    network_connection_cb();
+#else
   WiFi.reconnect();
+#endif
 }
 
 void ESP8266_TCP_Client::networkDisconnect()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+  if (network_disconnection_cb)
+    network_disconnection_cb();
+#else
   WiFi.disconnect();
+#endif
 }
 
 String ESP8266_TCP_Client::fwVersion()
@@ -225,7 +259,42 @@ esp_mail_client_type ESP8266_TCP_Client::type()
   return esp_mail_client_type_internal;
 }
 
-bool ESP8266_TCP_Client::isInitialized() { return true; }
+bool ESP8266_TCP_Client::isInitialized()
+{
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+  bool rdy = wcs != nullptr;
+
+  if (!network_connection_cb)
+  {
+    rdy = false;
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_369, true);
+  }
+
+  if (!connection_cb)
+  {
+    rdy = false;
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_367, true);
+  }
+
+#if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+  if (wcs->getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
+  {
+    rdy = false;
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_368, true);
+  }
+
+#endif
+
+  return rdy;
+#else
+  return true;
+#endif
+}
 
 int ESP8266_TCP_Client::hostByName(const char *name, IPAddress &ip)
 {
@@ -234,16 +303,18 @@ int ESP8266_TCP_Client::hostByName(const char *name, IPAddress &ip)
 
 bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
 {
-  if (strcmp(this->host.c_str(), host) != 0)
+  if (strcmp(_host.c_str(), host) != 0)
     mflnChecked = false;
 
-  this->host = host;
-  this->port = port;
+  _host = host;
+  _port = port;
 
+#if defined(WCS_USE_BEARSSL)
   // probe for fragmentation support at the specified size
   if (!mflnChecked)
   {
-    fragmentable = WiFiClientSecure::probeMaxFragmentLength(this->host.c_str(), this->port, _chunkSize);
+    // remove WiFClientSecure
+    // fragmentable = WiFiClientSecure::probeMaxFragmentLength(this->host.c_str(), this->port, _chunkSize);
     if (fragmentable)
     {
       bsslRxSize = _chunkSize;
@@ -255,6 +326,8 @@ bool ESP8266_TCP_Client::begin(const char *host, uint16_t port)
 
   if (!fragmentable)
     wcs->setBufferSizes(maxRXBufSize / rxBufDivider, maxTXBufSize / txBufDivider);
+
+#endif
 
   return true;
 }
@@ -270,29 +343,90 @@ bool ESP8266_TCP_Client::connect(bool secured, bool verify)
     return true;
   }
 
-  if (!wcs->connect(host.c_str(), port))
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+  // no client assigned?
+  if (!wcs->_basic_client)
+  {
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_346, true);
+    return false;
+  }
+
+  // no client type assigned?
+  if (wcs->ext_client_type == esp_mail_external_client_type_none)
+  {
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_372, true);
+    return false;
+  }
+
+  // pain text via ssl client?
+  if (!secured && wcs->ext_client_type == esp_mail_external_client_type_ssl)
+  {
+    if (wcs->debugLevel > 0)
+      esp_mail_debug_print(esp_mail_str_366, true);
+    return false;
+  }
+
+#endif
+
+// internal client or external client with internal ssl engine
+#if !defined(ENABLE_CUSTOM_CLIENT) || defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+  // internal or external client with innternal ssl client
+  if (!wcs->connect(_host.c_str(), _port))
     return false;
 
-  return connected();
+#endif
+
+  bool res = connected();
+
+  if (!res)
+    stop();
+
+  return res;
 }
 
 bool ESP8266_TCP_Client::connectSSL(bool verify)
 {
-  if (!wcs)
-    return false;
-  return wcs->connectSSL(verify);
+
+  bool res = false;
+
+#if defined(ENABLE_CUSTOM_CLIENT) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+  wcs->tls_required = true;
+
+  if (connection_upgrade_cb)
+    connection_upgrade_cb();
+
+  res = this->connected();
+
+  if (!res)
+    stop();
+
+  return res;
+
+#endif
+
+  res = wcs->connectSSL(verify);
+
+  if (!res)
+    wcs->stop();
+
+  return res;
 }
 
 void ESP8266_TCP_Client::stop()
 {
-  if (connected())
-    return wcs->stop();
+  _host.clear();
+  return wcs->stop();
 }
 
 bool ESP8266_TCP_Client::connected()
 {
   if (wcs)
-    return wcs->connected();
+    return wcs->_connected();
   return false;
 }
 
@@ -333,10 +467,10 @@ int ESP8266_TCP_Client::send(const char *data)
 
 int ESP8266_TCP_Client::print(int data)
 {
-  char *buf = (char *)mbfs->newP(64);
+  char *buf = (char *)wcs->mbfs->newP(64);
   sprintf(buf, (const char *)FPSTR("%d"), data);
   int ret = send(buf);
-  mbfs->delP(&buf);
+  wcs->mbfs->delP(&buf);
   return ret;
 }
 
@@ -358,35 +492,26 @@ int ESP8266_TCP_Client::println(const char *data)
 
 int ESP8266_TCP_Client::println(int data)
 {
-  char *buf = (char *)mbfs->newP(64);
+  char *buf = (char *)wcs->mbfs->newP(64);
   sprintf(buf, (const char *)FPSTR("%d\r\n"), data);
   int ret = send(buf);
-  mbfs->delP(&buf);
+  wcs->mbfs->delP(&buf);
   return ret;
 }
 
 int ESP8266_TCP_Client::available()
 {
-  if (!wcs)
-    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
-
   return wcs->available();
 }
 
 int ESP8266_TCP_Client::read()
 {
-  if (!wcs)
-    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
-
   return wcs->read();
 }
 
 int ESP8266_TCP_Client::readBytes(uint8_t *buf, int len)
 {
-  if (!wcs)
-    return TCP_CLIENT_ERROR_NOT_INITIALIZED;
-
-  return wcs->readBytes(buf, len);
+  return wcs->read(buf, len);
 }
 
 int ESP8266_TCP_Client::readBytes(char *buf, int len)

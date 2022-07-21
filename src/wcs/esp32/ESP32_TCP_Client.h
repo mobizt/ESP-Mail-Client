@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.11
+ * ESP32 TCP Client Library v2.0.0
  *
- * June 21, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -49,11 +49,17 @@ extern "C"
 #include <esp_wifi.h>
 }
 
-class ESP32_TCP_Client : public TCP_Client_Base
+class ESP32_TCP_Client 
 {
 public:
   ESP32_TCP_Client();
   ~ESP32_TCP_Client();
+
+  /**
+   * Set the Client for TCP connection.
+   * @param client The pointer to Client.
+   */
+  void setClient(Client *client);
 
   /**
    * Set Root CA certificate to verify.
@@ -137,6 +143,14 @@ public:
    * @return 1 for success or 0 for failed.
    */
   int hostByName(const char *name, IPAddress &ip);
+
+  /**
+   * Store the host name and port.
+   * @param host The host name to connect.
+   * @param port The port to connect.
+   * @return true.
+   */
+  bool begin(const char *host, uint16_t port);
 
   /**
    * Start TCP connection using stored host name and port.
@@ -241,10 +255,159 @@ public:
    */
   void flush();
 
+  void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
+
+  void setSession(ESP_Mail_Session *session)
+  {
+    wcs->session = session;
+  }
+  
+  void setClockReady(bool rdy)
+  {
+    wcs->clockReady = rdy;
+  }
+
+  bool setSystemTime(time_t ts)
+  {
+    return wcs->setSystemTime(ts);
+  }
+
+  time_t getTime()
+  {
+    return wcs->getTime();
+  }
+
+  esp_mail_cert_type getCertType()
+  {
+    return wcs->certType;
+  }
+
+  int getProtocol(uint16_t port)
+  {
+    return wcs->getProtocol(port);
+  }
+
+  void setDebugLevel(int debug)
+  {
+    wcs->setDebugLevel(debug);
+  }
+
+  void reset_tlsErr()
+  {
+    wcs->tls_required = false;
+    wcs->tls_error = false;
+  }
+
+  void setExtClientType(esp_mail_external_client_type type)
+  {
+    wcs->setExtClientType(type);
+  }
+
+  void set_tlsErrr(bool err)
+  {
+    wcs->tls_error = err;
+  }
+
+  bool tlsErr()
+  {
+    return wcs->tls_error;
+  }
+
+  void set_tlsRequired(bool req)
+  {
+    wcs->tls_required = req;
+  }
+
+  bool tlsRequired()
+  {
+    return wcs->tls_required;
+  }
+
+  int tcpTimeout()
+  {
+    return wcs->tmo;
+  }
+
+  void disconnect(){};
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  /**
+   * Set the connection request callback.
+   * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+   */
+  void connectionRequestCallback(ConnectionRequestCallback connectCB)
+  {
+    connection_cb = connectCB;
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    wcs->connectionRequestCallback(connectCB);
+#endif
+  }
+
+  /**
+   * Set the connection upgrade request callback.
+   * @param upgradeCB The callback function to do the SSL setup and handshake.
+   */
+  void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB)
+  {
+    this->connection_upgrade_cb = upgradeCB;
+  }
+
+  /**
+   * Set the network connection request callback.
+   * @param networkConnectionCB The callback function that handles the network connection.
+   */
+  void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
+  {
+    network_connection_cb = networkConnectionCB;
+  }
+
+  /**
+   * Set the network disconnection request callback.
+   * @param networkConnectionCB The callback function that handles the network disconnection.
+   */
+  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+  {
+    network_disconnection_cb = networkDisconnectionCB;
+  }
+
+  /**
+   * Set the network status request callback.
+   * @param networkStatusCB The callback function that calls the setNetworkStatus function to set the network status.
+   */
+  void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
+  {
+    network_status_cb = networkStatusCB;
+  }
+
+  /**
+   * Set the network status which should call in side the networkStatusRequestCallback function.
+   * @param status The status of network.
+   */
+  void setNetworkStatus(bool status)
+  {
+    networkStatus = status;
+  }
+
+  
+
+#endif
+
 private:
+  MB_String _host;
+  uint16_t _port;
   DebugMsgCallback debugCallback = NULL;
   std::unique_ptr<ESP32_WCS> wcs = std::unique_ptr<ESP32_WCS>(new ESP32_WCS());
   char *cert_buf = NULL;
+  int _chunkSize = 1024;
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  ConnectionRequestCallback connection_cb = NULL;
+  ConnectionUpgradeRequestCallback connection_upgrade_cb = NULL;
+  NetworkConnectionRequestCallback network_connection_cb = NULL;
+  NetworkDisconnectionRequestCallback network_disconnection_cb = NULL;
+  NetworkStatusRequestCallback network_status_cb = NULL;
+  volatile bool networkStatus = false;
+#endif
 };
 
 #endif // ESP32

@@ -10,7 +10,7 @@
  */
 
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and
- * change the config for that card interfaces in src/addons/SDHelper.h
+ * change the config for that card interfaces in src/extras/SDHelper.h
  */
 
 #include <Arduino.h>

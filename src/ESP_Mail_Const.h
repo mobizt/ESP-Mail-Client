@@ -1,4 +1,4 @@
-// Created July 4, 2022
+// Created July 20, 2022
 
 #pragma once
 
@@ -96,10 +96,29 @@ enum esp_mail_msg_xencoding
     esp_mail_msg_xencoding_binary
 };
 
+enum esp_mail_protocol
+{
+    esp_mail_protocol_plain_text,
+    esp_mail_protocol_ssl,
+    esp_mail_protocol_tls
+};
+
 struct esp_mail_internal_use_t
 {
     esp_mail_msg_xencoding xencoding = esp_mail_msg_xencoding_none;
     MB_String cid;
+};
+
+struct port_function
+{
+    uint16_t port = 0;
+    esp_mail_protocol protocol = esp_mail_protocol_plain_text;
+};
+
+struct esp_mail_ports_functions
+{
+    uint16_t size = 0;
+    port_function *list = nullptr;
 };
 
 struct esp_mail_content_transfer_encoding_t
@@ -752,6 +771,7 @@ struct esp_mail_imap_capability_t
     bool uidplus = false;
     bool acl = false;
     bool binary = false;
+    bool logindisable = false;
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -1483,7 +1503,7 @@ struct esp_mail_sesson_time_config_t
 
 struct esp_mail_sesson_secure_config_t
 {
-    /* The option to send the command to start the TLS connection */
+    /* The option to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
     bool startTLS = false;
 };
 
@@ -1524,6 +1544,8 @@ struct esp_mail_session_config_t
 
     /* The callback function for WiFi connection */
     NetworkConnectionHandler network_connection_handler = NULL;
+
+    struct esp_mail_ports_functions ports_functions;
 };
 
 /** The content transfer encoding
@@ -1951,7 +1973,7 @@ static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";
 static const char esp_mail_str_196[] PROGMEM = "> C: Send STARTTLS command";
 static const char esp_mail_str_201[] PROGMEM = "Port > ";
-// static const char esp_mail_str_204[] PROGMEM = "";
+static const char esp_mail_str_204[] PROGMEM = "> E: The alert SSL record received\n> E: Make sure the SSL/TLS handshake was done before sending the data";
 static const char esp_mail_str_221[] PROGMEM = "connection closed";
 static const char esp_mail_str_202[] PROGMEM = "/";
 static const char esp_mail_str_209[] PROGMEM = "Send command, STARTTLS";
@@ -1975,7 +1997,7 @@ static const char esp_mail_str_330[] PROGMEM = "+";
 static const char esp_mail_str_343[] PROGMEM = " on ";
 static const char esp_mail_str_344[] PROGMEM = "data sending failed";
 static const char esp_mail_str_345[] PROGMEM = "connection refused";
-static const char esp_mail_str_346[] PROGMEM = "Client is not yet initialized";
+static const char esp_mail_str_346[] PROGMEM = "Client and necessary callback functions are not yet assigned";
 static const char esp_mail_str_347[] PROGMEM = "/header.json";
 static const char esp_mail_str_352[] PROGMEM = "Custom Client is not yet enabled";
 static const char esp_mail_str_353[] PROGMEM = "! W: PSRAM was enabled but not detected.";
@@ -1989,6 +2011,13 @@ static const char esp_mail_str_362[] PROGMEM = "> C: append message";
 static const char esp_mail_str_363[] PROGMEM = "Message append successfully";
 static const char esp_mail_str_364[] PROGMEM = "> C: Message append successfully";
 static const char esp_mail_str_365[] PROGMEM = "binary";
+static const char esp_mail_str_366[] PROGMEM = "> E: Simple Client is required";
+static const char esp_mail_str_367[] PROGMEM = "> E: Client connection callback is required";
+static const char esp_mail_str_368[] PROGMEM = "> E: Client connection upgrade callback (for TLS handshake) is required";
+static const char esp_mail_str_369[] PROGMEM = "> E: Network connection callback is required";
+static const char esp_mail_str_370[] PROGMEM = "> E: Network connection status callback is required";
+static const char esp_mail_str_371[] PROGMEM = "> E: Response read timed out";
+static const char esp_mail_str_372[] PROGMEM = "> E: The Client type must be provided, see example";
 #endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
@@ -2018,5 +2047,6 @@ esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 typedef void (*ConnectionRequestCallback)(const char *, int);
 typedef void (*ConnectionUpgradeRequestCallback)(void);
 typedef void (*NetworkConnectionRequestCallback)(void);
+typedef void (*NetworkDisconnectionRequestCallback)(void);
 typedef void (*NetworkStatusRequestCallback)(void);
 #endif

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 4, 2022
+ * Created July 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -87,6 +87,7 @@ non_authenticated:
 
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
     {
+
         // just SMTP (rfc821), send HELO
         s = esp_mail_str_5;
         if (smtp->_sesson_cfg->login.user_domain.length() > 0)
@@ -94,7 +95,7 @@ non_authenticated:
         else
             s += esp_mail_str_44;
 
-        if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        if (!smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
@@ -107,6 +108,7 @@ non_authenticated:
         smtp->_send_capability.esmtp = true;
 
     // start TLS when needed
+    // rfc3207
     if ((smtp->_auth_capability.start_tls || smtp->_sesson_cfg->secure.startTLS) && !ssl)
     {
         // send starttls command
@@ -131,7 +133,7 @@ non_authenticated:
         }
 
         // connect in secure mode
-        // do ssl handshake
+        // do TLS handshake
         if (!smtp->client.connectSSL(smtp->_sesson_cfg->certificate.verify))
             return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 
@@ -3039,6 +3041,39 @@ void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
         smtp->_send_capability.dsn = true;
 }
 
+// Check if response from basic client is actually TLS alert
+// This response may return after basic Client sent plain text packet over SSL/TLS
+void ESP_Mail_Client::checkTLSAlert(SMTPSession *smtp, const char *response)
+{
+    /**
+     * SSL Record Byte 0
+     *
+     * SSL3_RT_CHANGE_CIPHER_SPEC      0x14
+     * SSL3_RT_ALERT                   0x15
+     * SSL3_RT_HANDSHAKE               0x16
+     * SSL3_RT_APPLICATION_DATA        0x17
+     * TLS1_RT_HEARTBEAT               0x18
+     *
+     * SSL Record Alert Value
+     * SSL3_AD_CLOSE_NOTIFY            0x00
+     * TLS1_AD_PROTOCOL_VERSION        0x46
+     *
+     */
+    uint8_t data0 = response[0];
+    if (!smtp->client.tlsErr() && data0 == 0x15)
+    {
+        smtp->client.set_tlsErrr(true);
+
+        int proto = smtp->client.getProtocol(smtp->_sesson_cfg->server.port);
+
+        if (proto == (int)esp_mail_protocol_ssl || proto == (int)esp_mail_protocol_tls)
+        {
+            if (smtp->_debug)
+                esp_mail_debug_print(esp_mail_str_204, true);
+        }
+    }
+}
+
 bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode)
 {
     if (!smtp)
@@ -3076,6 +3111,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
         {
             if (cmd != esp_mail_smtp_cmd_logout)
                 errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+
             return false;
         }
         chunkBufSize = smtp->client.available();
@@ -3117,6 +3153,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
                 if (readLen)
                 {
+
+                    checkTLSAlert(smtp, response);
+
                     if (smtp->_smtp_cmd != esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
                     {
                         // sometimes server sent multiple lines response
@@ -3143,7 +3182,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                                 strcpy(response, r.c_str());
                             }
 
-                            if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_basic)
+                            if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_basic)
                                 esp_mail_debug_print((const char *)response, true);
                         }
 
@@ -3161,7 +3200,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                         s = esp_mail_str_260;
                         s += response;
 
-                        if (smtp->_debug && !smtp->_customCmdResCallback)
+                        if (!smtp->client.tlsErr() && smtp->_debug && !smtp->_customCmdResCallback)
                             esp_mail_debug_print(s.c_str(), true);
 
                         memset(response, 0, chunkBufSize + 1);
@@ -3196,7 +3235,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                                 delP(&decoded);
                             }
                         }
-                        if (!smtp->_customCmdResCallback)
+                        if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback)
                             esp_mail_debug_print(s.c_str(), true);
                         r.clear();
                     }
@@ -3325,7 +3364,10 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
             else
             {
                 if (MailClient.networkAutoReconnect)
+                {
+                    smtp->client.networkDisconnect();
                     smtp->client.networkReconnect();
+                }
             }
 
             _lastReconnectMillis = millis();
@@ -3613,9 +3655,9 @@ MB_FS *ESP_Mail_Client::getMBFS()
     return mbfs;
 }
 
-SMTPSession::SMTPSession(Client *client)
+SMTPSession::SMTPSession(Client *client, esp_mail_external_client_type type)
 {
-    setClient(client);
+    setClient(client, type);
 }
 
 SMTPSession::SMTPSession()
@@ -3702,6 +3744,8 @@ bool SMTPSession::connect(bool &ssl)
     _secure = true;
     bool secureMode = true;
 
+    client.reset_tlsErr();
+
     MB_String s;
 
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
@@ -3711,23 +3755,22 @@ bool SMTPSession::connect(bool &ssl)
     client.txBufDivider = 8;  // medium tx buffer for faster attachment/inline data transfer
 #endif
 
-    if (_sesson_cfg->server.port == esp_mail_smtp_port_25)
+    if (!_sesson_cfg->ports_functions.list)
     {
-        _secure = false;
-        secureMode = false;
-    }
-    else
-    {
-        if (_sesson_cfg->server.port == esp_mail_smtp_port_587)
-            _sesson_cfg->secure.startTLS = true;
+        _sesson_cfg->ports_functions.list = new port_function[3];
+        _sesson_cfg->ports_functions.size = 3;
 
-        secureMode = !_sesson_cfg->secure.startTLS;
+        _sesson_cfg->ports_functions.list[0].port = 25;
+        _sesson_cfg->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
 
-        // to prevent to send the connection upgrade command when some server promotes
-        // the starttls capability even the current connection was already secured.
-        if (_sesson_cfg->server.port == esp_mail_smtp_port_465)
-            ssl = true;
+        _sesson_cfg->ports_functions.list[1].port = 465;
+        _sesson_cfg->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+
+        _sesson_cfg->ports_functions.list[2].port = 587;
+        _sesson_cfg->ports_functions.list[2].protocol = esp_mail_protocol_tls;
     }
+
+    MailClient.getPortFunction(_sesson_cfg->server.port, _sesson_cfg->ports_functions, _secure, secureMode, ssl, _sesson_cfg->secure.startTLS);
 
     // Server connection attempt: no status code
     if (_sendCallback && !_customCmdResCallback)
@@ -3748,7 +3791,7 @@ bool SMTPSession::connect(bool &ssl)
         }
 #endif
     }
-    
+
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
     bool validTime = false;
 #endif
@@ -3882,11 +3925,13 @@ void SMTPSession::debug(int level)
     {
         _debugLevel = level;
         _debug = true;
+        client.setDebugLevel(level);
     }
     else
     {
         _debugLevel = esp_mail_debug_level_none;
         _debug = false;
+        client.setDebugLevel(0);
     }
 }
 
@@ -4072,10 +4117,13 @@ void SMTPSession::setSystemTime(time_t ts)
     this->client.setSystemTime(ts);
 }
 
-void SMTPSession::setClient(Client *client)
+void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)
 {
-#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+#if (defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) || defined(ESP_MAIL_USE_SDK_SSL_ENGINE)) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+
     this->client.setClient(client);
+    this->client.setExtClientType(type);
+
 #endif
 }
 
@@ -4097,6 +4145,13 @@ void SMTPSession::networkConnectionRequestCallback(NetworkConnectionRequestCallb
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     this->client.networkConnectionRequestCallback(networkConnectionCB);
+#endif
+}
+
+void SMTPSession::networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+{
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    this->client.networkDisconnectionRequestCallback(networkDisconnectionCB);
 #endif
 }
 

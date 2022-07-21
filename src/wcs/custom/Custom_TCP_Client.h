@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v1.0.6
+ * The custom TCP Client Class v2.0.0
  *
- * June 21, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -41,9 +41,17 @@ public:
     Custom_TCP_Client(){};
     ~Custom_TCP_Client()
     {
+        _host.clear();
         if (wcs)
             wcs->stop();
-    };
+    }
+
+    bool begin(const char *host, uint16_t port)
+    {
+        _host = host;
+        _port = port;
+        return true;
+    }
 
     /**
      * Set TCP connection time out in seconds.
@@ -82,6 +90,11 @@ public:
     {
         if (network_connection_cb)
             network_connection_cb();
+        else
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_369, true);
+        }
     }
 
     /**
@@ -89,6 +102,8 @@ public:
      */
     void networkDisconnect()
     {
+        if (network_disconnection_cb)
+            network_disconnection_cb();
     }
 
     /**
@@ -115,12 +130,28 @@ public:
      */
     bool isInitialized()
     {
-        bool rdy = false;
+        bool rdy = wcs != nullptr;
 
-        rdy = wcs != nullptr && connection_cb != NULL;
-
-        if ((port == esp_mail_smtp_port_587) && connection_upgrade_cb == NULL)
+        if (!network_connection_cb)
+        {
             rdy = false;
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_369, true);
+        }
+
+        if (!connection_cb)
+        {
+            rdy = false;
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_367, true);
+        }
+
+        if (getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
+        {
+            rdy = false;
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_368, true);
+        }
 
         return rdy;
     }
@@ -151,10 +182,50 @@ public:
             return true;
         }
 
-        if (this->connection_cb)
-            this->connection_cb(host.c_str(), port);
+        // no client assigned?
+        if (!wcs)
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_346, true);
+            return false;
+        }
+        
+        // no client type assigned?
+        if (ext_client_type == esp_mail_external_client_type_none)
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_372, true);
+            return false;
+        }
 
-        return connected();
+        // nonsecure with ssl client?
+        if (!secured && ext_client_type == esp_mail_external_client_type_ssl)
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_366, true);
+            return false;
+        }
+
+        if (this->connection_cb)
+            this->connection_cb(_host.c_str(), _port);
+        else
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_367, true);
+            return false;
+        }
+
+        bool res = connected();
+
+        if (!res)
+            stop();
+
+        if (res && secured && ext_client_type == esp_mail_external_client_type_basic)
+        {
+            res = connectSSL(verify);
+        }
+
+        return res;
     }
 
     /**
@@ -168,10 +239,23 @@ public:
         if (!wcs)
             return false;
 
+        tls_required = true;
+
         if (connection_upgrade_cb)
             connection_upgrade_cb();
+        else
+        {
+            if (debugLevel > 0)
+                esp_mail_debug_print(esp_mail_str_368, true);
+            return false;
+        }
 
-        return connected();
+        bool res = connected();
+
+        if (!res)
+            stop();
+
+        return res;
     }
 
     /**
@@ -179,8 +263,8 @@ public:
      */
     void stop()
     {
-        if (connected())
-            return wcs->stop();
+        _host.clear();
+        wcs->stop();
     }
 
     /**
@@ -389,6 +473,15 @@ public:
     }
 
     /**
+     * Set the network disconnection request callback.
+     * @param networkConnectionCB The callback function that handles the network disconnection.
+     */
+    void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+    {
+        this->network_disconnection_cb = networkDisconnectionCB;
+    }
+
+    /**
      * Set the network status request callback.
      * @param networkStatusCB The callback function that calls the setNetworkStatus function to set the network status.
      */
@@ -406,11 +499,77 @@ public:
         networkStatus = status;
     }
 
+    /**
+     * Set the clock ready status.
+     * @param rdy The ready status.
+     */
+    void setClockReady(bool rdy)
+    {
+        this->clockReady = rdy;
+    }
+
+    /**
+     * Reset the nak error status.
+     */
+    void reset_tlsErr()
+    {
+        this->tls_required = false;
+        this->tls_error = false;
+    }
+
+    /**
+     * Set external Client type.
+     * @param type The esp_mail_external_client_type enum type esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl.
+     */
+    void setExtClientType(esp_mail_external_client_type type)
+    {
+        this->ext_client_type = type;
+    }
+
+    /**
+     * Set the tls error status.
+     * @param tls The tls error status.
+     */
+    void set_tlsErrr(bool tls)
+    {
+        this->tls_error = tls;
+    }
+
+    /**
+     * Get the tls status.
+     * @return bool status of tls error.
+     */
+    bool tlsErr()
+    {
+        return this->tls_error;
+    }
+
+    /**
+     * Set the TLS required status.
+     * @param req The tls required status.
+     */
+    void set_tlsRequired(bool req)
+    {
+        this->tls_required = req;
+    }
+
+    /**
+     * Get the TLS upgrade required status.
+     * @return bool status of TLS handshake required status.
+     */
+    bool tlsRequired()
+    {
+        return this->tls_required;
+    }
+
 private:
+    MB_String _host;
+    uint16_t _port;
     Client *wcs = nullptr;
     ConnectionRequestCallback connection_cb = NULL;
     ConnectionUpgradeRequestCallback connection_upgrade_cb = NULL;
     NetworkConnectionRequestCallback network_connection_cb = NULL;
+    NetworkDisconnectionRequestCallback network_disconnection_cb = NULL;
     NetworkStatusRequestCallback network_status_cb = NULL;
     volatile bool networkStatus = false;
 };

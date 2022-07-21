@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v1.0.10
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.0
  *
- * Created July 9, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -44,16 +44,21 @@
 #include <ESP8266WiFi.h>
 #include <WiFiClient.h>
 #include "ESP8266_WCS.h"
-#include "./wcs/base/TCP_Client_Base.h"
 
 #define ESP8266_TCP_CLIENT
 
-class ESP8266_TCP_Client : public TCP_Client_Base
+class ESP8266_TCP_Client
 {
 
 public:
   ESP8266_TCP_Client();
   ~ESP8266_TCP_Client();
+
+  /**
+   * Set the client.
+   * @param client The Client interface.
+   */
+  void setClient(Client *client);
 
   /**
    * Set Root CA certificate to verify.
@@ -238,6 +243,143 @@ public:
    */
   void flush();
 
+  void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
+
+  void setSession(ESP_Mail_Session *session)
+  {
+    wcs->session = session;
+  }
+
+  void setClockReady(bool rdy)
+  {
+    wcs->clockReady = rdy;
+  }
+
+  bool setSystemTime(time_t ts)
+  {
+    return wcs->setSystemTime(ts);
+  }
+
+  time_t getTime()
+  {
+    return wcs->getTime();
+  }
+
+  esp_mail_cert_type getCertType()
+  {
+    return wcs->certType;
+  }
+
+  int getProtocol(uint16_t port)
+  {
+    return wcs->getProtocol(port);
+  }
+
+  void setDebugLevel(int debug)
+  {
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    wcs->setDebugLevel(debug);
+#endif
+  }
+
+  void reset_tlsErr()
+  {
+    wcs->tls_required = false;
+    wcs->tls_error = false;
+  }
+
+  void setExtClientType(esp_mail_external_client_type type)
+  {
+    wcs->ext_client_type = type;
+  }
+
+  void set_tlsErrr(bool err)
+  {
+    wcs->tls_error = err;
+  }
+
+  bool tlsErr()
+  {
+    return wcs->tls_error;
+  }
+
+  void set_tlsRequired(bool req)
+  {
+    wcs->tls_required = req;
+  }
+
+  bool tlsRequired()
+  {
+    return wcs->tls_required;
+  }
+
+  int tcpTimeout()
+  {
+    return wcs->tmo;
+  }
+
+  void disconnect(){};
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  /**
+   * Set the connection request callback.
+   * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+   */
+  void connectionRequestCallback(ConnectionRequestCallback connectCB)
+  {
+    connection_cb = connectCB;
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    wcs->connectionRequestCallback(connectCB);
+#endif
+  }
+
+  /**
+   * Set the connection upgrade request callback.
+   * @param upgradeCB The callback function to do the SSL setup and handshake.
+   */
+  void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB)
+  {
+    this->connection_upgrade_cb = upgradeCB;
+  }
+
+  /**
+   * Set the network connection request callback.
+   * @param networkConnectionCB The callback function that handles the network connection.
+   */
+  void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
+  {
+    network_connection_cb = networkConnectionCB;
+  }
+
+  /**
+   * Set the network disconnection request callback.
+   * @param networkConnectionCB The callback function that handles the network disconnection.
+   */
+  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+  {
+    network_disconnection_cb = networkDisconnectionCB;
+  }
+
+  /**
+   * Set the network status request callback.
+   * @param networkStatusCB The callback function that calls the setNetworkStatus function to set the network status.
+   */
+  void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
+  {
+    network_status_cb = networkStatusCB;
+  }
+
+  /**
+   * Set the network status which should call in side the networkStatusRequestCallback function.
+   * @param status The status of network.
+   */
+  void setNetworkStatus(bool status)
+  {
+    networkStatus = status;
+  }
+
+#endif
+
   uint8_t sdPin = 15;
   uint16_t bsslRxSize = 1024;
   uint16_t bsslTxSize = 1024;
@@ -250,10 +392,25 @@ public:
   int txBufDivider = maxRXBufSize / _chunkSize;
 
 private:
+  MB_String _host;
+  uint16_t _port;
   std::unique_ptr<ESP8266_WCS> wcs = std::unique_ptr<ESP8266_WCS>(new ESP8266_WCS());
 
-#ifndef USING_AXTLS
+#if defined(WCS_USE_BEARSSL)
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+  BearSSL_X509List *x509 = nullptr;
+#else
   X509List *x509 = nullptr;
+#endif
+#endif
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  ConnectionRequestCallback connection_cb = NULL;
+  ConnectionUpgradeRequestCallback connection_upgrade_cb = NULL;
+  NetworkConnectionRequestCallback network_connection_cb = NULL;
+  NetworkDisconnectionRequestCallback network_disconnection_cb = NULL;
+  NetworkStatusRequestCallback network_status_cb = NULL;
+  volatile bool networkStatus = false;
 #endif
 };
 

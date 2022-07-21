@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 4, 2022
+ * Created July 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -146,6 +146,32 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
     tzset();
   }
 #endif
+}
+
+void ESP_Mail_Client::getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls)
+{
+  for (size_t i = 0; i < ports_functions.size; i++)
+  {
+    if (ports_functions.list[i].port == port)
+    {
+      if (ports_functions.list[i].protocol == esp_mail_protocol_plain_text)
+      {
+        secure = false;
+        secureMode = false;
+      }
+      else
+      {
+        if (ports_functions.list[i].protocol == esp_mail_protocol_tls)
+          starttls = true;
+
+        secureMode = !starttls;
+
+        if (ports_functions.list[i].protocol == esp_mail_protocol_ssl)
+          ssl = true;
+      }
+      return;
+    }
+  }
 }
 
 void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
@@ -480,7 +506,7 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
 
   while (client->connected() && client->available() && idx < bufLen)
   {
-    
+
     mbfs->feed();
 
     ret = client->read();
@@ -521,7 +547,7 @@ void ESP_Mail_Client::setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *s
 
     if (strlen(session->certificate.cert_file) > 0 || caCert != nullptr)
     {
-      client.clockReady = _clockReady;
+      client.setClockReady(_clockReady);
     }
 
     if (strlen(session->certificate.cert_file) == 0)

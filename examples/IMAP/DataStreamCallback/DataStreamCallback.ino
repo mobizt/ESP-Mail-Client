@@ -10,7 +10,7 @@
  */
 
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and
- * change the config for that card interfaces in src/addons/SDHelper.h
+ * change the config for that card interfaces in src/extras/SDHelper.h
  */
 
 #include <Arduino.h>
@@ -104,7 +104,7 @@ void setup()
 
 #if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
     // Mount SD card.
-    SD_Card_Mounting(); // See src/addons/SDHelper.h
+    SD_Card_Mounting(); // See src/extras/SDHelper.h
 #endif
 
     /* Set the callback function to get MIME Data stream */

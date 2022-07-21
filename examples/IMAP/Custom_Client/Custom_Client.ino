@@ -75,7 +75,7 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 WiFiSSLClient client;
 
 /* The IMAP Session object used for Email reading */
-IMAPSession imap(&client); // or assign the Client later with imap.setClient(&client);
+IMAPSession imap(&client, esp_mail_external_client_type_ssl /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */); // or assign the Client later with imap.setClient(&client, esp_mail_external_client_type_ssl);
 
 void networkConnection()
 {

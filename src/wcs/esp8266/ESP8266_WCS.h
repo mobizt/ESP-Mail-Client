@@ -1,11 +1,13 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v1.0.4
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v2.0.0
  *
+ * Created July 20, 2022
+ * 
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
- * 
+ *
  * Permission is hereby granted, free of charge, to any person returning a copy of
  * this software and associated documentation files (the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
@@ -31,10 +33,8 @@
 
 #include <vector>
 #include <WiFiClient.h>
-#include <bearssl/bearssl.h>
-#include "extras/SDK_Version_Common.h"
-#include <WiFiClientSecure.h>
 
+#include "extras/SDK_Version_Common.h"
 #include "ESP_Mail_FS.h"
 
 #define _ESP_MAIL_USE_PSRAM_ ESP_MAIL_USE_PSRAM
@@ -44,34 +44,58 @@
 
 #include "extras/MB_String.h"
 
-#ifdef DEBUG_ESP_SSL
-#if defined(DEBUG_ESP_PORT)
-#define DEBUG_BSSL(fmt, ...) DEBUG_ESP_PORT.printf_P((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
-#else
-#define DEBUG_BSSL(fmt, ...) ESP_MAIL_DEFAULT_DEBUG_PORT.printf((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
-#endif
-#else
-#define DEBUG_BSSL(...)
+#if !defined(USING_AXTLS)
+#define WCS_USE_BEARSSL
 #endif
 
-#if !defined(USING_AXTLS) && defined(ESP8266_CORE_SDK_V3_X_X)
+#if defined(ESP8266)
+#include <StackThunk.h>
+#endif
+
+#if defined(WCS_USE_BEARSSL)
+
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+#include "ESP8266_SSL_Client.h"
+#define WCS_CLASS ESP8266_SSL_Client
+#define WC_CLASS WCS_CLASS
+#else
+#include <WiFiClientSecure.h>
 #define WCS_CLASS WiFiClientSecureCtx
-#else
-#define WCS_CLASS WiFiClientSecure
-#endif
 #define WC_CLASS WiFiClient
+#endif
 
-#ifdef ESP8266_CORE_SDK_V3_X_X
-#define OVERRIDING override;
+#else
+
+#include <WiFiClientSecure.h>
+#define WCS_CLASS WiFiClientSecure
+#define WC_CLASS WiFiClient
+#endif
+
+#include "./wcs/base/TCP_Client_Base.h"
+
+#if defined(WCS_USE_BEARSSL) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+#define OVERRIDING override
 #else
 #define OVERRIDING
 #endif
 
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
 class ESP8266_WCS : public WCS_CLASS
+#else
+class ESP8266_WCS : public WCS_CLASS, public TCP_Client_Base
+#endif
 {
+  friend class ESP8266_TCP_Client;
+
 public:
   ESP8266_WCS();
   ~ESP8266_WCS() OVERRIDING;
+
+  /**
+   * Set the client.
+   * @param client The Client interface.
+   */
+  void setClient(Client *client);
 
   /**
    * Connect to server.
@@ -85,7 +109,7 @@ public:
    * Get TCP connection status.
    * @return 1 for connected or 0 for not connected.
    */
-  uint8_t connected() OVERRIDING;
+  uint8_t _connected();
 
   /**
    * Get available data size to read.
@@ -116,27 +140,10 @@ public:
   size_t write(const uint8_t *buf, size_t size) OVERRIDING;
 
   /**
-   * The TCP data write function.
-   * @param buf The data to write.
-   * @param size The length of data to write.
-   * @return The size of data that was successfully written or 0 for error.
-   */
-  size_t write_P(PGM_P buf, size_t size) OVERRIDING;
-
-  /**
    * Read one byte from stream.
    * @return The data that was successfully read or -1 for error.
    */
-  int peek() override;
-
-  /**
-   * Read data from Stream with time out.
-   * @param buffer The data buffer.
-   * @param length The length of data read.
-   * @return The size of data that was successfully read.
-   */
-  size_t peekBytes(uint8_t *buffer, size_t length) OVERRIDING;
-
+  int peek();
 
   /**
    * Set the status which used when certificates were installed and ready to verify.
@@ -176,7 +183,24 @@ public:
    */
   bool connectSSL(bool verify);
 
+  void stop();
+
+  void setTimeout(unsigned long timeout);
+
+#if defined(ENABLE_CUSTOM_CLIENT) && defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+  /**
+   * Set the connection request callback.
+   * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+   */
+  void connectionRequestCallback(_ConnectionRequestCallback connectCB)
+  {
+    WCS_CLASS::connectionRequestCallback(connectCB);
+  }
+
+#endif
+
 private:
+#if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
   /**
    * The non-secure mode TCP data write function.
    * @param b The data to write.
@@ -208,14 +232,6 @@ private:
   size_t ns_write(Stream &stream);
 
   /**
-   * The non-secure mode TCP data write function.
-   * @param buf The data to write.
-   * @param size The length of data to write.
-   * @return The size of data that was successfully written or 0 for error.
-   */
-  size_t ns_write_P(PGM_P buf, size_t size);
-
-  /**
    * Get the non-secure mode available data size to read.
    * @return The avaiable data size.
    */
@@ -242,23 +258,27 @@ private:
   int ns_peek();
 
   /**
-   * Non-secure mode read data from Stream with time out.
-   * @param buffer The data buffer.
-   * @param length The length of data read.
-   * @return The size of data that was successfully read.
-   */
-  size_t ns_peekBytes(uint8_t *buffer, size_t length);
-
-  /**
    * Get non-secure TCP connection status.
    * @return 1 for connected or 0 for not connected.
    */
   uint8_t ns_connected();
 
-  bool _secured = false;
-  MB_String _host_name;
+#endif
+
+  MB_String _host;
+  uint16_t _port;
   bool _has_ta = false;
+  bool _secured = false;
   bool _base_use_insecure = false;
+
+  Client *_basic_client = nullptr;
+  bool _use_internal_basic_client = false;
+
+  /**
+   * Prepare internal basic client
+   */
+  void
+  prepareBasicClient();
 };
 
 #endif /* ESP8266 */

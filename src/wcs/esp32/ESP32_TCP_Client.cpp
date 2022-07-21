@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v1.0.11
+ * ESP32 TCP Client Library v2.0.0
  *
- * June 21, 2022
+ * Created July 20, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -45,29 +45,36 @@ ESP32_TCP_Client::~ESP32_TCP_Client()
 {
     if (wcs)
     {
+        if (cert_buf)
+            wcs->mbfs->delP(&cert_buf);
+
         wcs->stop();
         wcs.reset(nullptr);
         wcs.release();
     }
-    if (cert_buf)
-        mbfs->delP(&cert_buf);
+}
+
+void ESP32_TCP_Client::setClient(Client *client)
+{
+    if (wcs)
+        wcs->setClient(client);
 }
 
 void ESP32_TCP_Client::setCACert(const char *caCert)
 {
     wcs->setCACert(caCert);
     if (caCert)
-        baseSetCertType(esp_mail_cert_type_data);
+        wcs->baseSetCertType(esp_mail_cert_type_data);
     else
     {
         setInsecure();
-        baseSetCertType(esp_mail_cert_type_none);
+        wcs->baseSetCertType(esp_mail_cert_type_none);
     }
 }
 
 void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
 {
-    if (!mbfs)
+    if (!wcs->mbfs)
         return;
 
     if (strlen(certFile) > 0)
@@ -79,7 +86,7 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
                 filename.prepend('/');
         }
 
-        int len = mbfs->open(filename, storageType, mb_fs_open_mode_read);
+        int len = wcs->mbfs->open(filename, storageType, mb_fs_open_mode_read);
         if (len > -1)
         {
 
@@ -87,11 +94,11 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
             {
 
 #if defined(MBFS_FLASH_FS)
-                fs::File file = mbfs->getFlashFile();
+                fs::File file = wcs->mbfs->getFlashFile();
                 wcs->loadCACert(file, len);
 #endif
-                mbfs->close(storageType);
-                baseSetCertType(esp_mail_cert_type_file);
+                wcs->mbfs->close(storageType);
+                wcs->baseSetCertType(esp_mail_cert_type_file);
             }
             else if (storageType == mb_fs_mem_storage_type_sd)
             {
@@ -99,21 +106,21 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
 #if defined(MBFS_ESP32_SDFAT_ENABLED)
 
                 if (cert_buf)
-                    mbfs->delP(&cert_buf);
+                    wcs->mbfs->delP(&cert_buf);
 
-                cert_buf = (char *)mbfs->newP(len);
-                if (mbfs->available(storageType))
-                    mbfs->read(storageType, (uint8_t *)cert_buf, len);
+                cert_buf = (char *)wcs->mbfs->newP(len);
+                if (wcs->mbfs->available(storageType))
+                    wcs->mbfs->read(storageType, (uint8_t *)cert_buf, len);
 
-                mbfs->close(storageType);
-                wcs->setCACert((const char *)cert_buf);
+                wcs->mbfs->close(storageType);
+                wcs->wcs->setCACert((const char *)cert_buf);
                 baseSetCertType(esp_mail_cert_type_file);
 
 #elif defined(MBFS_SD_FS)
-                fs::File file = mbfs->getSDFile();
+                fs::File file = wcs->mbfs->getSDFile();
                 wcs->loadCACert(file, len);
-                mbfs->close(storageType);
-                baseSetCertType(esp_mail_cert_type_file);
+                wcs->mbfs->close(storageType);
+                wcs->baseSetCertType(esp_mail_cert_type_file);
 
 #endif
             }
@@ -131,7 +138,7 @@ void ESP32_TCP_Client::setTimeout(uint32_t timeoutSec)
     if (wcs)
         wcs->setTimeout(timeoutSec);
 
-    baseSetTimeout(timeoutSec);
+    wcs->baseSetTimeout(timeoutSec);
 }
 
 void ESP32_TCP_Client::setInsecure()
@@ -155,17 +162,35 @@ void ESP32_TCP_Client::ethDNSWorkAround()
 
 bool ESP32_TCP_Client::networkReady()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+    if (network_status_cb)
+        network_status_cb();
+
+    return networkStatus;
+#else
     return WiFi.status() == WL_CONNECTED || ethLinkUp();
+#endif
 }
 
 void ESP32_TCP_Client::networkReconnect()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+    if (network_connection_cb)
+        network_connection_cb();
+#else
     esp_wifi_connect();
+#endif
 }
 
 void ESP32_TCP_Client::networkDisconnect()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+    if (network_disconnection_cb)
+        network_disconnection_cb();
+#else
     WiFi.disconnect();
+#endif
 }
 
 String ESP32_TCP_Client::fwVersion()
@@ -178,12 +203,55 @@ esp_mail_client_type ESP32_TCP_Client::type()
     return esp_mail_client_type_internal;
 }
 
-bool ESP32_TCP_Client::isInitialized() { return true; }
+bool ESP32_TCP_Client::isInitialized()
+{
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+    bool rdy = wcs != nullptr;
+
+    if (!network_connection_cb)
+    {
+        rdy = false;
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_369, true);
+    }
+
+    if (!connection_cb)
+    {
+        rdy = false;
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_367, true);
+    }
+
+#if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+    if (wcs->getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
+    {
+        rdy = false;
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_368, true);
+    }
+
+#endif
+
+    return rdy;
+#else
+    return true;
+#endif
+}
 
 int ESP32_TCP_Client::hostByName(const char *name, IPAddress &ip)
 {
     return WiFi.hostByName(name, ip);
 }
+
+bool ESP32_TCP_Client::begin(const char *host, uint16_t port)
+{
+    _host = host;
+    _port = port;
+    wcs->begin(host, port);
+    return true;
+};
 
 bool ESP32_TCP_Client::connect(bool secured, bool verify)
 {
@@ -199,22 +267,85 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (debugCallback)
         wcs->setDebugCB(&debugCallback);
 
-    if (!wcs->connect(host.c_str(), this->port))
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+    // no client assigned?
+    if (!wcs->_ssl->client)
+    {
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_346, true);
         return false;
-    return connected();
+    }
+
+    // no client type assigned?
+    if (wcs->ext_client_type == esp_mail_external_client_type_none)
+    {
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_372, true);
+        return false;
+    }
+
+    // plain text via ssl client?
+    if (!secured && wcs->ext_client_type == esp_mail_external_client_type_ssl)
+    {
+        if (wcs->debugLevel > 0)
+            esp_mail_debug_print(esp_mail_str_366, true);
+        return false;
+    }
+
+#endif
+
+// internal client or external client with internal ssl engine
+#if !defined(ENABLE_CUSTOM_CLIENT) || defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+    // internal or external client with innternal ssl client
+    if (!wcs->connect(_host.c_str(), _port))
+        return false;
+
+#endif
+
+    bool res = connected();
+
+    if (!res)
+        stop();
+
+    return res;
 }
 
 bool ESP32_TCP_Client::connectSSL(bool verify)
 {
     if (!wcs)
         return false;
-    return wcs->connectSSL(verify);
+
+    bool res = false;
+
+#if defined(ENABLE_CUSTOM_CLIENT) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
+    wcs->tls_required = true;
+
+    if (connection_upgrade_cb)
+        connection_upgrade_cb();
+
+    res = this->connected();
+
+    if (!res)
+        stop();
+
+    return res;
+#endif
+
+    res = wcs->connectSSL(verify);
+
+    if (!res)
+        wcs->stop();
+
+    return res;
 }
 
 void ESP32_TCP_Client::stop()
 {
-    if (connected())
-        return wcs->stop();
+    _host.clear();
+    return wcs->stop();
 }
 
 bool ESP32_TCP_Client::connected()
@@ -238,7 +369,7 @@ int ESP32_TCP_Client::write(uint8_t *data, int len)
     if (!connect(wcs->isSecure(), wcs->isVerify()))
         return TCP_CLIENT_ERROR_CONNECTION_REFUSED;
 
-    int toSend = chunkSize;
+    int toSend = _chunkSize;
     int sent = 0;
     while (sent < len)
     {
@@ -261,10 +392,10 @@ int ESP32_TCP_Client::send(const char *data)
 
 int ESP32_TCP_Client::print(int data)
 {
-    char *buf = (char *)mbfs->newP(64);
+    char *buf = (char *)wcs->mbfs->newP(64);
     sprintf(buf, (const char *)FPSTR("%d"), data);
     int ret = send(buf);
-    mbfs->delP(&buf);
+    wcs->mbfs->delP(&buf);
     return ret;
 }
 
@@ -286,10 +417,10 @@ int ESP32_TCP_Client::println(const char *data)
 
 int ESP32_TCP_Client::println(int data)
 {
-    char *buf = (char *)mbfs->newP(64);
+    char *buf = (char *)wcs->mbfs->newP(64);
     sprintf(buf, (const char *)FPSTR("%d\r\n"), data);
     int ret = send(buf);
-    mbfs->delP(&buf);
+    wcs->mbfs->delP(&buf);
     return ret;
 }
 
@@ -314,7 +445,7 @@ int ESP32_TCP_Client::readBytes(uint8_t *buf, int len)
     if (!wcs)
         return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-    return wcs->readBytes(buf, len);
+    return wcs->read(buf, len);
 }
 
 int ESP32_TCP_Client::readBytes(char *buf, int len)
