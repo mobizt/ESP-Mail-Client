@@ -35,8 +35,16 @@
 
 #elif defined(MB_MCU_ATMEL_ARM) && !defined(ARDUINO_SAMD_MKR1000) || defined(MB_MCU_RP2040)
 
+// To do:
+// - Add support board SSL engine for external basic client
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT)
+#include "custom/Custom_TCP_Client.h"
+#define ESP_MAIL_TCP_CLIENT Custom_TCP_Client
+#else
 #include "samd/WiFiNINA_TCP_Client.h"
 #define ESP_MAIL_TCP_CLIENT WiFiNINA_TCP_Client
+#endif
+
 
 #else
 

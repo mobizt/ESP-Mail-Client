@@ -1,8 +1,10 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.9
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.10
  *
+ * To do:
+ * - Add support board SSL engine for external basic client 
  *
- * June 21, 2022
+ * July 21, 2022
  *
  * Add support Arduino Nano RP2040 Connect
  *
@@ -246,6 +248,7 @@ public:
    */
   void setClient(Client *client)
   {
+    // dummy
     _client = client;
   }
 
@@ -255,6 +258,7 @@ public:
    */
   void connectionRequestCallback(ConnectionRequestCallback connectCB)
   {
+    // dummy
     this->connection_cb = connectCB;
   }
 
@@ -264,6 +268,7 @@ public:
    */
   void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB)
   {
+    // dummy
     this->connection_upgrade_cb = upgradeCB;
   }
 
@@ -273,6 +278,7 @@ public:
    */
   void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
   {
+    // dummy
     this->network_connection_cb = networkConnectionCB;
   }
 
@@ -282,6 +288,7 @@ public:
    */
   void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
   {
+    // dummy
     this->network_disconnection_cb = networkDisconnectionCB;
   }
 
@@ -291,6 +298,7 @@ public:
    */
   void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
   {
+    // dummy
     this->network_status_cb = networkStatusCB;
   }
 
@@ -300,6 +308,7 @@ public:
    */
   void setNetworkStatus(bool status)
   {
+    // dummy
     networkStatus = status;
   }
 
@@ -309,6 +318,7 @@ public:
    */
   void setClockReady(bool rdy)
   {
+    // dummy
     this->clockReady = rdy;
   }
 
@@ -317,6 +327,7 @@ public:
    */
   void reset_tlsErr()
   {
+    // dummy
     this->tls_required = false;
     this->tls_error = false;
   }
@@ -327,6 +338,7 @@ public:
    */
   void setExtClientType(esp_mail_external_client_type type)
   {
+    // dummy
     this->ext_client_type = type;
   }
 
@@ -336,6 +348,7 @@ public:
    */
   void set_tlsErrr(bool tls)
   {
+    // dummy
     this->tls_error = tls;
   }
 
@@ -345,6 +358,7 @@ public:
    */
   bool tlsErr()
   {
+    // dummy
     return this->tls_error;
   }
 
@@ -354,6 +368,7 @@ public:
    */
   void set_tlsRequired(bool req)
   {
+    // dummy
     this->tls_required = req;
   }
 
@@ -363,6 +378,7 @@ public:
    */
   bool tlsRequired()
   {
+    // dummy
     return this->tls_required;
   }
 
@@ -371,7 +387,10 @@ private:
   uint16_t port = 0;
   WiFiSSLClient *wcs = nullptr;
   WiFiClient *wc = nullptr;
+
+  // dummy
   Client *_client = nullptr;
+
   bool secured = false;
   bool verifyRootCA = false;
   int sock = -1;

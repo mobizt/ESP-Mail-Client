@@ -1,8 +1,10 @@
 /*
- * WiFiNINA TCP Client for ESP Mail Client, version 1.0.9
+ * WiFiNINA TCP Client for ESP Mail Client, version 1.0.10
  *
- *
- *June 21, 2022
+ * To do:
+ * - Add support board SSL engine for external basic client
+ * 
+ * July 21, 2022
  *
  * Add support Arduino Nano RP2040 Connect
  *
