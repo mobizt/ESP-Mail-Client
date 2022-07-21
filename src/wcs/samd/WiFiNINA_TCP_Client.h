@@ -240,13 +240,149 @@ public:
    */
   void flush();
 
+  /**
+   * Set the Client for TCP connection.
+   * @param client The pointer to Client.
+   */
+  void setClient(Client *client)
+  {
+    _client = client;
+  }
+
+  /**
+   * Set the connection request callback.
+   * @param connectCB The callback function that accepts the host name (const char*) and port (int) as parameters.
+   */
+  void connectionRequestCallback(ConnectionRequestCallback connectCB)
+  {
+    this->connection_cb = connectCB;
+  }
+
+  /**
+   * Set the connection upgrade request callback.
+   * @param upgradeCB The callback function to do the SSL setup and handshake.
+   */
+  void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB)
+  {
+    this->connection_upgrade_cb = upgradeCB;
+  }
+
+  /**
+   * Set the network connection request callback.
+   * @param networkConnectionCB The callback function that handles the network connection.
+   */
+  void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)
+  {
+    this->network_connection_cb = networkConnectionCB;
+  }
+
+  /**
+   * Set the network disconnection request callback.
+   * @param networkConnectionCB The callback function that handles the network disconnection.
+   */
+  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB)
+  {
+    this->network_disconnection_cb = networkDisconnectionCB;
+  }
+
+  /**
+   * Set the network status request callback.
+   * @param networkStatusCB The callback function that calls the setNetworkStatus function to set the network status.
+   */
+  void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB)
+  {
+    this->network_status_cb = networkStatusCB;
+  }
+
+  /**
+   * Set the network status which should call in side the networkStatusRequestCallback function.
+   * @param status The status of network.
+   */
+  void setNetworkStatus(bool status)
+  {
+    networkStatus = status;
+  }
+
+  /**
+   * Set the clock ready status.
+   * @param rdy The ready status.
+   */
+  void setClockReady(bool rdy)
+  {
+    this->clockReady = rdy;
+  }
+
+  /**
+   * Reset the nak error status.
+   */
+  void reset_tlsErr()
+  {
+    this->tls_required = false;
+    this->tls_error = false;
+  }
+
+  /**
+   * Set external Client type.
+   * @param type The esp_mail_external_client_type enum type esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl.
+   */
+  void setExtClientType(esp_mail_external_client_type type)
+  {
+    this->ext_client_type = type;
+  }
+
+  /**
+   * Set the tls error status.
+   * @param tls The tls error status.
+   */
+  void set_tlsErrr(bool tls)
+  {
+    this->tls_error = tls;
+  }
+
+  /**
+   * Get the tls status.
+   * @return bool status of tls error.
+   */
+  bool tlsErr()
+  {
+    return this->tls_error;
+  }
+
+  /**
+   * Set the TLS required status.
+   * @param req The tls required status.
+   */
+  void set_tlsRequired(bool req)
+  {
+    this->tls_required = req;
+  }
+
+  /**
+   * Get the TLS upgrade required status.
+   * @return bool status of TLS handshake required status.
+   */
+  bool tlsRequired()
+  {
+    return this->tls_required;
+  }
+
 private:
+  MB_String host;
+  uint16_t port = 0;
   WiFiSSLClient *wcs = nullptr;
   WiFiClient *wc = nullptr;
+  Client *_client = nullptr;
   bool secured = false;
   bool verifyRootCA = false;
   int sock = -1;
   int fwBuild = -1;
+
+  ConnectionRequestCallback connection_cb = NULL;
+  ConnectionUpgradeRequestCallback connection_upgrade_cb = NULL;
+  NetworkConnectionRequestCallback network_connection_cb = NULL;
+  NetworkDisconnectionRequestCallback network_disconnection_cb = NULL;
+  NetworkStatusRequestCallback network_status_cb = NULL;
+  volatile bool networkStatus = false;
 };
 
 #endif
