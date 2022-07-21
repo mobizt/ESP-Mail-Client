@@ -41,7 +41,7 @@ External Arduino Client can be used which this allows other devices (with minimu
 
 
 
-## The Supported Protocols based on the devices and usage opttions
+## Supported Protocols based on the devices and usage opttions
 
 | Devices and Usage options | Plain | SSL | TLS |
 | ------------- | ------------- | ------------- | ------------- |
