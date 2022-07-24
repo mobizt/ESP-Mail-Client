@@ -41,32 +41,6 @@ External Arduino Client can be used which this allows other devices (with minimu
 
 
 
-## Supported Protocols based on the devices and usage options
-
-| Devices and Usage options | Plain | SSL | TLS |
-| ------------- | ------------- | ------------- | ------------- |
-| ESP8266/ESP32 or SAMD21/RPI2040 + Custom NINA Firmware | ✔️ | ✔️ | ✔️ |
-| ESP8266/ESP32 + External basic Client (4) | ✔️(1) | ✔️(1)  | ✔️(1) |
-| ESP8266/ESP32 + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
-| SAMD21/RPI2040 w/o Custom NINA Firmware | ✔️ | ✔️ | ❌ |
-| SAMD21/RPI2040 + External basic Client | ✔️(1) | ❌ | ❌ |
-| SAMD21/RPI2040 + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
-| Other Arduino devices (5) + External basic Client | ✔️(1) | ❌ | ❌ |
-| Other Arduino devices (5) + External SSL Client | ✔️(2) | ✔️ | ✔️(3) |
-
-#### Notes
-
- 1) Required connection callback function.
-
- 2) Required connection callback function and use SSL Client that supports plain text connection e.g. https://github.com/mobizt/SSLClient
-
- 3) Required both connection callback function and connection upgrade callback function and use SSL Client that supports connection upgrade e.g. https://github.com/mobizt/SSLClient
-
- 4) If macro `ESP_MAIL_USE_SDK_SSL_ENGINE` was assigned in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
-
- 5) Arduino Devices with at least 80 k program memory
-
-
 
 ## Supported Devices
 
@@ -639,7 +613,7 @@ The Clients that have ability to handle SSL/TLS encryption/decryption of data fr
 The Arduino devices that don't have on-board WiFi, the external Client library is needed and no additional setup required.
 
 
-In boards that have WiFi e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module, the built-in client will be used by default.
+For boards that have WiFi e.g. ESP32, ESP8266 and SAMD21 with built-in U-blox NINA-W102 module, the built-in client will be used by default.
 
 
 To use custom (external) Client for such WiFi capable devices, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
@@ -649,11 +623,7 @@ To use custom (external) Client for such WiFi capable devices, the following mac
 ```
 
 
-See [Custom_Client.ino](/examples/SMTP/Custom_Client/Custom_Client.ino) for complete Client example.
-
-
-
-In case of external Clients used as the following examples, please see the above table for supported protocols and its requirements.
+See [Custom Client Examples](/examples/SMTP/Custom_Client) for complete Client example.
 
 
 The following example showed how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
@@ -672,7 +642,9 @@ GSMClient client; // basic non-secure client
 // https://github.com/mobizt/SSLClient
 SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, rand_pin); 
 
-SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic); // set the Client type as basic client due to port 587 required non-secure connection during greeting and upgrade to TLS later with STARTTLS command. 
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic); 
+// port 587 required non-secure connection during greeting and 
+// upgrade to TLS later with STARTTLS command. 
 
 void connectionUpgradeRequestCallback()
 {
@@ -683,7 +655,7 @@ void connectionUpgradeRequestCallback()
 
     // Upgrade the connection
     // The host and port parameters will be ignored for this case and can be any
-    ssl_client.connectSSL("" /* host */, 0 /* port */);
+    ssl_client.connectSSL("smtp.gmail.com" /* host */, 587 /* port */);
     
 #endif
 }
@@ -691,6 +663,17 @@ void connectionUpgradeRequestCallback()
 void connectionRequestCallback(const char *host, int port)
 {
     client.connect(host, port)
+}
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+    // Set the network status
+    bool networkConnected;
+
+    // networkConnected = modem.isNetworkConnected();
+
+    smtp.setNetworkStatus(networkConnected);
 }
 
 void serup()
@@ -713,6 +696,8 @@ void serup()
     // Set the callback function for connection upgrade
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
 }
 
 
@@ -731,7 +716,8 @@ WiFiSSLClient ssl_client; // secured client
 
 // Define the global used smtp object
 // SSL required for port 465
-SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl); // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_ssl);
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl); 
+// or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_ssl);
 
 // Since we use WiFiSSLClient that supported SSL and no basic non-secure client can be pass to its constructor,
 // only SMTP port 465 works in the following code.
@@ -847,7 +833,9 @@ The below example will use ESP32 and GSMClient library.
 
 GSMClient client; // basic non-secure client
 
-SMTPSession smtp(&client, esp_mail_external_client_type_basic); // We can assign basic Client directly in ESP8266 and ESP32 as library will handle the connection upgrade (if needed in case of SMTP port 587) using Core SDK SSL engine.
+SMTPSession smtp(&client, esp_mail_external_client_type_basic); 
+// We can assign basic Client directly in ESP8266 and ESP32 as library will handle 
+// the connection upgrade (if needed in case of SMTP port 587) using Core SDK SSL engine.
 
 
 void connectionRequestCallback(const char *host, int port)

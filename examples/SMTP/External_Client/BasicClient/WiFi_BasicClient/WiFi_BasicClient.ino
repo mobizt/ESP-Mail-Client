@@ -58,11 +58,34 @@
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
 
+WiFiClient client;
+
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
                                   "-----END CERTIFICATE-----\n";
+
+// Define the callback function to handle server status acknowledgement
+void networkStatusRequestCallback()
+{
+  // Set the network status
+  smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
+}
+
+// Define the callback function to handle server connection
+void connectionRequestCallback(const char *host, int port)
+{
+
+  Serial.print("> U: Connecting to server via custom Client... ");
+
+  if (!client.connect(host, port))
+  {
+    Serial.println("failed.");
+    return;
+  }
+  Serial.println("success.");
+}
 
 void setup()
 {
@@ -233,7 +256,13 @@ void setup()
   // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
   // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
-  //
+  smtp.setClient(&client, esp_mail_external_client_type_basic);
+
+  // Set the callback functions to hadle the required tasks.
+  smtp.connectionRequestCallback(connectionRequestCallback);
+
+  smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
   if (!smtp.connect(&session))
     return;
 

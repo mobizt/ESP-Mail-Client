@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v2.0.0
+ * The custom TCP Client Class v2.0.1
  *
- * Created July 20, 2022
+ * Created July 24, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -186,10 +186,14 @@ public:
         if (!wcs)
         {
             if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_346, true);
+            {
+                MB_String s = esp_mail_str_185;
+                s += esp_mail_str_346;
+                esp_mail_debug_print(s.c_str(), true);
+            }
             return false;
         }
-        
+
         // no client type assigned?
         if (ext_client_type == esp_mail_external_client_type_none)
         {

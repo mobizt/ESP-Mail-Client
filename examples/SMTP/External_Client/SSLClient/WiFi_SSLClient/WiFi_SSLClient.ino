@@ -1,9 +1,7 @@
 
 
 /**
- * This example shows how to send Email using custom Clients (EthernetClient).
- *
- * This example used ESP32 and WIZnet W5500 Ethernet module
+ * This example showes how to send text Email.
  *
  * Created by K. Suwatchai (Mobizt)
  *
@@ -16,19 +14,24 @@
  */
 
 #include <Arduino.h>
+#if defined(ESP32)
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#else
+
+// Other Client defined here
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in src/ESP_Mail_FS.h.
+// See the example Custom_Client.ino for how to use.
+
+#endif
+
+#include <WiFiClientSecure.h>
 
 #include <ESP_Mail_Client.h>
 
-// https://github.com/OPEnSLab-OSU/EthernetLarge
-// #include <EthernetLarge.h>
-
-#include <Ethernet.h>
-
-// For NTP client
-#include <EthernetUdp.h>
-#include <extras/MB_NTP.h>
-
-
+#define WIFI_SSID "<ssid>"
+#define WIFI_PASSWORD "<password>"
 
 /** For Gmail, the app password will be used for log in
  *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
@@ -41,97 +44,35 @@
  */
 
 /** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
-#define SMTP_HOST "smtp.gmail.com"
+#define SMTP_HOST "<host>"
 
 /** The smtp port e.g.
  * 25  or esp_mail_smtp_port_25
  * 465 or esp_mail_smtp_port_465
  * 587 or esp_mail_smtp_port_587
  */
-#define SMTP_PORT esp_mail_smtp_port_587
+#define SMTP_PORT esp_mail_smtp_port_465 // port 465 is not available for Outlook.com
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-#define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
-#define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
-#define WIZNET_MISO_PIN 19  // Connect W5500 MISO pin to GPIO 19 of ESP32
-#define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
-#define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
-
-// For NTP client
-EthernetUDP udpClient;
-
-MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, 0 /* timezone offset in seconds */ );
-
-unsigned long timestamp = 0;
-
-unsigned long sentMillis = 0;
-
-const int analog_pin = 34; // ESP32 GPIO 34 (Analog pin)
-
-uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
-
-IPAddress Eth_IP(192, 168, 1, 104);
-
-EthernetClient client;
-
 /* The SMTP Session object used for Email sending */
-SMTPSession smtp(&client, esp_mail_external_client_type_basic /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */); // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
+SMTPSession smtp;
+
+WiFiClientSecure client;
 
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-void sendNTPpacket(const char *address);
-
-void getTime();
-
-void ResetEthernet()
-{
-    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
-    pinMode(WIZNET_RESET_PIN, OUTPUT);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-    digitalWrite(WIZNET_RESET_PIN, LOW);
-    delay(50);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-}
-
-void networkConnection()
-{
-
-    Ethernet.init(WIZNET_CS_PIN);
-
-    ResetEthernet();
-
-    Serial.println("Starting Ethernet connection...");
-    Ethernet.begin(Eth_MAC, Eth_IP);
-
-    unsigned long to = millis();
-
-    while (Ethernet.linkStatus() == LinkOFF || millis() - to < 2000)
-    {
-        delay(100);
-    }
-
-    if (Ethernet.linkStatus() == LinkON)
-    {
-        Serial.print("Connected with IP ");
-        Serial.println(Ethernet.localIP());
-    }
-    else
-    {
-        Serial.println("Can't connected");
-    }
-}
+const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
+                                  "-----END CERTIFICATE-----\n";
 
 // Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
     // Set the network status
-    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
+    smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
 // Define the callback function to handle server connection
@@ -139,6 +80,7 @@ void connectionRequestCallback(const char *host, int port)
 {
 
     Serial.print("> U: Connecting to server via custom Client... ");
+
     if (!client.connect(host, port))
     {
         Serial.println("failed.");
@@ -147,16 +89,49 @@ void connectionRequestCallback(const char *host, int port)
     Serial.println("success.");
 }
 
-void sendEmail()
+void setup()
 {
-    // Get time from NTP server
-    if (timestamp == 0)
-    {
-        timestamp = ntpClient.getTime(2000 /* wait 2000 ms */);
 
-        if (timestamp > 0)
-            smtp.setSystemTime(timestamp);
+    Serial.begin(115200);
+
+#if defined(ARDUINO_ARCH_SAMD)
+    while (!Serial)
+        ;
+    Serial.println();
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
+#endif
+
+    Serial.println();
+
+    Serial.print("Connecting to AP");
+
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(200);
     }
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
+    /** Enable the debug via Serial port
+     * 0 for no debugging
+     * 1 for basic level debugging
+     *
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     */
+    smtp.debug(1);
+
+    /* Set the callback function to get the sending results */
+    smtp.callback(smtpCallback);
 
     /* Declare the session config data */
     ESP_Mail_Session session;
@@ -168,19 +143,58 @@ void sendEmail()
     session.login.password = AUTHOR_PASSWORD;
     session.login.user_domain = F("mydomain.net");
 
+    /* Set the NTP config time */
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    session.time.gmt_offset = 3;
+    session.time.day_light_offset = 0;
+
+    /** In ESP32, timezone environment will not keep after wake up boot from sleep.
+     * The local time will equal to GMT time.
+     *
+     * To sync or set time with NTP server with the valid local time after wake up boot,
+     * set both gmt and day light offsets to 0 and assign the timezone environment string e.g.
+
+       session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+       session.time.gmt_offset = 0;
+       session.time.day_light_offset = 0;
+       session.time.timezone_env_string = "JST-9"; // for Tokyo
+
+     * The library will get (sync) the time from NTP server without GMT time offset adjustment
+     * and set the timezone environment variable later.
+     *
+     * This timezone environment string will be stored to flash or SD file named "/tz_env.txt"
+     * which set via session.time.timezone_file.
+     *
+     * See the timezone environment string list from
+     * https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+     *
+     */
+
     /* Declare the message class */
     SMTP_Message message;
 
     /* Set the message headers */
-    message.sender.name = F("ESP Mail");
-    message.sender.email = AUTHOR_EMAIL;
+    message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
+    message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
     message.subject = F("Test sending plain text Email");
-
-    // Please don't forget to change the recipient email address.
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
 
     String textMsg = "This is simple plain text message";
-    message.text.content = "hiiiiii";
+    message.text.content = textMsg;
+
+    /** If the message to send is a large string, to reduce the memory used from internal copying  while sending,
+     * you can assign string to message.text.blob by cast your string to uint8_t array like this
+     *
+     * String myBigString = "..... ......";
+     * message.text.blob.data = (uint8_t *)myBigString.c_str();
+     * message.text.blob.size = myBigString.length();
+     *
+     * or assign string to message.text.nonCopyContent, like this
+     *
+     * message.text.nonCopyContent = myBigString.c_str();
+     *
+     * Only base64 encoding is supported for content transfer encoding in this case.
+     */
 
     /** The Plain text message character set e.g.
      * us-ascii
@@ -212,17 +226,47 @@ void sendEmail()
      */
     message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
 
+    // message.response.reply_to = "someone@somemail.com";
+    // message.response.return_path = "someone@somemail.com";
+
+    /** The Delivery Status Notifications e.g.
+     * esp_mail_smtp_notify_never
+     * esp_mail_smtp_notify_success
+     * esp_mail_smtp_notify_failure
+     * esp_mail_smtp_notify_delay
+     * The default value is esp_mail_smtp_notify_never
+     */
+    // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
+
     /* Set the custom message header */
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
+
+    // For Root CA certificate verification (ESP8266 and ESP32 only)
+    // session.certificate.cert_data = rootCACert;
+    // or
+    // session.certificate.cert_file = "/path/to/der/file";
+    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    // session.certificate.verify = true;
+
+    // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
+
+    /* Connect to server with the session config */
+
+    // Library will be trying to sync the time with NTP server if time is never sync or set.
+    // This is 10 seconds blocking process.
+    // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
+    // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
+    // Time can be set manually with provided timestamp to function smtp.setSystemTime.
+
+    client.setInsecure();
+
+    smtp.setClient(&client, esp_mail_external_client_type_ssl);
 
     // Set the callback functions to hadle the required tasks.
     smtp.connectionRequestCallback(connectionRequestCallback);
 
-    smtp.networkConnectionRequestCallback(networkConnection);
-
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    /* Connect to server with the session config */
     if (!smtp.connect(&session))
         return;
 
@@ -236,37 +280,8 @@ void sendEmail()
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
-void setup()
-{
-
-    Serial.begin(115200);
-
-    Serial.println();
-
-    networkConnection();
-
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
-    smtp.debug(1);
-
-    /* Set the callback function to get the sending results */
-    smtp.callback(smtpCallback);
-
-    // Begin NTP client
-    ntpClient.begin();
-}
-
 void loop()
 {
-    if (millis() - sentMillis > 120000 || sentMillis == 0)
-    {
-        sentMillis = millis();
-        sendEmail();
-    }
 }
 
 /* Callback function to get the Email sending status */

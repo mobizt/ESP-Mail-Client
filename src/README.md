@@ -1762,6 +1762,20 @@ esp_mail_sesson_secure_config_t secure;
 ```
 
 
+#### [Properties] The ports and protocols config
+
+This property has the sub properties
+
+##### [port_function *] list - The list (aray) of port_function.
+
+##### [size_t] size - The size of array.
+
+```cpp
+esp_mail_ports_functions ports_functions;
+```
+
+
+
 
 #### [Properties] The certificate config
 
@@ -1798,6 +1812,26 @@ esp_mail_spi_ethernet_module_t spi_ethernet_module;
 ```cpp
 NetworkConnectionHandler network_connection_handler;
 ```
+
+
+
+
+## port_function type data
+
+#### [Properties] The port number
+
+```cpp
+uint16_t port;
+```
+
+#### [Properties] The protocol
+
+The port protocol e.g. esp_mail_protocol_plain_text, esp_mail_protocol_ssl and esp_mail_protocol_tls.
+
+```cpp
+esp_mail_protocol protocol;
+```
+
 
 
 

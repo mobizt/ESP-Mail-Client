@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.0
+ * ESP32 SSL Client v2.0.1
  *
- * Created July 20, 2022
+ * Created July 24, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -147,10 +147,11 @@ static int esp_mail_esp32_basic_client_recv_timeout(void *ctx, unsigned char *bu
 
     res = client->read(buf, len);
 
-    if (res < len)
+    if (!res)
         return MBEDTLS_ERR_SSL_WANT_READ;
 
     return res;
+    
 }
 
 int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)

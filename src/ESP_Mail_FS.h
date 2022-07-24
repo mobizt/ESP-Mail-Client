@@ -1,38 +1,5 @@
 
 
-/**
- *  Supported Protocols based on the devices and usage options
- *
- *  |:: Devices and Usage options ::::::::::::::::::::::|:::::::: Plain ::::::::|:::::::: SSL ::::::::|:::::::: TLS ::::::::|
- *
- *      ESP8266/ESP32 or                                          ✔️                      ✔️                   ✔️
- *      SAMD21/RPI2040 + Custom NINA Firmware
- *
- *      ESP8266/ESP32 + External basic Client (4)                 ✔️(1)                   ✔️(1)                ✔️(1)
- *
- *      ESP8266/ESP32 + External SSL Client                       ✔️(2)                   ✔️                   ✔️(3)
- *
- *      SAMD21/RPI2040 w/o Custom NINA Firmware                   ✔️                      ✔️                   ❌
- *
- *      SAMD21/RPI2040 + External basic Client                    ✔️(1)                   ❌                   ❌
- *
- *      SAMD21/RPI2040 + External SSL Client                      ✔️(2)                   ✔️                   ✔️(3)
- *
- *      Other Arduino devices (5) + External basic Client         ✔️(1)                   ❌                   ❌
- *
- *      Other Arduino devices (5) + External SSL Client           ✔️(2)                   ✔️                   ✔️(3)
- *
- *
- *
- *  Notes:
- *  1) Required connection callback function.
- *  2) Required connection callback function and use SSL Client that supports plain text connection e.g. https://github.com/mobizt/SSLClient
- *  3) Required both connection callback function and connection upgrade callback function and use SSL Client that supports connection upgrade e.g. https://github.com/mobizt/SSLClient
- *  4) If macro ESP_MAIL_USE_SDK_SSL_ENGINE was assigned.
- *  5) Arduino Devices with at least 80 k program memory
- *
- */
-
 #pragma once
 
 #ifndef ESP_MAIL_CONFIG_H
@@ -139,7 +106,7 @@
  * This macro allows library to use external basic Client and external SSL Client interface.
  * The associated callback functions should be assigned based on port functions.
  */
-// #define ENABLE_CUSTOM_CLIENT
+ // #define ENABLE_CUSTOM_CLIENT
 
 
 

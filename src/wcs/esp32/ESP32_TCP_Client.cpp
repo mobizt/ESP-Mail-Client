@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.0
+ * ESP32 TCP Client Library v2.0.1
  *
- * Created July 20, 2022
+ * Created July 24, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -273,7 +273,11 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (!wcs->_ssl->client)
     {
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_346, true);
+        {
+            MB_String s = esp_mail_str_185;
+            s += esp_mail_str_346;
+            esp_mail_debug_print(s.c_str(), true);
+        }
         return false;
     }
 
