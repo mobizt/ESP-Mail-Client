@@ -120,6 +120,10 @@ The latest Core SDK is recommended. For ESP8266, the Core SDK version 3.x.x or l
 
 The ESP8266 Core SDK version 2.5.x and earlier are not supported.
 
+For ESP32, the Core SDK version 2.0.4 or later is recommended.
+
+The ESP32 Core SDK version 1.0.4 and earlier are not supported.
+
 ### SAMD21 custom build firmware
 
 For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) should be installed instead of official Arduino WiFiNINA firmware.

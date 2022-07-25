@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.0
+ * TCP Client Base class, version 2.0.1
  *
- * Created July 20, 2022
+ * Created July 26, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -29,6 +29,7 @@
 #define TCP_CLIENT_BASE_H
 
 #include <Arduino.h>
+#include <sys/time.h>
 #include "ESP_Mail_Const.h"
 #include <IPAddress.h>
 #include <Client.h>
@@ -163,8 +164,10 @@ public:
     int setTimestamp(time_t ts)
     {
 #if defined(ESP32) || defined(ESP8266)
-        struct timeval tm = {ts, 0}; // sec, us
-        return settimeofday((const timeval *)&tm, 0);
+        struct timeval tm; // sec, us
+        tm.tv_sec = ts;
+        tm.tv_usec = 0;
+        return settimeofday((const struct timeval *)&tm, 0);
 #endif
         return -1;
     }
@@ -180,7 +183,7 @@ public:
                 for (int i = 0; i < session->ports_functions.size; i++)
                 {
                     if (session->ports_functions.list[i].port == port)
-                            return (int)session->ports_functions.list[i].protocol;
+                        return (int)session->ports_functions.list[i].protocol;
                 }
             }
         }
@@ -207,7 +210,6 @@ private:
     }
 
 protected:
-
     MB_FS *mbfs = nullptr;
     int chunkSize = 4096;
     int tmo = 40000; // 40 sec

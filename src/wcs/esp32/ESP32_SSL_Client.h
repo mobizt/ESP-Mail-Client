@@ -1,7 +1,7 @@
 /*
  * ESP32 SSL Client v2.0.1
  *
- * Created July 24, 2022
+ * Created July 26, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -64,7 +64,7 @@ static const char esp_ssl_client_str_14[] PROGMEM = "> C: set mbedtls config";
 static const char esp_ssl_client_str_15[] PROGMEM = "> C: loading CRT cert";
 static const char esp_ssl_client_str_16[] PROGMEM = "> C: loading private key";
 static const char esp_ssl_client_str_17[] PROGMEM = "> C: setting hostname for TLS session";
-static const char esp_ssl_client_str_18[] PROGMEM = "> C: performing the SSL/TLS handshake";
+static const char esp_ssl_client_str_18[] PROGMEM = "> C: perform the SSL/TLS handshake";
 static const char esp_ssl_client_str_19[] PROGMEM = "> C: verifying peer X.509 certificate";
 static const char esp_ssl_client_str_20[] PROGMEM = "! E: failed to verify peer certificate!";
 static const char esp_ssl_client_str_21[] PROGMEM = "> C: certificate verified";

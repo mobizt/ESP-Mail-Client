@@ -1,4 +1,4 @@
-// Created July 20, 2022
+// Created July 26, 2022
 
 #pragma once
 
@@ -1988,7 +1988,7 @@ static const char esp_mail_str_286[] PROGMEM = "\1auth=Bearer ";
 static const char esp_mail_str_287[] PROGMEM = "\1\1";
 static const char esp_mail_str_294[] PROGMEM = "{\"status\":";
 static const char esp_mail_str_305[] PROGMEM = "connection failed";
-static const char esp_mail_str_310[] PROGMEM = "> C: Perform the SSL handshake";
+static const char esp_mail_str_310[] PROGMEM = "> C: Perform the SSL/TLS handshake";
 static const char esp_mail_str_311[] PROGMEM = "STARTTLS\r\n";
 static const char esp_mail_str_314[] PROGMEM = "> C: ESP Mail Client v";
 static const char esp_mail_str_328[] PROGMEM = "0.0.0.0";
