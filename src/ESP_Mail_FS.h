@@ -24,8 +24,6 @@
 #define ESP_MAIL_USE_PSRAM
 #endif
 
-
-
 /** 📌Flash Filesystem compilation options
  *
  * ::::::: To use SPIFFS :::::::
@@ -36,7 +34,15 @@
  * ::::::: To use LittleFS Filesystem :::::::
  *
  * #include <LittleFS.h>
- * #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS //For ESP8266 LitteFS
+ * #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
+ *
+ *
+ * ::::::: To use SPIFFS Filesystem :::::::
+ *
+ * #if defined(ESP32)
+ * #include <SPIFFS.h>
+ * #endif
+ * #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
  *
  *
  * ::::::: To use FAT Filesystem :::::::
@@ -46,10 +52,29 @@
  *
  */
 #if defined(ESP32) || defined(ESP8266)
-#if defined(ESP32)
-#include <SPIFFS.h>
+
+// Use LittleFS as default flash filesystem for ESP8266 
+#if defined(ESP8266)
+
+#include <LittleFS.h>
+#define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
+
+// Use LittleFS as default flash filesystem for ESP32 core v2.0.x
+#elif defined(ESP_ARDUINO_VERSION) /* ESP32 core >= v2.0.x */ /* ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0) */
+
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0)
+#include <LittleFS.h>
+#define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 #endif
+
+// Use SPIFFS as default flash filesystem for ESP32 core v1.0.6 and earlier
+#else
+
+#include <SPIFFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
+
+#endif
+
 #endif
 
 // For ESP32, format SPIFFS or FFat if mounting failed
