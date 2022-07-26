@@ -1,7 +1,11 @@
 
 
 /**
- * This example showes how to send text Email.
+ * This example showes how to send text Email using WiFiClientSecure.
+ *
+ * This example works only for SSL port (465) because we use normal SSLClient (WiFiClientSecure) to connect.
+ * 
+ * All protocols (plain text, SSL and TLS) are supported using upgrasable SSLClient, see Ethernet_SSLClient.ino
  *
  * Created by K. Suwatchai (Mobizt)
  *

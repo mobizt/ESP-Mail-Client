@@ -1,7 +1,9 @@
 
 
 /**
- * This example showes how to send text Email.
+ * This example showes how to send text Email using WiFiClient.
+ *
+ * No SSLClient is required for ESP8266 and ESP32 devices.
  *
  * Created by K. Suwatchai (Mobizt)
  *

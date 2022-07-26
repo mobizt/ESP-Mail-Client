@@ -123,6 +123,10 @@ void setup()
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
+    /** Set the ports and protocols 
+     *  This allows non-standard port to work with this library.
+    */
+
     session.ports_functions.list = new port_function[4];
     session.ports_functions.size = 3;
 

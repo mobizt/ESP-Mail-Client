@@ -1,9 +1,11 @@
 
 
 /**
- * This example shows how to send Email using custom Clients (EthernetClient).
+ * This example shows how to send Email using EthernetClient.
  *
- * This example used ESP32 and WIZnet W5500 Ethernet module
+ * This example used ESP32 and WIZnet W5500 Ethernet module.
+ * 
+ * No SSLClient is required for ESP8266 and ESP32 devices.
  *
  * Created by K. Suwatchai (Mobizt)
  *

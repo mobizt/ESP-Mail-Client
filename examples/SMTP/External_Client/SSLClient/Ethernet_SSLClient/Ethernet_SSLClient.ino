@@ -1,9 +1,13 @@
 
 
 /**
- * This example shows how to send Email using custom Clients (EthernetClient).
+ * This example shows how to send Email using EthernetClient and SSLClient.
  *
- * This example used ESP32 and WIZnet W5500 Ethernet module
+ * This example used ESP32 and WIZnet W5500 Ethernet module.
+ * 
+ * Normally SSLClient is not required in ESP32 and ESP8266 devices as seen from Ethernet_BasicClient.ino.
+ * 
+ * This example used SSLClient to show how to use it and can adapt with other Arduino devices other than ESP8266 and ESP32.
  *
  * Created by K. Suwatchai (Mobizt)
  *
@@ -86,9 +90,10 @@ EthernetClient client;
 SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, analog_pin);
 
 /* The SMTP Session object used for Email sending */
+
 // Client type should be basic because port 587 required 
-// non-secure connection during greeting 
-// and upgrade to TLS later with STARTTLS command.
+// non-secure connection during greeting stage 
+// and later upgrade to TLS with STARTTLS command.
 SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic);
 
 /* Callback function to get the Email sending status */

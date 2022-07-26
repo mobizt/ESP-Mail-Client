@@ -1,5 +1,7 @@
 /**
- * This example shows how to read Email.
+ * This example shows how to read Email using WiFiSSLClient.
+ *
+ * This example works only for SSL port (993) because we use normal SSLClient (WiFiSSLClient) to connect.
  *
  * Email: suwatchai@outlook.com
  *
