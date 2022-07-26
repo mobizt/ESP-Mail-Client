@@ -62,10 +62,8 @@
 // Use LittleFS as default flash filesystem for ESP32 core v2.0.x
 #elif defined(ESP_ARDUINO_VERSION) /* ESP32 core >= v2.0.x */ /* ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0) */
 
-#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0)
 #include <LittleFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
-#endif
 
 // Use SPIFFS as default flash filesystem for ESP32 core v1.0.6 and earlier
 #else
