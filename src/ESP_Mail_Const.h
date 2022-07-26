@@ -117,8 +117,15 @@ struct port_function
 
 struct esp_mail_ports_functions
 {
+    friend class IMAPSession;
+    friend class SMTPSession;
+    friend class esp_mail_session_config_t;
+
     uint16_t size = 0;
     port_function *list = nullptr;
+
+private:
+    bool use_internal_list = false;
 };
 
 struct esp_mail_content_transfer_encoding_t
@@ -1545,7 +1552,22 @@ struct esp_mail_session_config_t
     /* The callback function for WiFi connection */
     NetworkConnectionHandler network_connection_handler = NULL;
 
+    /* specific ports and its protocols */
     struct esp_mail_ports_functions ports_functions;
+
+public:
+    esp_mail_session_config_t(){};
+    ~esp_mail_session_config_t()
+    {
+        if (ports_functions.list)
+        {
+            if (ports_functions.use_internal_list)
+            {
+                ports_functions.use_internal_list = false;
+                delete[] ports_functions.list;
+            }
+        }
+    }
 };
 
 /** The content transfer encoding
