@@ -53,20 +53,23 @@
  */
 #if defined(ESP32) || defined(ESP8266)
 
-// Use LittleFS as default flash filesystem for ESP8266 
+
 #if defined(ESP8266)
+// Use LittleFS as default flash filesystem for ESP8266
 
 #include <LittleFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 
-// Use LittleFS as default flash filesystem for ESP32 core v2.0.x
+
 #elif defined(ESP_ARDUINO_VERSION) /* ESP32 core >= v2.0.x */ /* ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0) */
+// Use LittleFS as default flash filesystem for ESP32 core v2.0.x
 
 #include <LittleFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 
-// Use SPIFFS as default flash filesystem for ESP32 core v1.0.6 and earlier
+
 #else
+// Use SPIFFS as default flash filesystem for ESP32 core v1.0.6 and earlier
 
 #include <SPIFFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
