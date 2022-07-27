@@ -26,7 +26,7 @@
 #else
 
 // Other Client defined here
-// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
+// To use custom Client, define ENABLE_CUSTOM_CLIENT in src/ESP_Mail_FS.h.
 // See the example Custom_Client.ino for how to use.
 
 #endif
@@ -240,7 +240,7 @@ void setup()
    */
   message.html.transfer_encoding = Content_Transfer_Encoding::enc_qp;
 
-  message.text.content = F("This message contains 1 inline image and 1 attachment file.\r\nThe inline images were not shown in the plain text message.");
+  message.text.content = F("This message contains 1 inline image and 1 attachment file.\r\nThe inline image will not show in the plain text message.");
 
   message.text.charSet = F("utf-8");
   message.text.transfer_encoding = Content_Transfer_Encoding::enc_base64;
