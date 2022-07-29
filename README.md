@@ -74,7 +74,7 @@ This following devices are supported.
 
 From May 30, 2022, Google no longer supports the use of third-party apps or devices which ask you to sign in to your  GoogleAccount using only your username and password.
 
-This means the Gmail account credentials i.e. account Email and account password can't be used to sign in with Google SMTP andIMAP servers. This prevents the third party apps hack to Gmail user account.
+This means the Gmail account credentials i.e. account Email and account password can't be used to sign in with Google SMTP and IMAP servers. This prevents the third party apps hack to Gmail user account.
 
 To use Gmail with this library, you need to use App Passwords instead.
 
