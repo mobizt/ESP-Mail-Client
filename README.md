@@ -609,7 +609,7 @@ See [Custom_Command.ino](/examples/IMAP/Custom_Command/Custom_Command.ino) for t
 
 The Arduino Clients for network interfaces (WiFiClient, EthernetClient and GSMClient) which support non-secure network connection can be used as external client.
 
-These network interface Clients are refered to as "bsic Clients" which only handle the network communication.
+These network interface Clients are refered to as "basic Clients" which only handle the network communication.
 
 The Clients that have ability to handle SSL/TLS encryption/decryption of data from basic Client or to basic Client are refered to as "SSL Clients".
 
@@ -627,7 +627,7 @@ To use custom (external) Client for such WiFi capable devices, the following mac
 ```
 
 
-See [Custom Client Examples](/examples/SMTP/Custom_Client) for complete Client example.
+See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete Client example.
 
 
 The following example showed how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
