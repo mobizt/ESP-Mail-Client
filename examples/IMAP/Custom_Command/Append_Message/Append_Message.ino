@@ -62,7 +62,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 void customCommandCallback(IMAP_Response res)
@@ -123,15 +123,15 @@ void setup()
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
     session.server.port = IMAP_PORT;
 
-    /* Connect to server with the session and config */
-    if (!imap.customConnect(&session, customCommandCallback, F("A01") /* tag */))
+    /* Connect to the server */
+    if (!imap.customConnect(&session /* session credentials */, customCommandCallback, F("A01") /* tag */))
         return;
 
     String cmd = F("LOGIN ");

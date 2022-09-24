@@ -68,7 +68,7 @@ void printAllMailboxesInfo(IMAPSession &imap);
 /* Print the selected folder info */
 void printSelectedMailboxInfo(IMAPSession &imap);
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 void setup()
@@ -112,7 +112,7 @@ void setup()
      */
     imap.debug(1);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -121,11 +121,13 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Setup the configuration for searching or fetching operation and its result */
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result
+     */
     IMAP_Config config;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     /*  {Optional} */

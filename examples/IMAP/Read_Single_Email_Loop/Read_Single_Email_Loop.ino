@@ -86,7 +86,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 /* Print all attachments info from the message */
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 unsigned long readMillis = 0;
@@ -94,10 +94,12 @@ int totalMessage = 0;
 int msgNum = 0;
 int sign = -1;
 
-/* Declare the session config data */
+/* Declare the global used ESP_Mail_Session for user defined session credentials */
 ESP_Mail_Session session;
 
-/* Setup the configuration for searching or fetching operation and its result */
+/** Declare the global used IMAP_Config object used for user defined IMAP operating options
+ * and contains the IMAP operating result
+ */
 IMAP_Config config;
 
 void setup()
@@ -227,8 +229,8 @@ void setup()
      */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     /*  {Optional} */

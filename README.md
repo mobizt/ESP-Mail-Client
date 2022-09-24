@@ -388,10 +388,10 @@ The following code will send email with image attachment.
 #include <ESP_Mail_Client.h>
 
 
-// Define the global used SMTP Session object which used for SMTP transsport
+// Declare the global used SMTPSession object for SMTP transport
 SMTPSession smtp;
 
-// Define the global used session config data which used to store the TCP session configuration
+// Declare the global used ESP_Mail_Session for user defined session credentials
 ESP_Mail_Session session;
 
 void setup()
@@ -423,7 +423,7 @@ void setup()
   session.time.gmt_offset = 3;
   session.time.day_light_offset = 0;
 
-  // Define the SMTP_Message class variable to handle to message being transport
+  // Declare the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
 
   // Set the message headers
@@ -446,7 +446,7 @@ void setup()
                          "GCECEIEYIQIQhBiBCECEGIEIQIQQhChCBECEKEIEQIQhAiBCFCECIEIUIQ"
                          "ghAhCBGCECEIEYIQIUKEIEQIQoQg5LoBBaDPbQYiMoMAAAAASUVORK5CYII=";
 
-  // Define the attachment data
+  // Declare the attachment data
   SMTP_Attachment att;
 
   // Set the attatchment info
@@ -462,8 +462,8 @@ void setup()
   // Add attachment to the message
   message.addAttachment(att);
 
-  // Connect to server with the session config
-  smtp.connect(&session);
+  // Connect to the server
+  smtp.connect(&session /* session credentials */);
 
   // Start sending Email and close the session
   if (!MailClient.sendMail(&smtp, &message))
@@ -484,12 +484,10 @@ The following code will read the latest email.
 // Include ESP Mail Client library (this library)
 #include <ESP_Mail_Client.h>
 
+// Declare the global used IMAPSession object for IMAP transport
+IMAPSession imap;
 
-// Define the global used IMAP Session object which used for IMAP transsport
-IMAP_Config config;
-
-
-// Define the global used session config data which used to store the TCP session configuration
+// Declare the global used ESP_Mail_Session for user defined session credentials
 ESP_Mail_Session session;
 
 
@@ -516,7 +514,8 @@ void setup()
   session.login.email = "your Email address";
   session.login.password = "your Email password";
 
-  // Define the config class variable for searching or fetching operation and store the messsagess data
+  // Declare the IMAP_Config object used for user defined IMAP operating options 
+  // and contains the IMAP operating result
   IMAP_Config config;
 
   
@@ -525,8 +524,8 @@ void setup()
   config.enable.text = true;
 
 
-  // Connect to the server with the defined session and options
-  imap.connect(&session, &config);
+  // Connect to the server
+  imap.connect(&session /* session credentials */, &config /* operating options and its result */);
 
   // Open or select the mailbox folder to read the message
   imap.selectFolder("INBOX");
@@ -538,7 +537,7 @@ void setup()
   // calling select or open the folder (mailbox).
   config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
-  // Define the empty search criteria to disable the messsage search
+  // Empty search criteria to disable the messsage search
   config.search.criteria.clear();
 
 
@@ -715,10 +714,10 @@ The below example will use Arduino MKR 1000 and WiFi101 library.
 
 #include <WiFi101.h>
 
-// Define the global used Client object
+// Declare the global used Client object
 WiFiSSLClient ssl_client; // secured client
 
-// Define the global used smtp object
+// Declare the global used smtp object
 // SSL required for port 465
 SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl); 
 // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_ssl);
@@ -726,7 +725,7 @@ SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl);
 // Since we use WiFiSSLClient that supported SSL and no basic non-secure client can be pass to its constructor,
 // only SMTP port 465 works in the following code.
 
-// Define the global used session config data which used to store the TCP session configuration
+// Declare the global used session config data which used to store the TCP session configuration
 ESP_Mail_Session session;
 
 void networkConnection()
@@ -791,7 +790,7 @@ void setup()
   session.login.user_domain = "client domain or ip e.g. mydomain.com";
 
 
-  // Define the SMTP_Message class variable to handle to message being transport
+  // Declare the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
 
   // Set the message headers

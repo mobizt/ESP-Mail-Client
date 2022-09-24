@@ -77,7 +77,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 /* Print all attachments info from the message */
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 void setup()
@@ -124,7 +124,7 @@ void setup()
     /* Set the callback function to get the reading results */
     imap.callback(imapCallback);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
@@ -143,7 +143,9 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Setup the configuration for searching or fetching operation and its result */
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result 
+    */
     IMAP_Config config;
 
     /* Message UID to fetch or read */
@@ -225,8 +227,8 @@ void setup()
      */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     /*  {Optional} */

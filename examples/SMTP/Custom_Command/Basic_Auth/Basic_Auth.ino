@@ -55,7 +55,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
@@ -117,7 +117,7 @@ void setup()
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -127,7 +127,8 @@ void setup()
     session.login.password = AUTHOR_PASSWORD;
     session.login.user_domain = F("mydomain.net");
 
-    if (!smtp.connect(&session))
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
         return;
 
     // Please don't forget to change sender@xxxxxx.com to your email

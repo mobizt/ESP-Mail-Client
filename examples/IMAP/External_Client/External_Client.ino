@@ -12,9 +12,9 @@
  */
 
 /** This example shows how to read E-mail with external Client.
- * 
+ *
  * This example used SAMD21 device and WiFiNINA as the client.
- * 
+ *
  * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
  */
 
@@ -76,7 +76,7 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 /* Define the Client object */
 WiFiSSLClient client;
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap(&client, esp_mail_external_client_type_ssl /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */); // or assign the Client later with imap.setClient(&client, esp_mail_external_client_type_ssl);
 
 void networkConnection()
@@ -163,7 +163,7 @@ void setup()
      * Which pin 15 is the CS pin of SD card adapter
      */
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -172,7 +172,9 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Setup the configuration for searching or fetching operation and its result */
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result
+     */
     IMAP_Config config;
 
     /* Set seen flag */
@@ -244,8 +246,8 @@ void setup()
 
     imap.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     /*  {Optional} */

@@ -4,9 +4,9 @@
  * This example shows how to send Email using EthernetClient and SSLClient.
  *
  * This example used ESP32 and WIZnet W5500 Ethernet module.
- * 
+ *
  * Normally SSLClient is not required in ESP32 and ESP8266 devices as seen from Ethernet_BasicClient.ino.
- * 
+ *
  * This example used SSLClient to show how to use it and can adapt with other Arduino devices other than ESP8266 and ESP32.
  *
  * Created by K. Suwatchai (Mobizt)
@@ -73,7 +73,7 @@
 // For NTP client
 EthernetUDP udpClient;
 
-MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, 0 /* timezone offset in seconds */ );
+MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, 0 /* timezone offset in seconds */);
 
 unsigned long timestamp = 0;
 
@@ -89,10 +89,10 @@ EthernetClient client;
 
 SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, analog_pin);
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 
-// Client type should be basic because port 587 required 
-// non-secure connection during greeting stage 
+// Client type should be basic because port 587 required
+// non-secure connection during greeting stage
 // and later upgrade to TLS with STARTTLS command.
 SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic);
 
@@ -185,7 +185,7 @@ void sendEmail()
             smtp.setSystemTime(timestamp);
     }
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -251,8 +251,8 @@ void sendEmail()
 
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    /* Connect to server with the session config */
-    if (!smtp.connect(&session))
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
         return;
 
     /* Start sending Email and close the session */

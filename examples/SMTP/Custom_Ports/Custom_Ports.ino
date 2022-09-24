@@ -55,7 +55,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 /* Callback function to get the Email sending status */
@@ -108,7 +108,7 @@ void setup()
     /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -123,9 +123,9 @@ void setup()
     session.time.gmt_offset = 3;
     session.time.day_light_offset = 0;
 
-    /** Set the ports and protocols 
+    /** Set the ports and protocols
      *  This allows non-standard port to work with this library.
-    */
+     */
 
     session.ports_functions.list = new port_function[4];
     session.ports_functions.size = 3;
@@ -252,8 +252,8 @@ void setup()
     // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
-    //
-    if (!smtp.connect(&session))
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
         return;
 
     /* Start sending Email and close the session */

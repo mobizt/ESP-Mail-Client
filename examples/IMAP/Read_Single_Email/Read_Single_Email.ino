@@ -76,7 +76,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 /* Print all attachments info from the message */
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 void setup()
@@ -138,7 +138,7 @@ void setup()
      * Which pin 15 is the CS pin of SD card adapter
      */
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -147,7 +147,9 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Setup the configuration for searching or fetching operation and its result */
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result
+     */
     IMAP_Config config;
 
     /* Set the storage to save the downloaded files and attachments */
@@ -203,8 +205,8 @@ void setup()
      */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     /*  {Optional} */
@@ -225,9 +227,8 @@ void setup()
     // or fetch via the message sequence number
     // config.fetch.number = imap.selectedFolder().msgCount();
 
-    // if both config.fetch.uid and config.fetch.number were set, 
-    // then total 2 messages will be fetched i.e. one using uid and other using number. 
-
+    // if both config.fetch.uid and config.fetch.number were set,
+    // then total 2 messages will be fetched i.e. one using uid and other using number.
 
     /* Set seen flag */
 

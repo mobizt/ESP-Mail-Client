@@ -62,7 +62,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 void customCommandCallback(IMAP_Response res)
@@ -123,10 +123,12 @@ void setup()
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
-    /* Setup the configuration for searching or fetching operation and its result */
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result
+     */
     IMAP_Config config;
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -135,8 +137,8 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     // You can also assign tag to the begining of the command e.g. "A01 FETCH 1 UID"

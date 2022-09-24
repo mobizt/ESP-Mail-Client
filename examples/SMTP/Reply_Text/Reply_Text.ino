@@ -91,20 +91,22 @@ void helloSMTPCallback(SMTP_Status status);
 
 void replySMTPCallback(SMTP_Status status);
 
-/* The IMAP Session object used for Email reading */
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/* Declare the imap mail session config data */
+/*  Declare the global used ESP_Mail_Session for user defined IMAP session credentials */
 ESP_Mail_Session imap_mail_app_session;
 
-/* Setup the configuration for searching or fetching operation and its result */
+/** Define the IMAP_Config object used for user defined IMAP operating options
+ * and contains the IMAP operating result 
+*/
 IMAP_Config imap_config;
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession hello_smtp;
 SMTPSession reply_smtp;
 
-/* Declare the smtp mail session config data */
+/* Declare the global used ESP_Mail_Session for user defined SMTP session credentials */
 ESP_Mail_Session hello_smtp_mail_app_session;
 ESP_Mail_Session reply_smtp_mail_app_session;
 
@@ -188,8 +190,8 @@ void setupIMAP()
     imap_mail_app_session.login.email = IMAP_AUTHOR_EMAIL;
     imap_mail_app_session.login.password = IMAP_AUTHOR_PASSWORD;
 
-    /* Connect to server with the session and config */
-    if (!imap.connect(&imap_mail_app_session, &imap_config))
+    /* Connect to the server */
+    if (!imap.connect(&imap_mail_app_session /* session credentials */, &imap_config /* operating options and its result */))
         return;
 
     /* Open or select the mailbox folder to read or search the message */
@@ -218,8 +220,8 @@ bool setupHelloSMTP()
     hello_smtp_mail_app_session.time.gmt_offset = 3;
     hello_smtp_mail_app_session.time.day_light_offset = 0;
 
-    /* Connect to server with the session config */
-    if (!hello_smtp.connect(&hello_smtp_mail_app_session))
+    /* Connect to the server */
+    if (!hello_smtp.connect(&hello_smtp_mail_app_session /* session credentials */))
         return false;
 
     return true;
@@ -239,8 +241,8 @@ bool setupReplySMTP()
     reply_smtp_mail_app_session.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
     reply_smtp_mail_app_session.login.user_domain = F("mydomain.net");
 
-    /* Connect to server with the session config */
-    if (!reply_smtp.connect(&reply_smtp_mail_app_session))
+     /* Connect to the server */
+    if (!reply_smtp.connect(&reply_smtp_mail_app_session /* session credentials */))
         return false;
 
     return true;

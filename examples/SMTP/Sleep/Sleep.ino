@@ -57,7 +57,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 /* Callback function to get the Email sending status */
@@ -68,7 +68,7 @@ const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
 
 void sendEmail()
 {
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -85,8 +85,7 @@ void sendEmail()
     session.time.day_light_offset = 0;
     session.time.timezone_env_string = "JST-9"; // for Tokyo
 
-    //See the timezone environment string list from https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
-
+    // See the timezone environment string list from https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 
     /* Declare the message class */
     SMTP_Message message;
@@ -176,8 +175,8 @@ void sendEmail()
     // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
-    //
-    if (!smtp.connect(&session))
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
         return;
 
     /* Start sending Email and close the session */

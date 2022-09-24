@@ -77,7 +77,7 @@ IPAddress Eth_IP(192, 168, 1, 104);
 
 EthernetClient client;
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp(&client, esp_mail_external_client_type_basic /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */);
 // or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
 
@@ -168,7 +168,7 @@ void sendEmail()
             smtp.setSystemTime(timestamp);
     }
 
-    /* Declare the session config data */
+     /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -235,9 +235,9 @@ void sendEmail()
     // This is not required for ESP8266/ESP32 with external basic client
     // imap.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
-    /* Connect to server with the session config */
-    if (!smtp.connect(&session))
-        return;
+   /* Connect to the server */
+  if (!smtp.connect(&session /* session credentials */))
+    return;
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))

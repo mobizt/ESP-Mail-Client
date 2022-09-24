@@ -55,7 +55,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
@@ -117,7 +117,7 @@ void setup()
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -126,8 +126,8 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-
-    if (smtp.customConnect(&session, customCommandCallback) != 220)
+    /* Connect to the server */
+    if (smtp.customConnect(&session /* session credentials */, customCommandCallback) != 220)
     {
         Serial.println("> E: Unable to connect to server");
         return;
@@ -179,22 +179,21 @@ void setup()
 
     if (!smtp.sendCustomData(F("Subject: Test sending Email\r\n")))
     {
-      smtp.closeSession();
-      return;
+        smtp.closeSession();
+        return;
     }
 
     if (!smtp.sendCustomData(F("Hello World!\r\n")))
     {
-      smtp.closeSession();
-      return;
+        smtp.closeSession();
+        return;
     }
 
     if (smtp.sendCustomCommand(F("."), customCommandCallback) != 250)
     {
-      smtp.closeSession();
-      return;
+        smtp.closeSession();
+        return;
     }
-
 
     // Do not use this command in ESP8266 due to memory leaks in ESP8266 core BearSSL.
     // smtp.sendCustomCommand(F("QUIT"), customCommandCallback);

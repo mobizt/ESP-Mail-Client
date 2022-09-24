@@ -58,7 +58,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 /* Callback function to get the Email sending status */
@@ -108,7 +108,7 @@ void setup()
   /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
 
-  /* Declare the session config data */
+  /* Declare the ESP_Mail_Session for user defined session credentials */
   ESP_Mail_Session session;
 
   /* Set the session config */
@@ -250,8 +250,8 @@ void setup()
   /* Add attachment to the message */
   message.addAttachment(att[attIndex]);
 
-  /* Connect to server with the session config */
-  if (!smtp.connect(&session))
+  /* Connect to the server */
+  if (!smtp.connect(&session /* session credentials */))
     return;
 
   /* Start sending the Email and close the session */

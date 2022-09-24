@@ -63,6 +63,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
 /* Callback function to get the Email reading status */
@@ -121,7 +122,7 @@ void setup()
     /* Set the callback function to get the reading results */
     imap.callback(imapCallback);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -130,6 +131,9 @@ void setup()
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
+    /** Declare the IMAP_Config object used for user defined IMAP operating options
+     * and contains the IMAP operating result
+     */
     IMAP_Config config;
 
     ESP_Mail_Message message[2]; // The same usage as SMTP_Message
@@ -167,7 +171,8 @@ void setup()
 
     message[1].addAttachment(att[1]);
 
-    if (!imap.connect(&session, &config))
+    /* Connect to the server */
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
     if (!imap.selectFolder(F("INBOX")))

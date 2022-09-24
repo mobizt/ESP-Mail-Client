@@ -4,7 +4,7 @@
  * This example showes how to send text Email using WiFiClientSecure.
  *
  * This example works only for SSL port (465) because we use normal SSLClient (WiFiClientSecure) to connect.
- * 
+ *
  * All protocols (plain text, SSL and TLS) are supported using upgrasable SSLClient, see Ethernet_SSLClient.ino
  *
  * Created by K. Suwatchai (Mobizt)
@@ -61,7 +61,7 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* The SMTP Session object used for Email sending */
+/* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
 WiFiClientSecure client;
@@ -137,7 +137,7 @@ void setup()
     /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);
 
-    /* Declare the session config data */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -271,7 +271,8 @@ void setup()
 
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    if (!smtp.connect(&session))
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
         return;
 
     /* Start sending Email and close the session */
