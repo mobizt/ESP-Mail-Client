@@ -59,7 +59,7 @@ This following devices are supported.
  * W5500 SPI Ethernet module
 
 
-### Supposted Devices with flash size > 80k, using custom Clients.
+### Supported Devices with flash size > 80k, using custom Clients.
 
  * ESP32
  * ESP8266
