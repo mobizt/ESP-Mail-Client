@@ -41,7 +41,8 @@ typedef enum
     esp_mail_cert_type_undefined = -1,
     esp_mail_cert_type_none = 0,
     esp_mail_cert_type_data,
-    esp_mail_cert_type_file
+    esp_mail_cert_type_file,
+    esp_mail_cert_type_bundle
 
 } esp_mail_cert_type;
 

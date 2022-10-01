@@ -1,4 +1,4 @@
-// Created July 26, 2022
+// Created October 1, 2022
 
 #pragma once
 
@@ -123,8 +123,6 @@ struct esp_mail_ports_functions
 
     uint16_t size = 0;
     port_function *list = nullptr;
-
-private:
     bool use_internal_list = false;
 };
 
@@ -1505,7 +1503,7 @@ struct esp_mail_sesson_time_config_t
     MB_String timezone_env_string;
 
     /* the file path to store TZ environment variable */
-    MB_String timezone_file = "/tz_env.txt";
+    MB_String timezone_file = "/tze.txt";
 };
 
 struct esp_mail_sesson_secure_config_t
@@ -1531,6 +1529,9 @@ struct esp_mail_spi_ethernet_module_t
 
 struct esp_mail_session_config_t
 {
+    friend class IMAPSession;
+    friend class SMTPSession;
+
     /* The server config */
     struct esp_mail_sesson_sever_config_t server;
 
@@ -1559,12 +1560,45 @@ public:
     esp_mail_session_config_t(){};
     ~esp_mail_session_config_t()
     {
+        clear();
+    }
+
+    void clear()
+    {
+        server.host_name.clear();
+        server.port = 0;
+
+        secure.startTLS = false;
+
+        login.email.clear();
+        login.password.clear();
+        login.user_domain.clear();
+        login.accessToken.clear();
+
+        time.day_light_offset = 0;
+        time.gmt_offset = 0;
+        time.ntp_server.clear();
+        time.timezone_env_string.clear();
+
+        certificate.cert_data = "";
+        certificate.cert_file = "";
+        certificate.cert_file_storage_type = esp_mail_file_storage_type_none;
+        certificate.verify = false;
+
+        clearPorts();
+    }
+
+private:
+    void clearPorts()
+    {
         if (ports_functions.list)
         {
             if (ports_functions.use_internal_list)
             {
+                ports_functions.size = 0;
                 ports_functions.use_internal_list = false;
                 delete[] ports_functions.list;
+                ports_functions.list = nullptr;
             }
         }
     }

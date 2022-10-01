@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 20, 2022
+ * Created October 1, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -215,9 +215,9 @@ private:
   {
     for (size_t i = 0; i < _folders.size(); i++)
     {
-        _folders[i].name.clear();
-        _folders[i].attributes.clear();
-        _folders[i].delimiter.clear();
+      _folders[i].name.clear();
+      _folders[i].attributes.clear();
+      _folders[i].delimiter.clear();
     }
     _folders.clear();
   }
@@ -859,8 +859,8 @@ private:
 
 #if defined(ENABLE_SMTP)
 
-      // Encode Quoted Printable string
-      void encodeQP(const char *buf, char *out);
+  // Encode Quoted Printable string
+  void encodeQP(const char *buf, char *out);
 
   // Add the soft line break to the long text line rfc 3676
   void formatFlowedText(MB_String &content);
@@ -993,7 +993,7 @@ private:
 
   // Base64 and QP encodings for text and html messages and replace embeded attachment file name with content ID
   void encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t type, MB_String &content);
- 
+
   // Blob or Stream available
   int chunkAvailable(SMTPSession *smtp, esp_mail_smtp_send_base64_data_info_t &data_info);
 
@@ -1002,7 +1002,7 @@ private:
 
   // Terminate chunk reading
   void closeChunk(esp_mail_smtp_send_base64_data_info_t &data_info);
-  
+
   // Get base64 encoded buffer or raw buffer
   void getBuffer(bool base64, uint8_t *out, uint8_t *in, int &encodedCount, int &bufIndex, bool &dataReady, int &size, size_t chunkSize);
 
@@ -1031,7 +1031,7 @@ private:
   bool smtpAuth(SMTPSession *smtp, bool &ssl);
 
   // Check if response from basic client is actually TLS alert header
-  // This is the response returns after basic Client sent plain text packet over SSL/TLS 
+  // This is the response returns after basic Client sent plain text packet over SSL/TLS
   void checkTLSAlert(SMTPSession *smtp, const char *response);
 
   // Handle SMTP response
@@ -1555,7 +1555,6 @@ public:
    * @param ts The current timestamp.
    */
   void setSystemTime(time_t ts);
-
 
   friend class ESP_Mail_Client;
   friend class foldderList;
