@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created October 1, 2022
+ * Created October 20, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2754,13 +2754,12 @@ bool ESP_Mail_Client::altSendData(uint8_t *data, size_t size, SMTPSession *smtp,
 
 bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary)
 {
-    MB_String alt = getMIMEBoundary(15);
     MB_String s;
 
     if (numAtt(smtp, esp_mail_att_type_inline, msg) > 0)
     {
         s += esp_mail_str_297;
-        s += alt;
+        s += boundary;
         s += esp_mail_str_35;
 
         if (!sendBDAT(smtp, msg, s.length(), false))
@@ -2771,19 +2770,19 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
 
         if (msg->type == esp_mail_msg_type_plain || msg->type == esp_mail_msg_type_enriched || msg->type == esp_mail_msg_type_html)
         {
-            if (!sendInline(smtp, msg, alt, msg->type))
+            if (!sendInline(smtp, msg, boundary, msg->type))
                 return false;
         }
         else if (msg->type == (esp_mail_msg_type_html | esp_mail_msg_type_enriched | esp_mail_msg_type_plain))
         {
-            if (!sendPartText(smtp, msg, esp_mail_msg_type_plain, alt.c_str()))
+            if (!sendPartText(smtp, msg, esp_mail_msg_type_plain, boundary.c_str()))
                 return false;
-            if (!sendInline(smtp, msg, alt, esp_mail_msg_type_html))
+            if (!sendInline(smtp, msg, boundary, esp_mail_msg_type_html))
                 return false;
         }
 
         s = esp_mail_str_33;
-        s += alt;
+        s += boundary;
         s += esp_mail_str_33;
         s += esp_mail_str_34;
 
@@ -2802,11 +2801,9 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
         }
         else if (msg->type == (esp_mail_msg_type_html | esp_mail_msg_type_enriched | esp_mail_msg_type_plain))
         {
-            s = esp_mail_str_33;
-            s += boundary;
-            s += esp_mail_str_34;
+
             s += esp_mail_str_297;
-            s += alt;
+            s += boundary;
             s += esp_mail_str_35;
 
             if (!sendBDAT(smtp, msg, s.length(), false))
@@ -2815,10 +2812,10 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
             if (!altSendData(s, false, smtp, msg, false, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
                 return false;
 
-            if (!sendPartText(smtp, msg, esp_mail_msg_type_plain, alt.c_str()))
+            if (!sendPartText(smtp, msg, esp_mail_msg_type_plain, boundary.c_str()))
                 return false;
 
-            if (!sendPartText(smtp, msg, esp_mail_msg_type_html, alt.c_str()))
+            if (!sendPartText(smtp, msg, esp_mail_msg_type_html, boundary.c_str()))
                 return false;
         }
     }
