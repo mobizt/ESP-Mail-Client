@@ -1,12 +1,17 @@
 
 /**
- * Mobizt's SRAM/PSRAM supported String, version 1.2.6
+ * Mobizt's SRAM/PSRAM supported String, version 1.2.8
  *
- * Created July 5, 2022
+ * Created November 4, 2022
  *
  * Changes Log
- * 
- * 
+ *
+ * v1.2.8
+ * - Add support StringSumHelper class in Arduino
+ *
+ * v1.2.7
+ * - Fix string sub type checking issue
+ *
  * v1.2.6
  * - Update trim() function
  *
@@ -78,9 +83,7 @@
 
 #define MB_STRING_MAJOR 1
 #define MB_STRING_MINOR 2
-#define MB_STRING_PATCH 6
-
-
+#define MB_STRING_PATCH 5
 
 #if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(MB_STRING_USE_PSRAM)
 #include <umm_malloc/umm_malloc.h>
@@ -130,27 +133,32 @@ namespace mb_string
         mb_string_sub_type_mb_string,
         mb_string_sub_type_arduino_string,
         mb_string_sub_type_std_string,
-        mb_string_sub_type_fptr
+        mb_string_sub_type_fptr,
+        mb_string_sub_type_string_sum_helper
+
     };
 
     typedef struct mb_string_ptr_t
     {
 
     public:
-        mb_string_ptr_t(uint32_t addr = 0, mb_string_sub_type type = mb_string_sub_type_cstring, int precision = -1)
+        mb_string_ptr_t(uint32_t addr = 0, mb_string_sub_type type = mb_string_sub_type_cstring, int precision = -1, const StringSumHelper *s = nullptr)
         {
             _addr = addr;
             _type = type;
             _precision = precision;
+            _ssh = s;
         }
         int precision() { return _precision; }
         mb_string_sub_type type() { return _type; }
         uint32_t address() { return _addr; }
+        const StringSumHelper *stringsumhelper() { return _ssh; }
 
     private:
         mb_string_sub_type _type = mb_string_sub_type_none;
         int _precision = -1;
         uint32_t _addr = 0;
+        const StringSumHelper *_ssh = nullptr;
 
     } MB_StringPtr;
 
@@ -419,12 +427,14 @@ namespace mb_string
             return mb_string_sub_type_double;
         else if (is_arduino_string<T>::value)
             return mb_string_sub_type_arduino_string;
-        else if (is_std_string<T>::value || MB_IS_SAME<T, StringSumHelper>::value)
+        else if (is_std_string<T>::value)
             return mb_string_sub_type_std_string;
         else if (is_mb_string<T>::value)
             return mb_string_sub_type_mb_string;
         else if (is_arduino_flash_string_helper<T>::value)
             return mb_string_sub_type_fptr;
+        else if (MB_IS_SAME<T, StringSumHelper>::value)
+            return mb_string_sub_type_string_sum_helper;
         else if (ccs_t<T>::value)
             return mb_string_sub_type_cstring;
         else if (cs_t<T>::value)
@@ -440,9 +450,20 @@ namespace mb_string
     }
 
     template <typename T>
-    auto toStringPtr(const T &val) -> typename MB_ENABLE_IF<is_std_string<T>::value || is_arduino_string<T>::value || is_mb_string<T>::value || MB_IS_SAME<T, StringSumHelper>::value, MB_StringPtr>::type
+    auto toStringPtr(const T &val) -> typename MB_ENABLE_IF<is_std_string<T>::value || is_arduino_string<T>::value || is_mb_string<T>::value, MB_StringPtr>::type
     {
         return MB_StringPtr(reinterpret_cast<uint32_t>(&val), getSubType(val));
+    }
+
+    template <typename T>
+    auto toStringPtr(const T &val) -> typename MB_ENABLE_IF<MB_IS_SAME<T, StringSumHelper>::value, MB_StringPtr>::type
+    {
+#if defined(ESP8266)
+        return MB_StringPtr(reinterpret_cast<uint32_t>(&val), getSubType(val), -1);
+
+#else
+        return MB_StringPtr(reinterpret_cast<uint32_t>(&val), getSubType(val), -1, &val);
+#endif
     }
 
     template <typename T>
@@ -503,7 +524,19 @@ public:
         *this = str;
     }
 
+#if !defined(ESP8266)
+    MB_String(StringSumHelper rval)
+    {
+        *this = rval;
+    }
+#endif
+
     MB_String(MB_StringPtr value)
+    {
+        *this = value;
+    }
+
+    MB_String(String value)
     {
         *this = value;
     }
@@ -640,6 +673,22 @@ public:
 
         return *this;
     }
+
+#if !defined(ESP8266)
+    MB_String &operator=(StringSumHelper rval)
+    {
+        String temp = rval;
+        *this = temp;
+        return *this;
+    }
+
+    MB_String &operator+=(StringSumHelper rval)
+    {
+        String temp = rval;
+        *this += temp;
+        return *this;
+    }
+#endif
 
     MB_String &operator+=(const __FlashStringHelper *str)
     {
@@ -801,6 +850,12 @@ public:
             *this += addrTo<const char *>(src.address());
         else if (src.type() == mb_string_sub_type_arduino_string)
             *this += *addrTo<String *>(src.address());
+        else if (src.type() == mb_string_sub_type_string_sum_helper)
+#if !defined(ESP8266)
+            *this += *src.stringsumhelper();
+#else
+            *this += *addrTo<String *>(src.address());
+#endif
 #if !defined(__AVR__)
         else if (src.type() == mb_string_sub_type_std_string)
             *this += *addrTo<std::string *>(src.address());
@@ -1265,8 +1320,8 @@ public:
 
     MB_String &insert(size_t pos, char c)
     {
-        char tmp[2]{c, '\0'};
-        return insert(pos, tmp);
+        char temp[2]{c, '\0'};
+        return insert(pos, temp);
     }
 
     size_t find_first_of(const char *cstr, size_t pos = 0) const
@@ -1370,8 +1425,8 @@ public:
         int repLen = strlen(replace);
         int findLen = strlen(find);
 
-        MB_String tmp = buf;
-        char *s = tmp.buf;
+        MB_String temp = buf;
+        char *s = temp.buf;
         clear();
 
         for (i = 0; s[i] != '\0'; i++)
@@ -1401,7 +1456,7 @@ public:
             buf[i] = '\0';
         }
 
-        tmp.clear();
+        temp.clear();
     }
 
     void replaceAll(const MB_String &find, const MB_String &replace)

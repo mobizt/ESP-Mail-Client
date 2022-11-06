@@ -59,7 +59,6 @@ bool ESP_Mail_Client::sdBegin(SDFSConfig *sdFSConfig)
 #endif
 
 #if defined(ESP32)
-
 bool ESP_Mail_Client::sdBegin(int8_t ss, SPIClass *spiConfig, uint32_t frequency)
 {
   return mbfs->sdSPIBegin(ss, spiConfig, frequency);
