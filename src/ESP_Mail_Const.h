@@ -1,4 +1,4 @@
-// Created October 1, 2022
+// Created November 16, 2022
 
 #pragma once
 
@@ -670,6 +670,9 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_plain,
     esp_mail_imap_cmd_auth,
     esp_mail_imap_cmd_list,
+    esp_mail_imap_cmd_lsub,
+    esp_mail_imap_cmd_subscribe,
+    esp_mail_imap_cmd_unsubscribe,
     esp_mail_imap_cmd_select,
     esp_mail_imap_cmd_examine,
     esp_mail_imap_cmd_close,
@@ -684,6 +687,7 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_store,
     esp_mail_imap_cmd_expunge,
     esp_mail_imap_cmd_create,
+    esp_mail_imap_cmd_rename,
     esp_mail_imap_cmd_delete,
     esp_mail_imap_cmd_idle,
     esp_mail_imap_cmd_done,
@@ -1960,6 +1964,17 @@ static const char esp_mail_str_340[] PROGMEM = "Mailbox listening stopped";
 static const char esp_mail_str_341[] PROGMEM = "> C: Mailbox listening stopped";
 static const char esp_mail_str_342[] PROGMEM = " FETCH (UID ";
 static const char esp_mail_str_354[] PROGMEM = " [UNSEEN ";
+static const char esp_mail_str_373[] PROGMEM = "RENAME ";
+static const char esp_mail_str_374[] PROGMEM = "> C: Rename folder";
+static const char esp_mail_str_375[] PROGMEM = "> C: Send IMAP command, LSUB";
+static const char esp_mail_str_376[] PROGMEM = "Listing the subscribed mailboxes...";
+static const char esp_mail_str_377[] PROGMEM = "LSUB ";
+static const char esp_mail_str_378[] PROGMEM = "> C: Send IMAP command, SUBSCRIBE";
+static const char esp_mail_str_379[] PROGMEM = "Subscribe mailbox...";
+static const char esp_mail_str_380[] PROGMEM = "SUBSCRIBE ";
+static const char esp_mail_str_381[] PROGMEM = "> C: Send IMAP command, UNSUBSCRIBE";
+static const char esp_mail_str_382[] PROGMEM = "Unsubscribe mailbox...";
+static const char esp_mail_str_383[] PROGMEM = "UNSUBSCRIBE ";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";
@@ -1989,6 +2004,7 @@ static const char esp_mail_imap_response_23[] PROGMEM = "MULTIAPPEND";
 static const char esp_mail_imap_response_24[] PROGMEM = "UIDPLUS";
 static const char esp_mail_imap_response_25[] PROGMEM = "LITERAL+";
 static const char esp_mail_imap_response_26[] PROGMEM = "LITERAL-";
+static const char esp_mail_imap_response_27[] PROGMEM = "* LSUB ";
 
 #endif
 

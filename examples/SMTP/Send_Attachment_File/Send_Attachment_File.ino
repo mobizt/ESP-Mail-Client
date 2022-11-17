@@ -341,7 +341,7 @@ void smtpCallback(SMTP_Status status)
   {
     // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
     // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
-    // In ESP32 and ESP32, you can use Serial.printf directly.
+    // In ESP8266 and ESP32, you can use Serial.printf directly.
 
     Serial.println("----------------");
     ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());

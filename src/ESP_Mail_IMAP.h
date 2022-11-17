@@ -2706,7 +2706,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_capability)
                             parseCapabilityResponse(imap, response, chunkIdx);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_list)
-                            parseFoldersResponse(imap, response);
+                            parseFoldersResponse(imap, response, true);
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_lsub)
+                            parseFoldersResponse(imap, response, false);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_select || imap->_imap_cmd == esp_mail_imap_cmd_examine)
                             parseExamineResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
@@ -3325,11 +3327,11 @@ bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf
     return false;
 }
 
-void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf)
+void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool list)
 {
     struct esp_mail_folder_info_t fd;
     char *tmp = nullptr;
-    int p1 = strposP(buf, esp_mail_imap_response_4, 0);
+    int p1 = list ? strposP(buf, esp_mail_imap_response_4, 0): strposP(buf, esp_mail_imap_response_27, 0);
     int p2 = 0;
     if (p1 != -1)
     {
@@ -5267,6 +5269,102 @@ bool IMAPSession::getMailboxes(FoldersCollection &folders)
     return true;
 }
 
+bool IMAPSession::mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr mailbox, FoldersCollection &folders)
+{
+    folders.clear();
+
+    FoldersCollection tmp;
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_376, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_375, true);
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_377);
+    cmd += esp_mail_str_136;
+    cmd += reference;
+    cmd += esp_mail_str_136;
+
+    cmd += esp_mail_str_131;
+
+    cmd += esp_mail_str_136;
+    cmd += mailbox;
+    cmd += esp_mail_str_136;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    for (size_t i = 0; i < this->_folders.size(); i++)
+        tmp.add(this->_folders[i]);
+
+    this->_folders.clear();
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_lsub;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_LIST_MAILBOXS_FAILED, false))
+        return false;
+
+    for (size_t i = 0; i < this->_folders.size(); i++)
+        folders.add(this->_folders[i]);
+
+    this->_folders.clear();
+
+    for (size_t i = 0; i < tmp.size(); i++)
+        this->_folders.add(tmp[i]);
+
+    tmp.clear();
+
+    return true;
+}
+
+bool IMAPSession::mSubscribe(MB_StringPtr folder)
+{
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_379, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_378, true);
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_380);
+    cmd += esp_mail_str_136;
+    cmd += folder;
+    cmd += esp_mail_str_136;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_subscribe;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_LIST_MAILBOXS_FAILED, false))
+        return false;
+
+    return true;
+}
+
+bool IMAPSession::mUnSubscribe(MB_StringPtr folder)
+{
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_382, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_381, true);
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_383);
+    cmd += esp_mail_str_136;
+    cmd += folder;
+    cmd += esp_mail_str_136;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_unsubscribe;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_LIST_MAILBOXS_FAILED, false))
+        return false;
+
+    return true;
+}
+
 MB_String IMAPSession::prependTag(PGM_P tag, PGM_P cmd)
 {
     MB_String s = tag;
@@ -5310,6 +5408,50 @@ bool IMAPSession::mCreateFolder(MB_StringPtr folderName)
     _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_create;
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return false;
+
+    return true;
+}
+
+bool IMAPSession::mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr newFolderName)
+{
+    if (_debug)
+    {
+        esp_mail_debug_print();
+        esp_mail_debug_print(esp_mail_str_374, true);
+    }
+
+    MB_String o = currentFolderName;
+    MB_String n = newFolderName;
+
+    o.trim();
+    n.trim();
+
+    if (o == n)
+        return true;
+
+    if (o.length() == 0 || n.length() == 0)
+        return false;
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_373);
+    cmd += esp_mail_str_136;
+    cmd += o;
+    cmd += esp_mail_str_136;
+
+    cmd += esp_mail_str_131;
+
+    cmd += esp_mail_str_136;
+    cmd += n;
+    cmd += esp_mail_str_136;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_rename;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    if (_currentFolder == o)
+        selectFolder(n.c_str(), false);
 
     return true;
 }

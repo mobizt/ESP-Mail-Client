@@ -73,7 +73,7 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool setFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+bool setFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
 ```
 
 
@@ -93,7 +93,7 @@ param **`closeSession`** The option to close the IMAP session after add flag.
 return **`boolean`** The boolean value indicates the success of operation.
  
 ```cpp
-bool addFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+bool addFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
 ```
 
 
@@ -114,7 +114,7 @@ param **`closeSession`** The option to close the IMAP session after remove flag.
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool removeFlag(IMAPSession *imap, int msgUID, const char *flags, bool closeSession);
+bool removeFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
 ```
 
 
@@ -411,7 +411,7 @@ return **`boolean`** The boolean value which indicates the success of operation.
 note: the function will exit immediately and return true if the time since previous success folder selection (open) with the same readOnly mode, is less than 5 seconds.
 
 ```cpp
-bool selectFolder(const char *folderName, bool readOnly = true);
+bool selectFolder(<string> folderName, bool readOnly = true);
 ```
 
 
@@ -430,7 +430,7 @@ return **`boolean`** The boolean value which indicates the success of operation.
 note: the function will exit immediately and return true if the time since previous success folder selection (open) with the same readOnly mode, is less than 5 seconds.
 
 ```cpp
-bool openFolder(const char *folderName, bool readOnly = true);
+bool openFolder(<string> folderName, bool readOnly = true);
 ```
 
 
@@ -444,7 +444,7 @@ param **`folderName`** The mailbox folder name.
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool closeFolder(const char *folderName);
+bool closeFolder(<string> folderName);
 ```
 
 
@@ -459,11 +459,68 @@ param **`folderName`** The name of folder to create.
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool createFolder(const char *folderName);
+bool createFolder(<string> folderName);
 ```
 
 
 
+
+
+#### Get subscribes mailboxes. 
+
+param **`reference`** The reference name.
+
+param **`mailbox`** The mailbox name with possible wildcards.
+
+param **`folders`** The return FoldersCollection that contains the folder info e.g., name, attribute and delimiter.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool getSubscribesMailboxes(<string> reference, <string> mailbox, FoldersCollection &folders);
+```
+
+
+
+
+#### Subscribe mailbox.
+
+param **`folderName`** The name of folder to subscribe.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool subscribe(<string> folderName)
+```
+
+
+
+
+#### Unsubscribe mailbox.
+
+param **`folderName`** The name of folder to unsubscribe.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool unSubscribe(<string> folderName)
+```
+
+
+
+
+
+#### Rename folder. 
+
+param **`currentFolderName`** The name of folder to create.
+
+param **`newFolderName`** The new name of folder to create.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool renameFolder(<string> currentFolderName, <string> newFolderName);
+```
 
 
 
@@ -474,7 +531,7 @@ param **`folderName`** The name of folder to delete..
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool deleteFolder(const char *folderName);
+bool deleteFolder(<string> folderName);
 ```
 
 
@@ -1138,7 +1195,7 @@ param **`name`** The name of primary recipient
 param **`email`** The Email address of primary recipient
 
 ```cpp
-void addRecipient(const char *name, const char *email);
+void addRecipient(<string> name, <string> email);
 ```
 
 
@@ -1150,7 +1207,7 @@ void addRecipient(const char *name, const char *email);
 param **`email`** The Email address of secondary recipient
 
 ```cpp
-void addCc(const char *email);
+void addCc(<string> email);
 ```
 
 
@@ -1162,7 +1219,7 @@ void addCc(const char *email);
 param **`email`** The Email address of the tertiary recipient
 
 ```cpp
-void addBcc(const char *email);
+void addBcc(<string> email);
 ```
 
 
@@ -1174,7 +1231,7 @@ void addBcc(const char *email);
 param **`hdr`** The header name and value
 
 ```cpp
-void addHeader(const char *hdr);
+void addHeader(<string> hdr);
 ```
 
 

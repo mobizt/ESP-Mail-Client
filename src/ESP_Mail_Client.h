@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 6, 2022
+ * Created November 16, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -209,8 +209,16 @@ public:
     return fd;
   }
 
+   esp_mail_folder_info_t operator[](size_t index)
+  {
+    if (index < _folders.size())
+      return _folders[index];
+
+    return esp_mail_folder_info_t();
+  }
+
 private:
-  void add(struct esp_mail_folder_info_t &fd) { _folders.push_back(fd); };
+  void add(struct esp_mail_folder_info_t fd) { _folders.push_back(fd); };
   void clear()
   {
     for (size_t i = 0; i < _folders.size(); i++)
@@ -1219,7 +1227,7 @@ private:
   bool parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
 
   // Parse mailbox folder open response
-  void parseFoldersResponse(IMAPSession *imap, char *buf);
+  void parseFoldersResponse(IMAPSession *imap, char *buf, bool list);
 
   // Prepare alias (short name) file list for unsupported long file name filesystem
   void prepareFileList(IMAPSession *imap, MB_String &filePath);
@@ -1395,6 +1403,15 @@ public:
   template <typename T = const char *>
   bool createFolder(T folderName) { return mCreateFolder(toStringPtr(folderName)); }
 
+  /** Rename folder.
+   *
+   * @param currentFolderName The name of folder to rename.
+   * @param newFolderName The new name of folder to rename.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool renameFolder(T1 currentFolderName, T2 newFolderName) { return mRenameFolder(toStringPtr(currentFolderName), toStringPtr(newFolderName)); }
+
   /** Delete folder.
    *
    * @param folderName The name of folder to delete.
@@ -1402,6 +1419,32 @@ public:
    */
   template <typename T = const char *>
   bool deleteFolder(T folderName) { return mDeleteFolder(toStringPtr(folderName)); }
+
+  /** Get subscribes mailboxes.
+   *
+   * @param reference The reference name.
+   * @param mailbox The mailbox name with possible wildcards.
+   * @param folders The return FoldersCollection that contains the folder info e.g., name, attribute and delimiter.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool getSubscribesMailboxes(T1 reference, T2 mailbox, FoldersCollection &folders) { return mGetSubscribesMailboxes(toStringPtr(reference), toStringPtr(mailbox), folders); }
+
+  /** Subscribe mailbox.
+   *
+   * @param folderName The name of folder to subscribe.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool subscribe(T folderName) { return mSubscribe(toStringPtr(folderName)); }
+
+  /** Unsubscribe mailbox.
+   *
+   * @param folderName The name of folder to unsubscribe.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool unSubscribe(T folderName) { return mUnSubscribe(toStringPtr(folderName)); }
 
   /** Get UID number in selected or opened mailbox.
    *
@@ -1582,7 +1625,16 @@ private:
   bool openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse);
 
   // Get folders list
-  bool getMailboxes(FoldersCollection &flders);
+  bool getMailboxes(FoldersCollection &folders);
+
+  // Get subscribes mailboxes
+  bool mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr mailbox, FoldersCollection &folders);
+
+  // Subscribe the mailbox
+  bool mSubscribe(MB_StringPtr folder);
+
+  // Unsubscribe the mailbox
+  bool mUnSubscribe(MB_StringPtr folder);
 
   // Prepend TAG for response status parsing
   MB_String prependTag(PGM_P tag, PGM_P cmd);
@@ -1610,6 +1662,9 @@ private:
 
   // Create folder
   bool mCreateFolder(MB_StringPtr folderName);
+
+  // Rename folder
+  bool mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr newFolderName);
 
   // Copy message
   bool mCopyMessages(MessageList *toCopy, MB_StringPtr dest);
