@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 16, 2022
+ * Created November 21, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -209,7 +209,7 @@ public:
     return fd;
   }
 
-   esp_mail_folder_info_t operator[](size_t index)
+  esp_mail_folder_info_t operator[](size_t index)
   {
     if (index < _folders.size())
       return _folders[index];
@@ -634,22 +634,52 @@ public:
    * @param msgUID The UID of the message.
    * @param flags The flag list to set.
    * @param closeSession The option to close the IMAP session after set flag.
+   * @param silent The option to ignore the response.
    * @return The boolean value indicates the success of operation.
    */
   template <typename T = const char *>
-  bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 0, closeSession); }
+  bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent); }
+
+  /** Set the argument to the Flags for the specified message.
+   *
+   * @param imap The pointer to IMAP session object which holds the data and the
+   * TCP client.
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param flags The flag list to set.
+   * @param closeSession The option to close the IMAP session after set flag.
+   * @param silent The option to ignore the response.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool setFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent, UID); }
 
   /** Add the argument to the Flags for the specified message.
    *
    * @param imap The pointer to IMAP session object which holds the data and the
    * TCP client.
    * @param msgUID The UID of the message.
-   * @param flags The flag list to set.
+   * @param flags The flag list to add.
    * @param closeSession The option to close the IMAP session after add flag.
+   * @param silent The option to ignore the response.
    * @return The boolean value indicates the success of operation.
    */
   template <typename T = const char *>
-  bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 1, closeSession); }
+  bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent); }
+
+  /** Add the argument to the Flags for the specified message.
+   *
+   * @param imap The pointer to IMAP session object which holds the data and the
+   * TCP client.
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param flags The flag list to add.
+   * @param closeSession The option to close the IMAP session after set flag.
+   * @param silent The option to ignore the response.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool addFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent, UID); }
 
   /** Remove the argument from the Flags for the specified message.
    *
@@ -658,10 +688,26 @@ public:
    * @param msgUID The UID of the message that flags to be removed.
    * @param flags The flag list to remove.
    * @param closeSession The option to close the IMAP session after remove flag.
+   * @param silent The option to ignore the response.
    * @return The boolean value indicates the success of operation.
    */
   template <typename T = const char *>
-  bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession) { return mSetFlag(imap, msgUID, toStringPtr(flags), 2, closeSession); }
+  bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent); }
+
+  /** Remove the argument from the Flags for the specified message.
+   *
+   * @param imap The pointer to IMAP session object which holds the data and the
+   * TCP client.
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param flags The flag list to remove.
+   * @param closeSession The option to close the IMAP session after set flag.
+   * @param silent The option to ignore the response.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool removeFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent, UID); }
+
 #endif
 
   /** Reconnect WiFi or network if lost connection.
@@ -1251,7 +1297,7 @@ private:
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
 
   // Set Flag
-  bool mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flags, uint8_t action, bool closeSession);
+  bool mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_StringPtr flags, esp_mail_imap_store_flag_type type, bool closeSession, bool silent = false, bool UID = true);
 
 #endif
 };
@@ -1500,7 +1546,7 @@ public:
 
   /** Copy the messages to the defined mailbox folder.
    *
-   * @param toCopy The pointer to the MessageListList class that contains the
+   * @param toCopy The pointer to the MessageList class that contains the
    * list of messages to copy.
    * @param dest The destination folder that the messages to copy to.
    * @return The boolean value which indicates the success of operation.
@@ -1508,14 +1554,34 @@ public:
   template <typename T = const char *>
   bool copyMessages(MessageList *toCopy, T dest) { return mCopyMessages(toCopy, toStringPtr(dest)); }
 
+  /** Copy the messages to the defined mailbox folder.
+   *
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param dest The destination folder that the messages to copy to.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool copyMessages(T1 sequenceSet, bool UID, T2 dest) { return mCopyMessagesSet(toStringPtr(sequenceSet), UID, toStringPtr(dest)); }
+
   /** Delete the messages in the opened mailbox folder.
    *
-   * @param toDelete The pointer to the MessageListList class that contains the
+   * @param toDelete The pointer to the MessageList class that contains the
    * list of messages to delete.
    * @param expunge The boolean option to expunge all messages.
    * @return The boolean value which indicates the success of operation.
    */
-  bool deleteMessages(MessageList *toDelete, bool expunge = false);
+  bool deleteMessages(MessageList *toDelete, bool expunge = false) { return mDeleteMessages(toDelete, expunge); }
+
+  /** Delete the messages in the opened mailbox folder.
+   *
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param expunge The boolean option to expunge all messages.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool deleteMessages(T sequenceSet, bool UID, bool expunge = false) { return mDeleteMessagesSet(toStringPtr(sequenceSet), UID, expunge); }
 
   /** Listen for the selected or open mailbox for updates.
    * @return The boolean value which indicates the success of operation.
@@ -1668,6 +1734,15 @@ private:
 
   // Copy message
   bool mCopyMessages(MessageList *toCopy, MB_StringPtr dest);
+
+  // Copy message using sequence set
+  bool mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
+
+  // Delete messages
+  bool mDeleteMessages(MessageList *toDelete, bool expunge = false);
+
+  // Delete messages
+  bool mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool expunge = false);
 
   // Close folder
   bool mCloseFolder(MB_StringPtr folderName);

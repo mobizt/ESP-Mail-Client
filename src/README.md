@@ -70,10 +70,37 @@ param **`flags`** The flag list to set.
 
 param **`closeSession`** The option to close the IMAP session after set flag.
 
+param **`silent`** The option to ignore the response.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool setFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
+bool setFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession, bool silent = false);
+```
+
+
+
+
+
+#### Set the argument to the Flags for the specified message.
+
+param **`imap`** The pointer to IMAP session object which holds the data and the TCP client.
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`flags`** The flag list to set.
+
+param **`closeSession`** The option to close the IMAP session after set flag.
+
+param **`silent`** The option to ignore the response.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+```cpp
+bool setFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
 ```
 
 
@@ -86,9 +113,11 @@ param **`imap`** The pointer to IMAP session object which holds the data and the
 
 param **`msgUID`** The UID of the message.
 
-param **`flags`** The flag list to set.
+param **`flags`** The flag list to add.
 
 param **`closeSession`** The option to close the IMAP session after add flag.
+
+param **`silent`** The option to ignore the response.
 
 return **`boolean`** The boolean value indicates the success of operation.
  
@@ -96,6 +125,30 @@ return **`boolean`** The boolean value indicates the success of operation.
 bool addFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
 ```
 
+
+
+
+
+#### Add the argument to the Flags for the specified message.
+
+param **`imap`** The pointer to IMAP session object which holds the data and the TCP client.
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`flags`** The flag list to add.
+
+param **`closeSession`** The option to close the IMAP session after set flag.
+
+param **`silent`** The option to ignore the response.
+
+return **`boolean`** The boolean value indicates the success of operation.
+ 
+```cpp
+bool addFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
+```
 
 
 
@@ -111,11 +164,39 @@ param **`flags`** The flag list to remove.
 
 param **`closeSession`** The option to close the IMAP session after remove flag.
 
+param **`silent`** The option to ignore the response.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
 bool removeFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
 ```
+
+
+
+
+
+#### Remove the argument from the Flags for the specified message.
+
+param **`imap`** The pointer to IMAP session object which holds the data and the TCP client.
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`flags`** The flag list to remove.
+
+param **`closeSession`** The option to close the IMAP session after set flag.
+
+param **`silent`** The option to ignore the response.
+
+return **`boolean`** The boolean value indicates the success of operation.
+ 
+```cpp
+bool removeFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
+```
+
 
 
 
@@ -648,7 +729,6 @@ bool customConnect(ESP_Mail_Session *session, imapResponseCallback callback, <st
 
 
 
-
 #### Copy the messages to the defined mailbox folder. 
 
 param **`toCopy`** The pointer to the MessageList class that contains the list of messages to copy.
@@ -659,6 +739,25 @@ return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
 bool copyMessages(MessageList *toCopy, <string> dest);
+```
+
+
+
+
+
+#### Copy the messages to the defined mailbox folder. 
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`dest`** The destination folder that the messages to copy to.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool copyMessages(<string> sequenceSet, bool UID, <string> dest);
 ```
 
 
@@ -682,6 +781,24 @@ bool deleteMessages(MessageList *toDelete, bool expunge = false);
 
 
 
+#### Delete the messages in the opened mailbox folder. 
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`expunge`** The boolean option to expunge all messages.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool deleteMessages(<string> sequenceSet, bool UID, bool expunge = false);
+```
+
+
+
+
 
 #### Listen for the selected or open mailbox for updates.
 
@@ -690,8 +807,6 @@ return **`boolean`** The boolean value which indicates the success of operation.
 ```cpp
 bool listen();
 ```
-
-
 
 
 

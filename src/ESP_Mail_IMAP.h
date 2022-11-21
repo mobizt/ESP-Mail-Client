@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created October 1, 2022
+ * Created November 21, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1307,7 +1307,7 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, uint8_t *data, size_t size)
     return sent;
 }
 
-bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flag, uint8_t action, bool closeSession)
+bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_StringPtr flag, esp_mail_imap_store_flag_type type, bool closeSession, bool silent, bool UID)
 {
     if (!reconnect(imap))
         return false;
@@ -1341,9 +1341,9 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flag,
 
     if (imap->_readCallback)
     {
-        if (action == 0)
+        if (type == esp_mail_imap_store_flag_type_set)
             imapCB(imap, esp_mail_str_157, true, false);
-        else if (action == 1)
+        else if (type == esp_mail_imap_store_flag_type_add)
             imapCB(imap, esp_mail_str_155, true, false);
         else
             imapCB(imap, esp_mail_str_154, true, false);
@@ -1351,22 +1351,39 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, int msgUID, MB_StringPtr flag,
 
     if (imap->_debug)
     {
-        if (action == 0)
+        if (type == esp_mail_imap_store_flag_type_set)
             esp_mail_debug_print(esp_mail_str_253, true);
-        else if (action == 1)
+        else if (type == esp_mail_imap_store_flag_type_add)
             esp_mail_debug_print(esp_mail_str_254, true);
         else
             esp_mail_debug_print(esp_mail_str_255, true);
     }
 
-    MB_String cmd = imap->prependTag(esp_mail_str_27, esp_mail_str_249);
-    cmd += msgUID;
-    if (action == 0)
+    MB_String cmd;
+
+    if (UID)
+    {
+        cmd = imap->prependTag(esp_mail_str_27, esp_mail_str_137);
+        cmd += esp_mail_str_249;
+    }
+    else
+        cmd = imap->prependTag(esp_mail_str_27, esp_mail_str_249);
+
+    cmd += sequenceSet;
+
+    if (type == esp_mail_imap_store_flag_type_set)
         cmd += esp_mail_str_250;
-    else if (action == 1)
+    else if (type == esp_mail_imap_store_flag_type_add)
         cmd += esp_mail_str_251;
     else
         cmd += esp_mail_str_252;
+
+    if (silent)
+        cmd += esp_mail_str_384;
+
+    cmd += esp_mail_str_131;
+
+    cmd += esp_mail_str_198;
 
     cmd += flag;
     cmd += esp_mail_str_192;
@@ -3331,7 +3348,7 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
 {
     struct esp_mail_folder_info_t fd;
     char *tmp = nullptr;
-    int p1 = list ? strposP(buf, esp_mail_imap_response_4, 0): strposP(buf, esp_mail_imap_response_27, 0);
+    int p1 = list ? strposP(buf, esp_mail_imap_response_4, 0) : strposP(buf, esp_mail_imap_response_27, 0);
     int p2 = 0;
     if (p1 != -1)
     {
@@ -5669,7 +5686,7 @@ bool IMAPSession::mDeleteFolder(MB_StringPtr folderName)
     return true;
 }
 
-bool IMAPSession::deleteMessages(MessageList *toDelete, bool expunge)
+bool IMAPSession::mDeleteMessages(MessageList *toDelete, bool expunge)
 {
     if (toDelete->_list.size() > 0)
     {
@@ -5713,6 +5730,52 @@ bool IMAPSession::deleteMessages(MessageList *toDelete, bool expunge)
     return true;
 }
 
+bool IMAPSession::mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool expunge)
+{
+
+    if (!selectFolder(_currentFolder.c_str(), false))
+        return false;
+
+    if (_debug)
+    {
+        esp_mail_debug_print();
+        esp_mail_debug_print(esp_mail_str_316, true);
+    }
+
+    MB_String cmd;
+
+    if (UID)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_137);
+        cmd += esp_mail_str_249;
+    }
+    else
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_249);
+
+    cmd += sequenceSet;
+
+    cmd += esp_mail_str_315;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_store;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    if (expunge)
+    {
+        if (MailClient.imapSend(this, prependTag(esp_mail_str_27, esp_mail_str_317).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            return false;
+
+        _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_expunge;
+        if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+            return false;
+    }
+
+    return true;
+}
+
 bool IMAPSession::mCopyMessages(MessageList *toCopy, MB_StringPtr dest)
 {
     if (toCopy->_list.size() > 0)
@@ -5728,7 +5791,8 @@ bool IMAPSession::mCopyMessages(MessageList *toCopy, MB_StringPtr dest)
             esp_mail_debug_print(s.c_str(), true);
         }
 
-        MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_319);
+        MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_137);
+        cmd += esp_mail_str_319;
         for (size_t i = 0; i < toCopy->_list.size(); i++)
         {
             if (i > 0)
@@ -5745,6 +5809,42 @@ bool IMAPSession::mCopyMessages(MessageList *toCopy, MB_StringPtr dest)
         if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
             return false;
     }
+
+    return true;
+}
+
+bool IMAPSession::mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest)
+{
+
+    if (!selectFolder(_currentFolder.c_str(), false))
+        return false;
+
+    if (_debug)
+    {
+        MB_String s = esp_mail_str_318;
+        s += dest;
+        esp_mail_debug_print(s.c_str(), true);
+    }
+
+    MB_String cmd;
+    if (UID)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_137);
+        cmd += esp_mail_str_319;
+    }
+    else
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_319);
+
+    cmd += sequenceSet;
+    cmd += esp_mail_str_131;
+    cmd += dest;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_store;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
 
     return true;
 }

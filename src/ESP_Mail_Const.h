@@ -1,4 +1,4 @@
-// Created November 16, 2022
+// Created November 21, 2022
 
 #pragma once
 
@@ -600,6 +600,13 @@ enum esp_mail_imap_msg_num_type
     esp_mail_imap_msg_num_type_undefined,
     esp_mail_imap_msg_num_type_uid,
     esp_mail_imap_msg_num_type_number
+};
+
+enum esp_mail_imap_store_flag_type
+{
+    esp_mail_imap_store_flag_type_set,
+    esp_mail_imap_store_flag_type_add,
+    esp_mail_imap_store_flag_type_remove
 };
 
 enum esp_mail_char_decoding_scheme
@@ -1913,10 +1920,10 @@ static const char esp_mail_str_235[] PROGMEM = "> C: Message fetch completed";
 static const char esp_mail_str_237[] PROGMEM = "tis-620";
 static const char esp_mail_str_247[] PROGMEM = "SELECT \"";
 static const char esp_mail_str_248[] PROGMEM = "> C: Open the mailbox folder";
-static const char esp_mail_str_249[] PROGMEM = "UID STORE ";
-static const char esp_mail_str_250[] PROGMEM = " FLAGS (";
-static const char esp_mail_str_251[] PROGMEM = " +FLAGS (";
-static const char esp_mail_str_252[] PROGMEM = " -FLAGS (";
+static const char esp_mail_str_249[] PROGMEM = "STORE ";
+static const char esp_mail_str_250[] PROGMEM = " FLAGS";
+static const char esp_mail_str_251[] PROGMEM = " +FLAGS";
+static const char esp_mail_str_252[] PROGMEM = " -FLAGS";
 static const char esp_mail_str_253[] PROGMEM = "> C: Set FLAG";
 static const char esp_mail_str_254[] PROGMEM = "> C: Add FLAG";
 static const char esp_mail_str_255[] PROGMEM = "> C: Remove FLAG";
@@ -1945,7 +1952,7 @@ static const char esp_mail_str_315[] PROGMEM = " +FLAGS.SILENT (\\Deleted)";
 static const char esp_mail_str_316[] PROGMEM = "> C: Delete message(s)";
 static const char esp_mail_str_317[] PROGMEM = "EXPUNGE";
 static const char esp_mail_str_318[] PROGMEM = "> C: copy message(s) to ";
-static const char esp_mail_str_319[] PROGMEM = "UID COPY ";
+static const char esp_mail_str_319[] PROGMEM = "COPY ";
 static const char esp_mail_str_320[] PROGMEM = "> C: Create folder";
 static const char esp_mail_str_321[] PROGMEM = "> C: Delete folder";
 static const char esp_mail_str_322[] PROGMEM = "CREATE ";
@@ -1975,6 +1982,7 @@ static const char esp_mail_str_380[] PROGMEM = "SUBSCRIBE ";
 static const char esp_mail_str_381[] PROGMEM = "> C: Send IMAP command, UNSUBSCRIBE";
 static const char esp_mail_str_382[] PROGMEM = "Unsubscribe mailbox...";
 static const char esp_mail_str_383[] PROGMEM = "UNSUBSCRIBE ";
+static const char esp_mail_str_384[] PROGMEM = ".SILENT";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";
