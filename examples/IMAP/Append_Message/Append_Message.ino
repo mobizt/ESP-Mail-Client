@@ -148,7 +148,7 @@ void setup()
 
     ESP_Mail_Attachment att[2]; // The same usage as SMTP_Attachment
 
-    att[0].descr.filename = "haun.png";
+    att[0].descr.filename = "shaun.png";
     att[0].descr.mime = "image/png";
     att[0].blob.data = shaun_png;
     att[0].blob.size = sizeof(shaun_png);
@@ -180,7 +180,8 @@ void setup()
 
     // If MULTIAPPEND extension is supported, the multiple messages will send by a single APPEND command.
     // If not, one message can append for a APPEND command.
-    if (!MailClient.appendMessage(&imap, &message[0], false /* if not last message to append */, "\\Flagged" /* flags */, "Thu, 16 Jun 2022 12:30:25 -0800 (PST)" /* date time */))
+    // Outlook.com does not accept flag and date/time arguments in APPEND command
+    if (!MailClient.appendMessage(&imap, &message[0], false /* if not last message to append */, "\\Flagged" /* flags or empty string for Outlook.com */, "Thu, 16 Jun 2022 12:30:25 -0800 (PST)" /* date/time or empty string for Outlook.com */))
         Serial.println("Error appending message, " + imap.errorReason());
 
     if (!MailClient.appendMessage(&imap, &message[1], true /* last message to append */))
