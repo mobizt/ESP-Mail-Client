@@ -931,7 +931,7 @@ void empty();
 
 
 
-## IMAPSession class functions
+## SMTPSession class functions
 
 
 The following functions are available from the SMTP Session class.
