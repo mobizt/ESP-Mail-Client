@@ -276,6 +276,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
     cmd += esp_mail_str_131;
     cmd += imap->_currentFolder;
   }
+  
   cmd += esp_mail_str_131;
 
   if (_flags.length() > 0)

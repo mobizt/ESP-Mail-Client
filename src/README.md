@@ -1664,9 +1664,9 @@ return **`SMTP_Result`** The SMTP_Result type data that provides these propertie
 
 ##### [bool] completed - The status of the message
 
-#### [const char *] recipients - The primary recipient mailbox of the message
+#### [MB_String] recipients - The primary recipient mailbox of the message
 
-#### [const char *] subject - The topic of the message
+#### [MB_String] subject - The topic of the message
 
 #### [time_t] timesstamp - The timestamp of the message
 
@@ -1735,11 +1735,11 @@ param **`index`** The index number of folders
 
 return **`esp_mail_folder_info_item_t`** The esp_mail_folder_info_item_t structured data that provides these properties
 
-#### [const char *] name - The name of folder
+#### [MB_String] name - The name of folder
 
-#### [const char *] attributes - The attributes of folder
+#### [MB_String] attributes - The attributes of folder
 
-#### [const char *] delimiter - The delimeter of folder
+#### [MB_String] delimiter - The delimeter of folder
 
 ```cpp
 esp_mail_folder_info_item_t info(size_t index);
@@ -1897,7 +1897,7 @@ This data type is used for storing the session info about the server and login c
 
 This property has the sub properties
 
-##### [const char *] host_name - The hostName of the server.
+##### [MB_String] host_name - The hostName of the server.
 
 ##### [uint16_t] port - The port on the server to connect to.
 
@@ -1910,7 +1910,7 @@ esp_mail_sesson_sever_config_t server;
 
 This property has the sub properties
 
-##### [const char *] email - The user Email address to log in.
+##### [MB_String] email - The user Email address to log in.
 
 ##### [consst char *] password - The user password to log in.
 
@@ -1953,7 +1953,7 @@ esp_mail_ports_functions ports_functions;
 
 ##### [const char *] cert_data - The certificate data (base64 data).
 
-##### [consst char *] cert_file - The certificate file (DER format).
+##### [const char *] cert_file - The certificate file (DER format).
 
 ##### [esp_mail_file_storage_type] cert_file_storage_type - The storage type.
 
@@ -2022,14 +2022,32 @@ control and store the operation result e.g. the messahe contents from search and
 
 This property has the sub properties
 
-##### [const char *] uid - The UID of message to fetch.
+##### [MB_String] uid - The UID of message to fetch.
 
-##### [const char *] number - The message sequence number to fetch.
+##### [MB_String] number - The message sequence number to fetch.
 
-##### [const char *] set_seen - Set the message flag as seen.
+##### [esp_mail_imap_sequence_set_t] sequence_set - The sequence set options.
+
+##### [MB_String] set_seen - Set the message flag as seen.
 
 ```cpp
 esp_mail_imap_fetch_config_t fetch;
+```
+
+
+#### [Properties] The config for IMAP sequence set fetching
+
+This property has the sub properties
+
+##### [MB_String] string - The sequence set string i.g., unique identifier (UID) 
+or message sequence number or ranges of UID or sequence number.
+
+##### [bool] UID - The option for sequenceSet whether it is UID or message sequence number.
+
+##### [bool] headerOnly - The option for header only fetching.
+
+```cpp
+esp_mail_imap_sequence_set_t fetch;
 ```
 
 
@@ -2037,7 +2055,7 @@ esp_mail_imap_fetch_config_t fetch;
 
 This property has the sub properties
 
-##### [const char *] criteria - The search criteria.
+##### [MB_String] criteria - The search criteria.
 
 ##### [boolean] unseen_msg - The option to search the unseen message.
 
@@ -2051,6 +2069,8 @@ esp_mail_imap_search_config_t search;
 This property has the sub properties
 
 ##### [size_t] search - The maximum messages from the search result.
+
+##### [size_t] fetch - The maximum messages from the sequence set fetching result.
 
 ##### [size_t] msg_size - The maximum size of the memory buffer to store the message content.
 

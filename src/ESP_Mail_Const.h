@@ -690,6 +690,7 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_fetch_body_text,
     esp_mail_imap_cmd_fetch_body_attachment,
     esp_mail_imap_cmd_fetch_body_inline,
+    esp_mail_imap_cmd_fetch_sequence_set,
     esp_mail_imap_cmd_logout,
     esp_mail_imap_cmd_store,
     esp_mail_imap_cmd_expunge,
@@ -1250,6 +1251,9 @@ struct esp_mail_imap_limit_config_t
     /* The maximum messages from the search result */
     size_t search = 10;
 
+    /* The maximum messages from the sequence set fetching result */
+    size_t fetch = 30;
+
     /** The maximum size of the memory buffer to store the message content.
      * This is only limit for data to be stored in the IMAPSession.
      */
@@ -1290,6 +1294,18 @@ struct esp_mail_imap_search_config_t
     bool unseen_msg = false;
 };
 
+struct esp_mail_imap_sequence_set_t
+{
+    /* The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number */
+    MB_String string;
+
+    /* The option for sequenceSet whether it is UID or message sequence number */
+    bool UID = false;
+
+    /* The option for header only fetching */
+    bool headerOnly = false;
+};
+
 struct esp_mail_imap_fetch_config_t
 {
     /* The UID of message to fetch */
@@ -1297,6 +1313,9 @@ struct esp_mail_imap_fetch_config_t
 
     /* The message sequence number to fetch */
     MB_String number;
+   
+    /* The sequence set options */
+    esp_mail_imap_sequence_set_t sequence_set;
 
     /* Set the message flag as seen */
     bool set_seen = false;

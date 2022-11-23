@@ -195,6 +195,13 @@ void setup()
    */
   if (!MailClient.sendMail(&smtp, &message, false))
     Serial.println("Error sending Email, " + smtp.errorReason());
+  
+  // If the session closed by server or internet interruption, 
+  // the function sendMail will return false with error.
+  // You may need to manually close the session to re-authenticate periodically.
+
+  /* To close session manually */
+  // smtp.closeSession();
 
   /* To clear all message data */
   // message.clear();

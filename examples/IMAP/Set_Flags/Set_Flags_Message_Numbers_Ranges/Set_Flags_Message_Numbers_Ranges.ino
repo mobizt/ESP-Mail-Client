@@ -207,7 +207,7 @@ void setup()
     printSelectedMailboxInfo(imap.selectedFolder());
 
     /* Add Seen and Answered flags from messages using message numbers ranges (last 10 message numbers)  */
-    int msg_last = imap.getUID(imap.selectedFolder().msgCount());
+    int msg_last = imap.selectedFolder().msgCount();
     int msg_begin = msg_last > 10 ? msg_last - 10 : msg_last;
 
     String sequence_set1 = String(msg_begin) + ":" + String(msg_last);

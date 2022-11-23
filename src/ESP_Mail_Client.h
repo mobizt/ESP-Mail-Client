@@ -1290,6 +1290,9 @@ private:
   // Parse Get Flags response
   void parseGetFlagsResponse(IMAPSession *imap, char *buf);
 
+  // Parse Fetch Sequence set response
+  void parFetchSequenceSetResponse(IMAPSession *imap, char *buf);
+
   // Parse examine response
   void parseExamineResponse(IMAPSession *imap, char *buf);
 
@@ -1701,6 +1704,9 @@ private:
 
   // Unsubscribe the mailbox
   bool mUnSubscribe(MB_StringPtr folder);
+
+  // Fetch by sequence set
+  bool mFetchSequenceSet();
 
   // Prepend TAG for response status parsing
   MB_String prependTag(PGM_P tag, PGM_P cmd);
