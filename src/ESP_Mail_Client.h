@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 21, 2022
+ * Created November 24, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1567,6 +1567,26 @@ public:
   template <typename T1 = const char *, typename T2 = const char *>
   bool copyMessages(T1 sequenceSet, bool UID, T2 dest) { return mCopyMessagesSet(toStringPtr(sequenceSet), UID, toStringPtr(dest)); }
 
+  /** Move the messages to the defined mailbox folder.
+   *
+   * @param toMove The pointer to the MessageList class that contains the
+   * list of messages to move.
+   * @param dest The destination folder that the messages to move to.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool moveMessages(MessageList *toCopy, T dest) { return mMoveMessages(toCopy, toStringPtr(dest)); }
+
+  /** Move the messages to the defined mailbox folder.
+   *
+   * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
+   * @param UID The option for sequenceSet whether it is UID or message sequence number.
+   * @param dest The destination folder that the messages to move to.
+   * @return The boolean value indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool moveMessages(T1 sequenceSet, bool UID, T2 dest) { return mMoveMessagesSet(toStringPtr(sequenceSet), UID, toStringPtr(dest)); }
+
   /** Delete the messages in the opened mailbox folder.
    *
    * @param toDelete The pointer to the MessageList class that contains the
@@ -1744,6 +1764,12 @@ private:
   // Copy message using sequence set
   bool mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
 
+   // Move message
+  bool mMoveMessages(MessageList *toMove, MB_StringPtr dest);
+
+  // Move message using sequence set
+  bool mMoveMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
+
   // Delete messages
   bool mDeleteMessages(MessageList *toDelete, bool expunge = false);
 
@@ -1777,8 +1803,8 @@ private:
   int _totalRead = 0;
   MB_VECTOR<struct esp_mail_message_header_t> _headers;
 
-  esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
-  esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_login;
+  esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
+  esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
   esp_mail_imap_command _imap_custom_cmd = esp_mail_imap_cmd_custom;
   esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
   bool _idle = false;

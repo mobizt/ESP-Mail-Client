@@ -1,5 +1,5 @@
 /**
- * This example shows how to copy messages from the mailbox to other folder.
+ * This example shows how to move messages from the mailbox to other folder using message numbers ranges.
  *
  * Email: suwatchai@outlook.com
  *
@@ -137,24 +137,19 @@ void setup()
     if (!imap.selectFolder(F("INBOX")))
         return;
 
-    /* Define the MessageList class to add the message to copy */
-    MessageList toCopy;
 
-    /* Add message uid to copy to the list */
-    toCopy.add(3);
-    toCopy.add(4);
+    /* Move all messages using message sequence ranges (last 10 message numbers) to the folder "test"*/
+    int msg_last = imap.selectedFolder().msgCount();
+    int msg_begin = msg_last > 10 ? msg_last - 10 : msg_last;
 
-    // imap.createFolder("test");
+    String sequence_set2 = String(msg_begin) + ":" + String(msg_last);
 
-    /* Copy all messages in the list to the folder "test" */
-    if (imap.copyMessages(&toCopy, F("test")))
-        Serial.println("Messages copied");
-
-    /* Delete all messages in the list from the opened folder (move to trash) */
-    // imap.deleteMessages(&toCopy);
+    if (imap.moveMessages(sequence_set2, false /* if sequence set are message numbers not UIDs */, F("test")))
+        Serial.println("Moving messages using message numbers ranges success");
+    else
+        Serial.println("Error, moving messages using message numbers ranges");
 
     // imap.deleteolder("test");
-    // imap.deleteolder("test2");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

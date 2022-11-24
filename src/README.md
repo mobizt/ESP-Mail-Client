@@ -764,6 +764,43 @@ bool copyMessages(<string> sequenceSet, bool UID, <string> dest);
 
 
 
+
+#### Move the messages to the defined mailbox folder. 
+
+param **`toMove`** The pointer to the MessageList class that contains the list of messages to move.
+
+param **`dest`** The destination folder that the messages to move to.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool moveMessages(MessageList *toMove, <string> dest);
+```
+
+
+
+
+
+#### Move the messages to the defined mailbox folder. 
+
+param **`sequenceSet`** The sequence set string i.g., unique identifier (UID) or 
+message sequence number or ranges of UID or sequence number.
+
+param **`UID`** The option for sequenceSet whether it is UID or message sequence number.
+
+param **`dest`** The destination folder that the messages to move to.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool moveMessages(<string> sequenceSet, bool UID, <string> dest);
+```
+
+
+
+
+
+
 #### Delete the messages in the opened mailbox folder. 
 
 param **`toDelete`** The pointer to the MessageList class that contains the list of messages to delete.

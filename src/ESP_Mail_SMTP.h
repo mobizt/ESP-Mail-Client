@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created October 20, 2022
+ * Created November 24, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -148,17 +148,17 @@ non_authenticated:
     }
 
     bool creds = smtp->_sesson_cfg->login.email.length() > 0 && smtp->_sesson_cfg->login.password.length() > 0;
-    bool xoauth_auth = smtp->_sesson_cfg->login.accessToken.length() > 0 && smtp->_auth_capability.xoauth2;
-    bool login_auth = smtp->_auth_capability.login && creds;
-    bool plain_auth = smtp->_auth_capability.plain && creds;
+    bool sasl_auth_oauth = smtp->_sesson_cfg->login.accessToken.length() > 0 && smtp->_auth_capability.xoauth2;
+    bool sasl_login = smtp->_auth_capability.login && creds;
+    bool sasl_auth_plain = smtp->_auth_capability.plain && creds;
 
-    if (xoauth_auth || login_auth || plain_auth)
+    if (sasl_auth_oauth || sasl_login || sasl_auth_plain)
     {
         if (smtp->_sendCallback)
             smtpCB(smtp, esp_mail_str_56, true, false);
 
         // log in
-        if (xoauth_auth)
+        if (sasl_auth_oauth)
         {
             if (smtp->_debug)
                 esp_mail_debug_print(esp_mail_str_288, true);
@@ -177,7 +177,7 @@ non_authenticated:
 
             return true;
         }
-        else if (plain_auth)
+        else if (sasl_auth_plain)
         {
 
             if (smtp->_debug)
@@ -217,7 +217,7 @@ non_authenticated:
 
             return true;
         }
-        else if (login_auth)
+        else if (sasl_login)
         {
             if (smtp->_debug)
                 esp_mail_debug_print(esp_mail_str_240, true);

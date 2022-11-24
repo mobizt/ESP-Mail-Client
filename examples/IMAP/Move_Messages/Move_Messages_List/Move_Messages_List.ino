@@ -1,5 +1,5 @@
 /**
- * This example shows how to copy messages from the mailbox to other folder.
+ * This example shows how to move messages from the mailbox to other folder.
  *
  * Email: suwatchai@outlook.com
  *
@@ -137,24 +137,19 @@ void setup()
     if (!imap.selectFolder(F("INBOX")))
         return;
 
-    /* Define the MessageList class to add the message to copy */
-    MessageList toCopy;
+    /* Define the MessageList class to add the message to move */
+    MessageList toMove;
 
-    /* Add message uid to copy to the list */
-    toCopy.add(3);
-    toCopy.add(4);
+    /* Add message uid to move to the list */
+    toMove.add(3);
+    toMove.add(4);
 
     // imap.createFolder("test");
 
-    /* Copy all messages in the list to the folder "test" */
-    if (imap.copyMessages(&toCopy, F("test")))
-        Serial.println("Messages copied");
+    /* Move all messages in the list to the folder "test" */
+    if (imap.moveMessages(&toMove, F("test")))
+        Serial.println("Messages moved");
 
-    /* Delete all messages in the list from the opened folder (move to trash) */
-    // imap.deleteMessages(&toCopy);
-
-    // imap.deleteolder("test");
-    // imap.deleteolder("test2");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

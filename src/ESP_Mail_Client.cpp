@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 16, 2022
+ * Created November 24, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -265,7 +265,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   if (!imap->_read_capability.multiappend)
   {
     lastAppend = true;
-    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
   }
 
   if (imap->_prev_imap_cmd != esp_mail_imap_cmd_append)
@@ -301,7 +301,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
   if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
   {
-    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
     return false;
   }
 
@@ -309,7 +309,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
   if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
   {
-    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
     return false;
   }
 
@@ -319,7 +319,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
   if (!sendContent(nullptr, msg, false, rfc822MSG))
   {
-    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
     return false;
   }
 
@@ -327,7 +327,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   {
     if (imapSend(imap, esp_mail_str_34, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
     {
-      imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+      imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
       return false;
     }
 
@@ -335,11 +335,11 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
     if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
     {
-      imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+      imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
       return false;
     }
 
-    imap->_prev_imap_cmd = esp_mail_imap_cmd_login;
+    imap->_prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
   }
 
   if (!lastAppend)

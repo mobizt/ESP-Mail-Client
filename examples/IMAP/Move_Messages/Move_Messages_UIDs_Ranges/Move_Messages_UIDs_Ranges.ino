@@ -1,5 +1,5 @@
 /**
- * This example shows how to copy messages from the mailbox to other folder.
+ * This example shows how to move messages from the mailbox to other folder using UIDs ranges.
  *
  * Email: suwatchai@outlook.com
  *
@@ -137,24 +137,18 @@ void setup()
     if (!imap.selectFolder(F("INBOX")))
         return;
 
-    /* Define the MessageList class to add the message to copy */
-    MessageList toCopy;
+    /* Move all messages using UIDs ranges (last 10 UIDs) to the folder "test" */
+    int uid_last = imap.getUID(imap.selectedFolder().msgCount());
+    int uid_begin = uid_last > 10 ? uid_last - 10 : uid_last;
 
-    /* Add message uid to copy to the list */
-    toCopy.add(3);
-    toCopy.add(4);
+    String sequence_set1 = String(uid_begin) + ":" + String(uid_last);
 
-    // imap.createFolder("test");
-
-    /* Copy all messages in the list to the folder "test" */
-    if (imap.copyMessages(&toCopy, F("test")))
-        Serial.println("Messages copied");
-
-    /* Delete all messages in the list from the opened folder (move to trash) */
-    // imap.deleteMessages(&toCopy);
+    if (imap.moveMessages(sequence_set1, true /* if sequence set are the UIDs */, F("test")))
+        Serial.println("Moving messages using UIDs ranges success");
+    else
+        Serial.println("Error, moving messages using UIDs ranges");
 
     // imap.deleteolder("test");
-    // imap.deleteolder("test2");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

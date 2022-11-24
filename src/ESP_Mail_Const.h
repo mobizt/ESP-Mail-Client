@@ -1,4 +1,4 @@
-// Created November 21, 2022
+// Created November 24, 2022
 
 #pragma once
 
@@ -673,9 +673,9 @@ enum esp_mail_imap_command
 {
     esp_mail_imap_cmd_capability,
     esp_mail_imap_cmd_starttls,
-    esp_mail_imap_cmd_login,
-    esp_mail_imap_cmd_plain,
-    esp_mail_imap_cmd_auth,
+    esp_mail_imap_cmd_sasl_login,
+    esp_mail_imap_cmd_sasl_auth_plain,
+    esp_mail_imap_cmd_sasl_auth_oauth,
     esp_mail_imap_cmd_list,
     esp_mail_imap_cmd_lsub,
     esp_mail_imap_cmd_subscribe,
@@ -693,6 +693,7 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_fetch_sequence_set,
     esp_mail_imap_cmd_logout,
     esp_mail_imap_cmd_store,
+    esp_mail_imap_cmd_move,
     esp_mail_imap_cmd_expunge,
     esp_mail_imap_cmd_create,
     esp_mail_imap_cmd_rename,
@@ -789,6 +790,7 @@ struct esp_mail_imap_capability_t
     bool acl = false;
     bool binary = false;
     bool logindisable = false;
+    bool move = false;
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -1474,6 +1476,9 @@ struct esp_mail_auth_capability_t
     bool digest_md5 = false;
     bool login = false;
     bool start_tls = false;
+
+    //imap rfc4959
+    bool sasl_ir = false;
 };
 
 struct esp_mail_sesson_cert_config_t
@@ -1806,7 +1811,7 @@ static const char esp_mail_str_2[] PROGMEM = "CAPABILITY";
 static const char esp_mail_str_27[] PROGMEM = "Xmail";
 static const char esp_mail_str_31[] PROGMEM = "base64";
 
-static const char esp_mail_str_41[] PROGMEM = "AUTHENTICATE PLAIN ";
+static const char esp_mail_str_41[] PROGMEM = "AUTHENTICATE PLAIN";
 static const char esp_mail_str_50[] PROGMEM = "Connecting to IMAP server...";
 static const char esp_mail_str_51[] PROGMEM = "* ";
 static const char esp_mail_str_54[] PROGMEM = "IMAP server connected";
@@ -1961,7 +1966,7 @@ static const char esp_mail_str_280[] PROGMEM = "> C: No content";
 static const char esp_mail_str_281[] PROGMEM = "fail to open the mailbox";
 static const char esp_mail_str_290[] PROGMEM = "> C: Send IMAP command, AUTHENTICATE PLAIN";
 static const char esp_mail_str_291[] PROGMEM = "> C: Send IMAP command, AUTH XOAUTH2";
-static const char esp_mail_str_292[] PROGMEM = "AUTHENTICATE XOAUTH2 ";
+static const char esp_mail_str_292[] PROGMEM = "AUTHENTICATE XOAUTH2";
 static const char esp_mail_str_295[] PROGMEM = "0123456789ABCDEF";
 static const char esp_mail_str_306[] PROGMEM = "some of the requested messages no longer exist";
 static const char esp_mail_str_307[] PROGMEM = "Reading messages...";
@@ -2002,6 +2007,9 @@ static const char esp_mail_str_381[] PROGMEM = "> C: Send IMAP command, UNSUBSCR
 static const char esp_mail_str_382[] PROGMEM = "Unsubscribe mailbox...";
 static const char esp_mail_str_383[] PROGMEM = "UNSUBSCRIBE ";
 static const char esp_mail_str_384[] PROGMEM = ".SILENT";
+static const char esp_mail_str_385[] PROGMEM = "+ ";
+static const char esp_mail_str_386[] PROGMEM = "> C: move message(s) to ";
+static const char esp_mail_str_387[] PROGMEM = "MOVE ";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";
@@ -2032,6 +2040,8 @@ static const char esp_mail_imap_response_24[] PROGMEM = "UIDPLUS";
 static const char esp_mail_imap_response_25[] PROGMEM = "LITERAL+";
 static const char esp_mail_imap_response_26[] PROGMEM = "LITERAL-";
 static const char esp_mail_imap_response_27[] PROGMEM = "* LSUB ";
+static const char esp_mail_imap_response_28[] PROGMEM = "SASL-IR";
+static const char esp_mail_imap_response_29[] PROGMEM = "MOVE";
 
 #endif
 

@@ -103,6 +103,7 @@ getCurrentTimestamp KEYWORD2
 getTimeFromSec  KEYWORD2
 getDateTimeString   KEYWORD2
 copyMessages    KEYWORD2
+moveMessages    KEYWORD2
 deleteMessages  KEYWORD2
 createFolder    KEYWORD2
 renameFolder    KEYWORD2
