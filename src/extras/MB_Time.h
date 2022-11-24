@@ -1,7 +1,7 @@
 /*
- * Time helper class v1.0.0
+ * Time helper class v1.0.1
  *
- * Created July 6, 2022
+ * Created November 24, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -193,7 +193,7 @@ public:
   }
 
   /** Get the timestamp from the RFC 2822 time string.
-   * e.g. Mon, 02 May 2022 00:30:00 +0000
+   * e.g. Mon, 02 May 2022 00:30:00 +0000 or 02 May 2022 00:30:00 +0000
    *
    * @param gmt Return the GMT time.
    * @return timestamp of time string.
@@ -207,24 +207,26 @@ public:
     splitToken(s1, tk, ' ');
     int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
 
+    int tkindex = tk.size() == 5 ? -1 : 0; // No week days?
+
     // some response may include (UTC) and (ICT)
-    if (tk.size() >= 6)
+    if (tk.size() >= 5)
     {
-      day = atoi(tk[1].c_str());
+      day = atoi(tk[tkindex + 1].c_str());
       for (size_t i = 0; i < 12; i++)
       {
-        if (strcmp_P(mb_months[i], tk[2].c_str()) == 0)
+        if (strcmp_P(mb_months[i], tk[tkindex + 2].c_str()) == 0)
           mon = i;
       }
 
       // RFC 822 year to RFC 2822
-      if (tk[3].length() == 2)
-        tk[3].prepend("20");
+      if (tk[tkindex + 3].length() == 2)
+        tk[tkindex + 3].prepend("20");
 
-      year = atoi(tk[3].c_str());
+      year = atoi(tk[tkindex + 3].c_str());
 
       MB_VECTOR<MB_String> tk2;
-      splitToken(tk[4], tk2, ':');
+      splitToken(tk[tkindex + 4], tk2, ':');
       if (tk2.size() == 3)
       {
         hr = atoi(tk2[0].c_str());
@@ -234,19 +236,19 @@ public:
 
       ts = getTimestamp(year, mon + 1, day, hr, mins, sec);
 
-      if (tk[5].length() == 5 && gmt)
+      if (tk[tkindex + 5].length() == 5 && gmt)
       {
         char tmp[6];
         memset(tmp, 0, 6);
-        strncpy(tmp, tk[5].c_str() + 1, 2);
+        strncpy(tmp, tk[tkindex + 5].c_str() + 1, 2);
         tz_h = atoi(tmp);
 
         memset(tmp, 0, 6);
-        strncpy(tmp, tk[5].c_str() + 3, 2);
+        strncpy(tmp, tk[tkindex + 5].c_str() + 3, 2);
         tz_m = atoi(tmp);
 
         time_t tz = tz_h * 60 * 60 + tz_m * 60;
-        if (tk[5][0] == '+')
+        if (tk[tkindex + 5][0] == '+')
           ts -= tz; // remove time zone offset
         else
           ts += tz;

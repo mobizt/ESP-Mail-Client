@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.1
+ * ESP32 TCP Client Library v2.0.2
  *
- * Created July 24, 2022
+ * Created November 24, 2022
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -113,8 +113,8 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
                     wcs->mbfs->read(storageType, (uint8_t *)cert_buf, len);
 
                 wcs->mbfs->close(storageType);
-                wcs->wcs->setCACert((const char *)cert_buf);
-                baseSetCertType(esp_mail_cert_type_file);
+                wcs->setCACert((const char *)cert_buf);
+                wcs->baseSetCertType(esp_mail_cert_type_file);
 
 #elif defined(MBFS_SD_FS)
                 fs::File file = wcs->mbfs->getSDFile();

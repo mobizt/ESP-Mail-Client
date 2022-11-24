@@ -28,8 +28,6 @@
 
 #include <ESP_Mail_Client.h>
 
-// Provide the SD card interfaces setting and mounting
-#include <extras/SDHelper.h>
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -122,7 +120,7 @@ void readEmailsNumbers()
 
     config.limit.fetch = 5; // Set the limit of number of messages in the fetch results
 
-    // Read Emaij and close session
+    // Read Email and close session
     MailClient.readMail(&imap);
 
     /* Clear all stored data in IMAPSession object */
@@ -192,21 +190,6 @@ void setup()
     /* Set the storage to save the downloaded files and attachments */
     config.storage.saved_path = F("/email_data");
 
-    /** The file storage type e.g.
-     * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and
-     * esp_mail_file_storage_type_sd
-     */
-    config.storage.type = esp_mail_file_storage_type_sd;
-
-    /** Set to download heades, text and html messaeges,
-     * attachments and inline images respectively.
-     */
-    config.download.header = true;
-    config.download.text = true;
-    config.download.html = true;
-    config.download.attachment = true;
-    config.download.inlineImg = true;
 
     /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited

@@ -20,6 +20,13 @@
 #define SPI_MOSI_PIN 15
 #define SPI_CLOCK_IN_MHz 16
 
+
+// #define SPI_CS_PIN 5
+// #define SPI_SCK_PIN 18
+// #define SPI_MISO_PIN 19
+// #define SPI_MOSI_PIN 23
+// #define SPI_CLOCK_IN_MHz 4 // may work on lower clock rate
+
 #elif defined(ESP8266)
 
 #define SPI_CS_PIN 15
