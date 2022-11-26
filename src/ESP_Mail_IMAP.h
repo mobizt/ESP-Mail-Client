@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 24, 2022
+ * Created November 26, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2789,6 +2789,23 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             parseGetUIDResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_flags)
                             parseGetFlagsResponse(imap, response);
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota)
+                            parseGetQuotaResponse(imap, response);
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota_root)
+                        {
+                            parseGetQuotaRootsResponse(imap, response);
+                            imap->_quota_tmp.clear();
+                            parseGetQuotaResponse(imap, response);
+                            if (imap->_quota_tmp.length() > 0)
+                            {
+                                imap->_quota_root_tmp += (char)':';
+                                imap->_quota_root_tmp += imap->_quota_tmp;
+                            }
+                        }
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_get_acl || imap->_imap_cmd == esp_mail_imap_cmd_my_rights)
+                            parseGetACLResponse(imap, response, imap->_imap_cmd);
+                        else if (imap->_imap_cmd == esp_mail_imap_cmd_namespace)
+                            parseNamespaceResponse(imap, response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_idle)
                         {
                             completedResponse = response[0] == '+';
@@ -3403,6 +3420,12 @@ bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf
                 imap->_read_capability.literal_minus = true;
             if (strposP(buf, esp_mail_imap_response_29, 0) > -1)
                 imap->_read_capability.move = true;
+            if (strposP(buf, esp_mail_imap_response_32, 0) > -1)
+                imap->_read_capability.quota = true;
+            if (strposP(buf, esp_mail_imap_response_35, 0) > -1)
+                imap->_read_capability.name_space = true;
+            if (strposP(buf, esp_mail_imap_response_37, 0) > -1)
+                imap->_read_capability.enable = true;
 
             return true;
         }
@@ -3611,6 +3634,75 @@ void ESP_Mail_Client::parseGetFlagsResponse(IMAPSession *imap, char *buf)
         imap->_flags_tmp = tmp;
         delP(&tmp);
         return;
+    }
+}
+
+void ESP_Mail_Client::parseGetQuotaResponse(IMAPSession *imap, char *buf)
+{
+    char *tmp = nullptr;
+
+    int p1 = strposP(buf, esp_mail_imap_response_30, 0);
+    if (p1 != -1)
+    {
+        int len = strlen(buf) - p1 - strlen_P(esp_mail_imap_response_30);
+        tmp = (char *)newP(len);
+        strncpy(tmp, buf + p1 + strlen_P(esp_mail_imap_response_30), strlen(buf) - p1 - strlen_P(esp_mail_imap_response_30) - 2);
+        imap->_quota_tmp = tmp;
+        delP(&tmp);
+    }
+}
+
+void ESP_Mail_Client::parseGetQuotaRootsResponse(IMAPSession *imap, char *buf)
+{
+    char *tmp = nullptr;
+
+    int p1 = strposP(buf, esp_mail_imap_response_31, 0);
+    if (p1 != -1)
+    {
+        int p2 = strposP(buf, esp_mail_str_131, p1 + strlen_P(esp_mail_imap_response_31));
+        if (p2 != -1)
+        {
+            int len = strlen(buf) - p2 - 1;
+            tmp = (char *)newP(len);
+            strncpy(tmp, buf + p2 + 1, strlen(buf) - p2 - 1);
+            if (imap->_quota_root_tmp.length() > 0)
+                imap->_quota_root_tmp += esp_mail_str_263;
+            imap->_quota_root_tmp += tmp;
+            delP(&tmp);
+        }
+    }
+}
+
+void ESP_Mail_Client::parseGetACLResponse(IMAPSession *imap, char *buf, esp_mail_imap_command cmd)
+{
+    char *tmp = nullptr;
+    int p1 = cmd == esp_mail_imap_cmd_get_acl ? strposP(buf, esp_mail_imap_response_33, 0) : strposP(buf, esp_mail_imap_response_34, 0);
+
+    if (p1 != -1)
+    {
+        int p2 = cmd == esp_mail_imap_cmd_get_acl ? strposP(buf, esp_mail_str_131, p1 + strlen_P(esp_mail_imap_response_33) + 1) : strposP(buf, esp_mail_str_131, p1 + strlen_P(esp_mail_imap_response_34) + 1);
+        if (p2 != -1)
+        {
+            int len = strlen(buf) - p2 - 1;
+            tmp = (char *)newP(len);
+            strncpy(tmp, buf + p2 + 1, strlen(buf) - p2 - 1);
+            imap->_acl_tmp = tmp;
+            delP(&tmp);
+        }
+    }
+}
+
+void ESP_Mail_Client::parseNamespaceResponse(IMAPSession *imap, char *buf)
+{
+    char *tmp = nullptr;
+    int p1 = strposP(buf, esp_mail_imap_response_36, 0);
+    if (p1 != -1)
+    {
+        int len = strlen(buf) - p1 - strlen_P(esp_mail_imap_response_36);
+        tmp = (char *)newP(len);
+        strncpy(tmp, buf + p1 + strlen_P(esp_mail_imap_response_36), strlen(buf) - p1 - strlen_P(esp_mail_imap_response_36));
+        imap->_ns_tmp += tmp;
+        delP(&tmp);
     }
 }
 
@@ -6067,6 +6159,415 @@ bool IMAPSession::mMoveMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_String
         return false;
 
     return true;
+}
+
+bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *data, bool getMode)
+{
+    if (!_read_capability.quota)
+        return false;
+
+    MB_String _quotaRoot = quotaRoot;
+
+    if (_readCallback)
+    {
+        if (getMode)
+            MailClient.imapCB(this, esp_mail_str_388, true, false);
+        else
+            MailClient.imapCB(this, esp_mail_str_389, true, false);
+    }
+
+    if (_debug)
+    {
+        if (getMode)
+            esp_mail_debug_print(esp_mail_str_390, true);
+        else
+            esp_mail_debug_print(esp_mail_str_391, true);
+    }
+
+    MB_String cmd;
+    if (getMode)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_392);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _quotaRoot;
+        cmd += esp_mail_str_136;
+    }
+    else
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_393);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _quotaRoot;
+        cmd += esp_mail_str_136;
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_198;
+
+        cmd += data->name;
+        cmd += esp_mail_str_131;
+        cmd += data->limit;
+
+        cmd += esp_mail_str_192;
+    }
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _quota_tmp.clear();
+
+    _imap_cmd = (getMode) ? esp_mail_imap_command::esp_mail_imap_cmd_get_quota : esp_mail_imap_command::esp_mail_imap_cmd_set_quota;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    if (getMode)
+    {
+        mParseQuota(_quota_tmp, data);
+    }
+
+    _quota_tmp.clear();
+
+    return true;
+}
+
+void IMAPSession::mParseQuota(MB_String &quota, IMAP_Quota_Root_Info *data)
+{
+    MB_VECTOR<MB_String> tokens;
+    MailClient.splitToken(quota, tokens, " ");
+    data->quota_root = tokens[0];
+    tokens[1].erase(0, 1);
+    data->name = tokens[1];
+    data->usage = atoi(tokens[2].c_str());
+    data->limit = atoi(tokens[3].c_str());
+}
+
+bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *quotaRootsList)
+{
+    if (!_read_capability.quota)
+        return false;
+
+    MB_String _mailbox = mailbox;
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_395, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_396, true);
+
+    MB_String cmd;
+
+    cmd = prependTag(esp_mail_str_27, esp_mail_str_392);
+    cmd += esp_mail_str_394;
+    cmd += esp_mail_str_131;
+    cmd += esp_mail_str_136;
+    cmd += _mailbox;
+    cmd += esp_mail_str_136;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _quota_root_tmp.clear();
+    _quota_tmp.clear();
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_get_quota_root;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    MB_VECTOR<MB_String> tokens;
+    MailClient.splitToken(_quota_root_tmp, tokens, ",");
+
+    for (size_t i = 0; i < tokens.size(); i++)
+    {
+        MB_VECTOR<MB_String> tk;
+        MailClient.splitToken(tokens[i], tk, ":");
+        IMAP_Quota_Root_Info data;
+        if (tk.size() > 1)
+            mParseQuota(tk[1], &data);
+        else
+            data.quota_root = tk[0];
+
+        quotaRootsList->add(data);
+    }
+
+    _quota_root_tmp.clear();
+    _quota_tmp.clear();
+
+    return true;
+}
+
+bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, IMAP_Rights_Info *acl, MB_StringPtr identifier, esp_mail_imap_command type)
+{
+
+    if (!_read_capability.acl)
+        return false;
+
+    MB_String _mailbox = mailbox;
+    MB_String _identifier = identifier;
+
+    if (_readCallback)
+    {
+        if (type == esp_mail_imap_cmd_get_acl)
+            MailClient.imapCB(this, esp_mail_str_397, true, false);
+        else if (type == esp_mail_imap_cmd_set_acl)
+            MailClient.imapCB(this, esp_mail_str_399, true, false);
+        else if (type == esp_mail_imap_cmd_delete_acl)
+            MailClient.imapCB(this, esp_mail_str_401, true, false);
+        else if (type == esp_mail_imap_cmd_my_rights)
+            MailClient.imapCB(this, esp_mail_str_403, true, false);
+    }
+
+    if (_debug)
+    {
+        if (type == esp_mail_imap_cmd_get_acl)
+            esp_mail_debug_print(esp_mail_str_398, true);
+        else if (type == esp_mail_imap_cmd_set_acl)
+            esp_mail_debug_print(esp_mail_str_400, true);
+        else if (type == esp_mail_imap_cmd_delete_acl)
+            esp_mail_debug_print(esp_mail_str_402, true);
+        else if (type == esp_mail_imap_cmd_my_rights)
+            esp_mail_debug_print(esp_mail_str_404, true);
+    }
+
+    MB_String cmd;
+    if (type == esp_mail_imap_cmd_get_acl)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_405);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _mailbox;
+        cmd += esp_mail_str_136;
+    }
+    else if (type == esp_mail_imap_cmd_set_acl)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_406);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += mailbox;
+        cmd += esp_mail_str_136;
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += acl->identifier.c_str();
+        cmd += esp_mail_str_136;
+        cmd += esp_mail_str_131;
+        MB_String s;
+        getRights(s, acl);
+        cmd += esp_mail_str_136;
+        cmd += s.c_str();
+        cmd += esp_mail_str_136;
+    }
+    else if (type == esp_mail_imap_cmd_delete_acl)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_407);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _mailbox;
+        cmd += esp_mail_str_136;
+
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _identifier;
+        cmd += esp_mail_str_136;
+    }
+    else if (type == esp_mail_imap_cmd_my_rights)
+    {
+        cmd = prependTag(esp_mail_str_27, esp_mail_str_408);
+        cmd += esp_mail_str_131;
+        cmd += esp_mail_str_136;
+        cmd += _mailbox;
+        cmd += esp_mail_str_136;
+    }
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _acl_tmp.clear();
+
+    _imap_cmd = type;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    if (type == esp_mail_imap_cmd_get_acl)
+        parseACL(_acl_tmp, acl_list);
+    else if (type == esp_mail_imap_cmd_my_rights)
+        parseRights(_acl_tmp, acl);
+
+    _acl_tmp.clear();
+
+    return true;
+}
+
+void IMAPSession::parseACL(MB_String &acl_str, IMAP_Rights_List *right_list)
+{
+    MB_VECTOR<MB_String> tokens;
+    MailClient.splitToken(acl_str, tokens, " ");
+
+    for (size_t i = 0; i < tokens.size(); i += 2)
+    {
+        IMAP_Rights_Info info;
+        info.identifier = tokens[i];
+        parseRights(tokens[i + 1], &info);
+        right_list->add(info);
+    }
+}
+
+void IMAPSession::parseRights(MB_String &righs_str, IMAP_Rights_Info *info)
+{
+    for (size_t i = 0; i < righs_str.length(); i++)
+    {
+        char c = righs_str[i];
+
+        if (c == 'l')
+            info->rights.lookup = true;
+        else if (c == 'r')
+            info->rights.read = true;
+        else if (c == 's')
+            info->rights.seen = true;
+        else if (c == 'w')
+            info->rights.write = true;
+        else if (c == 'i')
+            info->rights.insert = true;
+        else if (c == 'p')
+            info->rights.post = true;
+        else if (c == 'k')
+            info->rights.create = true;
+        else if (c == 'c')
+            info->rights.create_c = true;
+        else if (c == 'x')
+            info->rights.delete_mailbox = true;
+        else if (c == 't')
+            info->rights.delete_messages = true;
+        else if (c == 'd')
+            info->rights.delete_d = true;
+        else if (c == 'e')
+            info->rights.expunge = true;
+        else if (c == 'a')
+            info->rights.administer = true;
+    }
+}
+
+void IMAPSession::getRights(MB_String &righs_str, IMAP_Rights_Info *info)
+{
+    if (info->rights.lookup)
+        righs_str += (char)'l';
+    if (info->rights.read)
+        righs_str += (char)'r';
+    if (info->rights.seen)
+        righs_str += (char)'s';
+    if (info->rights.write)
+        righs_str += (char)'w';
+    if (info->rights.insert)
+        righs_str += (char)'i';
+    if (info->rights.post)
+        righs_str += (char)'p';
+    if (info->rights.create)
+        righs_str += (char)'k';
+    if (info->rights.create_c)
+        righs_str += (char)'c';
+    if (info->rights.delete_mailbox)
+        righs_str += (char)'x';
+    if (info->rights.delete_mailbox)
+        righs_str += (char)'t';
+    if (info->rights.delete_d)
+        righs_str += (char)'d';
+    if (info->rights.expunge)
+        righs_str += (char)'e';
+    if (info->rights.administer)
+        righs_str += (char)'a';
+}
+
+bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
+{
+    if (!_read_capability.name_space)
+        return false;
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_409, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_410, true);
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_411);
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _ns_tmp.clear();
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_namespace;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    int cnt = 0;
+    MB_String personal, other, shared;
+
+    for (size_t i = 0; i < _ns_tmp.length(); i++)
+    {
+        if (i > 0 && i < _ns_tmp.length() - 1 && _ns_tmp[i] == ' ' && _ns_tmp[i - 1] != '"' && _ns_tmp[i + 1] != '"')
+        {
+            if (cnt == 0)
+                personal = _ns_tmp.substr(0, i);
+            else if (cnt == 1)
+            {
+                other = _ns_tmp.substr(personal.length() + 1, i - personal.length() - 1);
+                shared = _ns_tmp.substr(i + 1, _ns_tmp.length() - i - 1);
+            }
+
+            cnt++;
+        }
+    }
+
+    if (personal.length() > 4)
+        parseNamespaces(personal, &(ns->personal_namespaces));
+
+    if (other.length() > 4)
+        parseNamespaces(other, &(ns->other_users_namespaces));
+
+    if (shared.length() > 4)
+        parseNamespaces(shared, &(ns->shared_namespaces));
+
+    return true;
+}
+
+bool IMAPSession::mEnable(MB_StringPtr capability)
+{
+    if (!_read_capability.enable)
+        return false;
+
+    MB_String _cap = capability;
+
+    if (_readCallback)
+        MailClient.imapCB(this, esp_mail_str_412, true, false);
+
+    if (_debug)
+        esp_mail_debug_print(esp_mail_str_413, true);
+
+    MB_String cmd = prependTag(esp_mail_str_27, esp_mail_str_414);
+    cmd += esp_mail_str_131;
+    cmd += _cap;
+
+    if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        return false;
+
+    _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_enable;
+    if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
+        return false;
+
+    return true;
+}
+
+void IMAPSession::parseNamespaces(MB_String &ns_str, IMAP_Namespaces *ns)
+{
+    MB_String tmp = ns_str.substr(2, ns_str.length() - 4);
+    tmp.replaceAll(")(", " ");
+    MB_VECTOR<MB_String> tokens;
+    MailClient.splitToken(tmp, tokens, " ");
+
+    for (size_t i = 0; i < tokens.size(); i += 2)
+    {
+        IMAP_Namespace_Info info;
+        info.prefix = tokens[i];
+        info.delimiter = tokens[i + 1];
+        ns->add(info);
+    }
 }
 
 void IMAPSession::empty()

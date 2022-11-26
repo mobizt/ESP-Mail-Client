@@ -837,6 +837,152 @@ bool deleteMessages(<string> sequenceSet, bool UID, bool expunge = false);
 
 
 
+
+#### Get the quota root's resource usage and limits.
+
+param **`quotaRoot`** The quota root to get.
+
+param **`info`** The pointer to `IMAP_Quota_Root_Info` that contains quota root's resource name, usage and limit.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool getQuota(<string> quotaRoot, IMAP_Quota_Root_Info *info);
+```
+
+
+
+
+
+#### Set the quota root's resource usage and limits.
+
+param **`quotaRoot`** The quota root to set.
+
+param **`data`** The pointer to `IMAP_Quota_Root_Info` that contains quota root's resource name, usage and limit.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool setQuota(<string> quotaRoot, IMAP_Quota_Root_Info *data);
+```
+
+
+
+
+
+#### Get the list of quota roots for the named mailbox.
+
+param **`mailbox`** The mailbox name.
+
+param **`quotaRootsList`** The pointer to `IMAP_Quota_Roots_List` that contains the list of `IMAP_Quota_Root_Info`.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool getQuotaRoot(<string> mailbox, IMAP_Quota_Roots_List *quotaRootsList);
+```
+
+
+
+
+
+#### Get the ACLs for a mailbox.
+
+param **`mailbox`** The mailbox name.
+
+param **`aclList`** The pointer to the returning `IMAP_Rights_List` object.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool getACL(<string> mailbox, IMAP_Rights_List *aclList);
+```
+
+
+
+
+
+
+#### Get the ACLs for a mailbox.
+
+param **`mailbox`** The mailbox name.
+
+param **`acl`** The pointer to the acl IMAP_Rights_Info to set.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool setACL(<string> mailbox, IMAP_Rights_Info *acl);
+```
+
+
+
+
+
+
+#### Delete the ACLs set for identifier on mailbox.
+
+param **`mailbox`** The mailbox name.
+
+param **`identifier`** The identifier (user) to remove the rights.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool deleteACL(<string> mailbox, <string> identifier);
+```
+
+
+
+
+
+#### Show my ACLs for a mailbox.
+
+param **`mailbox`** The mailbox name.
+
+param **`acl`** The pointer to the returning `IMAP_Rights_Info` object.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool myRights(<string> mailbox, IMAP_Rights_Info *acl);
+```
+
+
+
+
+
+#### Returns IMAP namespaces.
+
+param **`mailbox`** The mailbox name.
+
+param **`ns`** The pointer to the returning `IMAP_Namespaces_List` object.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool getNamespace(IMAP_Namespaces_List *ns);
+```
+
+
+
+
+
+
+#### Enable IMAP capability.
+
+param **`capability`** The mailbox name.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool enable(<string> capability);
+```
+
+
+
+
+
 #### Listen for the selected or open mailbox for updates.
 
 return **`boolean`** The boolean value which indicates the success of operation.
@@ -879,7 +1025,7 @@ bool folderChanged();
 
 #### Assign the callback function that returns the operating status when fetching or reading the Email.
 
-param **`imapCallback`** The function that accepts the imapStatusCallback as parameter.
+param **`imapCallback`** The function that accepts the `imapStatusCallback` as parameter.
 
 ```cpp
 void callback(imapStatusCallback imapCallback);
@@ -890,7 +1036,7 @@ void callback(imapStatusCallback imapCallback);
 
 #### Assign the callback function to decode the string based on the character set.
 
-param **`callback`** The function that accepts the pointer to IMAP_Decoding_Info as parameter.
+param **`callback`** The function that accepts the pointer to `IMAP_Decoding_Info` as parameter.
 
 ```cpp
 void characterDecodingCallback(imapCharacterDecodingCallback callback);
@@ -900,7 +1046,7 @@ void characterDecodingCallback(imapCharacterDecodingCallback callback);
 
 #### Assign the callback function that returns the MIME data stream from fetching or reading the Email.
 
-param **`mimeDataStreamCallback`** The function that accepts the MIME_Stream_Info as parameter.
+param **`mimeDataStreamCallback`** The function that accepts the `MIME_Stream_Info` as parameter.
 
 ```cpp
 void mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCallback);
@@ -1184,7 +1330,7 @@ String errorReason();
 
 #### Set the Email sending status callback function.
 
-param **`smtpCallback`** The callback function that accept the smtpStatusCallback param.
+param **`smtpCallback`** The callback function that accept the `smtpStatusCallback` param.
 
 ```cpp
 void callback(smtpStatusCallback smtpCallback);

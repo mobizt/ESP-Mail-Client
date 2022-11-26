@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 24, 2022
+ * Created November 26, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -231,6 +231,109 @@ private:
   }
   MB_VECTOR<esp_mail_folder_info_t> _folders;
 };
+
+/* The class that provides the list of IMAP_Quota_Root_Info e.g. resource name, used and limit */
+class IMAP_Quota_Roots_List
+{
+  friend class IMAPSession;
+
+public:
+  IMAP_Quota_Roots_List(){};
+  ~IMAP_Quota_Roots_List() { clear(); };
+
+  size_t size() { return _quota_roots.size(); };
+
+  IMAP_Quota_Root_Info operator[](size_t index)
+  {
+    if (index < _quota_roots.size())
+      return _quota_roots[index];
+
+    return IMAP_Quota_Root_Info();
+  }
+
+private:
+  MB_VECTOR<IMAP_Quota_Root_Info> _quota_roots;
+
+  void add(IMAP_Quota_Root_Info v)
+  {
+    _quota_roots.push_back(v);
+  }
+  void clear()
+  {
+    _quota_roots.clear();
+  }
+};
+
+/* The class that provides the list of IMAP_Namespaces */
+class IMAP_Namespaces
+{
+  friend class IMAPSession;
+
+public:
+  IMAP_Namespaces(){};
+  ~IMAP_Namespaces() { clear(); };
+
+  size_t size() { return _ns_list.size(); };
+
+  IMAP_Namespace_Info operator[](size_t index)
+  {
+    if (index < _ns_list.size())
+      return _ns_list[index];
+
+    return IMAP_Namespace_Info();
+  }
+
+private:
+  MB_VECTOR<IMAP_Namespace_Info> _ns_list;
+
+  void add(IMAP_Namespace_Info v)
+  {
+    _ns_list.push_back(v);
+  }
+  void clear()
+  {
+    _ns_list.clear();
+  }
+};
+
+/* The class that provides the list of IMAP_Namespaces */
+class IMAP_Rights_List
+{
+  friend class IMAPSession;
+
+public:
+  IMAP_Rights_List(){};
+  ~IMAP_Rights_List() { clear(); };
+
+  size_t size() { return _rights_list.size(); };
+
+  IMAP_Rights_Info operator[](size_t index)
+  {
+    if (index < _rights_list.size())
+      return _rights_list[index];
+
+    return IMAP_Rights_Info();
+  }
+
+private:
+  MB_VECTOR<IMAP_Rights_Info> _rights_list;
+
+  void add(IMAP_Rights_Info v)
+  {
+    _rights_list.push_back(v);
+  }
+  void clear()
+  {
+    _rights_list.clear();
+  }
+};
+
+typedef struct esp_mail_imap_nanespace_list_t
+{
+  IMAP_Namespaces personal_namespaces;
+  IMAP_Namespaces other_users_namespaces;
+  IMAP_Namespaces shared_namespaces;
+} IMAP_Namespaces_List;
 
 /* The class that provides the status of message feching and searching */
 class IMAP_Status
@@ -1290,6 +1393,18 @@ private:
   // Parse Get Flags response
   void parseGetFlagsResponse(IMAPSession *imap, char *buf);
 
+  // Parse Get Quota response
+  void parseGetQuotaResponse(IMAPSession *imap, char *buf);
+
+  // Parse Get Quota roots response
+  void parseGetQuotaRootsResponse(IMAPSession *imap, char *buf);
+
+  // Parse Get ACL response
+  void parseGetACLResponse(IMAPSession *imap, char *buf, esp_mail_imap_command cmd);
+
+  // Parse Namespace response
+  void parseNamespaceResponse(IMAPSession *imap, char *buf);
+
   // Parse Fetch Sequence set response
   void parFetchSequenceSetResponse(IMAPSession *imap, char *buf);
 
@@ -1606,6 +1721,85 @@ public:
   template <typename T = const char *>
   bool deleteMessages(T sequenceSet, bool UID, bool expunge = false) { return mDeleteMessagesSet(toStringPtr(sequenceSet), UID, expunge); }
 
+  /** Get the quota root's resource usage and limits.
+   *
+   * @param quotaRoot The quota root to get.
+   * @param info The pointer to IMAP_Quota_Root_Info that contains quota root's resource name, usage and limit.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool getQuota(T quotaRoot, IMAP_Quota_Root_Info *info) { return mGetSetQuota(toStringPtr(quotaRoot), info, true); }
+
+  /** Set the quota root's resource usage and limits.
+   *
+   * @param quotaRoot The quota root to set.
+   * @param data The pointer to IMAP_Quota_Root_Info that contains quota root's resource name, usage and limit.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool setQuota(T quotaRoot, IMAP_Quota_Root_Info *data) { return mGetSetQuota(toStringPtr(quotaRoot), data, false); }
+
+  /** Get the list of quota roots for the named mailbox.
+   *
+   * @param mailbox The mailbox name.
+   * @param quotaRootsList The pointer to IMAP_Quota_Roots_List that contains the list of IMAP_Quota_Root_Info.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool getQuotaRoot(T mailbox, IMAP_Quota_Roots_List *quotaRootsList) { return mGetQuotaRoots(toStringPtr(mailbox), quotaRootsList); }
+
+  /** Get the ACLs for a mailbox.
+   *
+   * @param mailbox The mailbox name.
+   * @param aclList The pointer to the returning IMAP_Rights_List object.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool getACL(T mailbox, IMAP_Rights_List *aclList) { return mManageACL(toStringPtr(mailbox), aclList, nullptr, toStringPtr(""), esp_mail_imap_cmd_get_acl); };
+
+  /** Get the ACLs for a mailbox.
+   *
+   * @param mailbox The mailbox name.
+   * @param acl The pointer to the acl IMAP_Rights_Info to set.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool setACL(T mailbox, IMAP_Rights_Info *acl) { return mManageACL(toStringPtr(mailbox), nullptr, acl, toStringPtr(""), esp_mail_imap_cmd_set_acl); };
+
+  /** Delete the ACLs set for identifier on mailbox.
+   *
+   * @param mailbox The mailbox name.
+   * @param identifier The identifier (user) to remove the rights.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool deleteACL(T1 mailbox, T2 identifier) { return mManageACL(toStringPtr(mailbox), nullptr, nullptr, toStringPtr(identifier), esp_mail_imap_cmd_delete_acl); };
+
+  /** Show my ACLs for a mailbox.
+   *
+   * @param mailbox The mailbox name.
+   * @param acl The pointer to the returning IMAP_Rights_Info object.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool myRights(T mailbox, IMAP_Rights_Info *acl) { return mManageACL(toStringPtr(mailbox), nullptr, acl, toStringPtr(""), esp_mail_imap_cmd_my_rights); };
+
+  /** Returns IMAP namespaces.
+   *
+   * @param mailbox The mailbox name.
+   * @param ns The pointer to the returning IMAP_Namespaces_List object.
+   * @return The boolean value which indicates the success of operation.
+   */
+  bool getNamespace(IMAP_Namespaces_List *ns) { return mNamespace(ns); };
+
+  /** Enable IMAP capability.
+   *
+   * @param capability The mailbox name.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T = const char *>
+  bool enable(T capability) { return mEnable(toStringPtr(capability)); };
+
   /** Listen for the selected or open mailbox for updates.
    * @return The boolean value which indicates the success of operation.
    */
@@ -1764,7 +1958,7 @@ private:
   // Copy message using sequence set
   bool mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
 
-   // Move message
+  // Move message
   bool mMoveMessages(MessageList *toMove, MB_StringPtr dest);
 
   // Move message using sequence set
@@ -1775,6 +1969,36 @@ private:
 
   // Delete messages
   bool mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool expunge = false);
+
+  // Get or set the quota root's resource usage and limits.
+  bool mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *data, bool getMode);
+
+  // Parse the IMAP_Quota_Root_info
+  void mParseQuota(MB_String &quota, IMAP_Quota_Root_Info *data);
+
+  // Get the list of quota roots for the named mailbox.
+  bool mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *quotaRootsList);
+
+  // Get or set ACL.
+  bool mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, IMAP_Rights_Info *acl, MB_StringPtr identifier, esp_mail_imap_command type);
+
+  // Parse ACL
+  void parseACL(MB_String &acl_str, IMAP_Rights_List *right_list);
+
+  // parse Rights
+  void parseRights(MB_String &righs_str, IMAP_Rights_Info *info);
+
+  // Get Rights from IMAP_Rights_Info
+  void getRights(MB_String &righs_str, IMAP_Rights_Info *info);
+
+  // Get namespace
+  bool mNamespace(IMAP_Namespaces_List *ns);
+
+   // Enable the IMAP capability
+  bool mEnable(MB_StringPtr capability);
+
+  // Parse namespaces
+  void parseNamespaces(MB_String &ns_str, IMAP_Namespaces *ns);
 
   // Close folder
   bool mCloseFolder(MB_StringPtr folderName);
@@ -1822,6 +2046,10 @@ private:
   MB_String _nextUID;
   MB_String _unseenMsgIndex;
   MB_String _flags_tmp;
+  MB_String _quota_tmp;
+  MB_String _quota_root_tmp;
+  MB_String _acl_tmp;
+  MB_String _ns_tmp;
   MB_String _sdFileList;
 
   struct esp_mail_imap_read_config_t *_config = nullptr;

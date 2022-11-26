@@ -105,6 +105,15 @@ getDateTimeString   KEYWORD2
 copyMessages    KEYWORD2
 moveMessages    KEYWORD2
 deleteMessages  KEYWORD2
+getQuota    KEYWORD2
+setQuota    KEYWORD2
+getQuotaRoot    KEYWORD2
+getACL  KEYWORD2
+setACL  KEYWORD2
+deleteACL   KEYWORD2
+myRights    KEYWORD2
+enable  KEYWORD2
+getNamespace    KEYWORD2
 createFolder    KEYWORD2
 renameFolder    KEYWORD2
 getSubscribesMailboxes  KEYWORD2

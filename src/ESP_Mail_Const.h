@@ -1,4 +1,4 @@
-// Created November 24, 2022
+// Created November 26, 2022
 
 #pragma once
 
@@ -694,6 +694,14 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_logout,
     esp_mail_imap_cmd_store,
     esp_mail_imap_cmd_move,
+    esp_mail_imap_cmd_get_quota,
+    esp_mail_imap_cmd_set_quota,
+    esp_mail_imap_cmd_get_quota_root,
+    esp_mail_imap_cmd_get_acl,
+    esp_mail_imap_cmd_set_acl,
+    esp_mail_imap_cmd_delete_acl,
+    esp_mail_imap_cmd_my_rights,
+    esp_mail_imap_cmd_namespace,
     esp_mail_imap_cmd_expunge,
     esp_mail_imap_cmd_create,
     esp_mail_imap_cmd_rename,
@@ -704,6 +712,7 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_get_flags,
     esp_mail_imap_cmd_append,
     esp_mail_imap_cmd_append_last,
+    esp_mail_imap_cmd_enable,
     esp_mail_imap_cmd_custom
 };
 
@@ -787,10 +796,18 @@ struct esp_mail_imap_capability_t
     bool literal_minus = false;
     bool multiappend = false;
     bool uidplus = false;
+    // rfc4314
     bool acl = false;
     bool binary = false;
     bool logindisable = false;
+    // rfc6851
     bool move = false;
+    // rfc2087
+    bool quota = false;
+    // rfc2342
+    bool name_space = false;
+    // rfc5161
+    bool enable = false;
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -811,6 +828,71 @@ struct esp_mail_imap_rfc822_msg_header_item_t
     MB_String references;
     MB_String flags;
 };
+
+/* IMAP quota root info */
+typedef struct esp_mail_imap_quota_root_info_t
+{
+    /* The quota root */
+    MB_String quota_root;
+
+    /* The resource name e.g. STORAGE and MESSAGE */
+    MB_String name;
+
+    /* The resource usage in kilo octets */
+    size_t usage = 0;
+
+    /* The resource limit in kilo octets */
+    size_t limit = 0;
+
+} IMAP_Quota_Root_Info;
+
+/* IMAP namespace info */
+typedef struct esp_mail_imap_namespace_info_t
+{
+    /* The leading prefix */
+    MB_String prefix;
+
+    /* The hierarchy delimiter */
+    MB_String delimiter;
+
+} IMAP_Namespace_Info;
+
+struct esp_mail_imap_rights_t
+{
+    /* l - lookup (mailbox is visible to LIST/LSUB commands, SUBSCRIBE mailbox) */
+    bool lookup = false;
+    /* r - read (SELECT the mailbox, perform STATUS) */
+    bool read = false;
+    /* s - keep seen/unseen information across sessions (set or clear \SEEN flag via STORE, also set \SEEN during APPEND/COPY/ FETCH BODY[...]) */
+    bool seen = false;
+    /* w - write (set or clear flags other than \SEEN and \DELETED via STORE, also set them during APPEND/COPY) */
+    bool write = false;
+    /* i - insert (perform APPEND, COPY into mailbox) */
+    bool insert = false;
+    /* p - post (send mail to submission address for mailbox, not enforced by IMAP4 itself) */
+    bool post = false;
+    /* c - RFC2086 (obsoleted) create (CREATE new sub-mailboxes in any implementation-defined hierarchy) */
+    bool create_c = false;
+    /* k - RFC4314 create mailboxes (CREATE new sub-mailboxes in any implementation-defined hierarchy, parent mailbox for the new mailbox name in RENAME)*/
+    bool create = false;
+    /* x - RFC4314 delete mailbox (DELETE mailbox, old mailbox name in RENAME) */
+    bool delete_mailbox = false;
+    /* d - RFC2086 (obsoleted) delete (STORE DELETED flag, perform EXPUNGE) */
+    bool delete_d = false;
+    /* t - RFC4314 delete messages (set or clear \DELETED flag via STORE, set \DELETED flag during APPEND/COPY) */
+    bool delete_messages = false;
+    /* e - perform EXPUNGE and expunge as a part of CLOSE */
+    bool expunge = false;
+    /* a - administer (perform SETACL/DELETEACL/GETACL/LISTRIGHTS) */
+    bool administer = false;
+};
+
+typedef struct esp_mail_imap_rights_info_t
+{
+    MB_String identifier;
+    esp_mail_imap_rights_t rights;
+
+} IMAP_Rights_Info;
 
 /* descrete media types (rfc 2046) */
 struct esp_mail_imap_descrete_media_type_t
@@ -1315,7 +1397,7 @@ struct esp_mail_imap_fetch_config_t
 
     /* The message sequence number to fetch */
     MB_String number;
-   
+
     /* The sequence set options */
     esp_mail_imap_sequence_set_t sequence_set;
 
@@ -1477,7 +1559,7 @@ struct esp_mail_auth_capability_t
     bool login = false;
     bool start_tls = false;
 
-    //imap rfc4959
+    // imap rfc4959
     bool sasl_ir = false;
 };
 
@@ -2010,6 +2092,33 @@ static const char esp_mail_str_384[] PROGMEM = ".SILENT";
 static const char esp_mail_str_385[] PROGMEM = "+ ";
 static const char esp_mail_str_386[] PROGMEM = "> C: move message(s) to ";
 static const char esp_mail_str_387[] PROGMEM = "MOVE ";
+static const char esp_mail_str_388[] PROGMEM = "Get quota root resource usage and limit...";
+static const char esp_mail_str_389[] PROGMEM = "Set quota root resource usage and limit...";
+static const char esp_mail_str_390[] PROGMEM = "> C: Send IMAP command, GETQUOTA";
+static const char esp_mail_str_391[] PROGMEM = "> C: Send IMAP command, SETQUOTA";
+static const char esp_mail_str_392[] PROGMEM = "GETQUOTA";
+static const char esp_mail_str_393[] PROGMEM = "SETQUOTA";
+static const char esp_mail_str_394[] PROGMEM = "ROOT";
+static const char esp_mail_str_395[] PROGMEM = "Get the list of quota roots...";
+static const char esp_mail_str_396[] PROGMEM = "> C: Send IMAP command, GETQUOTAROOT";
+static const char esp_mail_str_397[] PROGMEM = "Get the ACL...";
+static const char esp_mail_str_398[] PROGMEM = "> C: Send IMAP command, GETACL";
+static const char esp_mail_str_399[] PROGMEM = "Set the ACL...";
+static const char esp_mail_str_400[] PROGMEM = "> C: Send IMAP command, SETACL";
+static const char esp_mail_str_401[] PROGMEM = "Delete the ACL...";
+static const char esp_mail_str_402[] PROGMEM = "> C: Send IMAP command, DELETEACL";
+static const char esp_mail_str_403[] PROGMEM = "Get my ACL...";
+static const char esp_mail_str_404[] PROGMEM = "> C: Send IMAP command, MYRIGHTS";
+static const char esp_mail_str_405[] PROGMEM = "GETACL";
+static const char esp_mail_str_406[] PROGMEM = "SETACL";
+static const char esp_mail_str_407[] PROGMEM = "DELETEACL";
+static const char esp_mail_str_408[] PROGMEM = "MYRIGHTS";
+static const char esp_mail_str_409[] PROGMEM = "Get namespace...";
+static const char esp_mail_str_410[] PROGMEM = "> C: Send IMAP command, NAMESPACE";
+static const char esp_mail_str_411[] PROGMEM = "NAMESPACE";
+static const char esp_mail_str_412[] PROGMEM = "Enable capability...";
+static const char esp_mail_str_413[] PROGMEM = "> C: Send IMAP command, ENABLE";
+static const char esp_mail_str_414[] PROGMEM = "ENABLE";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";
@@ -2042,6 +2151,14 @@ static const char esp_mail_imap_response_26[] PROGMEM = "LITERAL-";
 static const char esp_mail_imap_response_27[] PROGMEM = "* LSUB ";
 static const char esp_mail_imap_response_28[] PROGMEM = "SASL-IR";
 static const char esp_mail_imap_response_29[] PROGMEM = "MOVE";
+static const char esp_mail_imap_response_30[] PROGMEM = "* QUOTA ";
+static const char esp_mail_imap_response_31[] PROGMEM = "* QUOTAROOT ";
+static const char esp_mail_imap_response_32[] PROGMEM = "QUOTA";
+static const char esp_mail_imap_response_33[] PROGMEM = "* ACL ";
+static const char esp_mail_imap_response_34[] PROGMEM = "* MYRIGHTS ";
+static const char esp_mail_imap_response_35[] PROGMEM = "NAMESPACE";
+static const char esp_mail_imap_response_36[] PROGMEM = "* NAMESPACE ";
+static const char esp_mail_imap_response_37[] PROGMEM = "ENABLE";
 
 #endif
 
