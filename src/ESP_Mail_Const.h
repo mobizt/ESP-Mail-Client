@@ -1,4 +1,4 @@
-// Created November 26, 2022
+// Created December 26, 2022
 
 #pragma once
 
@@ -2255,11 +2255,10 @@ static const char esp_mail_str_351[] PROGMEM = "File not found.";
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
-static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const unsigned char esp_mail_base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // Print debug message w/wo new line to debug port
-static void __attribute__((used))
-esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
+inline void esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 {
     delay(0);
     if (newLine)

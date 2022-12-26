@@ -74,85 +74,96 @@ void ESP32_SSL_Client::ssl_init(ssl_ctx *ssl)
     mbedtls_ctr_drbg_init(&ssl->drbg_ctx);
 }
 
-/**
- * \brief          Callback type: send data on the network.
- *
- * \note           That callback may be either blocking or non-blocking.
- *
- * \param ctx      Context for the send callback (typically a file descriptor)
- * \param buf      Buffer holding the data to send
- * \param len      Length of the data to send
- *
- * \return         The callback must return the number of bytes sent if any,
- *                 or a non-zero error code.
- *                 If performing non-blocking I/O, \c MBEDTLS_ERR_SSL_WANT_WRITE
- *                 must be returned when the operation would block.
- *
- * \note           The callback is allowed to send fewer bytes than requested.
- *                 It must always return the number of bytes actually sent.
- */
-static int esp_mail_esp32_basic_client_send(void *ctx, const unsigned char *buf, size_t len)
+namespace esp_mail_esp32_basic_client_io
 {
-    Client *client = (Client *)ctx;
 
-    if (!client)
-        return -1;
-
-    int res = client->write(buf, len);
-
-    return res;
-}
-
-/**
- * \brief          Callback type: receive data from the network, with timeout
- *
- * \note           That callback must block until data is received, or the
- *                 timeout delay expires, or the operation is interrupted by a
- *                 signal.
- *
- * \param ctx      Context for the receive callback (typically a file descriptor)
- * \param buf      Buffer to write the received data to
- * \param len      Length of the receive buffer
- * \param timeout  Maximum number of milliseconds to wait for data
- *                 0 means no timeout (potentially waiting forever)
- *
- * \return         The callback must return the number of bytes received,
- *                 or a non-zero error code:
- *                 \c MBEDTLS_ERR_SSL_TIMEOUT if the operation timed out,
- *                 \c MBEDTLS_ERR_SSL_WANT_READ if interrupted by a signal.
- *
- * \note           The callback may receive fewer bytes than the length of the
- *                 buffer. It must always return the number of bytes actually
- *                 received and written to the buffer.
- */
-static int esp_mail_esp32_basic_client_recv_timeout(void *ctx, unsigned char *buf, size_t len, uint32_t timeout)
-{
-    Client *client = (Client *)ctx;
-
-    if (!client)
-        return -1;
-
-    int available = client->available();
-
-    int res = 0;
-
-    unsigned long to = millis();
-    while (millis() - to < timeout && available < len)
+    /**
+     * \brief          Callback type: send data on the network.
+     *
+     * \note           That callback may be either blocking or non-blocking.
+     *
+     * \param ctx      Context for the send callback (typically a file descriptor)
+     * \param buf      Buffer holding the data to send
+     * \param len      Length of the data to send
+     *
+     * \return         The callback must return the number of bytes sent if any,
+     *                 or a non-zero error code.
+     *                 If performing non-blocking I/O, \c MBEDTLS_ERR_SSL_WANT_WRITE
+     *                 must be returned when the operation would block.
+     *
+     * \note           The callback is allowed to send fewer bytes than requested.
+     *                 It must always return the number of bytes actually sent.
+     */
+    static int net_send(void *ctx, const unsigned char *buf, size_t len)
     {
-        delay(0);
-        available = client->available();
-        if (millis() - to >= timeout)
-            res = MBEDTLS_ERR_SSL_TIMEOUT;
-    };
+        Client *client = (Client *)ctx;
 
-    res = client->read(buf, len);
+        if (!client)
+            return -1;
 
-    if (!res)
+        int res = client->write(buf, len);
+
+        return res;
+    }
+
+    /**
+     * \brief          Callback type: receive data from the network, with timeout
+     *
+     * \note           That callback must block until data is received, or the
+     *                 timeout delay expires, or the operation is interrupted by a
+     *                 signal.
+     *
+     * \param ctx      Context for the receive callback (typically a file descriptor)
+     * \param buf      Buffer to write the received data to
+     * \param len      Length of the receive buffer
+     * \param timeout  Maximum number of milliseconds to wait for data
+     *                 0 means no timeout (potentially waiting forever)
+     *
+     * \return         The callback must return the number of bytes received,
+     *                 or a non-zero error code:
+     *                 \c MBEDTLS_ERR_SSL_TIMEOUT if the operation timed out,
+     *                 \c MBEDTLS_ERR_SSL_WANT_READ if interrupted by a signal.
+     *
+     * \note           The callback may receive fewer bytes than the length of the
+     *                 buffer. It must always return the number of bytes actually
+     *                 received and written to the buffer.
+     */
+    static int net_recv_timeout(void *ctx, unsigned char *buf, size_t len, uint32_t timeout)
+    {
+        Client *basic_client = (Client *)ctx;
+
+        if (!basic_client)
+            return -1;
+
+        int read = 0;
+
+        if (len > 2048)
+        {
+            if (timeout == 0)
+                timeout = 5000;
+            unsigned long tm = millis();
+            while (millis() - tm < timeout && read < len)
+            {
+                // This is required for ESP32 when continuousely reading large data or multiples chunks from slow SPI
+                // basic client device, otherwise the connection may die at some point
+                delay(0);
+                int r = basic_client->read();
+                if (r > -1)
+                    buf[read++] = r;
+            }
+        }
+        else
+            read = basic_client->read(buf, len);
+
+        if (read)
+            return read;
+
+        if (!basic_client->connected() && basic_client->available() == 0)
+            return MBEDTLS_ERR_NET_CONN_RESET;
+
         return MBEDTLS_ERR_SSL_WANT_READ;
-
-    return res;
-    
-}
+    }
+};
 
 int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
 {
@@ -344,7 +355,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
         return esp32_ssl_handle_error(ret);
     }
 
-    mbedtls_ssl_set_bio(&ssl->ssl_ctx, ssl->client, esp_mail_esp32_basic_client_send, NULL, esp_mail_esp32_basic_client_recv_timeout);
+    mbedtls_ssl_set_bio(&ssl->ssl_ctx, ssl->client, esp_mail_esp32_basic_client_io::net_send, NULL, esp_mail_esp32_basic_client_io::net_recv_timeout);
 
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_18);

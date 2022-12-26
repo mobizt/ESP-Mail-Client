@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 24, 2022
+ * Created December 26, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -210,14 +210,11 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
     {
       unsigned long waitMs = millis();
       while (!Time.clockReady() && millis() - waitMs < 10000)
-      {
         delay(0);
-      }
     }
   }
 
   // set and get TZ environment variable
-
   MB_String timezone;
 
   // only ESP32 only
@@ -276,7 +273,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
     cmd += esp_mail_str_131;
     cmd += imap->_currentFolder;
   }
-  
+
   cmd += esp_mail_str_131;
 
   if (_flags.length() > 0)
@@ -353,9 +350,9 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 #endif
 char *ESP_Mail_Client::getRandomUID()
 {
-  char *tmp = (char *)newP(36);
-  sprintf(tmp, (const char *)MBSTRING_FLASH_MCR("%d"), (int)random(2000, 4000));
-  return tmp;
+  char *buf = createBuffer<char *>(36);
+  sprintf(buf, (const char *)MBSTRING_FLASH_MCR("%d"), (int)random(2000, 4000));
+  return buf;
 }
 
 /* Safe string splitter to avoid strsep bugs */
@@ -374,14 +371,6 @@ void ESP_Mail_Client::splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const
   s = str.substr(previous, current - previous);
   tk.push_back(s);
   s.clear();
-}
-
-void ESP_Mail_Client::strcat_c(char *str, char c)
-{
-  for (; *str; str++)
-    ;
-  *str++ = c;
-  *str++ = 0;
 }
 
 int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset, bool caseSensitive)
@@ -419,7 +408,7 @@ int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset
 
 char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos, bool caseSensitive)
 {
-  char *tmp = nullptr;
+  char *out = nullptr;
   int p1 = strposP(buf, beginH, beginPos, caseSensitive);
   if (p1 != -1)
   {
@@ -442,9 +431,9 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginH, PGM_P endH, int beg
       p2 = strlen(buf);
 
     int len = p2 - p1 - strlen_P(beginH);
-    tmp = (char *)newP(len + 1);
-    memcpy(tmp, &buf[p1 + strlen_P(beginH)], len);
-    return tmp;
+    out = createBuffer<char *>(len + 1);
+    memcpy(out, &buf[p1 + strlen_P(beginH)], len);
+    return out;
   }
 
   return nullptr;
@@ -454,11 +443,11 @@ bool ESP_Mail_Client::getHeader(const char *buf, PGM_P beginH, MB_String &out, b
 {
   if (strcmpP(buf, 0, beginH, caseSensitive))
   {
-    char *tmp = subStr(buf, beginH, NULL, 0, -1, caseSensitive);
-    if (tmp)
+    char *temp = subStr(buf, beginH, NULL, 0, -1, caseSensitive);
+    if (temp)
     {
-      out = tmp;
-      delP(&tmp);
+      out = temp;
+      freeBuffer(&temp);
       return true;
     }
   }
@@ -497,15 +486,12 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
 
   while (client->connected() && client->available() && idx < bufLen)
   {
-
     mbfs->feed();
-
     ret = client->read();
     if (ret > -1)
     {
       c = (char)ret;
-      strcat_c(buf, c);
-      idx++;
+      buf[idx++] = c;
       count++;
       if (_c == '\r' && c == '\n')
       {
@@ -530,16 +516,13 @@ void ESP_Mail_Client::setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *s
 {
 
   client.setMBFS(mbfs);
-
   client.setSession(session);
 
   if (client.getCertType() == esp_mail_cert_type_undefined)
   {
 
     if (strlen(session->certificate.cert_file) > 0 || caCert != nullptr)
-    {
       client.setClockReady(_clockReady);
-    }
 
     if (strlen(session->certificate.cert_file) == 0)
     {
@@ -549,15 +532,13 @@ void ESP_Mail_Client::setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *s
         client.setCACert(nullptr);
     }
     else
-    {
       client.setCertFile(session->certificate.cert_file, mbfs_type session->certificate.cert_file_storage_type);
-    }
   }
 }
 
 #endif
 
-void ESP_Mail_Client::delP(void *ptr)
+void ESP_Mail_Client::freeBuffer(void *ptr)
 {
   mbfs->delP(ptr);
 }
@@ -567,13 +548,15 @@ size_t ESP_Mail_Client::getReservedLen(size_t len)
   return mbfs->getReservedLen(len);
 }
 
-void *ESP_Mail_Client::newP(size_t len)
+template <typename T>
+T ESP_Mail_Client::createBuffer(size_t size, bool clear)
 {
-  return mbfs->newP(len);
+  return reinterpret_cast<T>(mbfs->newP(size, clear));
 }
 
 bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive)
 {
+
   if (ofs < 0)
   {
     int p = strposP(buf, beginH, 0, caseSensitive);
@@ -582,25 +565,23 @@ bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseS
     ofs = p;
   }
 
-  char *tmp2 = (char *)newP(strlen_P(beginH) + 1);
-  memcpy(tmp2, &buf[ofs], strlen_P(beginH));
-  tmp2[strlen_P(beginH)] = 0;
-  MB_String s = beginH;
-  bool ret = (strcasecmp(s.c_str(), tmp2) == 0);
-  delP(&tmp2);
+  char *temp = createBuffer<char *>(strlen_P(beginH) + 1);
+  memcpy(temp, &buf[ofs], strlen_P(beginH));
+  temp[strlen_P(beginH)] = 0;
+  bool ret = (strcasecmp(pgm2Str(beginH), temp) == 0);
+  freeBuffer(&temp);
   return ret;
 }
 
 int ESP_Mail_Client::strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive)
 {
-  MB_String s = beginH;
-  return strpos(buf, s.c_str(), ofs, caseSensitive);
+  return strpos(buf, pgm2Str(beginH), ofs, caseSensitive);
 }
 
 char *ESP_Mail_Client::strP(PGM_P pgm)
 {
   size_t len = strlen_P(pgm) + 1;
-  char *buf = (char *)newP(len);
+  char *buf = createBuffer<char *>(len);
   strcpy_P(buf, pgm);
   buf[len - 1] = 0;
   return buf;
@@ -608,13 +589,7 @@ char *ESP_Mail_Client::strP(PGM_P pgm)
 
 void ESP_Mail_Client::strReplaceP(MB_String &buf, PGM_P name, PGM_P value)
 {
-  char *n = strP(name);
-  char *v = strP(value);
-
-  buf.replaceAll(n, v);
-
-  delP(&n);
-  delP(&v);
+  buf.replaceAll(pgm2Str(name), pgm2Str(value));
 }
 
 bool ESP_Mail_Client::authFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
@@ -627,7 +602,7 @@ bool ESP_Mail_Client::authFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
     if (decoded)
     {
       ret = strposP((char *)decoded, esp_mail_str_294, 0) > -1;
-      delP(&decoded);
+      freeBuffer(&decoded);
     }
     chunkIdx++;
   }
@@ -646,17 +621,17 @@ MB_String ESP_Mail_Client::getXOAUTH2String(const MB_String &email, const MB_Str
 
 unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t len, size_t *out_len)
 {
-  unsigned char *out, *pos, block[4], tmp;
+  unsigned char *out, *pos, block[4], temp;
   size_t i, count, olen;
   int pad = 0;
   size_t extra_pad;
 
-  unsigned char *dtable = (unsigned char *)newP(256);
+  unsigned char *dtable = createBuffer<unsigned char *>(256);
 
   memset(dtable, 0x80, 256);
 
-  for (i = 0; i < sizeof(b64_index_table) - 1; i++)
-    dtable[b64_index_table[i]] = (unsigned char)i;
+  for (i = 0; i < sizeof(esp_mail_base64_table) - 1; i++)
+    dtable[esp_mail_base64_table[i]] = (unsigned char)i;
   dtable['='] = 0;
 
   count = 0;
@@ -673,7 +648,7 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
 
   olen = (count + extra_pad) / 4 * 3;
 
-  pos = out = (unsigned char *)newP(olen);
+  pos = out = createBuffer<unsigned char *>(olen);
 
   if (out == NULL)
     goto exit;
@@ -688,13 +663,13 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
       val = '=';
     else
       val = src[i];
-    tmp = dtable[val];
-    if (tmp == 0x80)
+    temp = dtable[val];
+    if (temp == 0x80)
       continue;
 
     if (val == '=')
       pad++;
-    block[count] = tmp;
+    block[count] = temp;
     count++;
     if (count == 4)
     {
@@ -719,10 +694,10 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   }
 
   *out_len = pos - out;
-  delP(&dtable);
+  freeBuffer(&dtable);
   return out;
 exit:
-  delP(&dtable);
+  freeBuffer(&dtable);
   return nullptr;
 }
 
@@ -749,25 +724,25 @@ MB_String ESP_Mail_Client::encodeBase64Str(uint8_t *src, size_t len)
 
   while (end - in >= 3)
   {
-    *pos++ = b64_index_table[in[0] >> 2];
-    *pos++ = b64_index_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-    *pos++ = b64_index_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
-    *pos++ = b64_index_table[in[2] & 0x3f];
+    *pos++ = esp_mail_base64_table[in[0] >> 2];
+    *pos++ = esp_mail_base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
+    *pos++ = esp_mail_base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
+    *pos++ = esp_mail_base64_table[in[2] & 0x3f];
     in += 3;
   }
 
   if (end - in)
   {
-    *pos++ = b64_index_table[in[0] >> 2];
+    *pos++ = esp_mail_base64_table[in[0] >> 2];
     if (end - in == 1)
     {
-      *pos++ = b64_index_table[(in[0] & 0x03) << 4];
+      *pos++ = esp_mail_base64_table[(in[0] & 0x03) << 4];
       *pos++ = '=';
     }
     else
     {
-      *pos++ = b64_index_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-      *pos++ = b64_index_table[(in[1] & 0x0f) << 2];
+      *pos++ = esp_mail_base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
+      *pos++ = esp_mail_base64_table[(in[1] & 0x0f) << 2];
     }
     *pos++ = '=';
   }

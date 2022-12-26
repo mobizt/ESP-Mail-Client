@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266 and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created November 24, 2022
+ * Created December 26, 2022
  *
  * This library allows Espressif's ESP32, ESP8266 and SAMD devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -196,18 +196,18 @@ non_authenticated:
 
             // rfc4616
             int len = smtp->_sesson_cfg->login.email.length() + smtp->_sesson_cfg->login.password.length() + 2;
-            uint8_t *tmp = (uint8_t *)newP(len);
-            memset(tmp, 0, len);
+            uint8_t *temp = createBuffer<uint8_t *>(len);
+            memset(temp, 0, len);
             int p = 1;
-            memcpy(tmp + p, smtp->_sesson_cfg->login.email.c_str(), smtp->_sesson_cfg->login.email.length());
+            memcpy(temp + p, smtp->_sesson_cfg->login.email.c_str(), smtp->_sesson_cfg->login.email.length());
             p += smtp->_sesson_cfg->login.email.length() + 1;
-            memcpy(tmp + p, smtp->_sesson_cfg->login.password.c_str(), smtp->_sesson_cfg->login.password.length());
+            memcpy(temp + p, smtp->_sesson_cfg->login.password.c_str(), smtp->_sesson_cfg->login.password.length());
             p += smtp->_sesson_cfg->login.password.length();
 
             MB_String s = esp_mail_str_45;
             s += esp_mail_str_131;
-            s += encodeBase64Str(tmp, p);
-            delP(&tmp);
+            s += encodeBase64Str(temp, p);
+            freeBuffer(&temp);
 
             if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
@@ -1360,7 +1360,7 @@ bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, S
 
                 size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
                 size_t writeLen = 0;
-                uint8_t *buf = (uint8_t *)newP(chunkSize);
+                uint8_t *buf = createBuffer<uint8_t *>(chunkSize);
                 while (writeLen < att->blob.size)
                 {
                     if (writeLen > att->blob.size - chunkSize)
@@ -1378,7 +1378,7 @@ bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, S
 
                     writeLen += chunkSize;
                 }
-                delP(&buf);
+                freeBuffer(&buf);
 
                 if (cb)
                     uploadReport(att->descr.filename.c_str(), addr, 100);
@@ -1433,7 +1433,7 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
                 if (fileSize < chunkSize)
                     chunkSize = fileSize;
 
-                uint8_t *buf = (uint8_t *)newP(chunkSize);
+                uint8_t *buf = createBuffer<uint8_t *>(chunkSize);
 
                 while (writeLen < fileSize && mbfs->available(mbfs_type att->file.storage_type))
                 {
@@ -1457,7 +1457,7 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
 
                     writeLen += chunkSize;
                 }
-                delP(&buf);
+                freeBuffer(&buf);
 
                 if (cb)
                     uploadReport(att->descr.filename.c_str(), addr, 100);
@@ -2052,9 +2052,9 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 header += esp_mail_str_26;
                 header += esp_mail_str_164;
                 header += esp_mail_str_136;
-                char *tmp = getRandomUID();
-                msg->text._int.cid = tmp;
-                delP(&tmp);
+                char *temp = getRandomUID();
+                msg->text._int.cid = temp;
+                freeBuffer(&temp);
             }
 
             header += esp_mail_str_34;
@@ -2090,9 +2090,9 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 header += esp_mail_str_26;
                 header += esp_mail_str_159;
                 header += esp_mail_str_136;
-                char *tmp = getRandomUID();
-                msg->html._int.cid = tmp;
-                delP(&tmp);
+                char *temp = getRandomUID();
+                msg->html._int.cid = temp;
+                freeBuffer(&temp);
             }
             header += esp_mail_str_34;
         }
@@ -2273,7 +2273,7 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
     int available = len;
     int sz = len;
-    uint8_t *buf = (uint8_t *)newP(bufLen + 1);
+    uint8_t *buf = createBuffer<uint8_t *>(bufLen + 1);
     while (available)
     {
         if (available > bufLen)
@@ -2303,7 +2303,7 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             uploadReport(s1.c_str(), addr, 100 * pos / sz);
         }
     }
-    delP(&buf);
+    freeBuffer(&buf);
 
     return ret;
 }
@@ -2349,7 +2349,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (fileSize < chunkSize)
                 chunkSize = fileSize;
 
-            uint8_t *buf = (uint8_t *)newP(chunkSize);
+            uint8_t *buf = createBuffer<uint8_t *>(chunkSize);
 
             while (writeLen < fileSize && mbfs->available(mbfs_type msg->text.file.type))
             {
@@ -2383,7 +2383,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
                 writeLen += chunkSize;
             }
-            delP(&buf);
+            freeBuffer(&buf);
 
             if (cb)
             {
@@ -2423,7 +2423,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (fileSize < chunkSize)
                 chunkSize = fileSize;
 
-            uint8_t *buf = (uint8_t *)newP(chunkSize);
+            uint8_t *buf = createBuffer<uint8_t *>(chunkSize);
 
             while (writeLen < fileSize && mbfs->available(mbfs_type msg->html.file.type))
             {
@@ -2458,7 +2458,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 writeLen += chunkSize;
             }
 
-            delP(&buf);
+            freeBuffer(&buf);
             if (cb)
             {
                 MB_String s1 = esp_mail_str_326;
@@ -2487,10 +2487,10 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 content += encodeBase64Str((const unsigned char *)s.c_str(), s.length());
             else if (strcmp(msg->text.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_qp) == 0)
             {
-                char *out = (char *)newP(s.length() * 3 + 1);
+                char *out = createBuffer<char *>(s.length() * 3 + 1);
                 encodeQP(s.c_str(), out);
                 content += out;
-                delP(&out);
+                freeBuffer(&out);
             }
             else
                 content += s;
@@ -2536,10 +2536,10 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 content += encodeBase64Str((const unsigned char *)s.c_str(), s.length());
             else if (strcmp(msg->html.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_qp) == 0)
             {
-                char *out = (char *)newP(msg->html.content.length() * 3 + 1);
+                char *out = createBuffer<char *>(msg->html.content.length() * 3 + 1);
                 encodeQP(msg->html.content.c_str(), out);
                 content += out;
-                delP(&out);
+                freeBuffer(&out);
             }
             else
                 content += s;
@@ -2552,7 +2552,7 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
 void ESP_Mail_Client::encodeQP(const char *buf, char *out)
 {
-    int n = 0, p = 0, pos = 0;
+    int n = 0, p = 0, pos = 0, idx = 0;
     for (n = 0; *buf; buf++)
     {
         if (n >= 73 && *buf != 10 && *buf != 13)
@@ -2564,7 +2564,7 @@ void ESP_Mail_Client::encodeQP(const char *buf, char *out)
 
         if (*buf == 10 || *buf == 13)
         {
-            strcat_c(out, *buf);
+            out[idx++] = *buf;
             pos++;
             n = 0;
         }
@@ -2576,7 +2576,7 @@ void ESP_Mail_Client::encodeQP(const char *buf, char *out)
         }
         else if (*buf != 32 || (*(buf + 1) != 10 && *(buf + 1) != 13))
         {
-            strcat_c(out, *buf);
+            out[idx++] = *buf;
             n++;
             pos++;
         }
@@ -2631,8 +2631,8 @@ void ESP_Mail_Client::formatFlowedText(MB_String &content)
         count++;
     }
 
-    delP(&stk);
-    delP(&qm);
+    freeBuffer(&stk);
+    freeBuffer(&qm);
     tokens.clear();
 }
 
@@ -2671,7 +2671,7 @@ void ESP_Mail_Client::softBreak(MB_String &content, const char *quoteMarks)
             }
         }
     }
-    delP(&stk);
+    freeBuffer(&stk);
     tokens.clear();
 }
 
@@ -3142,7 +3142,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             {
 
                 chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
-                response = (char *)newP(chunkBufSize + 1);
+                response = createBuffer<char *>(chunkBufSize + 1);
 
             read_line:
 
@@ -3229,7 +3229,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                             if (decoded && olen > 0)
                             {
                                 s.append(decoded, olen);
-                                delP(&decoded);
+                                freeBuffer(&decoded);
                             }
                         }
                         if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback)
@@ -3260,7 +3260,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     if (smtp->_chunkedEnable && smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_chunk_termination)
                         completedResponse = smtp->_chunkCount == chunkIndex;
                 }
-                delP(&response);
+                freeBuffer(&response);
             }
         }
 
@@ -3274,7 +3274,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status)
 {
     MB_String s;
-    char *tmp = nullptr;
+    char *temp = nullptr;
     int p1 = 0;
     if (respCode > esp_mail_smtp_status_code_0)
     {
@@ -3293,19 +3293,19 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
 
         if (p2 < 4 && p2 > -1)
         {
-            tmp = (char *)newP(p2 + 1);
-            memcpy(tmp, &buf[p1], p2);
-            status.respCode = atoi(tmp);
-            delP(&tmp);
+            temp = createBuffer<char *>(p2 + 1);
+            memcpy(temp, &buf[p1], p2);
+            status.respCode = atoi(temp);
+            freeBuffer(&temp);
 
             p1 = p2 + 1;
             p2 = strlen(buf);
             if (p2 > p1)
             {
-                tmp = (char *)newP(p2 + 1);
-                memcpy(tmp, &buf[p1], p2 - p1);
-                status.text = tmp;
-                delP(&tmp);
+                temp = createBuffer<char *>(p2 + 1);
+                memcpy(temp, &buf[p1], p2 - p1);
+                status.text = temp;
+                freeBuffer(&temp);
             }
         }
     }
@@ -3403,22 +3403,22 @@ void ESP_Mail_Client::uploadReport(const char *filename, uint32_t pgAddr, int pr
 
 MB_String ESP_Mail_Client::getMIMEBoundary(size_t len)
 {
-    MB_String tmp = boundary_table;
-    char *buf = (char *)newP(len);
+    MB_String temp = boundary_table;
+    char *buf = createBuffer<char *>(len);
     if (len)
     {
         --len;
-        buf[0] = tmp[0];
-        buf[1] = tmp[1];
+        buf[0] = temp[0];
+        buf[1] = temp[1];
         for (size_t n = 2; n < len; n++)
         {
-            int key = rand() % (int)(tmp.length() - 1);
-            buf[n] = tmp[key];
+            int key = rand() % (int)(temp.length() - 1);
+            buf[n] = temp[key];
         }
         buf[len] = '\0';
     }
     MB_String s = buf;
-    delP(&buf);
+    freeBuffer(&buf);
     return s;
 }
 
@@ -3505,10 +3505,10 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
             chunkSize = data_info.size;
     }
 
-    uint8_t *buf = (uint8_t *)newP(chunkSize);
+    uint8_t *buf = createBuffer<uint8_t *>(chunkSize);
     memset(buf, 0, chunkSize);
 
-    uint8_t *rawChunk = (uint8_t *)newP(base64 ? 3 : 4);
+    uint8_t *rawChunk = createBuffer<uint8_t *>(base64 ? 3 : 4);
 
     if (report)
         uploadReport(data_info.filename, addr, data_info.dataIndex / data_info.size);
@@ -3569,16 +3569,16 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
         {
             memset(buf, 0, chunkSize);
             bufIndex = 0;
-            buf[bufIndex++] = b64_index_table[rawChunk[0] >> 2];
+            buf[bufIndex++] = esp_mail_base64_table[rawChunk[0] >> 2];
             if (read == 1)
             {
-                buf[bufIndex++] = b64_index_table[(rawChunk[0] & 0x03) << 4];
+                buf[bufIndex++] = esp_mail_base64_table[(rawChunk[0] & 0x03) << 4];
                 buf[bufIndex++] = '=';
             }
             else
             {
-                buf[bufIndex++] = b64_index_table[((rawChunk[0] & 0x03) << 4) | (rawChunk[1] >> 4)];
-                buf[bufIndex++] = b64_index_table[(rawChunk[1] & 0x0f) << 2];
+                buf[bufIndex++] = esp_mail_base64_table[((rawChunk[0] & 0x03) << 4) | (rawChunk[1] >> 4)];
+                buf[bufIndex++] = esp_mail_base64_table[(rawChunk[1] & 0x0f) << 2];
             }
             buf[bufIndex++] = '=';
 
@@ -3596,8 +3596,8 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
         uploadReport(data_info.filename, addr, 100);
 
 ex:
-    delP(&buf);
-    delP(&rawChunk);
+    freeBuffer(&buf);
+    freeBuffer(&rawChunk);
 
     if (!ret)
         closeChunk(data_info);
@@ -3610,10 +3610,10 @@ void ESP_Mail_Client::getBuffer(bool base64, uint8_t *out, uint8_t *in, int &enc
     if (base64)
     {
         size = 0;
-        out[bufIndex++] = b64_index_table[in[0] >> 2];
-        out[bufIndex++] = b64_index_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
-        out[bufIndex++] = b64_index_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
-        out[bufIndex++] = b64_index_table[in[2] & 0x3f];
+        out[bufIndex++] = esp_mail_base64_table[in[0] >> 2];
+        out[bufIndex++] = esp_mail_base64_table[((in[0] & 0x03) << 4) | (in[1] >> 4)];
+        out[bufIndex++] = esp_mail_base64_table[((in[1] & 0x0f) << 2) | (in[2] >> 6)];
+        out[bufIndex++] = esp_mail_base64_table[in[2] & 0x3f];
 
         encodedCount += 4;
 

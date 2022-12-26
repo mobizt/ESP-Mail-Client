@@ -131,4 +131,43 @@
  */
 #define ESP_MAIL_USE_SDK_SSL_ENGINE
 
+
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
+// You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of 
+// "ESP_Mail_FS.h" and put your own custom config to overwrite or 
+// change the default config in "ESP_Mail_FS.h".
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
+
+/** This is an example of "Custom_ESP_Mail_FS.h" 
+
+#pragma once
+
+#ifndef Custom_ESP_Mail_FS_H
+#define Custom_ESP_Mail_FS_H
+
+// Use custom client instead of internal client
+#define ENABLE_CUSTOM_CLIENT // define to use custom client
+
+// Use LittleFS instead of SPIFFS
+#include "LittleFS.h"
+#undef DEFAULT_FLASH_FS // remove Flash FS defined macro
+#define DEFAULT_FLASH_FS LittleFS
+
+// Use SD_MMC instead of SD
+#if defined(ESP32)
+#include <SD_MMC.h>
+#undef ESP_MAIL_DEFAULT_SD_FS // remove SD defined macro
+#undef ESP_MAIL_CARD_TYPE_SD_MMC // remove SD defined macro
+#define ESP_MAIL_DEFAULT_SD_FS SD_MMC
+#define ESP_MAIL_CARD_TYPE_SD_MMC 1
+#endif
+
+
+#endif
+
+*/
+#if __has_include("Custom_ESP_Mail_FS.h")
+#include "Custom_ESP_Mail_FS.h"
+#endif
+
 #endif
