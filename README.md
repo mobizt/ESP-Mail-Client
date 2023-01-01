@@ -601,7 +601,7 @@ Can't find what you want from exising IMAP functions, sending custom command was
 
 Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol commands.
 
-See [Custom_Command.ino](/examples/IMAP/Custom_Command/Custom_Command.ino) for the example.
+See [Custom_Command examples](/examples/IMAP/Custom_Command/Custom_Command) for the example.
 
 
 ### Use external Arduino Clients interfaces
@@ -886,7 +886,7 @@ void serup()
 
 The MIT License (MIT)
 
-Copyright (c) 2022 K. Suwatchai (Mobizt)
+Copyright (c) 2023 K. Suwatchai (Mobizt)
 
 
 Permission is hereby granted, free of charge, to any person returning a copy of
