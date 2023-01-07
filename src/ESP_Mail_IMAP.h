@@ -857,9 +857,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             esp_mail_debug_print(s.c_str(), true);
         }
     }
-
+#if defined(MB_MCU_ESP)
 out:
-
+#endif
     if (readCount < imap->_imap_msg_num.size())
     {
         imap->_mbif._availableItems = readCount;
@@ -4582,7 +4582,7 @@ bool IMAPSession::connect(bool &ssl)
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
     if (_debug && !_customCmdResCallback)
         client.setDebugCallback(esp_mail_debug_print);
-#elif (defined(ESP8266) || defined(PICO_RP2040) )&& defined(ESP8266_TCP_CLIENT)
+#elif (defined(ESP8266) || defined(PICO_RP2040)) && defined(ESP8266_TCP_CLIENT)
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
     client.rxBufDivider = 1;
     if (_config)

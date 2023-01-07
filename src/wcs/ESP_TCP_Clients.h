@@ -5,7 +5,10 @@
 #ifndef ESP_TCP_CLIENTS_H
 #define ESP_TCP_CLIENTS_H
 
+#include <Arduino.h>
 #include "./ESP_Mail_FS.h"
+#include "./extras/MB_MCU.h"
+
 
 #ifdef ENABLE_CUSTOM_CLIENT
 #define ESP_MAIL_ENABLE_CUSTOM_CLIENT
