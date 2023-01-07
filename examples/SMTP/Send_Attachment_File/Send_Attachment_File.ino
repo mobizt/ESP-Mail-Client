@@ -18,8 +18,7 @@
  */
 
 #include <Arduino.h>
-
-#if defined(ESP32)
+#if defined(ESP32) || defined(PICO_RP2040)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -145,11 +144,20 @@ void setup()
 
 #else
 
+#if defined(ESP32)
   File file = ESP_MAIL_DEFAULT_SD_FS.open("/orange.png", FILE_WRITE);
+#else
+  File file = ESP_MAIL_DEFAULT_SD_FS.open("/orange.png", "w");
+#endif
   file.print(orangeImg);
   file.close();
 
+#if defined(ESP32)
   file = ESP_MAIL_DEFAULT_SD_FS.open("/bin1.dat", FILE_WRITE);
+#else
+  file = ESP_MAIL_DEFAULT_SD_FS.open("/bin1.dat", "w");
+#endif
+
   buf[0] = 'H';
   buf[1] = 'E';
   buf[2] = 'A';

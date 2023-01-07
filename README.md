@@ -6,11 +6,11 @@
 ![arduino-library-badge](https://www.ardu-badge.com/badge/ESP%20Mail%20Client.svg) ![PlatformIO](https://badges.registry.platformio.org/packages/mobizt/library/ESP%20Mail%20Client.svg)
 
 
-Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
+Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266, SAMD21 and RP2040 Pico devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
 
 This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
 
-The library was tested and works well with ESP32s, ESP8266s, SAMD21s based modules.
+The library was tested and works well with ESP32s, ESP8266s, SAMD21s and RP2040 Pico based modules.
 
 
 This library has built-in WiFi client and aim to be full functionality Email client that can send, read and get Email notification without other indirect Email proxy services needed. 
@@ -22,7 +22,7 @@ External Arduino Client can be used which this allows other devices (with minimu
 
 # Features
 
-* Support Espressif's ESP32 and ESP8266, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
+* Support Espressif's ESP32 and ESP8266, Raspberry Pi's RP2040 Pico, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
 * Support secured (with SSL and TLS or upgrade via STARTTLS) and non-secure ports.
@@ -51,6 +51,7 @@ This following devices are supported.
  * Arduino MKR WiFi 1010
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
+ * RP2040 Pico W
  * LAN8720 Ethernet PHY
  * TLK110 Ethernet PHY
  * IP101 Ethernet PHY
@@ -68,7 +69,7 @@ This following devices are supported.
  * Arduino AVR
  * Teensy 3.1 to 4.1
  * Arduino Nano RP2040 Connect
- * Raspberry Pi Pico 
+ * RP2040 Pi Pico 
 
  ### Gmail SMTP and IMAP required App Passwords to sign in
 
@@ -204,6 +205,26 @@ Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
 
 Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
 
+
+
+
+### RP2040 Arduino SDK installation
+
+For Arduino IDE, the Arduino-Pico SDK can be installed from Boards Manager by searching pico and choose Raspberry Pi Pico/RP2040 to install.
+
+For PlatformIO, the Arduino-Pico SDK can be installed via platformio.ini
+
+```ini
+[env:rpipicow]
+platform = https://github.com/maxgerhardt/platform-raspberrypi.git
+board = rpipicow
+framework = arduino
+board_build.core = earlephilhower
+monitor_speed = 115200
+board_build.filesystem_size = 1m
+```
+
+See this Arduino-Pico SDK [documentation](https://arduino-pico.readthedocs.io/en/latest/) for more information.
 
 
 
@@ -383,6 +404,13 @@ The following code snippet showed the minimum usage of the library.
 The following code will send email with image attachment.
 
 ```C++
+// Include WiFi library
+#include <Arduino.h>
+#if defined(ESP32) || defined(PICO_RP2040)
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#endif
 
 // Include ESP Mail Client library (this library)
 #include <ESP_Mail_Client.h>
@@ -480,6 +508,13 @@ void setup()
 The following code will read the latest email.
 
 ```C++
+// Include WiFi library
+#include <Arduino.h>
+#if defined(ESP32) || defined(PICO_RP2040)
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#endif
 
 // Include ESP Mail Client library (this library)
 #include <ESP_Mail_Client.h>

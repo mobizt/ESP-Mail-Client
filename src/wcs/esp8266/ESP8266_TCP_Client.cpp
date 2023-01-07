@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.1
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.2
  *
- * Created July 24, 2022
+ * Created January 7, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -29,7 +29,8 @@
 #ifndef ESP8266_TCP_Client_CPP
 #define ESP8266_TCP_Client_CPP
 
-#ifdef ESP8266
+#include <Arduino.h>
+#if defined(ESP8266) || defined(PICO_RP2040)
 
 #include "ESP8266_TCP_Client.h"
 
@@ -71,7 +72,7 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
     if (x509)
       delete x509;
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-    x509 = new BearSSL_X509List(caCert);
+    x509 = new X509List(caCert);
 #else
     x509 = new X509List(caCert);
 #endif
@@ -123,7 +124,7 @@ void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
       if (x509)
         delete x509;
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-      x509 = new BearSSL_X509List(der, len);
+      x509 = new X509List(der, len);
 #else
       x509 = new X509List(der, len);
 #endif
@@ -234,7 +235,7 @@ void ESP8266_TCP_Client::networkReconnect()
 #if defined(ENABLE_CUSTOM_CLIENT)
   if (network_connection_cb)
     network_connection_cb();
-#else
+#elif defined(ESP8266)
   WiFi.reconnect();
 #endif
 }

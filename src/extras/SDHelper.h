@@ -3,7 +3,6 @@
 #ifndef SD_HELPER_H_
 #define SD_HELPER_H_
 
-
 #include <Arduino.h>
 #include <ESP_Mail_Client.h>
 
@@ -20,7 +19,6 @@
 #define SPI_MOSI_PIN 15
 #define SPI_CLOCK_IN_MHz 16
 
-
 // #define SPI_CS_PIN 5
 // #define SPI_SCK_PIN 18
 // #define SPI_MISO_PIN 19
@@ -30,6 +28,9 @@
 #elif defined(ESP8266)
 
 #define SPI_CS_PIN 15
+
+#elif defined(PICO_RP2040)
+#define SPI_CS_PIN PIN_SPI1_SS
 
 #elif defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040) || defined(MB_MCU_TEENSY_ARM)
 
@@ -78,7 +79,7 @@ bool SD_Card_Mounting()
     spi.begin(SPI_SCK_PIN, SPI_MISO_PIN, SPI_MOSI_PIN, SPI_CS_PIN); // SPI pins config -> SCK,MISO, MOSI, SS
     if (!MailClient.sdBegin(SPI_CS_PIN, &spi))                      // SS, pointer to SPIClass <- SPIClass object should defined as static or global
 
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(PICO_RP2040)
 
     if (!MailClient.sdBegin(SPI_CS_PIN))
 

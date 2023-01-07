@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v2.0.1
+ * The custom TCP Client Class v2.0.2
  *
- * Created July 24, 2022
+ * Created January 7, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)

@@ -1,9 +1,9 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.0
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.1
  *
- * Created July 20, 2022
- * 
+ * Created January 7, 2023
+ *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
  *
@@ -29,7 +29,8 @@
 #ifndef ESP8266_WCS_CPP
 #define ESP8266_WCS_CPP
 
-#ifdef ESP8266
+#include <Arduino.h>
+#if defined(ESP8266) || defined(PICO_RP2040)
 
 #define LWIP_INTERNAL
 
@@ -67,7 +68,6 @@ void ESP8266_WCS::setClient(Client *client)
 
 int ESP8266_WCS::connect(const char *name, uint16_t port)
 {
-
   prepareBasicClient();
 
   _host = name;

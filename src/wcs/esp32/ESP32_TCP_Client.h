@@ -1,10 +1,10 @@
 /*
- * ESP32 TCP Client Library v2.0.2
+ * ESP32 TCP Client Library v2.0.3
  *
- * Created November 24, 2022
+ * Created January 7, 2023
  *
  * The MIT License (MIT)
- * Copyright (c) 2023 K. Suwatchai (Mobizt)
+ * Copyright (c) 2021 K. Suwatchai (Mobizt)
  *
  *
  * TCPClient Arduino library for ESP32

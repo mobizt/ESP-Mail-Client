@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v2.0.0
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v2.0.1
  *
- * Created July 20, 2022
+ * Created January 7, 2023
  * 
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -29,7 +29,8 @@
 #ifndef ESP8266_WCS_H
 #define ESP8266_WCS_H
 
-#ifdef ESP8266
+#include <Arduino.h>
+#if defined(ESP8266) || defined(PICO_RP2040)
 
 #include <vector>
 #include <WiFiClient.h>
@@ -48,7 +49,7 @@
 #define WCS_USE_BEARSSL
 #endif
 
-#if defined(ESP8266)
+#if defined(ESP8266)|| defined(PICO_RP2040)
 #include <StackThunk.h>
 #endif
 

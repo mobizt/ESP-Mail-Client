@@ -50,7 +50,7 @@
 #endif
 
 // Only SdFat library from Bill Greiman
-#if !defined(ESP32) && !defined(ESP8266) && defined(SD_FAT_VERSION) && defined(SD_FAT_VERSION_STR) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
+#if !defined(ESP32) && !defined(ESP8266) && !defined(PICO_RP2040) && defined(SD_FAT_VERSION) && defined(SD_FAT_VERSION_STR) && defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 #define MBFS_SDFAT_ENABLED
 #ifndef ESP_MAIL_USE_SDFAT
 #define ESP_MAIL_USE_SDFAT
@@ -69,7 +69,7 @@
 #if defined(MBFS_ESP32_SDFAT_ENABLED)
 #define MBFS_SD_FILE SdFile
 #else
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
 #define MBFS_SD_FILE fs::File
 #else
 #define MBFS_SD_FILE File

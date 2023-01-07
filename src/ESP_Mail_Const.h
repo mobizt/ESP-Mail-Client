@@ -1,4 +1,4 @@
-// Created December 26, 2022
+// Created November 26, 2022
 
 #pragma once
 
@@ -2251,14 +2251,18 @@ static const char esp_mail_str_348[] PROGMEM = "Flash Storage is not ready.";
 static const char esp_mail_str_349[] PROGMEM = "SD Storage is not ready.";
 static const char esp_mail_str_350[] PROGMEM = "File is still opened.";
 static const char esp_mail_str_351[] PROGMEM = "File not found.";
+#if defined(PICO_RP2040)
+static const char esp_mail_str_415[] PROGMEM = "Please make sure that the size of flash filesystem is not 0 in Pico.";
+#endif
 #endif
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
-static const unsigned char esp_mail_base64_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 // Print debug message w/wo new line to debug port
-inline void esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
+static void __attribute__((used))
+esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 {
     delay(0);
     if (newLine)

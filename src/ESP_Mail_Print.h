@@ -1,7 +1,7 @@
 #ifndef ESP_MAIL_PRINT_H_
 #define ESP_MAIL_PRINT_H_
 
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
 
 #define UPLOAD_CHUNKS_NUM 12
 #define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf

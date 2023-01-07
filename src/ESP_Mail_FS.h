@@ -46,9 +46,9 @@
  * #define ESP_MAIL_DEFAULT_FLASH_FS FFat  //For ESP32 FAT
  *
  */
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
 
-#if defined(ESP8266)
+#if defined(ESP8266) || defined(PICO_RP2040)
 // Use LittleFS as default flash filesystem for ESP8266
 
 #include <LittleFS.h>
@@ -98,7 +98,7 @@
  * The SdFat (https://github.com/greiman/SdFat) is already implemented as wrapper class in ESP8266 core library.
  * Do not include SdFat.h library in ESP8266 target code which it conflicts with the wrapper one.
  */
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
 #include <SD.h>
 #define ESP_MAIL_DEFAULT_SD_FS SD
 #define ESP_MAIL_CARD_TYPE_SD 1
@@ -123,7 +123,7 @@
 /* 📌 ESP8266 W5100 Ethernet module Enable compilation option */
 // #define ENABLE_ESP8266_W5100_ETH
 
-/** 📌 ESP8266/ESP32 SSL engine for basic Client compilation option
+/** 📌 ESP8266/ESP32/RP2040 SSL engine for basic Client compilation option
  *
  * This macro allows library to use ESP8266 and ESP32 devices with
  * basic Clients (EthernetClient, WiFiClient and GSMClient)
@@ -131,14 +131,13 @@
  */
 #define ESP_MAIL_USE_SDK_SSL_ENGINE
 
-
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
-// You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of 
-// "ESP_Mail_FS.h" and put your own custom config to overwrite or 
+// You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of
+// "ESP_Mail_FS.h" and put your own custom config to overwrite or
 // change the default config in "ESP_Mail_FS.h".
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
 
-/** This is an example of "Custom_ESP_Mail_FS.h" 
+/** This is an example of "Custom_ESP_Mail_FS.h"
 
 #pragma once
 

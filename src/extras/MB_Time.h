@@ -4,7 +4,7 @@
  * Created November 24, 2022
  *
  * The MIT License (MIT)
- * Copyright (c) 2023 K. Suwatchai (Mobizt)
+ * Copyright (c) 2022 K. Suwatchai (Mobizt)
  *
  *
  * Permission is hereby granted, free of charge, to any person returning a copy of
@@ -43,6 +43,10 @@
 
 #include "MB_String.h"
 #include "MB_List.h"
+#if defined(PICO_RP2040)
+#include <WiFi.h>
+#include <WiFiNTP.h>
+#endif
 
 #if defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
 #include "../wcs/samd/lib/WiFiNINA.h"
@@ -85,7 +89,7 @@ public:
   bool setClock(float gmtOffset, float daylightOffset, const char *servers = "pool.ntp.org,time.nist.gov")
   {
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
     TZ = gmtOffset;
     DST_MN = daylightOffset;
@@ -100,7 +104,7 @@ public:
       if (newConfig)
         now += TZ * 3600;
     }
-#elif defined(ESP32) || defined(ESP8266)
+#elif defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
     bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
     if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (now < ESP_TIME_DEFAULT_TS || newConfig))
     {
@@ -117,26 +121,45 @@ public:
       case 1:
 
         _sv1 = tk[0];
+#if defined(PICO_RP2040)
+        NTP.begin(_sv1.c_str());
+#else
         configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str());
+#endif
         break;
       case 2:
 
         _sv1 = tk[0];
         _sv2 = tk[1];
+#if defined(PICO_RP2040)
+        NTP.begin(_sv1.c_str(), _sv2.c_str());
+#else
         configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str());
+#endif
         break;
       case 3:
 
         _sv1 = tk[0];
         _sv2 = tk[1];
         _sv3 = tk[2];
+#if defined(PICO_RP2040)
+        NTP.begin(_sv1.c_str(), _sv2.c_str());
+#else
         configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+#endif
         break;
       default:
-
+#if defined(PICO_RP2040)
+        NTP.begin("pool.ntp.org", "time.nist.gov");
+#else
         configTime((TZ)*3600, (DST_MN)*60, "pool.ntp.org", "time.nist.gov");
+#endif
         break;
       }
+
+#if defined(PICO_RP2040)
+      NTP.waitSet();
+#endif
 
       now = time(nullptr);
       uint64_t tmp = now;
@@ -146,7 +169,7 @@ public:
 
 #if defined(ESP32)
     getLocalTime(&timeinfo);
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(PICO_RP2040)
     localtime_r(&now, &timeinfo);
 #endif
 
@@ -381,7 +404,7 @@ private:
 #if defined(ESP32)
     now = time(nullptr);
     getLocalTime(&timeinfo);
-#elif defined(ESP8266)
+#elif defined(ESP8266) || defined(PICO_RP2040)
     now = time(nullptr);
     localtime_r(&now, &timeinfo);
 #elif (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)

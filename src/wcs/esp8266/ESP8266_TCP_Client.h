@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.1
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.2
  *
- * Created July 24, 2022
+ * Created January 7, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -29,12 +29,14 @@
 #ifndef ESP8266_TCP_Client_H
 #define ESP8266_TCP_Client_H
 
-#ifdef ESP8266
-
 #include <Arduino.h>
-#include <core_version.h>
 #include <time.h>
 #include <string>
+#include <WiFiClient.h>
+#if defined(ESP8266) || defined(PICO_RP2040)
+
+#if defined(ESP8266)
+#include <core_version.h>
 #include "extras/SDK_Version_Common.h"
 
 #ifndef ARDUINO_ESP8266_GIT_VER
@@ -42,7 +44,12 @@
 #endif
 
 #include <ESP8266WiFi.h>
-#include <WiFiClient.h>
+#elif defined(PICO_RP2040)
+#include <WiFi.h>
+#endif
+
+using namespace BearSSL;
+
 #include "ESP8266_WCS.h"
 
 #define ESP8266_TCP_CLIENT
@@ -398,7 +405,7 @@ private:
 
 #if defined(WCS_USE_BEARSSL)
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-  BearSSL_X509List *x509 = nullptr;
+  X509List *x509 = nullptr;
 #else
   X509List *x509 = nullptr;
 #endif

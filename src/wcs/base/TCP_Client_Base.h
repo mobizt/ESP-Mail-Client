@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.1
+ * TCP Client Base class, version 2.0.2
  *
- * Created July 26, 2022
+ * Created January 7, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
