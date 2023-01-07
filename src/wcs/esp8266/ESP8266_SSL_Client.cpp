@@ -655,6 +655,7 @@ namespace BearSSL
 
         for (int no_work = 0; blocking || no_work < 2;)
         {
+            delay(0);
 
 #if defined(ESP8266)
             optimistic_yield(100);
@@ -848,6 +849,7 @@ namespace BearSSL
         _timeout = 15000;
         while (!_handshake_done && _clientConnected())
         {
+            delay(0);
             int ret = _run_until(BR_SSL_SENDAPP);
             if (ret < 0)
             {

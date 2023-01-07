@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 /**
-* Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
  * Created January 7, 2023
  *
@@ -1729,8 +1729,10 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
         {
             e += esp_mail_str_348;
             e += esp_mail_str_34;
+#if defined(PICO_RP2040)
             e += esp_mail_str_185;
             e += esp_mail_str_415;
+#endif
         }
         else if (storageType == esp_mail_file_storage_type_sd)
             e += esp_mail_str_349;
