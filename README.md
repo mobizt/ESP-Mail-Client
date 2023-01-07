@@ -125,6 +125,26 @@ For ESP32, the Core SDK version 2.0.4 or later is recommended.
 
 The ESP32 Core SDK version 1.0.4 and earlier are not supported.
 
+
+### RP2040 Arduino SDK
+
+For Arduino IDE, the Arduino-Pico SDK can be installed from Boards Manager by searching pico and choose Raspberry Pi Pico/RP2040 to install.
+
+For PlatformIO, the Arduino-Pico SDK can be installed via platformio.ini
+
+```ini
+[env:rpipicow]
+platform = https://github.com/maxgerhardt/platform-raspberrypi.git
+board = rpipicow
+framework = arduino
+board_build.core = earlephilhower
+monitor_speed = 115200
+board_build.filesystem_size = 1m
+```
+
+See this Arduino-Pico SDK [documentation](https://arduino-pico.readthedocs.io/en/latest/) for more information.
+
+
 ### SAMD21 custom build firmware
 
 For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) should be installed instead of official Arduino WiFiNINA firmware.
@@ -204,27 +224,6 @@ From Arduino IDE, goto menu **Sketch** -> **Include Library** -> **Add .ZIP Libr
 Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
 
 Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
-
-
-
-
-### RP2040 Arduino SDK installation
-
-For Arduino IDE, the Arduino-Pico SDK can be installed from Boards Manager by searching pico and choose Raspberry Pi Pico/RP2040 to install.
-
-For PlatformIO, the Arduino-Pico SDK can be installed via platformio.ini
-
-```ini
-[env:rpipicow]
-platform = https://github.com/maxgerhardt/platform-raspberrypi.git
-board = rpipicow
-framework = arduino
-board_build.core = earlephilhower
-monitor_speed = 115200
-board_build.filesystem_size = 1m
-```
-
-See this Arduino-Pico SDK [documentation](https://arduino-pico.readthedocs.io/en/latest/) for more information.
 
 
 
