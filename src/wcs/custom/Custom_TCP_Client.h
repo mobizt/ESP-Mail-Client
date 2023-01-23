@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v2.0.2
+ * The custom TCP Client Class v2.0.3
  *
- * Created January 7, 2023
+ * Created January 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -139,13 +139,6 @@ public:
                 esp_mail_debug_print(esp_mail_str_369, true);
         }
 
-        if (!connection_cb)
-        {
-            rdy = false;
-            if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_367, true);
-        }
-
         if (getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
         {
             rdy = false;
@@ -213,11 +206,7 @@ public:
         if (this->connection_cb)
             this->connection_cb(_host.c_str(), _port);
         else
-        {
-            if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_367, true);
-            return false;
-        }
+            wcs->connect(_host.c_str(), _port);
 
         bool res = connected();
 

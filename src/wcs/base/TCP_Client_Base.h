@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.2
+ * TCP Client Base class, version 2.0.3
  *
- * Created January 7, 2023
+ * Created January 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -33,6 +33,7 @@
 #include "ESP_Mail_Const.h"
 #include <IPAddress.h>
 #include <Client.h>
+#include "./extras/MB_Time.h"
 
 #define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
 
@@ -81,40 +82,6 @@ public:
 
     virtual void disconnect(){};
 
-    virtual time_t getTime()
-    {
-        time_t tm = now;
-#if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
-#if defined(MB_MCU_ESP) || defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
-        if (tm < ESP_MAIL_CLIENT_VALID_TS)
-            tm = time(nullptr);
-#else
-        tm += millis() / 1000;
-#endif
-#endif
-        return tm;
-    }
-
-    virtual bool setSystemTime(time_t ts)
-    {
-
-#if defined(ESP8266) || defined(ESP32)
-
-        if (setTimestamp(ts) == 0)
-        {
-            this->now = time(nullptr);
-            return true;
-        }
-
-#else
-        if (ts > ESP_MAIL_CLIENT_VALID_TS)
-            this->now = ts - (millis() / 1000);
-
-#endif
-
-        return false;
-    }
-
     virtual String fwVersion()
     {
         return String();
@@ -161,17 +128,6 @@ public:
     void baseSetCertType(esp_mail_cert_type type) { certType = type; }
 
     void baseSetTimeout(uint32_t timeoutSec) { tmo = timeoutSec * 1000; }
-
-    int setTimestamp(time_t ts)
-    {
-#if defined(ESP32) || defined(ESP8266)
-        struct timeval tm; // sec, us
-        tm.tv_sec = ts;
-        tm.tv_usec = 0;
-        return settimeofday((const struct timeval *)&tm, 0);
-#endif
-        return -1;
-    }
 
     esp_mail_cert_type getCertType() { return certType; }
 

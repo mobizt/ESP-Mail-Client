@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 7, 2023
+ * Created January 23, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -812,7 +812,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                     imap->_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_fetch_body_attachment;
                                     if (!handleIMAPResponse(imap, IMAP_STATUS_IMAP_RESPONSE_FAILED, closeSession))
                                         return false;
-                                    delay(0);
+                                    idle();
                                 }
                             }
                             else
@@ -1476,7 +1476,7 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLe
 
     while (imap->client.available() > 0 && idx < bufLen)
     {
-        delay(0);
+        idle();
 
         ret = imap->client.read();
 
@@ -2419,7 +2419,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
 
     imap->client.setSession(imap->_sesson_cfg);
 
-    bool status = imap->client.networkReady();
+    networkStatus = imap->client.networkReady();
 
     if (dataTime > 0)
     {
@@ -2451,7 +2451,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
         }
     }
 
-    if (!status)
+    if (!networkStatus)
     {
 
         if (imap->_tcpConnected)
@@ -2488,19 +2488,16 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
             else
             {
                 if (MailClient.networkAutoReconnect)
-                {
-                    imap->client.networkDisconnect();
-                    imap->client.networkReconnect();
-                }
+                    MailClient.resumeNetwork(&(imap->client));
             }
 
             _lastReconnectMillis = millis();
         }
 
-        status = imap->client.networkReady();
+        networkStatus = imap->client.networkReady();
     }
 
-    return status;
+    return networkStatus;
 }
 
 // Check if response from basic client is actually TLS alert
@@ -2596,7 +2593,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             return false;
         }
         chunkBufSize = imap->client.available();
-        delay(0);
+        idle();
     }
 
     dataTime = millis();
@@ -2630,7 +2627,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         while (!completedResponse) // looking for operation finishing
         {
-            delay(0);
+            idle();
 
             if (imap->_imap_cmd == esp_mail_imap_cmd_append || (imap->_imap_custom_cmd == esp_mail_imap_cmd_append && imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback))
             {
@@ -3936,7 +3933,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         return true;
     }
 
-    delay(0);
+    idle();
 
     if (octetLength == 0)
         return true;
@@ -3981,7 +3978,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                 int write = olen;
                 if (mbfs->ready(mbfs_type imap->_config->storage.type))
                     write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)decoded, olen);
-                delay(0);
+                idle();
                 delP(&decoded);
 
                 if (write != (int)olen)
@@ -4006,7 +4003,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             if (mbfs->ready(mbfs_type imap->_config->storage.type))
                 write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)buf, bufLen);
 
-            delay(0);
+            idle();
 
             if (write != bufLen)
                 return false;
@@ -4169,7 +4166,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
         }
     }
 
-    delay(0);
+    idle();
 
     if (octetLength == 0)
         return;
@@ -4696,7 +4693,7 @@ bool IMAPSession::connect(bool &ssl)
     unsigned long dataMs = millis();
     while (client.connected() && client.available() == 0 && millis() - dataMs < 2000)
     {
-        delay(0);
+        MailClient.idle();
     }
 
     int chunkBufSize = client.available();
@@ -4876,6 +4873,7 @@ void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)
 void IMAPSession::connectionRequestCallback(ConnectionRequestCallback connectCB)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    ESP_MAIL_PRINTF((const char *)FPSTR("> I: The Connection Request Callback is now optional.\n\n"));
     this->client.connectionRequestCallback(connectCB);
 #endif
 }
@@ -4912,6 +4910,7 @@ void IMAPSession::setNetworkStatus(bool status)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     this->client.setNetworkStatus(status);
+    MailClient.networkStatus = status;
 #endif
 }
 
@@ -5197,7 +5196,7 @@ void IMAPSession::mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCa
 
 void IMAPSession::setSystemTime(time_t ts)
 {
-    this->client.setSystemTime(ts);
+    MailClient.Time.setTimestamp(ts);
 }
 
 void IMAPSession::getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg)

@@ -98,8 +98,8 @@ IMAPSession imap;
 ESP_Mail_Session imap_mail_app_session;
 
 /** Define the IMAP_Config object used for user defined IMAP operating options
- * and contains the IMAP operating result 
-*/
+ * and contains the IMAP operating result
+ */
 IMAP_Config imap_config;
 
 /* Declare the global used SMTPSession object for SMTP transport */
@@ -116,6 +116,10 @@ unsigned long helloSendingMillis = 0;
 
 String sendingSubject = "ESP Mail Hello Test!";
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
+
 void setup()
 {
 
@@ -131,20 +135,38 @@ void setup()
 
     Serial.println();
 
-    Serial.print("Connecting to AP");
-
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(200);
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
     }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
+    Serial.println();
+    Serial.print("Connected with IP: ");
     Serial.println(WiFi.localIP());
     Serial.println();
+
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for Pico W
+    // due to it does not have reconnect feature.
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
     Serial.print("Setup and connect to IMAP server... ");
 
@@ -241,7 +263,7 @@ bool setupReplySMTP()
     reply_smtp_mail_app_session.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
     reply_smtp_mail_app_session.login.user_domain = F("mydomain.net");
 
-     /* Connect to the server */
+    /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_mail_app_session /* session credentials */))
         return false;
 

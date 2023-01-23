@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.2
+ * ESP32 SSL Client v2.0.3
  *
- * Created January 7, 2023
+ * Created January 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -47,7 +47,7 @@
 #error "Please configure IDF framework to include mbedTLS -> Enable pre-shared-key ciphersuites and activate at least one cipher"
 #endif
 
-const char *custom_str = "esp32-tls";
+const char *esp32_ssl_str = "esp32-tls";
 
 static int _esp32_ssl_handle_error(int err, const char *file, int line)
 {
@@ -187,7 +187,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
     log_v("Seeding the random number generator");
     mbedtls_entropy_init(&ssl->entropy_ctx);
 
-    ret = mbedtls_ctr_drbg_seed(&ssl->drbg_ctx, mbedtls_entropy_func, &ssl->entropy_ctx, (const unsigned char *)custom_str, strlen(custom_str));
+    ret = mbedtls_ctr_drbg_seed(&ssl->drbg_ctx, mbedtls_entropy_func, &ssl->entropy_ctx, (const unsigned char *)esp32_ssl_str, strlen(esp32_ssl_str));
     if (ret < 0)
     {
         if (ssl->_debugCallback)

@@ -1,7 +1,7 @@
 /*
- * Time helper class v1.0.1
+ * Time helper class v1.0.2
  *
- * Created November 24, 2022
+ * Created January 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -48,6 +48,9 @@
 #include <WiFiNTP.h>
 #endif
 
+#include <Udp.h>
+#include "MB_NTP.h"
+
 #if defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
 #include "../wcs/samd/lib/WiFiNINA.h"
 #endif
@@ -77,6 +80,20 @@ public:
     _sv3.clear();
   }
 
+  void setUDPClient(UDP *client, float gmtOffset)
+  {
+    this->udp = client;
+    this->gmtOffset = gmtOffset;
+  }
+
+  bool initUDP()
+  {
+    if (!udp)
+      return false;
+
+    return true;
+  }
+
   /** Set the system time from the NTP server
    *
    * @param gmtOffset The GMT time offset in hour.
@@ -88,6 +105,18 @@ public:
    */
   bool setClock(float gmtOffset, float daylightOffset, const char *servers = "pool.ntp.org,time.nist.gov")
   {
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+
+    if (ts_offset == 0)
+    {
+      // Use local gmt offset set from setUDP function instead.
+      if (initUDP())
+        ntp.begin(udp, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, this->gmtOffset * 3600 /* timezone offset in seconds */);
+
+      clockReady();
+    }
+#else
 
 #if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
@@ -103,6 +132,7 @@ public:
       now = ts;
       if (newConfig)
         now += TZ * 3600;
+      ts_offset = now - millis() / 1000;
     }
 #elif defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
     bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
@@ -162,21 +192,22 @@ public:
 #endif
 
       now = time(nullptr);
-      uint64_t tmp = now;
-      tmp = tmp * 1000;
-      msec_time_diff = tmp - millis();
+
+#if defined(PICO_RP2040)
+      if (now > default_ts)
+        ts_offset = now - millis() / 1000;
+#endif
     }
 
 #if defined(ESP32)
     getLocalTime(&timeinfo);
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266)
     localtime_r(&now, &timeinfo);
 #endif
 
 #endif
 
     _clockReady = now > ESP_TIME_DEFAULT_TS;
-
     if (_clockReady)
     {
       _sv1.clear();
@@ -184,11 +215,26 @@ public:
       _sv3.clear();
     }
 
-#else
-    _clockReady = now > ESP_TIME_DEFAULT_TS;
 #endif
 
+#endif
+
+    _clockReady = now > ESP_TIME_DEFAULT_TS;
+
     return _clockReady;
+  }
+
+  int setTimestamp(time_t ts)
+  {
+#if defined(ESP32) || defined(ESP8266)
+    struct timeval tm; // sec, us
+    tm.tv_sec = ts;
+    tm.tv_usec = 0;
+    return settimeofday((const struct timeval *)&tm, 0);
+#else
+    ts_offset = ts - millis() / 1000;
+    return 1;
+#endif
   }
 
   /** Get the timestamp from the year, month, date, hour, minute,
@@ -351,11 +397,18 @@ public:
   /** get the clock ready state */
   bool clockReady()
   {
+    uint32_t ts = ntp.getTime(2000 /* wait 10000 ms */);
+    if (ts > 0)
+      ts_offset = ts - millis() / 1000;
 
-#if !defined(__arm__)
-    now = time(nullptr);
-#endif
+    getTime();
     _clockReady = now > ESP_TIME_DEFAULT_TS;
+
+#if defined(ESP32) || defined(ESP8266)
+    if (time(nullptr) < now)
+      setTimestamp(now);
+#endif
+
     if (_clockReady)
     {
       _sv1.clear();
@@ -366,7 +419,6 @@ public:
   }
 
   time_t now;
-  uint64_t msec_time_diff = 0;
   struct tm timeinfo;
   float TZ = 0.0;
   float DST_MN = 0.0;
@@ -401,24 +453,36 @@ private:
 
   void getTime()
   {
+
+#if defined(ENABLE_CUSTOM_CLIENT) || defined(PICO_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+    now = ts_offset + millis() / 1000;
+#if defined(PICO_RP2040)
+    if (now < time(nullptr))
+      now = time(nullptr);
+    localtime_r(&now, &timeinfo);
+#endif
+#else
+
 #if defined(ESP32)
     now = time(nullptr);
     getLocalTime(&timeinfo);
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266)
     now = time(nullptr);
     localtime_r(&now, &timeinfo);
-#elif (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
-    unsigned long ts = WiFi.getTime();
-    if (ts > 0)
-      now = ts + TZ * 3600;
-    localtime_r(&now, &timeinfo);
+#endif
+
 #endif
   }
 
+  UDP *udp = nullptr;
+  MB_NTP ntp;
+  uint32_t ts_offset = 0;
+  float gmtOffset = 0;
   bool _clockReady = false;
   unsigned long lastSyncMillis = 0;
   // in ESP8266 these NTP sever strings should be existed during configuring time.
   MB_String _sv1, _sv2, _sv3;
+  uint32_t default_ts = 1618971013;
 };
 
 #endif // MB_Time_H

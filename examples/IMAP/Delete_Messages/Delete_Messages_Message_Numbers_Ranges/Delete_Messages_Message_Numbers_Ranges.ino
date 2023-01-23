@@ -71,6 +71,10 @@ void printSelectedMailboxInfo(IMAPSession &imap);
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
+
 void setup()
 {
 
@@ -86,23 +90,38 @@ void setup()
 
     Serial.println();
 
-    Serial.print("Connecting to AP");
-
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(200);
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
     }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
+    Serial.println();
+    Serial.print("Connected with IP: ");
     Serial.println(WiFi.localIP());
     Serial.println();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for Pico W
+    // due to it does not have reconnect feature.
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
     /** Enable the debug via Serial port
      * 0 for no debugging
@@ -139,7 +158,7 @@ void setup()
 
     /* Copy all messages using UIDs ranges (last 10 message numbers) to the folder "test" */
     int msg_last = imap.selectedFolder().msgCount();
-    int  msg_begin = msg_last > 10 ? msg_last - 10 : msg_last;
+    int msg_begin = msg_last > 10 ? msg_last - 10 : msg_last;
 
     String sequence_set1 = String(msg_begin) + ":" + String(msg_last);
 

@@ -98,10 +98,15 @@
  * The SdFat (https://github.com/greiman/SdFat) is already implemented as wrapper class in ESP8266 core library.
  * Do not include SdFat.h library in ESP8266 target code which it conflicts with the wrapper one.
  */
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP32) || defined(ESP8266)
 #include <SD.h>
-#define ESP_MAIL_DEFAULT_SD_FS SD
-#define ESP_MAIL_CARD_TYPE_SD 1
+#define DEFAULT_SD_FS SD
+#define CARD_TYPE_SD 1
+#elif  defined(PICO_RP2040)
+// Use SDFS (ESP8266SdFat) instead of SD
+#include <SDFS.h>
+#define DEFAULT_SD_FS SDFS
+#define CARD_TYPE_SD 1
 #endif
 
 /* 📌 Debug port compilation option */
@@ -118,7 +123,7 @@
  * This macro allows library to use external basic Client and external SSL Client interface.
  * The associated callback functions should be assigned based on port functions.
  */
-// #define ENABLE_CUSTOM_CLIENT
+ // #define ENABLE_CUSTOM_CLIENT
 
 /* 📌 ESP8266 W5100 Ethernet module Enable compilation option */
 // #define ENABLE_ESP8266_W5100_ETH

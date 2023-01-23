@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 7, 2023
+ * Created January 23, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -75,8 +75,20 @@ non_authenticated:
     if (smtp->_debug)
         esp_mail_debug_print(esp_mail_str_239, true);
 
-    // ESMTP (rfc2821) support? send EHLO first
-    MB_String s = esp_mail_str_6;
+    // Extended HELLO (EHLO) or HELLO (HELO) was used to identify Client (ourself)
+
+    // If we (client) are able to process service extensions, let the server know by sending
+    // the ESMTP (rfc5321) EHLO command to identify ourself first
+
+    // If the EHLO command is not acceptable to the SMTP server, 501, 500,
+    // 502, or 550 failure replies MUST be returned as appropriate.
+    // It server accept EHLO, it should response with the extensions it supported.
+
+    MB_String s = esp_mail_str_6; /* "EHLO " "*/
+    // The EHLO/HELO command parameter should be the primary host name (domain name) of client system.
+    // Alternatively client public IP address string (IPv4 or IPv6) can be assign when no host name is available
+    // to prevent connection rejection.
+
     if (smtp->_sesson_cfg->login.user_domain.length() > 0)
         s += smtp->_sesson_cfg->login.user_domain;
     else
@@ -88,7 +100,8 @@ non_authenticated:
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
     {
 
-        // just SMTP (rfc821), send HELO
+        // In case EHLO command is not acceptable,
+        // we would fall back and send SMTP (rfc821) HELO command to identify ourself.
         s = esp_mail_str_5;
         if (smtp->_sesson_cfg->login.user_domain.length() > 0)
             s += smtp->_sesson_cfg->login.user_domain;
@@ -717,8 +730,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         // If there is no 'Date' field assigned, get time from system and construct 'Date' header field.
         if (smtp)
         {
-            smtp->client.setSystemTime(Time.getCurrentTimestamp());
-            ts = smtp->client.getTime();
+            ts = MailClient.Time.getCurrentTimestamp();
             smtp->ts = ts;
         }
         else if (imap)
@@ -726,8 +738,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 #if defined(ENABLE_IMAP)
             if (calDataLen)
             {
-                imap->client.setSystemTime(Time.getCurrentTimestamp());
-                ts = imap->client.getTime();
+                ts = MailClient.Time.getCurrentTimestamp();
                 imap_ts = ts;
             }
             else
@@ -984,17 +995,13 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     {
         time_t now = 0;
         if (smtp)
-        {
-            smtp->client.setSystemTime(Time.getCurrentTimestamp());
-            now = smtp->client.getTime();
-        }
+            now = MailClient.Time.getCurrentTimestamp();
         else if (imap)
         {
 #if defined(ENABLE_IMAP)
             if (calDataLen)
             {
-                imap->client.setSystemTime(Time.getCurrentTimestamp());
-                now = imap->client.getTime();
+                now = MailClient.Time.getCurrentTimestamp();
                 imap_ts = now;
             }
             else
@@ -3124,7 +3131,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             return false;
         }
         chunkBufSize = smtp->client.available();
-        delay(0);
+        idle();
     }
 
     dataTime = millis();
@@ -3133,7 +3140,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     {
         while (!completedResponse)
         {
-            delay(0);
+            idle();
 
             if (!reconnect(smtp, dataTime))
                 return false;
@@ -3176,7 +3183,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                             chunkBufSize = 0;
                             while (chunkBufSize == 0)
                             {
-                                delay(0);
+                                idle();
                                 if (!reconnect(smtp, dataTime))
                                     return false;
                                 chunkBufSize = smtp->client.available();
@@ -3343,7 +3350,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 
     smtp->client.setSession(smtp->_sesson_cfg);
 
-    bool status = smtp->client.networkReady();
+    networkStatus = smtp->client.networkReady();
 
     if (dataTime > 0)
     {
@@ -3355,7 +3362,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
         }
     }
 
-    if (!status)
+    if (!networkStatus)
     {
         if (smtp->_tcpConnected)
             closeTCPSession(smtp);
@@ -3373,19 +3380,16 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
             else
             {
                 if (MailClient.networkAutoReconnect)
-                {
-                    smtp->client.networkDisconnect();
-                    smtp->client.networkReconnect();
-                }
+                    MailClient.resumeNetwork(&(smtp->client));
             }
 
             _lastReconnectMillis = millis();
         }
 
-        status = smtp->client.networkReady();
+        networkStatus = smtp->client.networkReady();
     }
 
-    return status;
+    return networkStatus;
 }
 
 void ESP_Mail_Client::uploadReport(const char *filename, uint32_t pgAddr, int progress)
@@ -4139,7 +4143,7 @@ void SMTPSession::callback(smtpStatusCallback smtpCallback)
 
 void SMTPSession::setSystemTime(time_t ts)
 {
-    this->client.setSystemTime(ts);
+    MailClient.Time.setTimestamp(ts);
 }
 
 void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)
@@ -4155,6 +4159,7 @@ void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)
 void SMTPSession::connectionRequestCallback(ConnectionRequestCallback connectCB)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    ESP_MAIL_PRINTF((const char *)FPSTR("> I: The Connection Request Callback is now optional.\n\n"));
     this->client.connectionRequestCallback(connectCB);
 #endif
 }
@@ -4191,6 +4196,7 @@ void SMTPSession::setNetworkStatus(bool status)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     this->client.setNetworkStatus(status);
+    MailClient.networkStatus = status;
 #endif
 }
 

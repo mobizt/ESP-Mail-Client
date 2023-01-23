@@ -91,12 +91,12 @@ namespace BearSSL
     // Cache for a TLS session with a server
     // Use with BearSSL::WiFiClientSecure::setSession
     // to accelerate the TLS handshake
-    class BearSSL_Session
+    class _BearSSL_Session
     {
         friend class ESP8266_SSL_Client;
 
     public:
-        BearSSL_Session()
+        _BearSSL_Session()
         {
             memset(&_session, 0, sizeof(_session));
         }
@@ -116,20 +116,20 @@ namespace BearSSL
 
     // Cache for the TLS sessions of multiple clients.
     // Use with BearSSL::WiFiServerSecure::setCache
-    class BearSSL_ServerSessions
+    class _BearSSL_ServerSessions
     {
         friend class ESP8266_SSL_Client;
 
     public:
         // Uses the given buffer to cache the given number of sessions and initializes it.
-        BearSSL_ServerSessions(MB_ServerSession *sessions, uint32_t size) : BearSSL_ServerSessions(sessions, size, false) {}
+        _BearSSL_ServerSessions(MB_ServerSession *sessions, uint32_t size) : _BearSSL_ServerSessions(sessions, size, false) {}
 
         // Dynamically allocates a cache for the given number of sessions and initializes it.
         // If the allocation of the buffer wasn't successful, the value
         // returned by size() will be 0.
-        BearSSL_ServerSessions(uint32_t size) : BearSSL_ServerSessions(size > 0 ? new MB_ServerSession[size] : nullptr, size, true) {}
+        _BearSSL_ServerSessions(uint32_t size) : _BearSSL_ServerSessions(size > 0 ? new MB_ServerSession[size] : nullptr, size, true) {}
 
-        ~BearSSL_ServerSessions()
+        ~_BearSSL_ServerSessions()
         {
             if (_isDynamic && _store != nullptr)
             {
@@ -144,7 +144,7 @@ namespace BearSSL
         }
 
     private:
-        BearSSL_ServerSessions(MB_ServerSession *sessions, uint32_t size, bool isDynamic) : _size(sessions != nullptr ? size : 0),
+        _BearSSL_ServerSessions(MB_ServerSession *sessions, uint32_t size, bool isDynamic) : _size(sessions != nullptr ? size : 0),
                                                                                                _store(sessions), _isDynamic(isDynamic)
         {
             if (_size > 0)

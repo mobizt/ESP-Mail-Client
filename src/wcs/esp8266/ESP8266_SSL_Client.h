@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.1
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.2
  *
- * Created January 7, 2023
+ * Created January 20, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -58,6 +58,12 @@
 #if defined(ESP8266) || defined(PICO_RP2040)
 
 #include "ESP_Mail_FS.h"
+
+#if defined(ESP8266)
+#if __has_include(<core_esp8266_version.h>)
+#include <core_esp8266_version.h>
+#endif
+#endif
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE) && !defined(USING_AXTLS)
 
@@ -120,7 +126,7 @@ namespace BearSSL
         int availableForWrite();
 
         // Allow sessions to be saved/restored automatically to a memory area
-        void setSession(BearSSL_Session *session)
+        void setSession(_BearSSL_Session *session)
         {
             _session = session;
         }
@@ -355,7 +361,7 @@ namespace BearSSL
 
         // Optional storage space pointer for session parameters
         // Will be used on connect and updated on close
-        BearSSL_Session *_session;
+        _BearSSL_Session *_session;
 
         bool _use_insecure;
         bool _use_fingerprint;
@@ -390,16 +396,17 @@ namespace BearSSL
 
         // RSA keyed server
         bool _connectSSLServerRSA(const X509List *chain, const PrivateKey *sk,
-                                  BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
+                                  _BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
         // EC keyed server
         bool _connectSSLServerEC(const X509List *chain, unsigned cert_issuer_key_type, const PrivateKey *sk,
-                                 BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
+                                 _BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
 
         // X.509 validators differ from server to client
         bool _installClientX509Validator();                             // Set up X509 validator for a client conn.
         bool _installServerX509Validator(const X509List *client_CA_ta); // Setup X509 client cert validation, if supplied
 
         uint8_t *_streamLoad(Stream &stream, size_t size);
+        void idle();
 
         void setSecure(const char *rootCABuff, const char *cli_cert, const char *cli_key)
         {

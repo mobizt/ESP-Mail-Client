@@ -57,19 +57,19 @@
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
 #include "ESP8266_SSL_Client.h"
-#define WCS_CLASS ESP8266_SSL_Client
-#define WC_CLASS WCS_CLASS
+#define ESP_Mail_WCS_CLASS ESP8266_SSL_Client
+#define ESP_Mail_WC_CLASS ESP_Mail_WCS_CLASS
 #else
 #include <WiFiClientSecure.h>
-#define WCS_CLASS WiFiClientSecureCtx
-#define WC_CLASS WiFiClient
+#define ESP_Mail_WCS_CLASS WiFiClientSecureCtx
+#define ESP_Mail_WC_CLASS WiFiClient
 #endif
 
 #else
 
 #include <WiFiClientSecure.h>
-#define WCS_CLASS WiFiClientSecure
-#define WC_CLASS WiFiClient
+#define ESP_Mail_WCS_CLASS WiFiClientSecure
+#define ESP_Mail_WC_CLASS WiFiClient
 #endif
 
 #include "./wcs/base/TCP_Client_Base.h"
@@ -81,9 +81,9 @@
 #endif
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-class ESP8266_WCS : public WCS_CLASS
+class ESP8266_WCS : public ESP_Mail_WCS_CLASS
 #else
-class ESP8266_WCS : public WCS_CLASS, public TCP_Client_Base
+class ESP8266_WCS : public ESP_Mail_WCS_CLASS, public TCP_Client_Base
 #endif
 {
   friend class ESP8266_TCP_Client;
@@ -195,7 +195,7 @@ public:
    */
   void connectionRequestCallback(_ConnectionRequestCallback connectCB)
   {
-    WCS_CLASS::connectionRequestCallback(connectCB);
+    ESP_Mail_WCS_CLASS::connectionRequestCallback(connectCB);
   }
 
 #endif

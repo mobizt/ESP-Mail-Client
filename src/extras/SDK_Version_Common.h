@@ -1,7 +1,7 @@
 #ifndef _SDK_VERSION_COMMON_H
 #define _SDK_VERSION_COMMON_H
-
-#if defined(ESP8266)
+#include <Arduino.h>
+#if defined(ESP8266) || defined(PICO_RP2040)
 
 #include <string>
 
@@ -38,6 +38,10 @@
 #if __has_include(<W5500lwIP.h>)
 #define INC_W5500_LWIP
 #include <W5500lwIP.h>
+#endif
+
+#if defined(PICO_RP2040)
+
 #endif
 
 #endif

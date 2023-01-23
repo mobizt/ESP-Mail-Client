@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.1
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.2
  *
- * Created January 7, 2023
+ * Created January 20, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -266,6 +266,8 @@ namespace BearSSL
 
         if (connection_cb)
             connection_cb(ip.toString().c_str(), port);
+        else
+            base_client->connect(ip, port);
 
         if (!connected())
             return 0;
@@ -297,6 +299,8 @@ namespace BearSSL
 
         if (connection_cb)
             connection_cb(name, port);
+        else
+            base_client->connect(name, port);
 
         if (!connected())
             return 0;
@@ -655,7 +659,7 @@ namespace BearSSL
 
         for (int no_work = 0; blocking || no_work < 2;)
         {
-            delay(0);
+            idle();
 
 #if defined(ESP8266)
             optimistic_yield(100);
@@ -793,7 +797,7 @@ namespace BearSSL
                         rlen = base_client->read(buf + read, toRead);
                         read += rlen;
                         toRead = len - read;
-                        delay(0);
+                        idle();
 #if defined(ESP8266)
                         if (loopTimeout)
                         {
@@ -849,7 +853,7 @@ namespace BearSSL
         _timeout = 15000;
         while (!_handshake_done && _clientConnected())
         {
-            delay(0);
+            idle();
             int ret = _run_until(BR_SSL_SENDAPP);
             if (ret < 0)
             {
@@ -1080,7 +1084,7 @@ namespace BearSSL
         }
 
         //  Set up the x509 insecure data structures for BearSSL core to use.
-        void mb_bssl_br_x509_insecure_init(br_x509_insecure_context *ctx, int _use_fingerprint, const uint8_t _fingerprint[20], int _allow_self_signed)
+        void _mb_bssl_br_x509_insecure_init(br_x509_insecure_context *ctx, int _use_fingerprint, const uint8_t _fingerprint[20], int _allow_self_signed)
         {
             static const br_x509_class br_x509_insecure_vtable PROGMEM = {
                 sizeof(br_x509_insecure_context),
@@ -1372,7 +1376,7 @@ namespace BearSSL
                 DEBUG_BSSL("_installClientX509Validator: OOM for _x509_insecure\n");
                 return false;
             }
-            mb_bssl_br_x509_insecure_init(_x509_insecure.get(), _use_fingerprint, _fingerprint, _use_self_signed);
+            _mb_bssl_br_x509_insecure_init(_x509_insecure.get(), _use_fingerprint, _fingerprint, _use_self_signed);
             br_ssl_engine_set_x509(_eng, &_x509_insecure->vtable);
         }
         else if (_knownkey)
@@ -1634,7 +1638,7 @@ namespace BearSSL
     }
     // Called by WiFiServerBearSSL when an RSA cert/key is specified.
     bool ESP8266_SSL_Client::_connectSSLServerRSA(const X509List *chain,
-                                                  const PrivateKey *sk, BearSSL_ServerSessions *cache,
+                                                  const PrivateKey *sk, _BearSSL_ServerSessions *cache,
                                                   const X509List *client_CA_ta)
     {
         _freeSSL();
@@ -1684,7 +1688,7 @@ namespace BearSSL
     // Called by WiFiServerBearSSL when an elliptic curve cert/key is specified.
     bool ESP8266_SSL_Client::_connectSSLServerEC(const X509List *chain,
                                                  unsigned cert_issuer_key_type, const PrivateKey *sk,
-                                                 BearSSL_ServerSessions *cache, const X509List *client_CA_ta)
+                                                 _BearSSL_ServerSessions *cache, const X509List *client_CA_ta)
     {
 #ifndef BEARSSL_SSL_BASIC
         _freeSSL();
@@ -1975,6 +1979,15 @@ namespace BearSSL
         }
         dest[size] = '\0';
         return dest;
+    }
+
+    void ESP8266_SSL_Client::idle()
+    {
+#if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
+        esp_yield();
+#else
+        delay(0);
+#endif
     }
 };
 #endif // Internal SSL engine for basic clients

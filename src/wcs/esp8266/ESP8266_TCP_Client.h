@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.2
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.4
  *
- * Created January 7, 2023
+ * Created January 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -261,17 +261,6 @@ public:
   {
     wcs->clockReady = rdy;
   }
-
-  bool setSystemTime(time_t ts)
-  {
-    return wcs->setSystemTime(ts);
-  }
-
-  time_t getTime()
-  {
-    return wcs->getTime();
-  }
-
   esp_mail_cert_type getCertType()
   {
     return wcs->certType;

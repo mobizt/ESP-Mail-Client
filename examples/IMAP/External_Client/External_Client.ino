@@ -110,21 +110,6 @@ void networkStatusRequestCallback()
     imap.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-// Define the callback function to handle server connection
-void connectionRequestCallback(const char *host, int port)
-{
-    // You may need to set the system timestamp in case of custom client
-    imap.setSystemTime(WiFi.getTime());
-
-    Serial.print("> U: Connecting to server via custom Client... ");
-    if (!client.connect(host, port))
-    {
-        Serial.println("failed.");
-        return;
-    }
-    Serial.println("success.");
-}
-
 void setup()
 {
 
@@ -137,8 +122,13 @@ void setup()
 
     Serial.println();
 
-    /*  Set the network reconnection option */
+     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for SAMD21
+    // due to it does not have reconnect feature.
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
 
     networkConnection();
 
@@ -240,8 +230,6 @@ void setup()
     config.limit.attachment_size = 1024 * 1024 * 5;
 
     // Set the callback functions to hadle the required tasks.
-    imap.connectionRequestCallback(connectionRequestCallback);
-
     imap.networkConnectionRequestCallback(networkConnection);
 
     imap.networkStatusRequestCallback(networkStatusRequestCallback);

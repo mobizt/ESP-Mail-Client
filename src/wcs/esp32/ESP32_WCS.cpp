@@ -176,6 +176,8 @@ int ESP32_WCS::_connect(const char *host, uint16_t port)
 #if defined(ENABLE_CUSTOM_CLIENT)
     if (connection_cb)
         connection_cb(host, port);
+    else
+        _ssl->client->connect(host, port);
 #else
     _ssl->client->connect(host, port);
 #endif
@@ -272,7 +274,6 @@ bool ESP32_WCS::connectSSL(bool verify)
 
     if (!_ssl->client || !_ssl->client->connected())
         return false;
-
 
     setVerify(verify);
 

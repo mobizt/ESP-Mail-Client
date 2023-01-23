@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.3
+ * ESP32 TCP Client Library v2.0.4
  *
- * Created January 7, 2023
+ * Created January 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)
@@ -265,16 +265,6 @@ public:
   void setClockReady(bool rdy)
   {
     wcs->clockReady = rdy;
-  }
-
-  bool setSystemTime(time_t ts)
-  {
-    return wcs->setSystemTime(ts);
-  }
-
-  time_t getTime()
-  {
-    return wcs->getTime();
   }
 
   esp_mail_cert_type getCertType()

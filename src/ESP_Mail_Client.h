@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 7, 2023
+ * Created January 23, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -688,10 +688,19 @@ public:
   {
     mbfs = new MB_FS();
   };
+
   ~ESP_Mail_Client()
   {
     if (mbfs)
       delete mbfs;
+
+    wifi.clearAP();
+#if defined(HAS_WIFIMULTI)
+    if (multi)
+      delete multi;
+
+    multi = nullptr;
+#endif
   };
 
 #if defined(ENABLE_SMTP)
@@ -825,6 +834,24 @@ public:
    */
   void networkReconnect(bool reconnect);
 
+  /** Assign UDP client and gmt offset for NTP time synching when using external SSL client
+   * @param client The pointer to UDP client based on the network type.
+   * @param gmtOffset The GMT time offset.
+   */
+  void setUDPClient(UDP *client, float gmtOffset);
+
+  /** Clear all WiFi access points assigned.
+   *
+   */
+  void clearAP();
+
+  /** Add WiFi access point for non-ESP device to resume WiFi connection.
+   *
+   * @param ssid The WiFi SSID.
+   * @param password The WiFi password.
+   */
+  void addAP(const String &ssid, const String &password);
+  
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
   /** Initiate SD card with SPI port configuration.
@@ -918,6 +945,12 @@ private:
   bool _clockReady = false;
   time_t ts = 0;
   bool networkAutoReconnect = true;
+  volatile bool networkStatus = false;
+  esp_mail_wifi_credentials_t wifi;
+
+#if defined(HAS_WIFIMULTI)
+  WiFiMulti *multi = nullptr;
+#endif
 
 #if defined(ENABLE_IMAP)
 #define IMAP_SESSION IMAPSession
@@ -934,6 +967,8 @@ private:
 
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = ESP_MAIL_NETWORK_RECONNECT_TIMEOUT;
+
+  void resumeNetwork(ESP_MAIL_TCP_CLIENT *client);
 
   // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
   int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count);
@@ -1018,6 +1053,7 @@ private:
   // Get operation config based on port and its protocol
   void getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls);
 
+  void idle();
 #endif
 
 #if defined(ENABLE_SMTP)

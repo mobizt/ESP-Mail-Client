@@ -135,19 +135,6 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
 }
 
-// Define the callback function to handle server connection
-void connectionRequestCallback(const char *host, int port)
-{
-
-    Serial.print("> U: Connecting to server via custom Client... ");
-    if (!client.connect(host, port))
-    {
-        Serial.println("failed.");
-        return;
-    }
-    Serial.println("success.");
-}
-
 /*
 // Define the callback function to handle connection upgrade (TLS handshake).
 void connectionUpgradeRequestCallback()
@@ -226,8 +213,6 @@ void sendEmail()
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
     // Set the callback functions to hadle the required tasks.
-    smtp.connectionRequestCallback(connectionRequestCallback);
-
     smtp.networkConnectionRequestCallback(networkConnection);
 
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);

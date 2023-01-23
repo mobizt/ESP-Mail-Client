@@ -1,4 +1,4 @@
-// Created November 26, 2022
+// Created January 23, 2022
 
 #pragma once
 
@@ -17,7 +17,20 @@
 #include <algorithm>
 #endif
 
+#if defined(PICO_RP2040)
+#if __has_include(<WiFiMulti.h>)
+#define HAS_WIFIMULTI
+#endif
+#endif
+
 #include "extras/MB_List.h"
+#include "extras/SDK_Version_Common.h"
+
+#if defined(ESP8266)
+#if __has_include(<core_esp8266_version.h>)
+#include <core_esp8266_version.h>
+#endif
+#endif
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
@@ -1633,14 +1646,16 @@ struct esp_mail_spi_ethernet_module_t
 {
 #if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
 #ifdef INC_ENC28J60_LWIP
-    ENC28J60lwIP *enc28j60;
+    ENC28J60lwIP *enc28j60 = nullptr;
 #endif
 #ifdef INC_W5100_LWIP
-    Wiznet5100lwIP *w5100;
+    Wiznet5100lwIP *w5100 = nullptr;
 #endif
 #ifdef INC_W5500_LWIP
-    Wiznet5500lwIP *w5500;
+    Wiznet5500lwIP *w5500 = nullptr;
 #endif
+#elif defined(PICO_RP2040)
+
 #endif
 };
 
@@ -1769,6 +1784,37 @@ typedef struct esp_mail_imap_msg_item_t IMAP_MSG_Item;
 typedef struct esp_mail_imap_msg_list_t IMAP_MSG_List;
 
 #endif
+
+
+struct esp_mail_wifi_credential_t
+{
+    MB_String ssid;
+    MB_String password;
+};
+
+struct esp_mail_wifi_credentials_t
+{
+    friend class ESP_Mail_Client;
+
+public:
+    esp_mail_wifi_credentials_t(){};
+    ~esp_mail_wifi_credentials_t() { clearAP(); };
+    void addAP(const String &ssid, const String &password)
+    {
+        esp_mail_wifi_credential_t cred;
+        cred.ssid = ssid;
+        cred.password = password;
+        credentials.push_back(cred);
+    }
+    void clearAP()
+    {
+        credentials.clear();
+    }
+
+private:
+    MB_List<esp_mail_wifi_credential_t> credentials;
+};
+
 
 #if defined(ENABLE_SMTP)
 static const char esp_mail_str_1[] PROGMEM = "Content-Type: multipart/mixed; boundary=\"";
@@ -2264,7 +2310,11 @@ static const unsigned char b64_index_table[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcd
 static void __attribute__((used))
 esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 {
+#if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
+    esp_yield();
+#else
     delay(0);
+#endif
     if (newLine)
         ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
     else

@@ -66,6 +66,10 @@ SMTPSession smtp;
 
 WiFiClientSecure client;
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
+
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
@@ -79,18 +83,32 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-// Define the callback function to handle server connection
-void connectionRequestCallback(const char *host, int port)
+void networkConnectionRequestCallback()
 {
+    Serial.println();
 
-    Serial.print("> U: Connecting to server via custom Client... ");
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
-    if (!client.connect(host, port))
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
+    while (WiFi.status() != WL_CONNECTED)
     {
-        Serial.println("failed.");
-        return;
+        Serial.print(".");
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
     }
-    Serial.println("success.");
+    Serial.println();
+    Serial.print("Connected with IP: ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
 }
 
 void setup()
@@ -106,25 +124,17 @@ void setup()
 
 #endif
 
-    Serial.println();
-
-    Serial.print("Connecting to AP");
-
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        Serial.print(".");
-        delay(200);
-    }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println();
+    networkConnectionRequestCallback();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for Pico W
+    // due to it does not have reconnect feature.
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
     /** Enable the debug via Serial port
      * 0 for no debugging
@@ -267,9 +277,9 @@ void setup()
     smtp.setClient(&client, esp_mail_external_client_type_ssl);
 
     // Set the callback functions to hadle the required tasks.
-    smtp.connectionRequestCallback(connectionRequestCallback);
-
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnectionRequestCallback);
 
     /* Connect to the server */
     if (!smtp.connect(&session /* session credentials */))

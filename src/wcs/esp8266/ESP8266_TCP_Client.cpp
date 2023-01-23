@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.2
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.4
  *
- * Created January 7, 2023
+ * Created January 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -176,13 +176,19 @@ bool ESP8266_TCP_Client::ethLinkUp()
     goto ex;
   }
 #endif
+#elif defined(PICO_RP2040)
+
+
+#endif
 
   return ret;
 
+#if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
 ex:
+#endif
+
   // workaround for ESP8266 Ethernet
   delayMicroseconds(0);
-#endif
 
   return ret;
 }
@@ -208,8 +214,14 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
     goto ex;
 #endif
 
+#elif defined(PICO_RP2040)
+
+
+#endif
+
   return;
 
+#if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
 ex:
   WiFiClient client;
   client.connect(wcs->session->server.host_name.c_str(), wcs->session->server.port);
@@ -271,13 +283,6 @@ bool ESP8266_TCP_Client::isInitialized()
     rdy = false;
     if (wcs->debugLevel > 0)
       esp_mail_debug_print(esp_mail_str_369, true);
-  }
-
-  if (!connection_cb)
-  {
-    rdy = false;
-    if (wcs->debugLevel > 0)
-      esp_mail_debug_print(esp_mail_str_367, true);
   }
 
 #if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)

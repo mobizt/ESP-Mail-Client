@@ -98,6 +98,9 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
     initCam();
 
     /** Enable the debug via Serial port

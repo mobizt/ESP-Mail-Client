@@ -60,8 +60,8 @@
 
 typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
 
-#define WCS_CLASS ESP32_SSL_Client
-#define WC_CLASS ESP32_SSL_Client
+#define ESP_Mail_WCS_CLASS ESP32_SSL_Client
+#define ESP_Mail_WC_CLASS ESP32_SSL_Client
 
 #include "./wcs/base/TCP_Client_Base.h"
 
@@ -71,7 +71,7 @@ typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
 #define OVERRIDING
 #endif
 
-class ESP32_WCS : public WCS_CLASS, public TCP_Client_Base
+class ESP32_WCS : public ESP_Mail_WCS_CLASS, public TCP_Client_Base
 {
     friend class ESP32_TCP_Client;
 

@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 7, 2023
+ * Created January 23, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -36,12 +36,66 @@
 #include "ESP_Mail_IMAP.h"
 #include "ESP_Mail_SMTP.h"
 
+void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
+{
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  client->networkReconnect();
+#else
+
+#if defined(ESP32) || defined(ESP8266)
+  WiFi.reconnect();
+#else
+  if (wifi.credentials.size() > 0)
+  {
+#if __has_include(<WiFi.h>) || __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
+    if (!networkStatus)
+    {
+      WiFi.disconnect();
+#if defined(HAS_WIFIMULTI)
+      if (multi)
+        delete multi;
+      multi = nullptr;
+
+      multi = new WiFiMulti();
+      for (size_t i = 0; i < wifi.credentials.size(); i++)
+        multi->addAP(wifi.credentials[i].ssid.c_str(), wifi.credentials[i].password.c_str());
+
+      if (wifi.credentials.size() > 0)
+        multi->run();
+#else
+      WiFi.begin(wifi.credentials[0].ssid.c_str(), wifi.credentials[0].password.c_str());
+#endif
+    }
+#endif
+  }
+
+#endif
+
+#endif
+}
+
 void ESP_Mail_Client::networkReconnect(bool reconnect)
 {
 #if defined(ESP32) || defined(ESP8266)
   WiFi.setAutoReconnect(reconnect);
 #endif
   networkAutoReconnect = reconnect;
+}
+
+void ESP_Mail_Client::setUDPClient(UDP *client, float gmtOffset)
+{
+  Time.setUDPClient(client, gmtOffset);
+}
+
+void ESP_Mail_Client::addAP(const String &ssid, const String &password)
+{
+  wifi.addAP(ssid, password);
+}
+
+void ESP_Mail_Client::clearAP()
+{
+  wifi.clearAP();
 }
 
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
@@ -93,7 +147,7 @@ int ESP_Mail_Client::getFreeHeap()
 #if defined(MB_MCU_ESP)
   return ESP.getFreeHeap();
 #elif defined(PICO_RP2040)
-return rp2040.getFreeHeap();
+  return rp2040.getFreeHeap();
 #else
   return 0;
 #endif
@@ -196,6 +250,15 @@ void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
 #endif
 }
 
+void ESP_Mail_Client::idle()
+{
+#if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
+  esp_yield();
+#else
+  delay(0);
+#endif
+}
+
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait)
 {
 
@@ -205,7 +268,10 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
   if (!_clockReady)
   {
-
+#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    if (!Time.initUDP())
+      ESP_MAIL_PRINTF((const char *)FPSTR("> W: UDP client is required for NTP server time synching based on your network type \ne.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client.\n"));
+#endif
     Time.setClock(gmt_offset, day_light_offset, ntp_server);
 
     if (wait)
@@ -213,7 +279,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
       unsigned long waitMs = millis();
       while (!Time.clockReady() && millis() - waitMs < 10000)
       {
-        delay(0);
+        idle();
       }
     }
   }
@@ -278,7 +344,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
     cmd += esp_mail_str_131;
     cmd += imap->_currentFolder;
   }
-  
+
   cmd += esp_mail_str_131;
 
   if (_flags.length() > 0)
@@ -500,7 +566,7 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
   while (client->connected() && client->available() && idx < bufLen)
   {
 
-    mbfs->feed();
+    idle();
 
     ret = client->read();
     if (ret > -1)
