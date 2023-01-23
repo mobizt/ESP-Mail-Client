@@ -270,7 +270,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
   {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     if (!Time.initUDP())
-      ESP_MAIL_PRINTF((const char *)FPSTR("> W: UDP client is required for NTP server time synching based on your network type \ne.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client.\n"));
+      ESP_MAIL_PRINTF("> W: UDP client is required for NTP server time synching based on your network type \ne.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client.\n");
 #endif
     Time.setClock(gmt_offset, day_light_offset, ntp_server);
 
