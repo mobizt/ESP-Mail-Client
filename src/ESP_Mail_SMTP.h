@@ -4159,7 +4159,7 @@ void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)
 void SMTPSession::connectionRequestCallback(ConnectionRequestCallback connectCB)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
-    ESP_MAIL_PRINTF((const char *)FPSTR("> I: The Connection Request Callback is now optional.\n\n"));
+    ESP_MAIL_PRINTF("> I: The Connection Request Callback is now optional.\n\n");
     this->client.connectionRequestCallback(connectCB);
 #endif
 }
