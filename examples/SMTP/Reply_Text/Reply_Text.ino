@@ -235,6 +235,15 @@ bool setupHelloSMTP()
     hello_smtp_mail_app_session.server.port = HELLO_SMTP_PORT;
     hello_smtp_mail_app_session.login.email = HELLO_SMTP_AUTHOR_EMAIL;
     hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
+
+    /** Assign your host name or you public IPv4 or IPv6 only
+     * as this is the part of EHLO/HELO command that identify the client system
+     * to prevent connection rejection.
+     * If host name or public IP is not available, ignore this or
+     * use generic host "mydomain.net".
+     *
+     * Assign any text to this option may cause the connection rejection.
+     */
     hello_smtp_mail_app_session.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */

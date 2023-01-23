@@ -1611,7 +1611,7 @@ struct esp_mail_sesson_login_config_t
     /* The OAuth2.0 access token to log in */
     MB_String accessToken;
 
-    /* The user domain or ip of client */
+    /* The host name or public IP of client system */
     MB_String user_domain;
 };
 

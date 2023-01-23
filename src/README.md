@@ -2099,7 +2099,7 @@ This property has the sub properties
 
 ##### [consst char *] accessToken - The OAuth2.0 access token to log in.
 
-##### [consst char *] user_domain - The user domain or ip of client.
+##### [consst char *] user_domain - The host name or public IP of client system.
 
 ```cpp
 esp_mail_sesson_login_config_t login;

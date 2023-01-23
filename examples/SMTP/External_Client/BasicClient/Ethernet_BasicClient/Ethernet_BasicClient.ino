@@ -4,7 +4,7 @@
  * This example shows how to send Email using EthernetClient.
  *
  * This example used ESP32 and WIZnet W5500 Ethernet module.
- * 
+ *
  * No SSLClient is required for ESP8266 and ESP32 devices.
  *
  * Created by K. Suwatchai (Mobizt)
@@ -155,7 +155,7 @@ void sendEmail()
             smtp.setSystemTime(timestamp);
     }
 
-     /* Declare the ESP_Mail_Session for user defined session credentials */
+    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
     /* Set the session config */
@@ -163,6 +163,15 @@ void sendEmail()
     session.server.port = SMTP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
+
+    /** Assign your host name or you public IPv4 or IPv6 only
+     * as this is the part of EHLO/HELO command that identify the client system
+     * to prevent connection rejection.
+     * If host name or public IP is not available, ignore this or
+     * use generic host "mydomain.net".
+     *
+     * Assign any text to this option may cause the connection rejection.
+     */
     session.login.user_domain = F("mydomain.net");
 
     /* Declare the message class */
@@ -216,13 +225,13 @@ void sendEmail()
     smtp.networkConnectionRequestCallback(networkConnection);
 
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
-    
+
     // This is not required for ESP8266/ESP32 with external basic client
     // imap.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
-   /* Connect to the server */
-  if (!smtp.connect(&session /* session credentials */))
-    return;
+    /* Connect to the server */
+    if (!smtp.connect(&session /* session credentials */))
+        return;
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
