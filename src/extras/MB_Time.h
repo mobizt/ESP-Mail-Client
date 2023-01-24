@@ -1,7 +1,7 @@
 /*
- * Time helper class v1.0.2
+ * Time helper class v1.0.3
  *
- * Created January 21, 2023
+ * Created January 24, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -28,13 +28,19 @@
 #ifndef MB_Time_H
 #define MB_Time_H
 
+#include <Arduino.h>
+
 #if !defined(__AVR__)
 #include <vector>
 #include <string>
 #endif
 
+#if defined(ESP32) && !defined(ESP_ARDUINO_VERSION) /* ESP32 core < v2.0.x */
+#include <sys/time.h>
+#else
 #include <time.h>
-#include <Arduino.h>
+#endif
+
 #include "./ESP_Mail_FS.h"
 
 #if defined(ESP_MAIL_USE_PSRAM)
