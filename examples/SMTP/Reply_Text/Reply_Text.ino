@@ -16,7 +16,7 @@
 // The account 2 will send Hello message to account 1.
 
 // The account 1 will poll the mailbox for incoming message, when new message received with matched subject
-// and sent from account 1, the account 1 will send a reply messsage to account 2.
+// and sent from account 2, the account 1 will send a reply messsage to account 2.
 
 #include <Arduino.h>
 #if defined(ESP32) || defined(PICO_RP2040)
