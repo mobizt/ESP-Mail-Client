@@ -237,7 +237,7 @@ bool setupHelloSMTP()
     hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
 
     /** Assign your host name or you public IPv4 or IPv6 only
-     * as this is the part of EHLO/HELO command that identify the client system
+     * as this is the part of EHLO/HELO command to identify the client system
      * to prevent connection rejection.
      * If host name or public IP is not available, ignore this or
      * use generic host "mydomain.net".
