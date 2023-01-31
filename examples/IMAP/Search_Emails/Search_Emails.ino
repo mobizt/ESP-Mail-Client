@@ -167,7 +167,7 @@ void setup()
      */
     IMAP_Config config;
 
-    /* Message UID to fetch or read */
+    /* We will clear fetching message UID as it used to determine the reading mode i.e., search and fetch */
     config.fetch.uid.clear();
 
     /** Search criteria
@@ -186,9 +186,15 @@ void setup()
      * For more details on using parentheses, AND, OR and NOT search keys in search criteria.
      * https://www.limilabs.com/blog/imap-search-requires-parentheses
      *
-     *
+     *For keywords used in search criteria, see
+     * https://github.com/mobizt/ESP-Mail-Client/tree/master/src#search-criteria
+     * 
+     * Use "SEARCH UNSEEN" for unread messages search
+     * Use  "SEARCH RECENT" for messages with the \\RECENT flag set
+     * Use "ON _date_" for messages with Date header matching _date_
+     * Use "BEFORE _date_" for messages with Date header before _date_
      */
-    config.search.criteria = F("UID SEARCH ALL");
+    config.search.criteria = F("SEARCH RECENT");
 
     /* Also search the unseen message */
     config.search.unseen_msg = true;
@@ -276,10 +282,13 @@ void setup()
         /*  {Optional} */
         printSelectedMailboxInfo(imap.selectedFolder());
 
-        /* Config to search all messages in the opened mailboax (Search mode) */
-        config.search.criteria = F("UID SEARCH ALL"); // or "UID SEARCH NEW" for recent received messages
+        /** Config to search all messages in the opened mailboax (Search mode)
+         * For keywords used in search criteria, see
+         * https://github.com/mobizt/ESP-Mail-Client/tree/master/src#search-criteria
+         */
+        config.search.criteria = F("SEARCH ALL"); // or "SEARCH NEW" for recent received messages
 
-        /* No message UID provide for fetching */
+        /* We will clear fetching message UID as it used to determine the reading mode i.e., search and fetch */
         config.fetch.uid.clear();
 
         /* Search the Email and close the session */
@@ -369,7 +378,9 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         IMAP_MSG_Item msg = msgItems[i];
 
         Serial.println("****************************");
+        // Message sequence number
         ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
+        // Message UID
         ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
         ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
 

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 26, 2023
+ * Created January 31, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1465,7 +1465,7 @@ void ESP_Mail_Client::imapCB(IMAPSession *imap, PGM_P info, bool prependCRLF, bo
         imap->_readCallback(imap->_cbData);
 }
 
-int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc)
+int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc)
 {
     int ret = -1;
     char c = 0;
@@ -1496,16 +1496,21 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, char *buf, int bufLe
 
             if (chunkIdx == 0)
             {
+                // Search response parsing
                 if (strcmp(buf, key) == 0)
                 {
                     chunkIdx++;
                     return 0;
                 }
-
-                MB_String s = imap->prependTag(esp_mail_str_27, esp_mail_imap_response_1);
-
-                if (strpos(buf, s.c_str(), 0) > -1)
-                    goto end_search;
+                else
+                {
+                    // Status response parsing
+                    imapResp = imapResponseStatus(imap, buf, esp_mail_str_27);
+                    
+                    // Quit if command error or complete with no messages found
+                    if (imapResp != esp_mail_imap_resp_unknown)
+                        goto end_search;
+                }
             }
             else
             {
@@ -2660,7 +2665,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
                 if (imap->_imap_cmd == esp_mail_imap_command::esp_mail_imap_cmd_search)
                 {
-                    readLen = parseSearchResponse(imap, response, chunkBufSize, chunkIdx, esp_mail_str_27, endSearch, scnt, pgm2Str(esp_mail_imap_response_6), pgm2Str(esp_mail_str_92));
+                    readLen = parseSearchResponse(imap, imapResp, response, chunkBufSize, chunkIdx, esp_mail_str_27, endSearch, scnt, pgm2Str(esp_mail_imap_response_6), pgm2Str(esp_mail_str_92));
                     imap->_mbif._availableItems = imap->_imap_msg_num.size();
                 }
                 else

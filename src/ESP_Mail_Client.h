@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 26, 2023
+ * Created January 31, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1319,7 +1319,7 @@ private:
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
 
   // Parse search response
-  int parseSearchResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc);
+  int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc);
 
   // Parse header state
   bool parseHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
@@ -2382,7 +2382,7 @@ static void __attribute__((used)) esp_mail_dump_blob(unsigned char *buf, size_t 
     }
     else if ((u & 7) == 0)
     {
-      Serial.print(" ");
+      ESP_MAIL_PRINTF(" ");
     }
     ESP_MAIL_PRINTF(" %02x", buf[u]);
   }
