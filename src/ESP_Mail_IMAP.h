@@ -1506,8 +1506,8 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, esp_mail_imap_respon
                 {
                     // Status response parsing
                     imapResp = imapResponseStatus(imap, buf, esp_mail_str_27);
-                    
-                    // Quit if command error or complete with no messages found
+
+                    // Exit if error or complete (no messages found)
                     if (imapResp != esp_mail_imap_resp_unknown)
                         goto end_search;
                 }
