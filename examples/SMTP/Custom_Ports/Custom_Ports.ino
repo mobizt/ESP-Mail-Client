@@ -77,8 +77,8 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
+    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -153,7 +153,7 @@ void setup()
 
     /** Set the ports and protocols
      *  This allows non-standard port to work with this library
-     *  The port that assigned with session.server.port will map with the 
+     *  The port that assigned with session.server.port will map with the
      *  protocol assigned here
      */
 

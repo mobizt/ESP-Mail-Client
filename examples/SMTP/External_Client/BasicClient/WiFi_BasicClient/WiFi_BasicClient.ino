@@ -112,14 +112,6 @@ void setup()
 
   Serial.begin(115200);
 
-#if defined(ARDUINO_ARCH_SAMD)
-  while (!Serial)
-    ;
-  Serial.println();
-  Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
-#endif
-
   networkConnectionRequestCallback();
 
   /*  Set the network reconnection option */

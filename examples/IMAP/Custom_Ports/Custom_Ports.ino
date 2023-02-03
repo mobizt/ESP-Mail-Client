@@ -84,8 +84,8 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
+    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -169,7 +169,6 @@ void setup()
      */
     IMAP_Config config;
 
-
     /* Connect to the server */
     if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
@@ -184,7 +183,6 @@ void setup()
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-   
     /* Close the seeion in case the session is still open */
     imap.closeSession();
 
@@ -195,7 +193,6 @@ void setup()
 void loop()
 {
 }
-
 
 void printAllMailboxesInfo(IMAPSession &imap)
 {

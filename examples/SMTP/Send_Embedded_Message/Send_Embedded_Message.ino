@@ -77,8 +77,8 @@ void setup()
   while (!Serial)
     ;
   Serial.println();
-  Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
+  Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
+  Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
   Serial.println();
@@ -135,15 +135,15 @@ void setup()
   session.server.port = SMTP_PORT;
   session.login.email = AUTHOR_EMAIL;
   session.login.password = AUTHOR_PASSWORD;
-  
+
   /** Assign your host name or you public IPv4 or IPv6 only
    * as this is the part of EHLO/HELO command to identify the client system
-   * to prevent connection rejection. 
-   * If host name or public IP is not available, ignore this or 
+   * to prevent connection rejection.
+   * If host name or public IP is not available, ignore this or
    * use generic host "mydomain.net".
-   * 
-   * Assign any text to this option may cause the connection rejection. 
-  */
+   *
+   * Assign any text to this option may cause the connection rejection.
+   */
   session.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */

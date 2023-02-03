@@ -93,8 +93,8 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
+    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -188,7 +188,7 @@ void setup()
      *
      *For keywords used in search criteria, see
      * https://github.com/mobizt/ESP-Mail-Client/tree/master/src#search-criteria
-     * 
+     *
      * Use "SEARCH UNSEEN" for unread messages search
      * Use  "SEARCH RECENT" for messages with the \\RECENT flag set
      * Use "ON _date_" for messages with Date header matching _date_
