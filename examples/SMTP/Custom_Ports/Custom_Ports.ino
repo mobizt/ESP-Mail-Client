@@ -152,11 +152,13 @@ void setup()
     session.time.day_light_offset = 0;
 
     /** Set the ports and protocols
-     *  This allows non-standard port to work with this library.
+     *  This allows non-standard port to work with this library
+     *  The port that assigned with session.server.port will map with the 
+     *  protocol assigned here
      */
 
     session.ports_functions.list = new port_function[4];
-    session.ports_functions.size = 3;
+    session.ports_functions.size = 4;
 
     session.ports_functions.list[0].port = 25;
     session.ports_functions.list[0].protocol = esp_mail_protocol_plain_text;

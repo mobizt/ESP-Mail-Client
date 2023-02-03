@@ -25,9 +25,10 @@ External Arduino Client can be used which this allows other devices (with minimu
 * Support Espressif's ESP32 and ESP8266, Raspberry Pi's RP2040 Pico, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
-* Support secured (with SSL and TLS or upgrade via STARTTLS) and non-secure ports.
-* Support mailbox selection for Email reading and searching (IMAP).
-* Support mailbox changes notification (IMAP).
+* Support standard and user defined ports.
+* Support STARTTLS for both SMTP and IMAP.
+* Support mailbox selection for Email reading and searching.
+* Support mailbox changes notification.
 * Support the content encodings e.g. quoted-printable and base64.
 * Support the content decodings e.g. base64, UTF-8, UTF-7, quoted-printable, ISO-8859-1 (latin1) and ISO-8859-11 (Thai).
 * Support embedded contents e.g. inline images, attachments, parallel media attachments and RFC822 message.
@@ -51,7 +52,7 @@ This following devices are supported.
  * Arduino MKR WiFi 1010
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
- * RP2040 Pico W
+ * Raspberry Pi Pico (RP2040)
  * LAN8720 Ethernet PHY
  * TLK110 Ethernet PHY
  * IP101 Ethernet PHY
@@ -69,7 +70,7 @@ This following devices are supported.
  * Arduino AVR
  * Teensy 3.1 to 4.1
  * Arduino Nano RP2040 Connect
- * RP2040 Pi Pico 
+ * Raspberry Pi Pico 
 
  ### Gmail SMTP and IMAP required App Passwords to sign in
 
@@ -440,10 +441,12 @@ void setup()
 
   // Set the session config
   session.server.host_name = "smtp.office365.com"; // for outlook.com
-  session.server.port = 587;
+  session.server.port = 587; // for TLS with STARTTLS or 25 (Plain/TLS with STARTTLS) or 465 (SSL)
   session.login.email = "your Email address"; // set to empty for no SMTP Authentication
   session.login.password = "your Email password"; // set to empty for no SMTP Authentication
-  session.login.user_domain = "client domain or ip e.g. mydomain.com";
+  
+  // For client identity, assign invalid string can cause server rejection
+  session.login.user_domain = "client domain or public ip only e.g. mydomain.com";  
 
   // Set the NTP config time
   session.time.ntp_server = "pool.ntp.org,time.nist.gov";
@@ -544,7 +547,7 @@ void setup()
 
   // Set the session config
   session.server.host_name = "outlook.office365.com"; //for outlook.com
-  session.server.port = 993;
+  session.server.port = 993; // for SSL or 143 for Plain or TLS with STARTTLS
   session.login.email = "your Email address";
   session.login.password = "your Email password";
 

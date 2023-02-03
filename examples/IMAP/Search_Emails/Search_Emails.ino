@@ -53,10 +53,10 @@
 #define IMAP_HOST "<host>"
 
 /** The imap port e.g.
- * 143  or esp_mail_imap_port_143
+ * 143  or esp_mail_imap_port_143 // Plain or TLS with STARTTLS
  * 993 or esp_mail_imap_port_993
  */
-#define IMAP_PORT 993
+#define IMAP_PORT esp_mail_imap_port_143
 
 /* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
