@@ -659,8 +659,9 @@ public:
 // See https://github.com/espressif/arduino-esp32/issues/7615
 #if defined(MB_FS_USE_POSIX_STAT)
             return mb_fs_ns::exists("/littlefs", filename.c_str());
-#endif
+#else
             return MBFS_FLASH_FS.exists(filename.c_str());
+#endif
         }
 
 #endif
