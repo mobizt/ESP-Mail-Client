@@ -100,13 +100,13 @@
  */
 #if defined(ESP32) || defined(ESP8266)
 #include <SD.h>
-#define DEFAULT_SD_FS SD
-#define CARD_TYPE_SD 1
+#define ESP_MAIL_DEFAULT_SD_FS SD
+#define ESP_MAIL_CARD_TYPE_SD 1
 #elif  defined(PICO_RP2040)
 // Use SDFS (ESP8266SdFat) instead of SD
 #include <SDFS.h>
-#define DEFAULT_SD_FS SDFS
-#define CARD_TYPE_SD 1
+#define ESP_MAIL_DEFAULT_SD_FS SDFS
+#define ESP_MAIL_CARD_TYPE_SD 1
 #endif
 
 /* 📌 Debug port compilation option */
