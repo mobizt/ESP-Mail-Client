@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 31, 2023
+ * Created February 5, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1638,7 +1638,7 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufL
         if (strposP(buf, esp_mail_str_324, 0, caseSensitive) != -1 && buf[0] == '*')
             chunkIdx++;
 
-        tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0);
+        tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0, 0, caseSensitive);
         if (tmp)
         {
             octetCount = 2;
@@ -1711,7 +1711,7 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufL
         if (strcmpP(buf, 0, esp_mail_str_25, caseSensitive))
         {
             headerState = esp_mail_imap_state_content_type;
-            tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, caseSensitive);
+            tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, caseSensitive);
             if (tmp)
             {
                 if (strpos(tmp, esp_mail_imap_multipart_sub_type_t::mixed, 0, caseSensitive) != -1)
@@ -2942,21 +2942,21 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                     p1 += strlen(esp_mail_imap_composite_media_type_t::multipart) + 1;
                     header.multipart = true;
                     // inline or embedded images
-                    if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::related, p1) != -1)
+                    if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::related, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_related;
                     // multiple text formats e.g. plain, html, enriched
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::alternative, p1) != -1)
+                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::alternative, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_alternative;
                     // medias
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::parallel, p1) != -1)
+                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::parallel, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_parallel;
                     // rfc822 encapsulated
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::digest, p1) != -1)
+                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::digest, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_digest;
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::report, p1) != -1)
+                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::report, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_report;
                     // others can be attachments
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::mixed, p1) != -1)
+                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::mixed, p1) != -1)
                         header.multipart_sub_type = esp_mail_imap_multipart_sub_type_mixed;
                 }
 

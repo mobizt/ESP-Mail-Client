@@ -165,7 +165,7 @@ void setup()
    * The library will get (sync) the time from NTP server without GMT time offset adjustment
    * and set the timezone environment variable later.
    *
-   * This timezone environment string will be stored to flash or SD file named "/tz_env.txt"
+   * This timezone environment string will be stored to flash or SD file named "/tze.txt"
    * which set via session.time.timezone_file.
    *
    * See the timezone environment string list from
