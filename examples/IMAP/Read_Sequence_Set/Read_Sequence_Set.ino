@@ -349,8 +349,8 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment may not detect in search because the multipart/mixed
-        // was not found in Content-Type header field.
+        // The attachment status in search may be true in case the "multipart/mixed" 
+        // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))
