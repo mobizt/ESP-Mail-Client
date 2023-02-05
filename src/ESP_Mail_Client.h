@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 31, 2023
+ * Created February 5, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -851,7 +851,7 @@ public:
    * @param password The WiFi password.
    */
   void addAP(const String &ssid, const String &password);
-  
+
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
   /** Initiate SD card with SPI port configuration.
@@ -1295,7 +1295,7 @@ private:
   bool imapAuth(IMAPSession *imap, bool &ssl);
 
   // Send IMAP command
-  bool sendIMAPCommand(IMAPSession *imap, int msgIndex, int cmdCase);
+  bool sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_imap_command cmdCase);
 
   // Send error callback
   void errorStatusCB(IMAPSession *imap, int error);
@@ -2076,6 +2076,10 @@ private:
   int _rfc822_part_count = 0;
   bool _unseen = false;
   bool _readOnlyMode = true;
+  bool _msgDownload = false;
+  bool _attDownload = false;
+  bool _storageReady = false;
+  bool _storageChecked = false;
   struct esp_mail_auth_capability_t _auth_capability;
   struct esp_mail_imap_capability_t _read_capability;
   ESP_Mail_Session *_sesson_cfg;
@@ -2328,6 +2332,10 @@ private:
   smtpStatusCallback _sendCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
   int _commandID = -1;
+  bool _sdStorageReady = false;
+  bool _flashStorageReady = false;
+  bool _sdStorageChecked = false;
+  bool _flashStorageChecked = false;
 
   SMTP_Status _cbData;
   struct esp_mail_smtp_msg_type_t _msgType;

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created January 26, 2023
+ * Created February 5, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1573,8 +1573,18 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
             }
             else
             {
+                if (att->file.storage_type == esp_mail_file_storage_type_sd && !smtp->_sdStorageChecked && !smtp->_sdStorageReady)
+                {
+                    smtp->_sdStorageChecked = true;
+                    smtp->_sdStorageReady = mbfs->sdReady();
+                }
+                else if (att->file.storage_type == esp_mail_file_storage_type_flash && !smtp->_flashStorageChecked && !smtp->_flashStorageReady)
+                {
+                    smtp->_flashStorageChecked = true;
+                    smtp->_flashStorageReady = mbfs->flashReady();
+                }
 
-                if (!mbfs->checkStorageReady(mbfs_type att->file.storage_type))
+                if (!smtp->_flashStorageReady && !smtp->_sdStorageReady)
                 {
                     sendStorageNotReadyError(smtp, att->file.storage_type);
                     continue;
@@ -1832,7 +1842,18 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
                 else
                 {
 
-                    if (!mbfs->checkStorageReady(mbfs_type att->file.storage_type))
+                    if (att->file.storage_type == esp_mail_file_storage_type_sd && !smtp->_sdStorageChecked && !smtp->_sdStorageReady)
+                    {
+                        smtp->_sdStorageChecked = true;
+                        smtp->_sdStorageReady = mbfs->sdReady();
+                    }
+                    else if (att->file.storage_type == esp_mail_file_storage_type_flash && !smtp->_flashStorageChecked && !smtp->_flashStorageReady)
+                    {
+                        smtp->_flashStorageChecked = true;
+                        smtp->_flashStorageReady = mbfs->flashReady();
+                    }
+
+                    if (!smtp->_flashStorageReady && !smtp->_sdStorageReady)
                     {
                         sendStorageNotReadyError(smtp, att->file.storage_type);
                         continue;
