@@ -603,6 +603,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (!imap->_headerOnly)
         {
             imap->_cPartIdx = 0;
+            
+            // Reset attachment state if it was set by "multipart/mixed" content type header
+            cHeader(imap)->hasAttachment = false;
 
             // multipart
             if (cHeader(imap)->multipart)
@@ -649,9 +652,6 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
             if (cHeader(imap)->part_headers.size() > 0)
             {
-
-                if (cHeader(imap)->attachment_count > 0)
-                    cHeader(imap)->hasAttachment = true;
 
                 cHeader(imap)->sd_alias_file_count = 0;
 
@@ -1714,6 +1714,8 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufL
             tmp = subStr(buf, esp_mail_str_25, esp_mail_str_97, 0, 0, caseSensitive);
             if (tmp)
             {
+                // We set attachment status here as attachment should be included in multipart/mixed message,
+                // unless no real attachments included which we don't know until fetching the sub part.
                 if (strpos(tmp, esp_mail_imap_multipart_sub_type_t::mixed, 0, caseSensitive) != -1)
                     header.hasAttachment = true;
 
@@ -3050,12 +3052,15 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 cHeader(imap)->part_headers.push_back(part);
                 cHeader(imap)->message_data_count = cHeader(imap)->part_headers.size();
 
-                if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched || part.msg_type == esp_mail_msg_type_html || part.attach_type == esp_mail_att_type_none || (part.attach_type == esp_mail_att_type_attachment && imap->_config->download.attachment) || (part.attach_type == esp_mail_att_type_inline && imap->_config->download.inlineImg))
+                if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched || part.msg_type == esp_mail_msg_type_html || part.attach_type == esp_mail_att_type_none || part.attach_type == esp_mail_att_type_attachment || part.attach_type == esp_mail_att_type_inline)
                 {
                     if (part.attach_type == esp_mail_att_type_attachment || part.message_sub_type != esp_mail_imap_message_sub_type_rfc822)
                     {
                         if (part.attach_type != esp_mail_att_type_none && cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
+                        {
+                            cHeader(imap)->hasAttachment = true;
                             cHeader(imap)->attachment_count++;
+                        }
                     }
                 }
             }
