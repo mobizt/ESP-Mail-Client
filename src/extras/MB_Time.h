@@ -1,7 +1,7 @@
 /*
- * Time helper class v1.0.3
+ * Time helper class v1.0.4
  *
- * Created January 24, 2023
+ * Created February 9, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -33,6 +33,11 @@
 #if !defined(__AVR__)
 #include <vector>
 #include <string>
+#endif
+
+#if defined(ESP32)
+#include <ETH.h>
+#include <WiFiUdp.h>
 #endif
 
 #if defined(ESP32) && !defined(ESP_ARDUINO_VERSION) /* ESP32 core < v2.0.x */
@@ -84,6 +89,11 @@ public:
     _sv1.clear();
     _sv2.clear();
     _sv3.clear();
+    if (useInternalUDP)
+    {
+      delete udp;
+      udp = nullptr;
+    }
   }
 
   void setUDPClient(UDP *client, float gmtOffset)
@@ -116,11 +126,11 @@ public:
 
     if (ts_offset == 0)
     {
-      // Use local gmt offset set from setUDP function instead.
+      // Use local gmt offset set from setUDPClient function instead.
       if (initUDP())
         ntp.begin(udp, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, this->gmtOffset * 3600 /* timezone offset in seconds */);
 
-      clockReady();
+      clockReady(100);
     }
 #else
 
@@ -149,6 +159,9 @@ public:
 
       MB_VECTOR<MB_String> tk;
       MB_String sv = servers;
+      _sv1.clear();
+      _sv2.clear();
+      _sv3.clear();
 
       splitToken(sv, tk, ',');
 
@@ -160,7 +173,7 @@ public:
 #if defined(PICO_RP2040)
         NTP.begin(_sv1.c_str());
 #else
-        configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str());
+        ntpSetTime();
 #endif
         break;
       case 2:
@@ -170,7 +183,7 @@ public:
 #if defined(PICO_RP2040)
         NTP.begin(_sv1.c_str(), _sv2.c_str());
 #else
-        configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str());
+        ntpSetTime();
 #endif
         break;
       case 3:
@@ -181,14 +194,16 @@ public:
 #if defined(PICO_RP2040)
         NTP.begin(_sv1.c_str(), _sv2.c_str());
 #else
-        configTime((TZ)*3600, (DST_MN)*60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+        ntpSetTime();
 #endif
         break;
       default:
 #if defined(PICO_RP2040)
         NTP.begin("pool.ntp.org", "time.nist.gov");
 #else
-        configTime((TZ)*3600, (DST_MN)*60, "pool.ntp.org", "time.nist.gov");
+        _sv1 = "pool.ntp.org";
+        _sv2 = "time.nist.gov";
+        ntpSetTime();
 #endif
         break;
       }
@@ -200,7 +215,7 @@ public:
       now = time(nullptr);
 
 #if defined(PICO_RP2040)
-      if (now > default_ts)
+      if (now > ESP_TIME_DEFAULT_TS)
         ts_offset = now - millis() / 1000;
 #endif
     }
@@ -228,6 +243,33 @@ public:
     _clockReady = now > ESP_TIME_DEFAULT_TS;
 
     return _clockReady;
+  }
+
+  void ntpSetTime()
+  {
+#if defined(ESP32)
+
+    // Ethernet connected
+    if (strcmp(ETH.localIP().toString().c_str(), (const char *)MBSTRING_FLASH_MCR("0.0.0.0")) != 0)
+    {
+      if (!udp && !useInternalUDP)
+      {
+        udp = new WiFiUDP();
+        useInternalUDP = true;
+      }
+
+      if (udp)
+        ntp.begin(udp, _sv1.c_str() /* NTP host */, 123 /* NTP port */, TZ * 3600 /* timezone offset in seconds */);
+
+      clockReady(100);
+    }
+    // WiFi connected
+    else if (WiFi.status() == WL_CONNECTED)
+      configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+
+#else
+    configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+#endif
   }
 
   int setTimestamp(time_t ts)
@@ -401,13 +443,14 @@ public:
   }
 
   /** get the clock ready state */
-  bool clockReady()
+  bool clockReady(uint32_t wait_ms = 0)
   {
-    uint32_t ts = ntp.getTime(2000 /* wait 10000 ms */);
+    uint32_t ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
     if (ts > 0)
       ts_offset = ts - millis() / 1000;
 
-    getTime();
+    getTime(ts);
+
     _clockReady = now > ESP_TIME_DEFAULT_TS;
 
 #if defined(ESP32) || defined(ESP8266)
@@ -457,7 +500,7 @@ private:
     s.clear();
   }
 
-  void getTime()
+  void getTime(uint32_t ctime = 0)
   {
 
 #if defined(ENABLE_CUSTOM_CLIENT) || defined(PICO_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
@@ -469,18 +512,24 @@ private:
 #endif
 #else
 
-#if defined(ESP32)
-    now = time(nullptr);
-    getLocalTime(&timeinfo);
-#elif defined(ESP8266)
-    now = time(nullptr);
-    localtime_r(&now, &timeinfo);
+#if defined(ESP32) || defined(ESP8266)
+    now = ctime == 0 ? time(nullptr) : ctime;
 #endif
+
+    if (ctime == 0 && time(nullptr) > ESP_TIME_DEFAULT_TS)
+    {
+#if defined(ESP32)
+      getLocalTime(&timeinfo);
+#elif defined(ESP8266)
+      localtime_r(&now, &timeinfo);
+#endif
+    }
 
 #endif
   }
 
   UDP *udp = nullptr;
+  bool useInternalUDP = false;
   MB_NTP ntp;
   uint32_t ts_offset = 0;
   float gmtOffset = 0;
@@ -488,7 +537,6 @@ private:
   unsigned long lastSyncMillis = 0;
   // in ESP8266 these NTP sever strings should be existed during configuring time.
   MB_String _sv1, _sv2, _sv3;
-  uint32_t default_ts = 1618971013;
 };
 
 #endif // MB_Time_H
