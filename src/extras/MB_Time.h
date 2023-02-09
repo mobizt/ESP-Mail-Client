@@ -123,14 +123,12 @@ public:
   {
 
 #if defined(ENABLE_CUSTOM_CLIENT)
-
     if (ts_offset == 0)
     {
       // Use local gmt offset set from setUDPClient function instead.
-      if (initUDP())
-        ntp.begin(udp, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, this->gmtOffset * 3600 /* timezone offset in seconds */);
-
-      clockReady(100);
+      TZ = this->gmtOffset;
+      _sv1 = "pool.ntp.org";
+      ntpSetTime();
     }
 #else
 
@@ -159,94 +157,40 @@ public:
 
       MB_VECTOR<MB_String> tk;
       MB_String sv = servers;
+
       _sv1.clear();
       _sv2.clear();
       _sv3.clear();
 
       splitToken(sv, tk, ',');
 
-      switch (tk.size())
-      {
-      case 1:
-
+      if (tk.size() > 0)
         _sv1 = tk[0];
-#if defined(PICO_RP2040)
-        NTP.begin(_sv1.c_str());
-#else
-        ntpSetTime();
-#endif
-        break;
-      case 2:
-
-        _sv1 = tk[0];
+      if (tk.size() > 1)
         _sv2 = tk[1];
-#if defined(PICO_RP2040)
-        NTP.begin(_sv1.c_str(), _sv2.c_str());
-#else
-        ntpSetTime();
-#endif
-        break;
-      case 3:
-
-        _sv1 = tk[0];
-        _sv2 = tk[1];
+      if (tk.size() > 2)
         _sv3 = tk[2];
-#if defined(PICO_RP2040)
-        NTP.begin(_sv1.c_str(), _sv2.c_str());
-#else
-        ntpSetTime();
-#endif
-        break;
-      default:
-#if defined(PICO_RP2040)
-        NTP.begin("pool.ntp.org", "time.nist.gov");
-#else
-        _sv1 = "pool.ntp.org";
-        _sv2 = "time.nist.gov";
-        ntpSetTime();
-#endif
-        break;
-      }
 
 #if defined(PICO_RP2040)
+      NTP.begin(_sv1.c_str(), _sv2.c_str());
       NTP.waitSet();
-#endif
-
-      now = time(nullptr);
-
-#if defined(PICO_RP2040)
-      if (now > ESP_TIME_DEFAULT_TS)
-        ts_offset = now - millis() / 1000;
+#else
+      ntpSetTime();
 #endif
     }
 
-#if defined(ESP32)
-    getLocalTime(&timeinfo);
-#elif defined(ESP8266)
-    localtime_r(&now, &timeinfo);
 #endif
-
-#endif
-
-    _clockReady = now > ESP_TIME_DEFAULT_TS;
-    if (_clockReady)
-    {
-      _sv1.clear();
-      _sv2.clear();
-      _sv3.clear();
-    }
 
 #endif
 
 #endif
 
-    _clockReady = now > ESP_TIME_DEFAULT_TS;
-
-    return _clockReady;
+    return clockReady(100);
   }
 
   void ntpSetTime()
   {
+
 #if defined(ESP32)
 
     // Ethernet connected
@@ -257,11 +201,6 @@ public:
         udp = new WiFiUDP();
         useInternalUDP = true;
       }
-
-      if (udp)
-        ntp.begin(udp, _sv1.c_str() /* NTP host */, 123 /* NTP port */, TZ * 3600 /* timezone offset in seconds */);
-
-      clockReady(100);
     }
     // WiFi connected
     else if (WiFi.status() == WL_CONNECTED)
@@ -270,6 +209,9 @@ public:
 #elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
 #endif
+
+    if (udp)
+      ntp.begin(udp, _sv1.c_str() /* NTP host */, 123 /* NTP port */, TZ * 3600 /* timezone offset in seconds */);
   }
 
   int setTimestamp(time_t ts)
