@@ -171,12 +171,7 @@ public:
       if (tk.size() > 2)
         _sv3 = tk[2];
 
-#if defined(PICO_RP2040)
-      NTP.begin(_sv1.c_str(), _sv2.c_str());
-      NTP.waitSet();
-#else
       ntpSetTime();
-#endif
     }
 
 #endif
@@ -208,6 +203,9 @@ public:
 
 #elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+#el#if defined(PICO_RP2040)
+      NTP.begin(_sv1.c_str(), _sv2.c_str());
+      NTP.waitSet();
 #endif
 
     if (udp)
