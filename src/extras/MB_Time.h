@@ -267,7 +267,7 @@ public:
     else if (WiFi.status() == WL_CONNECTED)
       configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
 
-#else
+#elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
 #endif
   }
