@@ -91,8 +91,10 @@ public:
     _sv3.clear();
     if (useInternalUDP)
     {
+#if defined(ESP32)
       delete udp;
       udp = nullptr;
+#endif
     }
   }
 
@@ -134,23 +136,16 @@ public:
 
 #if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
-    TZ = gmtOffset;
-    DST_MN = daylightOffset;
-    now = time(nullptr);
 #if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
-    bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
-    unsigned long ts = WiFi.getTime();
-    if (ts > 0)
-    {
 
-      now = ts;
-      if (newConfig)
-        now += TZ * 3600;
-      ts_offset = now - millis() / 1000;
-    }
+    if (TZ != gmtOffset || DST_MN != daylightOffset)
+      configUpdated = true;
+    ntpSetTime();
+
 #elif defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
-    bool newConfig = TZ != gmtOffset || DST_MN != daylightOffset;
-    if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (now < ESP_TIME_DEFAULT_TS || newConfig))
+    now = time(nullptr);
+    bool configChanged = TZ != gmtOffset || DST_MN != daylightOffset;
+    if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (now < ESP_TIME_DEFAULT_TS || configChanged))
     {
 
       lastSyncMillis = millis();
@@ -180,13 +175,22 @@ public:
 
 #endif
 
+    TZ = gmtOffset;
+    DST_MN = daylightOffset;
+
     return clockReady(100);
   }
 
   void ntpSetTime()
   {
 
-#if defined(ESP32)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
+    unsigned long ts = WiFi.getTime();
+    if (ts > 0)
+      now = ts;
+
+#elif defined(ESP32)
 
     // Ethernet connected
     if (strcmp(ETH.localIP().toString().c_str(), (const char *)MBSTRING_FLASH_MCR("0.0.0.0")) != 0)
@@ -204,8 +208,8 @@ public:
 #elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
 #elif defined(PICO_RP2040)
-      NTP.begin(_sv1.c_str(), _sv2.c_str());
-      NTP.waitSet();
+    NTP.begin(_sv1.c_str(), _sv2.c_str());
+    NTP.waitSet();
 #endif
 
     if (udp)
@@ -393,6 +397,13 @@ public:
 
     _clockReady = now > ESP_TIME_DEFAULT_TS;
 
+    if (_clockReady && configUpdated)
+    {
+      now += TZ * 3600;
+      ts_offset = now - millis() / 1000;
+      configUpdated = false;
+    }
+
 #if defined(ESP32) || defined(ESP8266)
     if (time(nullptr) < now)
       setTimestamp(now);
@@ -472,6 +483,7 @@ private:
   bool useInternalUDP = false;
   MB_NTP ntp;
   uint32_t ts_offset = 0;
+  bool configUpdated = false;
   float gmtOffset = 0;
   bool _clockReady = false;
   unsigned long lastSyncMillis = 0;

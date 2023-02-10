@@ -36,6 +36,10 @@
 #include "ESP_Mail_IMAP.h"
 #include "ESP_Mail_SMTP.h"
 
+#if __has_include(<WiFi101.h>)
+#include <WiFi101.h>
+#endif
+
 void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
 {
 
