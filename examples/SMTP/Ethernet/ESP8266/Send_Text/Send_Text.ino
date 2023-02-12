@@ -83,9 +83,13 @@ void sendMail()
 
   /* Assign the pointer to Ethernet module lwip interface */
 #ifdef ESP8266_CORE_SDK_V3_X_X
+#if defined(ENABLE_ESP8266_ENC28J60_ETH)
   session.spi_ethernet_module.enc28j60 = &eth;
-  // session.spi_ethernet_module.w5100 = &eth;
-  // session.spi_ethernet_module.w5500 = &eth;
+#elif defined(ENABLE_ESP8266_W5100_ETH)
+  session.spi_ethernet_module.w5100 = &eth;
+#elif defined(ENABLE_ESP8266_W5500_ETH)
+  session.spi_ethernet_module.w5500 = &eth;
+#endif
 #endif
 
   session.server.host_name = SMTP_HOST;
