@@ -125,7 +125,13 @@
  */
  // #define ENABLE_CUSTOM_CLIENT
 
-/* 📌 ESP8266 W5100 Ethernet module Enable compilation option */
+/* 📌 To use ESP8266 ENC28J60 Ethernet module */
+// #define ENABLE_ESP8266_ENC28J60_ETH
+
+/* 📌 To use ESP8266 W5500 Ethernet module */
+// #define ENABLE_ESP8266_W5500_ETH
+
+/* 📌 To use ESP8266 W5100 Ethernet module */
 // #define ENABLE_ESP8266_W5100_ETH
 
 /** 📌 ESP8266/ESP32/RP2040 SSL engine for basic Client compilation option

@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.4
+ * ESP32 TCP Client Library v2.0.5
  *
- * Created January 21, 2023
+ * Created February 11, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2021 K. Suwatchai (Mobizt)

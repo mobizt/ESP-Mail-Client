@@ -1,9 +1,6 @@
 
-
 /**
- * This example shows how to send Email using EthernetClient.
- *
- * This example used ESP32 and WIZnet W5500 Ethernet module.
+ * This example is for SMTP server connection testing using multiples netwok types and clients.
  *
  * ///////////////////////////////////////////////////////////////
  * Important Information when using the custom or external Client
@@ -164,42 +161,127 @@
  *
  */
 
+// Change the folowing WiFi credentials, TEST_MODE and SSLCLIENT_LIB
+// #################################################################
+#define WIFI_SSID "ssid"
+#define WIFI_PASSWORD "password"
+
+// Test mode
+// 0 - WiFi test
+// 1 - Ethernet test (W5500)
+#define TEST_MODE 0
+
+// SSLClient library used for test
+// 0 - OPEnSLab's fork SSLClient // https://github.com/mobizt/SSLClient
+// 1 - Mobizt's MB_SSLClient // https://github.com/mobizt/ESP_SSLClient
+// 2 - Built-in SSL Engine
+#define SSLCLIENT_LIB 0
+// #################################################################
+
 #include <Arduino.h>
-
 #include <ESP_Mail_Client.h>
-
 #include <Ethernet.h>
 #include <EthernetUdp.h>
+#if SSLCLIENT_LIB == 0
+#include <SSLClient.h>
+#include "trust_anchors.h"
+const int analog_pin = 34;
+#elif SSLCLIENT_LIB == 1
+#include <ESP_SSLClient.h>
+#endif
 
 #define SMTP_HOST "smtp.gmail.com"
-#define SMTP_PORT 587
+#define SMTP_PORT 465
 
+#if TEST_MODE == 0
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
+WiFiUDP udpClient;
+#elif TEST_MODE == 1
 
-#define AUTHOR_EMAIL "<email>"
-#define AUTHOR_PASSWORD "<password>"
-
+#if defined(ESP32)
 #define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
 #define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
 #define WIZNET_MISO_PIN 19  // Connect W5500 MISO pin to GPIO 19 of ESP32
 #define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
 #define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
-
-unsigned long sentMillis = 0;
-
-const int analog_pin = 34;
+#elif defined(ESP8266)
+#define WIZNET_RESET_PIN 5 // Connect W5500 Reset pin to GPIO 5 (D1) of ESP8266
+#define WIZNET_CS_PIN 16   // Connect W5500 CS pin to GPIO 16 (D0) of ESP8266
+#define WIZNET_MISO_PIN 12 // Connect W5500 MISO pin to GPIO 12 (D6) of ESP8266
+#define WIZNET_MOSI_PIN 13 // Connect W5500 MOSI pin to GPIO 13 (D7) of ESP8266
+#define WIZNET_SCLK_PIN 14 // Connect W5500 SCLK pin to GPIO 14 (D5) of ESP8266
+#elif defined(PICO_RP2040)
+#define WIZNET_RESET_PIN 20 // Connect W5500 Reset pin to GPIO 20 of Raspberry Pi Pico
+#define WIZNET_CS_PIN 17    // Connect W5500 CS pin to GPIO 17 of Raspberry Pi Pico
+#define WIZNET_MISO_PIN 16  // Connect W5500 MISO pin to GPIO 16 of Raspberry Pi Pico
+#define WIZNET_MOSI_PIN 19  // Connect W5500 MOSI pin to GPIO 19 of Raspberry Pi Pico
+#define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of Raspberry Pi Pico
+#endif
 
 uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
+IPAddress Eth_IP(192, 168, 1, 104);
 
-SMTPSession smtp;
+EthernetUDP udpClient;
+#endif
 
+#if TEST_MODE == 0
+WiFiClient basic_client;
+#elif TEST_MODE == 1
 EthernetClient basic_client;
-EthernetUDP udp_client;
+#endif
+
+#if SSLCLIENT_LIB == 0
+SSLClient ssl_client(basic_client, TAs, (size_t)TAs_NUM, analog_pin);
+#elif SSLCLIENT_LIB == 1
+ESP_SSLClient ssl_client;
+#endif
+
+#if SSLCLIENT_LIB < 2
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl);
+#define WORK_CLIENT ssl_client
+#else
+SMTPSession smtp(&basic_client, esp_mail_external_client_type_basic);
+#define WORK_CLIENT basic_client
+#endif
 
 void smtpCallback(SMTP_Status status);
 
-void ResetEthernet()
+void networkConnection()
 {
-    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
+
+#if TEST_MODE == 0
+
+    Serial.print("> I: Connecting to AP");
+
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
+    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+    Serial.print("Connecting to Wi-Fi");
+    unsigned long ms = millis();
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        Serial.print(".");
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
+    }
+    Serial.println();
+    Serial.print("> I: Connected with IP ");
+    Serial.println(WiFi.localIP());
+    Serial.println();
+
+#elif TEST_MODE == 1
+
+    Ethernet.init(WIZNET_CS_PIN);
+    Serial.println("> I: Resetting Ethernet...  ");
     pinMode(WIZNET_RESET_PIN, OUTPUT);
     digitalWrite(WIZNET_RESET_PIN, HIGH);
     delay(200);
@@ -207,17 +289,9 @@ void ResetEthernet()
     delay(50);
     digitalWrite(WIZNET_RESET_PIN, HIGH);
     delay(200);
-}
 
-void networkConnection()
-{
-
-    Ethernet.init(WIZNET_CS_PIN);
-
-    ResetEthernet();
-
-    Serial.println("Starting Ethernet connection...");
-    Ethernet.begin(Eth_MAC);
+    Serial.println("> I: Starting Ethernet connection...");
+    Ethernet.begin(Eth_MAC, Eth_IP);
 
     unsigned long to = millis();
 
@@ -228,107 +302,123 @@ void networkConnection()
 
     if (Ethernet.linkStatus() == LinkON)
     {
-        Serial.print("Connected with IP ");
+        Serial.print("> I: Connected with IP ");
         Serial.println(Ethernet.localIP());
     }
-    else
-    {
-        Serial.println("Can't connect");
-    }
+
+#endif
 }
 
 void networkStatusRequestCallback()
 {
-    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
+    smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED || Ethernet.linkStatus() == LinkON);
 }
 
-void sendEmail()
+void connectionRequestCallback(const char *host, int port)
 {
-
-    ESP_Mail_Session session;
-
-    session.server.host_name = SMTP_HOST;
-    session.server.port = SMTP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
-
-    session.login.user_domain = F("mydomain.net");
-
-    SMTP_Message message;
-
-    message.sender.name = F("ESP Mail");
-    message.sender.email = AUTHOR_EMAIL;
-    message.subject = F("Test sending plain text Email");
-
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
-
-    String textMsg = "This is simple plain text message";
-    message.text.content = "hiiiiii";
-
-    smtp.setClient(&basic_client, esp_mail_external_client_type_basic);
-
-    smtp.networkConnectionRequestCallback(networkConnection);
-    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
-
-    if (!smtp.connect(&session))
+    Serial.print("> U: Connecting to server via custom Client... ");
+    if (!WORK_CLIENT.connect(host, port))
+    {
+        Serial.println("failed.");
         return;
+    }
+    Serial.println("success.");
+}
 
-    if (!MailClient.sendMail(&smtp, &message))
-        Serial.println("Error sending Email, " + smtp.errorReason());
-
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+void connectionUpgradeRequestCallback()
+{
+    Serial.println("> U: Upgrad the connection...");
+#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
+    WORK_CLIENT.connectSSL(SMTP_HOST, SMTP_PORT);
+#endif
 }
 
 void setup()
 {
 
+    ESP_Mail_Session session;
+
     Serial.begin(115200);
+
+    delay(5000);
 
     Serial.println();
 
+#if SSLCLIENT_LIB == 0
+    Serial.print("> I: Test started using OPEnSLab's SSL Client and ");
+#elif SSLCLIENT_LIB == 1
+    Serial.print("> I: Test started using Mobizt's ESP_SSLClient and ");
+#elif SSLCLIENT_LIB == 2
+    Serial.print("> I: Test started using Built-in SSL Engine and ");
+#endif
+
+#if TEST_MODE == 0
+    Serial.println("WiFiClient\n");
+#elif TEST_MODE == 1
+    Serial.println("EthernetClient\n");
+#endif
+
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    Serial.println("> E: ENABLE_CUSTOM_CLIENT Macro is required.\n> I: Please add #define ENABLE_CUSTOM_CLIENT in src/ESP_Mail_FS.h");
+    goto exit;
+#endif
+
+#if defined(ESP8266) && SSLCLIENT_LIB == 0
+    Serial.println("> E: OPEnSLab's SSL Client cannot use with ESP8266");
+    goto exit;
+#endif
+
     networkConnection();
 
-    // For internal NTP client
-    MailClient.setUDPClient(&udp_client, 0 /* GMT offset */);
+    if (WiFi.status() != WL_CONNECTED && Ethernet.linkStatus() != LinkON)
+    {
+        Serial.println("> E: network connection failed.");
+        goto exit;
+    }
+
+#if SSLCLIENT_LIB == 1
+    WORK_CLIENT.setClient(&basic_client);
+    WORK_CLIENT.setInsecure();
+#endif
+
+    MailClient.networkReconnect(true);
+
+    MailClient.setUDPClient(&udpClient, 0);
 
     smtp.debug(1);
 
     smtp.callback(smtpCallback);
+
+    session.server.host_name = SMTP_HOST;
+    session.server.port = SMTP_PORT;
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+
+    smtp.connectionRequestCallback(connectionRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnection);
+
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
+#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
+    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+#endif
+
+    smtp.connect(&session);
+
+    smtp.closeSession();
+
+    WORK_CLIENT.stop();
+
+exit:
+
+    Serial.println("\n> I: Test done!");
 }
 
 void loop()
 {
-    if (millis() - sentMillis > 120000 || sentMillis == 0)
-    {
-        sentMillis = millis();
-        sendEmail();
-    }
 }
 
 void smtpCallback(SMTP_Status status)
 {
     Serial.println(status.info());
-
-    if (status.success())
-    {
-        Serial.println("----------------");
-        ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
-        Serial.println("----------------\n");
-
-        for (size_t i = 0; i < smtp.sendingResult.size(); i++)
-        {
-            SMTP_Result result = smtp.sendingResult.getItem(i);
-
-            time_t ts = (time_t)result.timestamp;
-
-            ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
-            ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", asctime(localtime(&ts)));
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
-        }
-        Serial.println("----------------\n");
-        smtp.sendingResult.clear();
-    }
 }

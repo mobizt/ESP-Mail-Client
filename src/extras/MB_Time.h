@@ -136,18 +136,17 @@ public:
 
 #if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
+if (TZ != gmtOffset || DST_MN != daylightOffset)
+      configUpdated = true;
+
 #if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
-    if (TZ != gmtOffset || DST_MN != daylightOffset)
-      configUpdated = true;
-    ntpSetTime();
 
 #elif defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
-    now = time(nullptr);
-    bool configChanged = TZ != gmtOffset || DST_MN != daylightOffset;
-    if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (now < ESP_TIME_DEFAULT_TS || configChanged))
+    sys_ts = time(nullptr);
+    if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (sys_ts < ESP_TIME_DEFAULT_TS || configUpdated))
     {
-
+      
       lastSyncMillis = millis();
 
       MB_VECTOR<MB_String> tk;
@@ -184,13 +183,7 @@ public:
   void ntpSetTime()
   {
 
-#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
-
-    unsigned long ts = WiFi.getTime();
-    if (ts > 0)
-      now = ts;
-
-#elif defined(ESP32)
+#if defined(ESP32)
 
     // Ethernet connected
     if (strcmp(ETH.localIP().toString().c_str(), (const char *)MBSTRING_FLASH_MCR("0.0.0.0")) != 0)
@@ -325,7 +318,7 @@ public:
   uint64_t getCurrentTimestamp()
   {
     getTime();
-    return now;
+    return sys_ts;
   }
 
   /** Get the current date time string that valid for Email.
@@ -395,18 +388,20 @@ public:
 
     getTime(ts);
 
-    _clockReady = now > ESP_TIME_DEFAULT_TS;
-
+    _clockReady = sys_ts > ESP_TIME_DEFAULT_TS;
+    
+    // Update system timestamp and its offset when time/timezone changed.
     if (_clockReady && configUpdated)
     {
-      now += TZ * 3600;
-      ts_offset = now - millis() / 1000;
+      sys_ts += TZ * 3600;
+      ts_offset = sys_ts - millis() / 1000;
       configUpdated = false;
     }
 
 #if defined(ESP32) || defined(ESP8266)
-    if (time(nullptr) < now)
-      setTimestamp(now);
+    // If system timestamp was set, update the device time
+    if (sys_ts > ESP_TIME_DEFAULT_TS && time(nullptr) < sys_ts)
+      setTimestamp(sys_ts);
 #endif
 
     if (_clockReady)
@@ -417,8 +412,9 @@ public:
     }
     return _clockReady;
   }
-
-  time_t now;
+  // The library's internal timestamp which can be assigned via
+  // many methods e.g., device local time, NTP and manually set.
+  time_t sys_ts = 0;
   struct tm timeinfo;
   float TZ = 0.0;
   float DST_MN = 0.0;
@@ -454,17 +450,27 @@ private:
   void getTime(uint32_t ctime = 0)
   {
 
-#if defined(ENABLE_CUSTOM_CLIENT) || defined(PICO_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__)) || defined(ARDUINO_NANO_RP2040_CONNECT)
-    now = ts_offset + millis() / 1000;
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+
+    unsigned long ts = WiFi.getTime();
+    if (ts > 0)
+      sys_ts = ts;
+
+#else
+
+#if defined(ENABLE_CUSTOM_CLIENT) || defined(PICO_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__))
+    // set sys time using the offset since the time was manually set via setTimestamp function and current seconds count
+    sys_ts = ts_offset + millis() / 1000;
 #if defined(PICO_RP2040)
-    if (now < time(nullptr))
-      now = time(nullptr);
-    localtime_r(&now, &timeinfo);
+    // set sys time using device timestamp
+    if (sys_ts < time(nullptr))
+      sys_ts = time(nullptr);
+    localtime_r(&sys_ts, &timeinfo);
 #endif
 #else
 
 #if defined(ESP32) || defined(ESP8266)
-    now = ctime == 0 ? time(nullptr) : ctime;
+    sys_ts = ctime == 0 ? time(nullptr) : ctime;
 #endif
 
     if (ctime == 0 && time(nullptr) > ESP_TIME_DEFAULT_TS)
@@ -472,9 +478,11 @@ private:
 #if defined(ESP32)
       getLocalTime(&timeinfo);
 #elif defined(ESP8266)
-      localtime_r(&now, &timeinfo);
+      localtime_r(&sys_ts, &timeinfo);
 #endif
     }
+
+#endif
 
 #endif
   }

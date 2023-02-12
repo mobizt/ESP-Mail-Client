@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 5, 2023
+ * Created February 11, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -3544,7 +3544,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
     memset(buf, 0, chunkSize);
 
     uint8_t *rawChunk = (uint8_t *)newP(base64 ? 3 : 4);
-
+    
     if (report)
         uploadReport(data_info.filename, addr, data_info.dataIndex / data_info.size);
 
@@ -4120,31 +4120,35 @@ bool SMTPSession::closeSession()
 
     bool ret = true;
 
+    if (_sentSuccessCount || _sentFailedCount)
+    {
+
 /* Sign out */
 #if !defined(ESP8266)
 
-    // QUIT command asks SMTP server to close the TCP session.
-    // The connection may drop immediately.
+        // QUIT command asks SMTP server to close the TCP session.
+        // The connection may drop immediately.
 
-    // There is memory leaks bug in ESP8266 BearSSLWiFiClientSecure class when the remote server
-    // drops the connection.
+        // There is memory leaks bug in ESP8266 BearSSLWiFiClientSecure class when the remote server
+        // drops the connection.
 
-    ret = MailClient.smtpSend(this, esp_mail_str_7, true) > 0;
+        ret = MailClient.smtpSend(this, esp_mail_str_7, true) > 0;
 
-    // This may return false due to connection drops before get any response.
-    MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
+        // This may return false due to connection drops before get any response.
+        MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
 #endif
 
-    if (ret)
-    {
-        if (_sendCallback)
-            MailClient.smtpCB(this, esp_mail_str_129, true, false);
+        if (ret)
+        {
+            if (_sendCallback && _sentSuccessCount > 0)
+                MailClient.smtpCB(this, esp_mail_str_129, true, false);
 
-        if (_debug && !_customCmdResCallback)
-            esp_mail_debug_print(esp_mail_str_246, true);
+            if (_debug && !_customCmdResCallback && _sentSuccessCount > 0)
+                esp_mail_debug_print(esp_mail_str_246, true);
 
-        if (_sendCallback)
-            MailClient.smtpCB(this, "", false, true);
+            if (_sendCallback)
+                MailClient.smtpCB(this, "", false, true);
+        }
     }
 
     return MailClient.handleSMTPError(this, 0, ret);

@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v2.0.3
+ * The custom TCP Client Class v2.0.4
  *
- * Created January 21, 2023
+ * Created February 11, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -132,18 +132,25 @@ public:
     {
         bool rdy = wcs != nullptr;
 
-        if (!network_connection_cb)
-        {
-            rdy = false;
-            if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_369, true);
-        }
+        bool upgradeRequired = false;
 
         if (getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
+            upgradeRequired = true;
+
+        if (!network_connection_cb || !network_status_cb || upgradeRequired)
         {
             rdy = false;
             if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_368, true);
+            {
+                if (!network_connection_cb)
+                    esp_mail_debug_print(esp_mail_str_369, true);
+
+                if (!network_status_cb)
+                    esp_mail_debug_print(esp_mail_str_370, true);
+
+                if (upgradeRequired)
+                    esp_mail_debug_print(esp_mail_str_368, true);
+            }
         }
 
         return rdy;
@@ -234,13 +241,17 @@ public:
 
         tls_required = true;
 
-        if (connection_upgrade_cb)
-            connection_upgrade_cb();
-        else
+        if (getProtocol(_port) == (int)esp_mail_protocol_tls)
         {
-            if (debugLevel > 0)
-                esp_mail_debug_print(esp_mail_str_368, true);
-            return false;
+            if (connection_upgrade_cb)
+                connection_upgrade_cb();
+            else
+            {
+                if (debugLevel > 0)
+                    esp_mail_debug_print(esp_mail_str_368, true);
+
+                return false;
+            }
         }
 
         bool res = connected();

@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.4
+ * ESP32 TCP Client Library v2.0.5
  *
- * Created January 21, 2023
+ * Created February 11, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -200,7 +200,11 @@ String ESP32_TCP_Client::fwVersion()
 
 esp_mail_client_type ESP32_TCP_Client::type()
 {
+#if defined(ENABLE_CUSTOM_CLIENT)
+    return esp_mail_client_type_custom;
+#else
     return esp_mail_client_type_internal;
+#endif
 }
 
 bool ESP32_TCP_Client::isInitialized()
@@ -209,30 +213,28 @@ bool ESP32_TCP_Client::isInitialized()
 
     bool rdy = wcs != nullptr;
 
-    if (!network_connection_cb)
-    {
-        rdy = false;
-        if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_369, true);
-    }
-
-    if (!connection_cb)
-    {
-        rdy = false;
-        if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_367, true);
-    }
+    bool upgradeRequired = false;
 
 #if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-
     if (wcs->getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
+        upgradeRequired = true;
+#endif
+
+    if (!network_connection_cb || !network_status_cb || upgradeRequired)
     {
         rdy = false;
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_368, true);
-    }
+        {
+            if (!network_connection_cb)
+                esp_mail_debug_print(esp_mail_str_369, true);
 
-#endif
+            if (!network_status_cb)
+                esp_mail_debug_print(esp_mail_str_370, true);
+
+            if (upgradeRequired)
+                esp_mail_debug_print(esp_mail_str_368, true);
+        }
+    }
 
     return rdy;
 #else

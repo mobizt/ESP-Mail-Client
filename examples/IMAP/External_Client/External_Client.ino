@@ -1,7 +1,158 @@
 /**
- * This example shows how to read Email using WiFiSSLClient.
+ * This example shows how to read Email using WiFiSSLClient SSL client.
  *
- * This example works only for SSL port (993) because we use normal SSLClient (WiFiSSLClient) to connect.
+ * This example used SAMD21 device and WiFiNINA as the client.
+ *
+ * ///////////////////////////////////////////////////////////////
+ * Important Information when using the custom or external Client
+ * ///////////////////////////////////////////////////////////////
+ * 
+ * 1. The custom or external Client that works with network interface module
+ * e.g. WiFiClient, EthernetClient and GSMClient can be used with this library.
+ * 
+ * To let the library knows that external client was used, user needs to define 
+ * "ENABLE_CUSTOM_CLIENT" macro in file "src/ESP_Mail_FS.h" or 
+ * "src/Custom_ESP_Mail_FS.h" like the following
+ * 
+ * #define ENABLE_CUSTOM_CLIENT
+ * 
+ * 2. The two or three callback functions required to allow library to
+ * check the network status and resume or reconnect the network interface module
+ * and upgrade the connection mode from non-secure to secure connection or perform
+ * SSL/TLS handshake.
+ * 
+ * The purposes of callback functions are following
+ * 2.1 networkConnectionRequestCallback is for resume or reconnect the network.
+ * User needs to place the code to reset or disconnect and re-connect the network here.
+ * The methods that used to assign the callback are
+ * 
+ * smtp.networkConnectionRequestCallback(<callback function>);
+ * imap.networkConnectionRequestCallback(<callback function>);
+ * 
+ * 2.2 networkStatusRequestCallback is for library to check the network status.
+ * User needs to place the code to set back the network status via method smtp.setNetworkStatus(<bool>);
+ * and imap.setNetworkStatus(<bool>);
+ * 
+ * The methods that used to assign the callback are
+ * 
+ * smtp.networkStatusRequestCallback(<callback function>);
+ * imap.networkStatusRequestCallback(<callback function>);
+ * 
+ * 2.3 connectionUpgradeRequestCallback is for upgrade the server connection from pain text mode (non-secure) 
+ * to SSL mode. This callback function should perform SSL/TLS handshake which will be required when the STARTTLS
+ * command request was accepted.
+ * User needs to place the code that tells the external Client to perform SSL/TLS handshake.
+ * 
+ * The methods that used to assign the callback are
+ * 
+ * smtp.connectionUpgradeRequestCallback(<callback function>);
+ * imap.connectionUpgradeRequestCallback(<callback function>);
+ * 
+ * The external Client used for this purpose should be able to work as basic Arduino client that starting connection
+ * to server in non-secure mode and able to perform SSL/TLS handshake to upgrade the connection when required.
+ * 
+ * The current SSL clients that have this ability are
+ * 
+ * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports ESP8266, ESP32 
+ * and Raspberry Pi Pico.
+ * 
+ * OPEnSLab's SSLClient fork version libraryhttps://github.com/mobizt/SSLClient. This library support all microcontrollers
+ * that have enough flash memory and ram except for ESP8266 that has stack overfow issue.
+ * 
+ * With the above two SSL client libraries, the SSL/TLS hanshake can be done with the following code
+ * 
+ * #if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
+ * ssl_client.connectSSL(SMTP_HOST, SMTP_PORT);
+ * #endif
+ * 
+ * The mcro "SSLCLIENT_CONNECTION_UPGRADABLE" was defined in the those two SSL client libraries.
+ * 
+ * 2.4 connectionRequestCallback is the function for server connection which is set as optional and is not required.
+ * When it assigned, user need to place the code to connect to the server with host name and port as following code.
+ * 
+ * basic_client.connect(host, port); or ssl_client.connect(host, port);
+ * 
+ * The methods that used to assign the callback are
+ * 
+ * smtp.connectionRequestCallback(<callback function>);
+ * imap.connectionRequestCallback(<callback function>);
+ * 
+ * 3. SSL client can be adssign to the IMAPSession or SMTPSession object during class constructor like following
+ * 
+ * SMTPSession smtp(&basic_client, esp_mail_external_client_type_basic);
+ * IMAPSession imap(&ssl_client, esp_mail_external_client_type_ssl)
+ * 
+ * Or can be assign through the method
+ * 
+ * smtp.setClient(&basic_client, esp_mail_external_client_type_basic);
+ * imap.setClient(&ssl_client, esp_mail_external_client_type_ssl);
+ * 
+ * The first argument of class constructor and method is the Arduino client derived class.
+ * The second argument of class constructor and method is the esp_mail_external_client_type enum
+ * i.e., esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
+ * 
+ * If the firstargument is basic client or non-secure client that works directly with network module 
+ * e.g. WiFiClient, EthernetClient and GSMClient, the second argument should be 
+ * esp_mail_external_client_type_basic.
+ * 
+ * This kind of client can use for IMAP and SMTP transports via non-secure ports e.g., 25 (SMTP), 143 (IMAP).
+ * 
+ * If the firstargument is ssl client that cannot connect in non-secure mode (works as a wrapper class of basic client)
+ * e.g., WiFiClientSecure and WiFiSSLClient, the second argument should be esp_mail_external_client_type_ssl.
+ * 
+ * This kind of client can use for IMAP and SMTP transports via secure ports e.g., 465 (SMTP), 993 (IMAP).
+ * 
+ * If the firstargument is ssl client that can connect in non-secure mode as Mobizt's ESP_SSLClient and 
+ * OPEnSLab's SSLClient fork version, the second argument should be esp_mail_external_client_type_basic.
+ * 
+ * This kind of client can use for IMAP and SMTP transports via Plain/TLS via STARTTLS ports 
+ * e.g., 25 (SMTP), 25 (587), 143 (IMAP).
+ * Which the callback function connectionUpgradeRequestCallback in the topic 2.3 is required.
+ * 
+ * 
+ * When using ESP8266, ESP32 and Raspberry Pi Pico with network modules, user does not need to assign the SSL client
+ * to the SMTPSession and IMAPSession object or external SSL client library is not required.
+ * If ENABLE_CUSTOM_CLIENT mocro was defined in in file "src/ESP_Mail_FS.h" or "src/Custom_ESP_Mail_FS.h", user can assign
+ * the basic client of network module as first argument and esp_mail_external_client_type_basic for the second argument.
+ * 
+ * In above case, library will use the internal SDK SSL engine for SSL/TLS handshake process when working with SSL ports e.g., 465 (SMTP),
+ * 993 (IMAP) and Plain/TLS via STARTTLS ports e.g., 25 (SMTP), 25 (587), 143 (IMAP).
+ * 
+ * 4. Some tasks required valid time e.g., sending Email and SSL certificate validation.
+ * Normally when using the WiFi or Ethernet that supported natively on ESP8266, ESP32 and Raspberry Pi Pico (WiFi), 
+ * the system (device) time was setup internally by acquiring the NTP server response for synching which is not need any
+ * time or UDP client.
+ * 
+ * For external client usage, the external UDP client is required when valid time is needed because library does not know how and
+ * where to get the valid time from.
+ * 
+ * The UDP clients e.g. WiFiUDP and EthernetUDP required for internal time synching with NTP server which only GMT offset can be assigned.
+ * 
+ * The external UDP client can be assign to library from
+ * 
+ * MailClient.setUDPClient(&udp_client, 0);
+ * 
+ * Which the second argument is the GMT offset. This GMT offset will be used to set the time instead of GMT offset from the session object
+ * session.time.gmt_offset.
+ * 
+ * With external Client usage, the device time will be updated in ESP8266 and ESP32 which user can get it from time(nullptr).
+ * While Raspberry Pi Pico and other Arduino devices, the device time is not available. If user need to get the valid time
+ * from library, the internal time will be provided from
+ * 
+ * uint32_t timestamp = MailClient.Time.getCurrentTimestamp();
+ * 
+ * If user can get the valid time from RTC or any source, the internal time of library (also ESP8266 and ESP32's system time)
+ * can be set from
+ * 
+ * MailClient.Time.setTimestamp(timestamp);
+ * 
+ * In Raspberry Pi Pico, the device time that can get from time(nullptr) can not set manually except for WiFi using SDK's NTP class.
+ * Then when external client was used, the device time will not update by library's internal time synching and when calling 
+ * MailClient.Time.setTimestamp. User should call MailClient.Time.getCurrentTimestamp to get the valid time instead.
+ *  
+ * ///////////////////////////////////////////////////////////////
+ *
+ * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
  *
@@ -9,13 +160,6 @@
  *
  * Copyright (c) 2023 mobizt
  *
- */
-
-/** This example shows how to read E-mail with external Client.
- *
- * This example used SAMD21 device and WiFiNINA as the client.
- *
- * Other Arduino Clients e.g. WiFiClient, EthernetClient and GSMClient can be used.
  */
 
 #include <Arduino.h>
@@ -26,58 +170,29 @@
 
 #include <ESP_Mail_Client.h>
 
-// To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
-
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
-/** For Gmail, IMAP option should be enabled. https://support.google.com/mail/answer/7126229?hl=en
- * and also https://accounts.google.com/b/0/DisplayUnlockCaptcha
- *
- * Some Gmail user still not able to sign in using account password even above options were set up,
- * for this case, use "App Password" to sign in instead.
- * About Gmail "App Password", go to https://support.google.com/accounts/answer/185833?hl=en
- *
- * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
- * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
- *
- * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
- * and AUTHOR_EMAIL with your account email.
- */
-
-/* The imap host name e.g. imap.gmail.com for GMail or outlook.office365.com for Outlook */
 #define IMAP_HOST "<host>"
-
-/** The imap port e.g.
- * 143  or esp_mail_imap_port_143
- * 993 or esp_mail_imap_port_993
- */
 #define IMAP_PORT 993
 
-/* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Callback function to get the Email reading status */
 void imapCallback(IMAP_Status status);
 
-/* Print the list of mailbox folders */
 void printAllMailboxesInfo(IMAPSession &imap);
 
-/* Print the selected folder info */
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder);
 
-/* Print all messages from the message list */
 void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 
-/* Print all attachments info from the message */
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
-/* Define the Client object */
-WiFiSSLClient client;
+WiFiSSLClient ssl_client;
+WiFiUDP udp_client;
 
-/* Declare the global used IMAPSession object for IMAP transport */
-IMAPSession imap(&client, esp_mail_external_client_type_ssl /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */); // or assign the Client later with imap.setClient(&client, esp_mail_external_client_type_ssl);
+IMAPSession imap(&ssl_client, esp_mail_external_client_type_ssl);
 
 void networkConnection()
 {
@@ -103,10 +218,8 @@ void networkConnection()
     Serial.println();
 }
 
-// Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
-    // Set the network status
     imap.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
@@ -122,7 +235,6 @@ void setup()
 
     Serial.println();
 
-     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
     // The WiFi credentials are required for SAMD21
@@ -132,135 +244,69 @@ void setup()
 
     networkConnection();
 
-    /** Enable the debug via Serial port
-     * 0 for no debugging
-     * 1 for basic level debugging
-     *
-     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
-     */
     imap.debug(1);
 
-    /* Set the callback function to get the reading results */
+    // For internal NTP client
+    MailClient.setUDPClient(&udp_client, 0 /* GMT offset */);
+
+    MailClient.networkReconnect(true);
+
     imap.callback(imapCallback);
 
-    /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
-     * MailClient.sdBegin function which may be different for ESP32 and ESP8266
-     * For ESP32, assign all of SPI pins
-     * MailClient.sdBegin(14,2,15,13)
-     * Which SCK = 14, MISO = 2, MOSI = 15 and SS = 13
-     * And for ESP8266, assign the CS pins of SPI port
-     * MailClient.sdBegin(15)
-     * Which pin 15 is the CS pin of SD card adapter
-     */
-
-    /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
-    /* Set the session config */
     session.server.host_name = IMAP_HOST;
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /** Declare the IMAP_Config object used for user defined IMAP operating options
-     * and contains the IMAP operating result
-     */
     IMAP_Config config;
 
-    /* Set seen flag */
-    // config.fetch.set_seen = true;
-
-    /* Search criteria */
     config.search.criteria.clear();
 
-    /* Also search the unseen message */
     config.search.unseen_msg = true;
 
-    /* Set the storage to save the downloaded files and attachments */
     config.storage.saved_path = F("/email_data");
 
-    /** The file storage type e.g.
-     * esp_mail_file_storage_type_none,
-     * esp_mail_file_storage_type_flash, and
-     * esp_mail_file_storage_type_sd
-     */
     config.storage.type = esp_mail_file_storage_type_flash;
 
-    /** Set to download heades, text and html messaeges,
-     * attachments and inline images respectively.
-     */
     config.download.header = true;
     config.download.text = true;
     config.download.html = true;
     config.download.attachment = true;
     config.download.inlineImg = true;
 
-    /** Set to enable the results i.e. html and text messaeges
-     * which the content stored in the IMAPSession object is limited
-     * by the option config.limit.msg_size.
-     * The whole message can be download through config.download.text
-     * or config.download.html which not depends on these enable options.
-     */
     config.enable.html = true;
     config.enable.text = true;
 
-    /* Set to enable the sort the result by message UID in the decending order */
     config.enable.recent_sort = true;
 
-    /* Set to report the download progress via the default serial port */
     config.enable.download_status = true;
 
-    /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
-    , to allow case sensitive parse, uncomment below line*/
-    // config.enable.header_case_sensitive = true;
-
-    /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 
-    /** Set the maximum size of message stored in
-     * IMAPSession object in byte
-     */
     config.limit.msg_size = 512;
 
-    /** Set the maximum attachments and inline images files size
-     * that can be downloaded in byte.
-     * The file which its size is largger than this limit may be saved
-     * as truncated file.
-     */
     config.limit.attachment_size = 1024 * 1024 * 5;
 
-    // Set the callback functions to hadle the required tasks.
     imap.networkConnectionRequestCallback(networkConnection);
 
     imap.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&session, &config))
         return;
 
-    /*  {Optional} */
     printAllMailboxesInfo(imap);
 
-    /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
         return;
 
-    /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-    /** Message UID to fetch or read e.g. 100.
-     * In this case we will get the UID from the max message number (lastest message)
-     */
     config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
-    /* Read or search the Email and close the session */
-
-    // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
-    // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
-    // to message, see the Set_Flags.ino example.
     MailClient.readMail(&imap);
 
-    /* Clear all stored data in IMAPSession object */
     imap.empty();
 }
 
@@ -268,36 +314,26 @@ void loop()
 {
 }
 
-/* Callback function to get the Email reading status */
 void imapCallback(IMAP_Status status)
 {
-    /* Print the current status */
     Serial.println(status.info());
 
-    /* Show the result when reading finished */
     if (status.success())
     {
-        /* Print the result */
-        /* Get the message list from the message list data */
         IMAP_MSG_List msgList = imap.data();
         printMessages(msgList.msgItems, imap.headerOnly());
-
-        /* Clear all stored data in IMAPSession object */
         imap.empty();
     }
 }
 
 void printAllMailboxesInfo(IMAPSession &imap)
 {
-    /* Declare the folder collection class to get the list of mailbox folders */
     FoldersCollection folders;
 
-    /* Get the mailbox folders */
     if (imap.getFolders(folders))
     {
         for (size_t i = 0; i < folders.size(); i++)
         {
-            /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
             ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
@@ -306,7 +342,6 @@ void printAllMailboxesInfo(IMAPSession &imap)
 
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
-    /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
     ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
@@ -320,11 +355,6 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
     for (size_t j = 0; j < atts.size(); j++)
     {
         IMAP_Attach_Item att = atts[j];
-        /** att.type can be
-         * esp_mail_att_type_none or 0
-         * esp_mail_att_type_attachment or 1
-         * esp_mail_att_type_inline or 2
-         */
         ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Description: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.description, att.creationDate);
     }
     Serial.println();
@@ -333,17 +363,8 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
 void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
 
-    /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and
-     * the standard SD.h library included in ESP_Mail_FS.h, files will be renamed due to long filename
-     * (> 13 characters) is not support in the SD.h library.
-     * To show how its original file name, use imap.fileList().
-     */
-    // Serial.println(imap.fileList());
-
     for (size_t i = 0; i < msgItems.size(); i++)
     {
-
-        /* Iterate to get each message data through the message item data */
         IMAP_MSG_Item msg = msgItems[i];
 
         Serial.println("****************************");
@@ -353,8 +374,6 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment status in search may be true in case the "multipart/mixed" 
-        // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))
@@ -389,7 +408,6 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         if (strlen(msg.keywords))
             ESP_MAIL_PRINTF("Keywords: %s\n", msg.keywords);
 
-        /* If the result contains the message info (Fetch mode) */
         if (!headerOnly)
         {
             if (strlen(msg.text.content))
