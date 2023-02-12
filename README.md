@@ -638,7 +638,7 @@ Can't find what you want from exising IMAP functions, sending custom command was
 
 Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol commands.
 
-See [Custom_Command examples](/examples/IMAP/Custom_Command/Custom_Command) for the example.
+See [Custom_Command examples](/examples/IMAP/Custom_Command) for how to use.
 
 
 ### Use external Arduino Clients interfaces
