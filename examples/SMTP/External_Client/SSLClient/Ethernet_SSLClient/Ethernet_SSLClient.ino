@@ -58,7 +58,7 @@
  * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports ESP8266, ESP32 
  * and Raspberry Pi Pico.
  * 
- * OPEnSLab's SSLClient fork version libraryhttps://github.com/mobizt/SSLClient. This library support all microcontrollers
+ * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library support all microcontrollers
  * that have enough flash memory and ram except for ESP8266 that has stack overfow issue.
  * 
  * With the above two SSL client libraries, the SSL/TLS hanshake can be done with the following code
