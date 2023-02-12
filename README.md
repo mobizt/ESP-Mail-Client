@@ -688,21 +688,14 @@ SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic);
 
 void connectionUpgradeRequestCallback()
 {
-
     //To make sure that upgradable SSLClient https://github.com/mobizt/SSLClient was installed instead of
     // the original version
 #if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
-
     // Upgrade the connection
     // The host and port parameters will be ignored for this case and can be any
     ssl_client.connectSSL("smtp.gmail.com" /* host */, 587 /* port */);
     
 #endif
-}
-
-void connectionRequestCallback(const char *host, int port)
-{
-    client.connect(host, port)
 }
 
 // Define the callback function to handle server status acknowledgement
@@ -714,6 +707,11 @@ void networkStatusRequestCallback()
     // networkConnected = modem.isNetworkConnected();
 
     smtp.setNetworkStatus(networkConnected);
+}
+
+void networkConnection()
+{
+    // Code for network reset, disconnect and re-connect here.
 }
 
 void serup()
@@ -729,14 +727,13 @@ void serup()
      * Other setup codes
      * 
      */
-
-    // Set the callback function for server connection.
-    smtp.connectionRequestCallback(connectionRequestCallback);
     
     // Set the callback function for connection upgrade
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnection);
 
 }
 
@@ -796,20 +793,9 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-// Define the callback function to handle server connection
-void connectionRequestCallback(const char *host, int port)
+void networkConnection()
 {
-    // You may need to set the system timestamp in case of custom client
-    // time is used to set the date header while sending email.
-    smtp.setSystemTime(WiFi.getTime());
-
-    Serial.print("> U: Connecting to server via custom Client... ");
-    if (!client.connect(host, port))
-    {
-        Serial.println("failed.");
-        return;
-    }
-    Serial.println("success.");
+    // Code for network reset, disconnect and re-connect here.
 }
 
 void setup()
@@ -844,11 +830,9 @@ void setup()
   message.text.content = "This is simple plain text message";
   
   // Set the callback functions to hadle the required tasks.
-  smtp.connectionRequestCallback(connectionRequestCallback);
+  smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
   smtp.networkConnectionRequestCallback(networkConnection);
-
-  smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
 
   // Connect to the server with the defined session and options
@@ -878,11 +862,6 @@ SMTPSession smtp(&client, esp_mail_external_client_type_basic);
 // the connection upgrade (if needed in case of SMTP port 587) using Core SDK SSL engine.
 
 
-void connectionRequestCallback(const char *host, int port)
-{
-    client.connect(host, port)
-}
-
 // Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
@@ -892,6 +871,11 @@ void networkStatusRequestCallback()
     // networkConnected = modem.isNetworkConnected();
 
     smtp.setNetworkStatus(networkConnected);
+}
+
+void networkConnection()
+{
+    // Code for network reset, disconnect and re-connect here.
 }
 
 void serup()
@@ -909,11 +893,10 @@ void serup()
      */
 
     // Set the callback function for server connection.
-    smtp.connectionRequestCallback(connectionRequestCallback);
-
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
-  
 
+    smtp.networkConnectionRequestCallback(networkConnection);
+  
 }
 
 
