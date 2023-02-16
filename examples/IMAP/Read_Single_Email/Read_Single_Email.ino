@@ -228,7 +228,7 @@ void setup()
     if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
-    if (smtp.isAuthenticated())
+    if (imap.isAuthenticated())
         Serial.println("Successfully logged in.");
     else
         Serial.println("Connected with no Auth.");
