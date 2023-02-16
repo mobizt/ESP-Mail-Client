@@ -1,4 +1,4 @@
-// Created January 23, 2022
+// Created February 16, 2022
 
 #pragma once
 
@@ -537,6 +537,7 @@ struct esp_mail_smtp_send_status_t
 
 struct esp_mail_smtp_capability_t
 {
+public:
     bool esmtp = false;
     bool binaryMIME = false;
     bool _8bitMIME = false;
@@ -544,6 +545,18 @@ struct esp_mail_smtp_capability_t
     bool utf8 = false;
     bool pipelining = false;
     bool dsn = false;
+    esp_mail_smtp_capability_t() {}
+    ~esp_mail_smtp_capability_t() { clear(); }
+    void clear()
+    {
+        esmtp = false;
+        binaryMIME = false;
+        _8bitMIME = false;
+        chunking = false;
+        utf8 = false;
+        pipelining = false;
+        dsn = false;
+    };
 };
 
 struct esp_mail_smtp_msg_type_t
@@ -821,6 +834,27 @@ struct esp_mail_imap_capability_t
     bool name_space = false;
     // rfc5161
     bool enable = false;
+
+    esp_mail_imap_capability_t() {}
+    ~esp_mail_imap_capability_t() { clear(); }
+    void clear()
+    {
+        auto_caps = false;
+        imap4 = false;
+        imap4rev1 = false;
+        idle = false;
+        literal_plus = false;
+        literal_minus = false;
+        multiappend = false;
+        uidplus = false;
+        acl = false;
+        binary = false;
+        logindisable = false;
+        move = false;
+        quota = false;
+        name_space = false;
+        enable = false;
+    };
 };
 
 struct esp_mail_imap_rfc822_msg_header_item_t
@@ -1565,6 +1599,7 @@ struct esp_mail_link_internal_t
 
 struct esp_mail_auth_capability_t
 {
+public:
     bool plain = false;
     bool xoauth2 = false;
     bool cram_md5 = false;
@@ -1574,6 +1609,18 @@ struct esp_mail_auth_capability_t
 
     // imap rfc4959
     bool sasl_ir = false;
+
+    esp_mail_auth_capability_t() {}
+    ~esp_mail_auth_capability_t() { clear(); }
+    void clear()
+    {
+        plain = false;
+        xoauth2 = false;
+        cram_md5 = false;
+        digest_md5 = false;
+        login = false;
+        start_tls = false;
+    };
 };
 
 struct esp_mail_sesson_cert_config_t
@@ -1785,7 +1832,6 @@ typedef struct esp_mail_imap_msg_list_t IMAP_MSG_List;
 
 #endif
 
-
 struct esp_mail_wifi_credential_t
 {
     MB_String ssid;
@@ -1814,7 +1860,6 @@ public:
 private:
     MB_List<esp_mail_wifi_credential_t> credentials;
 };
-
 
 #if defined(ENABLE_SMTP)
 static const char esp_mail_str_1[] PROGMEM = "Content-Type: multipart/mixed; boundary=\"";

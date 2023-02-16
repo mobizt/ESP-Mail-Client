@@ -61,8 +61,8 @@ SMTPSession smtp;
 /* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
 
-//const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
-//                                  "-----END CERTIFICATE-----\n";
+// const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
+//                                   "-----END CERTIFICATE-----\n";
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 WiFiMulti multi;
@@ -264,6 +264,11 @@ void setup()
   /* Connect to the server */
   if (!smtp.connect(&session /* session credentials */))
     return;
+
+  if (smtp.isAuthenticated())
+    Serial.println("Successfully logged in.");
+  else
+    Serial.println("Connected with no Auth.");
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))

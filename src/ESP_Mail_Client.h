@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 11, 2023
+ * Created February 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1525,6 +1525,11 @@ public:
    */
   bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 
+  /** Return the SASL authentication status.
+   * @return The boolean value indicates SASL authentication status.
+   */
+  bool isAuthenticated();
+
   /** Begin the IMAP server connection without authentication.
    *
    * @param session The pointer to ESP_Mail_Session structured data that keeps
@@ -2107,6 +2112,7 @@ private:
   bool _debug = false;
   int _debugLevel = 0;
   bool _secure = false;
+  bool _authenticated = false;
   imapStatusCallback _readCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
@@ -2228,6 +2234,11 @@ public:
    */
   bool connect(ESP_Mail_Session *session);
 
+  /** Return the SASL authentication status.
+   * @return The boolean value indicates SASL authentication status.
+   */
+  bool isAuthenticated();
+
   /** Begin the SMTP server connection without authentication.
    *
    * @param session The pointer to ESP_Mail_Session structured data that keeps
@@ -2333,6 +2344,7 @@ private:
   bool _debug = false;
   int _debugLevel = 0;
   bool _secure = false;
+  bool _authenticated = false;
   smtpStatusCallback _sendCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
   int _commandID = -1;

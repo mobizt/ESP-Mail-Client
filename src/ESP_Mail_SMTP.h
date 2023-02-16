@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 11, 2023
+ * Created February 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -187,8 +187,6 @@ non_authenticated:
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
                 return false;
-
-            return true;
         }
         else if (sasl_auth_plain)
         {
@@ -227,8 +225,6 @@ non_authenticated:
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth_plain, esp_mail_smtp_status_code_235, SMTP_STATUS_USER_LOGIN_FAILED))
                 return false;
-
-            return true;
         }
         else if (sasl_login)
         {
@@ -267,9 +263,9 @@ non_authenticated:
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_psw, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
                 return false;
-
-            return true;
         }
+
+        smtp->_authenticated = true;
     }
 
     return true;
@@ -3359,7 +3355,11 @@ void ESP_Mail_Client::closeTCPSession(SMTPSession *smtp)
         smtp->client.stop();
         _lastReconnectMillis = millis();
     }
+
     smtp->_tcpConnected = false;
+    smtp->_auth_capability.clear();
+    smtp->_send_capability.clear();
+    smtp->_authenticated = false;
 }
 
 bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
@@ -3544,7 +3544,7 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
     memset(buf, 0, chunkSize);
 
     uint8_t *rawChunk = (uint8_t *)newP(base64 ? 3 : 4);
-    
+
     if (report)
         uploadReport(data_info.filename, addr, data_info.dataIndex / data_info.size);
 
@@ -3718,6 +3718,11 @@ bool SMTPSession::connect(ESP_Mail_Session *config)
         return false;
 
     return MailClient.smtpAuth(this, ssl);
+}
+
+bool SMTPSession::isAuthenticated()
+{
+    return _authenticated;
 }
 
 int SMTPSession::customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID)
@@ -4120,7 +4125,7 @@ bool SMTPSession::closeSession()
 
     bool ret = true;
 
-    if (_sentSuccessCount || _sentFailedCount)
+    if (_authenticated)
     {
 
 /* Sign out */

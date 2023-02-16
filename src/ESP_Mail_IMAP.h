@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 5, 2023
+ * Created February 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -333,7 +333,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
     imap->_msgDownload = imap->_config->download.text || imap->_config->download.html;
     imap->_attDownload = imap->_config->download.attachment || imap->_config->download.inlineImg;
-    
+
     if (!imap->_storageChecked)
     {
         imap->_storageChecked = true;
@@ -1247,6 +1247,9 @@ non_authenticated:
         if (!imap->checkCapabilities())
             return false;
     }
+
+    if (supported_sasl)
+        imap->_authenticated = true;
 
     return true;
 }
@@ -2434,7 +2437,11 @@ void ESP_Mail_Client::closeTCPSession(IMAPSession *imap)
         imap->client.stop();
         _lastReconnectMillis = millis();
     }
+
     imap->_tcpConnected = false;
+    imap->_auth_capability.clear();
+    imap->_read_capability.clear();
+    imap->_authenticated = false;
 }
 
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
@@ -4497,15 +4504,19 @@ bool IMAPSession::closeSession()
     if (_mbif._idleTimeMs > 0)
         mStopListen(false);
 
+    if (_authenticated)
+    {
 #if !defined(ESP8266)
-    /**
-     * The strange behavior in ESP8266 SSL client, BearSSLWiFiClientSecure
-     * The client disposed without memory released after the server close
-     * the connection due to LOGOUT command, which caused the memory leaks.
-     */
-    if (!MailClient.imapLogout(this))
-        return false;
+        /**
+         * The strange behavior in ESP8266 SSL client, BearSSLWiFiClientSecure
+         * The client disposed without memory released after the server close
+         * the connection due to LOGOUT command, which caused the memory leaks.
+         */
+        if (!MailClient.imapLogout(this))
+            return false;
 #endif
+    }
+
     return MailClient.handleIMAPError(this, 0, true);
 }
 
@@ -4527,6 +4538,11 @@ bool IMAPSession::connect(ESP_Mail_Session *session, IMAP_Config *config)
         return false;
 
     return MailClient.imapAuth(this, ssl);
+}
+
+bool IMAPSession::isAuthenticated()
+{
+    return _authenticated;
 }
 
 bool IMAPSession::mCustomConnect(ESP_Mail_Session *session, imapResponseCallback callback, MB_StringPtr tag)

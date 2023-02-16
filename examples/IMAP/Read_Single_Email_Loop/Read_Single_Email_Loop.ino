@@ -252,6 +252,11 @@ void setup()
     if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
+    if (smtp.isAuthenticated())
+        Serial.println("Successfully logged in.");
+    else
+        Serial.println("Connected with no Auth.");
+
     /*  {Optional} */
     printAllMailboxesInfo(imap);
 
@@ -406,7 +411,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment status in search may be true in case the "multipart/mixed" 
+        // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 

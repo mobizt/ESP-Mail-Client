@@ -425,6 +425,15 @@ bool connect(ESP_Mail_Session *session, IMAP_Config *config);
 ```
 
 
+#### Return the SASL authentication status.
+
+return **`boolean`** The boolean value indicates SASL authentication status.
+
+```cpp
+bool isAuthenticated();
+```
+
+
 #### Close the IMAP session.
 
 return **`boolean`** The boolean value which indicates the success of operation.
@@ -1206,7 +1215,13 @@ bool connect(ESP_Mail_Session *session);
 ```
 
 
+#### Return the SASL authentication status.
 
+return **`boolean`** The boolean value indicates SASL authentication status.
+
+```cpp
+bool isAuthenticated();
+```
 
 
 #### Close the SMTP session.
