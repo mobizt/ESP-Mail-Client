@@ -27,7 +27,7 @@
 
 #elif defined(ESP8266)
 #define SPI_CS_PIN 15
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 // Use SPI 1's SS (GPIO 13) port as CS for SPI
 #define SPI_CS_PIN PIN_SPI1_SS
 #elif defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040) || defined(MB_MCU_TEENSY_ARM)
@@ -57,7 +57,7 @@ SPIClass spi;
 
 SDFSConfig sdFSConfig(SPI_CS_PIN, SPI_HALF_SPEED);
 
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 
 /** Use Pico SPI 1 for SPI
  * MISO  GPIO 12
@@ -121,7 +121,7 @@ bool SD_Card_Mounting()
         return true;
     }
 
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 
     Serial.print("\nMounting SD Card... ");
 

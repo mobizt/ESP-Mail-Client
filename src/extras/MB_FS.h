@@ -1,9 +1,9 @@
 /**
- * The MB_FS, filesystems wrapper class v1.0.13
+ * The MB_FS, filesystems wrapper class v1.0.14
  *
  * This wrapper class is for SD and Flash filesystems interface which supports SdFat (//https://github.com/greiman/SdFat)
  *
- *  Created February 4, 2023
+ *  Created March 1, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -31,7 +31,7 @@
 #define MBFS_CLASS_H
 
 #define FS_NO_GLOBALS
-#if defined(ESP32) || defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 #include <FS.h>
 #endif
 #include "MB_FS_Interfaces.h"
@@ -135,7 +135,7 @@ struct mbfs_sd_config_info_t
 #endif
 };
 
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 struct mbfs_sd_config_info_t
 {
     int ss = -1;
@@ -177,7 +177,7 @@ public:
 #elif defined(ESP8266) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
         sd_rdy = MBFS_SD_FS.begin(ss);
         return sd_rdy;
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
         SDFSConfig c;
         c.setCSPin(ss);
         c.setSPISpeed(frequency);
@@ -217,7 +217,7 @@ public:
             sd_rdy = MBFS_SD_FS.begin();
 #endif
 
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
         cfg->_int.sd_config.sck = sck;
 
@@ -285,7 +285,7 @@ public:
     }
 #endif
 
-#if (defined(ESP8266) || defined(PICO_RP2040)) && defined(MBFS_SD_FS)
+#if (defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)) && defined(MBFS_SD_FS)
     // Assign the SD card interfaces with SDFSConfig object pointer (ESP8266 and Pico only).
     bool sdFatBegin(SDFSConfig *sdFSConfig)
     {
@@ -342,7 +342,7 @@ public:
         flash_rdy = MBFS_FLASH_FS.begin();
 #endif
 
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
         flash_rdy = MBFS_FLASH_FS.begin();
 #endif
 
@@ -392,7 +392,7 @@ public:
             sd_rdy = sdMMCBegin(sd_config.sdMMCConfig.mountpoint, sd_config.sdMMCConfig.mode1bit, sd_config.sdMMCConfig.format_if_mount_failed);
 #endif
 
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
         if (!sd_rdy)
         {
             if (sd_config.sdFSConfig)
@@ -935,7 +935,7 @@ public:
         return true;
 #endif
 
-#if defined(MBFS_SD_FS) && (defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040))
+#if defined(MBFS_SD_FS) && (defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040))
         return true;
 #endif
 

@@ -1,5 +1,5 @@
 /**
- * Created January 7, 2023
+ * Created March 1, 2023
  */
 
 #ifndef ESP_TCP_CLIENTS_H
@@ -13,7 +13,7 @@
 #define ESP_MAIL_ENABLE_CUSTOM_CLIENT
 #endif
 
-#if !defined(ESP32) && !defined(ESP8266) && !defined(PICO_RP2040) && !(defined(MB_MCU_ATMEL_ARM) && !defined(ARDUINO_SAMD_MKR1000) || defined(MB_MCU_RP2040)) && !defined(MB_MCU_RP2040)
+#if !defined(ESP32) && !defined(ESP8266) && !defined(ARDUINO_ARCH_RP2040) && !(defined(MB_MCU_ATMEL_ARM) && !defined(ARDUINO_SAMD_MKR1000) || defined(MB_MCU_RP2040)) && !defined(MB_MCU_RP2040)
 #ifndef ESP_MAIL_ENABLE_CUSTOM_CLIENT
 #define ESP_MAIL_ENABLE_CUSTOM_CLIENT
 #endif
@@ -29,7 +29,7 @@
 #include "esp32/ESP32_TCP_Client.h"
 #define ESP_MAIL_TCP_CLIENT ESP32_TCP_Client
 
-#elif defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
 #include <ESP8266WiFi.h>
 #include "esp8266/ESP8266_TCP_Client.h"

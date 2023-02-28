@@ -2,7 +2,7 @@
  *
  * The Network Upgradable BearSSL Client Class, MB_BearSSL.h v2.0.1
  *
- * Created January 7, 2023
+ * Created March 1, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -72,7 +72,7 @@
 #include <vector>
 #include <algorithm>
 
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 
 #include <Arduino.h>
 #include <bearssl/bearssl.h>

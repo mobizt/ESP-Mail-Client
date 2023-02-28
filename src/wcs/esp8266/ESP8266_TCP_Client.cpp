@@ -2,7 +2,7 @@
  *
  * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.5
  *
- * Created February 11, 2023
+ * Created March 1, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP8266_TCP_Client_CPP
 
 #include <Arduino.h>
-#if defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
 #include "ESP8266_TCP_Client.h"
 
@@ -176,7 +176,7 @@ bool ESP8266_TCP_Client::ethLinkUp()
     goto ex;
   }
 #endif
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 
 #endif
 
@@ -213,7 +213,7 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
     goto ex;
 #endif
 
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 
 #endif
 

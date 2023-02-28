@@ -3,7 +3,7 @@
  *
  * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.2
  *
- * Created January 20, 2023
+ * Created March 1, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -55,7 +55,7 @@
 #define ESP8266_SSL_Client_CPP
 
 #include <Arduino.h>
-#if defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
 #include "ESP8266_SSL_Client.h"
 #include "ESP_Mail_Print.h"
@@ -70,7 +70,7 @@
 #include <errno.h>
 #include <algorithm>
 #include "StackThunk.h"
-#if defined(PICO_RP2040)
+#if defined(ARDUINO_ARCH_RP2040)
 #include "lwip/opt.h"
 #include "lwip/ip.h"
 #include "lwip/tcp.h"

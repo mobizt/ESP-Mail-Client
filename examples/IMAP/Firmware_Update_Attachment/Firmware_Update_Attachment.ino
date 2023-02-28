@@ -12,7 +12,7 @@
  */
 
 #include <Arduino.h>
-#if defined(ESP32) || defined(PICO_RP2040)
+#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -289,7 +289,7 @@ void imapCallback(IMAP_Status status)
             delay(2000);
 #if defined(ESP32) || defined(ESP8266)
             ESP.restart();
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
             rp2040.restart();
 #endif
         }

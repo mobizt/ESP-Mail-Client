@@ -4614,7 +4614,7 @@ IMAPSession::IMAPSession()
 IMAPSession::~IMAPSession()
 {
     empty();
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
     _caCert.reset();
     _caCert = nullptr;
 #endif
@@ -4706,7 +4706,7 @@ bool IMAPSession::handleConnection(ESP_Mail_Session *session, IMAP_Config *confi
     _sesson_cfg = session;
     _config = config;
 
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
     _caCert = nullptr;
 
@@ -4732,7 +4732,7 @@ bool IMAPSession::connect(bool &ssl)
     MB_String buf;
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
     client.setDebugCallback(NULL);
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
 #endif
 
@@ -4753,7 +4753,7 @@ bool IMAPSession::connect(bool &ssl)
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
     if (_debug && !_customCmdResCallback)
         client.setDebugCallback(esp_mail_debug_print);
-#elif (defined(ESP8266) || defined(PICO_RP2040)) && defined(ESP8266_TCP_CLIENT)
+#elif (defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)) && defined(ESP8266_TCP_CLIENT)
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
     client.rxBufDivider = 1;
     if (_config)
@@ -4809,7 +4809,7 @@ bool IMAPSession::connect(bool &ssl)
 #endif
     }
 
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
     bool validTime = false;
 #endif
 
@@ -4817,7 +4817,7 @@ bool IMAPSession::connect(bool &ssl)
     validTime = strlen(_sesson_cfg->certificate.cert_file) > 0 || _caCert != nullptr;
 #endif
 
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
     if (!_customCmdResCallback && (_sesson_cfg->time.ntp_server.length() > 0 || validTime))
     {

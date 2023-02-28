@@ -46,9 +46,9 @@
  * #define ESP_MAIL_DEFAULT_FLASH_FS FFat  //For ESP32 FAT
  *
  */
-#if defined(ESP32) || defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
-#if defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 // Use LittleFS as default flash filesystem for ESP8266
 
 #include <LittleFS.h>
@@ -102,7 +102,7 @@
 #include <SD.h>
 #define ESP_MAIL_DEFAULT_SD_FS SD
 #define ESP_MAIL_CARD_TYPE_SD 1
-#elif defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT)
+#elif defined(ARDUINO_ARCH_RP2040)
 // Use SDFS (ESP8266SdFat) instead of SD
 #include <SDFS.h>
 #define ESP_MAIL_DEFAULT_SD_FS SDFS

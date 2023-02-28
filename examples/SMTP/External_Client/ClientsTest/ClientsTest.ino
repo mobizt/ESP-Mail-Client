@@ -211,7 +211,7 @@ WiFiUDP udpClient;
 #define WIZNET_MISO_PIN 12 // Connect W5500 MISO pin to GPIO 12 (D6) of ESP8266
 #define WIZNET_MOSI_PIN 13 // Connect W5500 MOSI pin to GPIO 13 (D7) of ESP8266
 #define WIZNET_SCLK_PIN 14 // Connect W5500 SCLK pin to GPIO 14 (D5) of ESP8266
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #define WIZNET_RESET_PIN 20 // Connect W5500 Reset pin to GPIO 20 of Raspberry Pi Pico
 #define WIZNET_CS_PIN 17    // Connect W5500 CS pin to GPIO 17 of Raspberry Pi Pico
 #define WIZNET_MISO_PIN 16  // Connect W5500 MISO pin to GPIO 16 of Raspberry Pi Pico

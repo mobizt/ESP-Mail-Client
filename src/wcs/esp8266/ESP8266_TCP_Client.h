@@ -2,7 +2,7 @@
  *
  * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.5
  *
- * Created February 11, 2023
+ * Created March 1, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -33,7 +33,7 @@
 #include <time.h>
 #include <string>
 #include <WiFiClient.h>
-#if defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
 
 #if defined(ESP8266)
 #include <core_version.h>
@@ -44,7 +44,7 @@
 #endif
 
 #include <ESP8266WiFi.h>
-#elif defined(PICO_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040)
 #include <WiFi.h>
 #endif
 
