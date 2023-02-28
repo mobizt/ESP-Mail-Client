@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#if defined(ENABLE_IMAP) && (defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040))
+#if defined(ENABLE_IMAP) && (defined(ESP32) || defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT)))
 #if defined(ESP32)
 #include <Update.h>
 #elif defined(ESP8266) || defined(PICO_RP2040)
