@@ -54,7 +54,7 @@
 
 #include "MB_String.h"
 #include "MB_List.h"
-#if defined(PICO_RP2040)
+#if (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
 #include <WiFi.h>
 #include <WiFiNTP.h>
 #endif
@@ -136,17 +136,16 @@ public:
 
 #if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
-if (TZ != gmtOffset || DST_MN != daylightOffset)
+    if (TZ != gmtOffset || DST_MN != daylightOffset)
       configUpdated = true;
 
 #if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
 
-
-#elif defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP32) || defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
     sys_ts = time(nullptr);
     if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (sys_ts < ESP_TIME_DEFAULT_TS || configUpdated))
     {
-      
+
       lastSyncMillis = millis();
 
       MB_VECTOR<MB_String> tk;
@@ -200,7 +199,7 @@ if (TZ != gmtOffset || DST_MN != daylightOffset)
 
 #elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
-#elif defined(PICO_RP2040)
+#elif (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
     NTP.begin(_sv1.c_str(), _sv2.c_str());
     NTP.waitSet();
 #endif
@@ -389,7 +388,7 @@ if (TZ != gmtOffset || DST_MN != daylightOffset)
     getTime(ts);
 
     _clockReady = sys_ts > ESP_TIME_DEFAULT_TS;
-    
+
     // Update system timestamp and its offset when time/timezone changed.
     if (_clockReady && configUpdated)
     {
@@ -461,7 +460,7 @@ private:
 #if defined(ENABLE_CUSTOM_CLIENT) || defined(PICO_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__))
     // set sys time using the offset since the time was manually set via setTimestamp function and current seconds count
     sys_ts = ts_offset + millis() / 1000;
-#if defined(PICO_RP2040)
+#if (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
     // set sys time using device timestamp
     if (sys_ts < time(nullptr))
       sys_ts = time(nullptr);
