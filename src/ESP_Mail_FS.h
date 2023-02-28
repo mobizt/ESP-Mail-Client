@@ -102,7 +102,7 @@
 #include <SD.h>
 #define ESP_MAIL_DEFAULT_SD_FS SD
 #define ESP_MAIL_CARD_TYPE_SD 1
-#elif  defined(PICO_RP2040)
+#elif defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT)
 // Use SDFS (ESP8266SdFat) instead of SD
 #include <SDFS.h>
 #define ESP_MAIL_DEFAULT_SD_FS SDFS
@@ -123,7 +123,7 @@
  * This macro allows library to use external basic Client and external SSL Client interface.
  * The associated callback functions should be assigned based on port functions.
  */
- // #define ENABLE_CUSTOM_CLIENT
+// #define ENABLE_CUSTOM_CLIENT
 
 /* 📌 To use ESP8266 ENC28J60 Ethernet module */
 // #define ENABLE_ESP8266_ENC28J60_ETH
