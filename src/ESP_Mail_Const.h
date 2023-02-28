@@ -32,7 +32,7 @@
 #endif
 #endif
 
-#if defined(ENABLE_IMAP)
+#if defined(ENABLE_IMAP) && (defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040))
 #if defined(ESP32)
 #include <Update.h>
 #elif defined(ESP8266) || defined(PICO_RP2040)
