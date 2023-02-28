@@ -180,10 +180,10 @@ void setup()
 
     /**
      * Device will reboot in if imap.isFirmwareUpdated() returns true in imapCallback function.
-     * To disable firmware update, call config.firmware_update.attach_filename.clear(); or 
+     * To disable firmware update, call config.firmware_update.attach_filename.clear(); or
      * config.firmware_update.attach_filename = "";
-     * 
-    */
+     *
+     */
 
     /* Set to enable the sort the result by message UID in the decending order */
     config.enable.recent_sort = true;
@@ -287,7 +287,11 @@ void imapCallback(IMAP_Status status)
             Serial.println("****************************");
             Serial.println("Firmware is already updated, restarting device...");
             delay(2000);
+#if defined(ESP32) || defined(ESP8266)
             ESP.restart();
+#elif defined(PICO_RP2040)
+            rp2040.restart();
+#endif
         }
     }
 }
