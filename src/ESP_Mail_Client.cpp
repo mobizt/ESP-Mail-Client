@@ -146,7 +146,7 @@ int ESP_Mail_Client::getFreeHeap()
 {
 #if defined(MB_MCU_ESP)
   return ESP.getFreeHeap();
-#elif defined(PICO_RP2040)
+#elif (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
   return rp2040.getFreeHeap();
 #else
   return 0;
