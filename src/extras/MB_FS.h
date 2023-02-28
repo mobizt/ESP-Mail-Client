@@ -31,7 +31,7 @@
 #define MBFS_CLASS_H
 
 #define FS_NO_GLOBALS
-#if defined(ESP32) || defined(ESP8266) || defined(PICO_RP2040)
+#if defined(ESP32) || defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
 #include <FS.h>
 #endif
 #include "MB_FS_Interfaces.h"
