@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 16, 2023
+ * Created March 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1080,10 +1080,10 @@ private:
   // Send Email function
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
 
-  // Reconnect the network if it disconnected
+  // Network reconnection and return the connection status
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
 
-  // Close TCP session
+  // Close TCP session and clear auth_capability, send_capability, connected and authenticate statuses
   void closeTCPSession(SMTPSession *smtp);
 
   // Send the error status callback
@@ -1280,13 +1280,13 @@ private:
   // Decode TIS620 to UTF-8
   void decodeTIS620_UTF8(char *out, const char *in, size_t len);
 
-  // Reconnect the network if it disconnected
+  // Network reconnection and return the connection status
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
 
   // Get the TCP connection status
   bool connected(IMAPSession *imap);
 
-  // Close TCP session
+  // Close TCP session and clear auth_capability, read_capability, connected and authenticate statuses
   void closeTCPSession(IMAPSession *imap);
 
   // Get multipart MIME fetch command
@@ -1529,6 +1529,11 @@ public:
    * @return The boolean value indicates SASL authentication status.
    */
   bool isAuthenticated();
+
+  /** Return firmware update result when attachment filename matches.
+   * @return The boolean value indicates the firmware update status.
+   */
+  bool isFirmwareUpdateSuccess();
 
   /** Begin the IMAP server connection without authentication.
    *
@@ -2113,6 +2118,7 @@ private:
   int _debugLevel = 0;
   bool _secure = false;
   bool _authenticated = false;
+  bool _isFirmwareUpdated = false;
   imapStatusCallback _readCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;

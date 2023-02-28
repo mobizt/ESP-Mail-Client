@@ -1,4 +1,4 @@
-// Created February 16, 2022
+// Created March 2, 2022
 
 #pragma once
 
@@ -30,6 +30,15 @@
 #if __has_include(<core_esp8266_version.h>)
 #include <core_esp8266_version.h>
 #endif
+#endif
+
+#if defined(ENABLE_IMAP)
+#if defined(ESP32)
+#include <Update.h>
+#elif defined(ESP8266) || defined(PICO_RP2040)
+#include <Updater.h>
+#endif
+#define ESP_MAIL_OTA_UPDATE_ENABLED
 #endif
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
@@ -1268,6 +1277,9 @@ struct esp_mail_message_part_info_t
     esp_mail_message_type msg_type = esp_mail_msg_type_none;
     bool file_open_write = false;
     bool multipart = false;
+    bool is_firmware_file = false;
+    bool save_to_file = true;
+    size_t firmware_downloaded_byte = 0;
     esp_mail_imap_multipart_sub_type multipart_sub_type = esp_mail_imap_multipart_sub_type_none;
     esp_mail_imap_message_sub_type message_sub_type = esp_mail_imap_message_sub_type_none;
     bool rfc822_part = false;
@@ -1452,6 +1464,15 @@ struct esp_mail_imap_fetch_config_t
     bool set_seen = false;
 };
 
+struct esp_mail_imap_firmware_config_t
+{
+    /* Update firmware using message attachments if one of its filename matches. */
+    MB_String attach_filename;
+
+    /* Save firmware file */
+    bool save_to_file = false;
+};
+
 struct esp_mail_imap_read_config_t
 {
     /* The config for fetching */
@@ -1471,6 +1492,9 @@ struct esp_mail_imap_read_config_t
 
     /* The config about the storage and path to save the downloaded file */
     struct esp_mail_imap_storage_config_t storage;
+
+    /* The config about firmware updates and downloads for ESP32, ESP8266 and Raspberry Pi Pico*/
+    struct esp_mail_imap_firmware_config_t firmware_update;
 };
 
 /* Mail and MIME Header Fields */
@@ -2210,6 +2234,7 @@ static const char esp_mail_str_411[] PROGMEM = "NAMESPACE";
 static const char esp_mail_str_412[] PROGMEM = "Enable capability...";
 static const char esp_mail_str_413[] PROGMEM = "> C: Send IMAP command, ENABLE";
 static const char esp_mail_str_414[] PROGMEM = "ENABLE";
+static const char esp_mail_str_416[] PROGMEM = "Updateing firmware...";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";

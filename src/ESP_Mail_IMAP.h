@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created February 16, 2023
+ * Created March 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -295,14 +295,17 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_
         break;
     }
 
-    // Apply partial fetch in case download was not able.
-    if (!imap->_storageReady && imap->_attDownload && cmdCase == esp_mail_imap_cmd_fetch_body_attachment)
-        cmd += "<0.0>"; // This case should not happen because the memory storage was previousely checked.
-    else if ((!imap->_msgDownload && cmdCase == esp_mail_imap_cmd_fetch_body_text) || (imap->_msgDownload && !imap->_storageReady))
+    if (!cPart(imap)->is_firmware_file)
     {
-        cmd += "<0.";
-        cmd += imap->_config->limit.msg_size;
-        cmd += esp_mail_str_15;
+        // Apply partial fetch in case download was not able.
+        if (!imap->_storageReady && imap->_attDownload && cmdCase == esp_mail_imap_cmd_fetch_body_attachment)
+            cmd += "<0.0>"; // This case should not happen because the memory storage was previousely checked.
+        else if ((!imap->_msgDownload && cmdCase == esp_mail_imap_cmd_fetch_body_text) || (imap->_msgDownload && !imap->_storageReady))
+        {
+            cmd += "<0.";
+            cmd += imap->_config->limit.msg_size;
+            cmd += esp_mail_str_15;
+        }
     }
 
     if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -319,6 +322,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
     if (!imap->_tcpConnected)
         imap->_mailboxOpened = false;
+
+    imap->_isFirmwareUpdated = false;
 
     MB_String buf;
     MB_String command;
@@ -795,28 +800,32 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                         if (!handleIMAPResponse(imap, IMAP_STATUS_IMAP_RESPONSE_FAILED, closeSession))
                             return false;
                     }
-                    else if (cPart(imap)->attach_type != esp_mail_att_type_none && imap->_storageReady)
+                    else if (cPart(imap)->attach_type != esp_mail_att_type_none && (imap->_storageReady || cPart(imap)->is_firmware_file))
                     {
 
-                        if ((imap->_config->download.attachment && cPart(imap)->attach_type == esp_mail_att_type_attachment) || (imap->_config->download.inlineImg && cPart(imap)->attach_type == esp_mail_att_type_inline))
+                        if (cPart(imap)->is_firmware_file || (imap->_config->download.attachment && cPart(imap)->attach_type == esp_mail_att_type_attachment) || (imap->_config->download.inlineImg && cPart(imap)->attach_type == esp_mail_att_type_inline))
                         {
-                            if (acnt == 0)
-                                imapCB(imap, esp_mail_str_80, true, false);
-
-                            if (imap->_debug)
+                            if (cPart(imap)->save_to_file)
                             {
-                                MB_String s = esp_mail_str_55;
-                                s += acnt + 1;
-                                s += MBSTRING_FLASH_MCR(" of ");
-                                s += cHeader(imap)->attachment_count;
-                                esp_mail_debug_print(s.c_str(), true);
+                                if (acnt == 0)
+                                    imapCB(imap, esp_mail_str_80, true, false);
+
+                                if (imap->_debug)
+                                {
+                                    MB_String s = esp_mail_str_55;
+                                    s += acnt + 1;
+                                    s += MBSTRING_FLASH_MCR(" of ");
+                                    s += cHeader(imap)->attachment_count;
+                                    esp_mail_debug_print(s.c_str(), true);
+                                }
                             }
 
                             acnt++;
+
                             if (cPart(imap)->octetLen <= (int)imap->_config->limit.attachment_size)
                             {
 
-                                if (imap->_storageReady)
+                                if (imap->_storageReady || cPart(imap)->is_firmware_file)
                                 {
 
                                     if ((int)j < (int)cHeader(imap)->part_headers.size() - 1)
@@ -829,6 +838,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                     imap->_imap_cmd = esp_mail_imap_cmd_fetch_body_attachment;
                                     if (!handleIMAPResponse(imap, IMAP_STATUS_IMAP_RESPONSE_FAILED, closeSession))
                                         return false;
+
                                     idle();
                                 }
                             }
@@ -1879,6 +1889,13 @@ void ESP_Mail_Client::parsePartHeaderResponse(IMAPSession *imap, const char *buf
                     getExtfromMIME(part.content_type.c_str(), ext);
                     part.filename += ext;
                 }
+
+                if (strcmp(part.filename.c_str(), imap->_config->firmware_update.attach_filename.c_str()) == 0 && part.attach_data_size > 0)
+                {
+                    part.is_firmware_file = true;
+                    if (!imap->_config->firmware_update.save_to_file)
+                        part.save_to_file = false;
+                }
             }
 
             return;
@@ -2628,7 +2645,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
     dataTime = millis();
 
-    if (chunkBufSize > 1)
+    if (chunkBufSize > 0)
     {
         if (imap->_imap_cmd == esp_mail_imap_cmd_examine)
         {
@@ -3910,6 +3927,7 @@ void ESP_Mail_Client::prepareFileList(IMAPSession *imap, MB_String &filePath)
 
 bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength)
 {
+
     if (chunkIdx == 0)
     {
         char *tmp = subStr(buf, esp_mail_str_193, esp_mail_str_194, 0);
@@ -3924,12 +3942,32 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             cHeader(imap)->total_download_size += octetLength;
             imap->_lastProgress = -1;
 
+            if (cPart(imap)->is_firmware_file)
+            {
+                cPart(imap)->is_firmware_file = Update.begin(cPart(imap)->attach_data_size);
+
+                imapCB(imap, esp_mail_str_416, !imap->_debug, false);
+
+                if (!cPart(imap)->is_firmware_file)
+                {
+                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED;
+                    imap->_imapStatus.text = MBSTRING_FLASH_MCR("firmware update initialization failed");
+                    imapCB(imap, imap->_imapStatus.text.c_str(), true, false);
+
+                    if (imap->_debug)
+                    {
+                        MB_String e = esp_mail_str_185;
+                        e += imap->errorReason().c_str();
+                        esp_mail_debug_print(e.c_str(), true);
+                    }
+                }
+            }
+
             if (!cPart(imap)->file_open_write)
             {
 
-                if (imap->_storageReady)
+                if (imap->_storageReady && cPart(imap)->save_to_file)
                 {
-
                     downloadRequest = true;
 
                     filePath.clear();
@@ -3948,11 +3986,12 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
                     if (sz < 0)
                     {
+                        imap->_imapStatus.statusCode = sz;
+                        imap->_imapStatus.text.clear();
+                        imapCB(imap, imap->errorReason().c_str(), true, false);
+
                         if (imap->_debug)
                         {
-                            imap->_imapStatus.statusCode = sz;
-                            imap->_imapStatus.text.clear();
-
                             MB_String e = esp_mail_str_185;
                             e += imap->errorReason().c_str();
                             esp_mail_debug_print(e.c_str(), true);
@@ -3991,6 +4030,8 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         if (cPart(imap)->octetCount > octetLength)
             return true;
 
+        bool write_error = false, fw_write_error = false;
+
         if (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64)
         {
 
@@ -4008,14 +4049,27 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
                 sendStreamCB(imap, (void *)decoded, olen, chunkIdx, false);
 
-                int write = olen;
-                if (mbfs->ready(mbfs_type imap->_config->storage.type))
-                    write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)decoded, olen);
+                size_t write = olen, fw_write = olen;
+
+                if (cPart(imap)->is_firmware_file)
+                {
+#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
+                    fw_write = Update.write((uint8_t *)decoded, olen);
+                    cPart(imap)->firmware_downloaded_byte += fw_write == olen ? olen : 0;
+                    fw_write_error = fw_write != olen;
+#endif
+                }
+
+                if (cPart(imap)->save_to_file)
+                {
+                    if (mbfs->ready(mbfs_type imap->_config->storage.type))
+                        write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)decoded, olen);
+                }
+
                 idle();
                 delP(&decoded);
 
-                if (write != (int)olen)
-                    return false;
+                write_error = write != olen;
             }
 
             if (!reconnect(imap))
@@ -4032,18 +4086,72 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
             sendStreamCB(imap, (void *)buf, bufLen, chunkIdx, false);
 
-            int write = bufLen;
-            if (mbfs->ready(mbfs_type imap->_config->storage.type))
-                write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)buf, bufLen);
+            int write = bufLen, fw_write = bufLen;
+
+            if (cPart(imap)->is_firmware_file)
+            {
+#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
+                fw_write = Update.write((uint8_t *)buf, bufLen);
+                cPart(imap)->firmware_downloaded_byte += fw_write == bufLen ? (size_t)bufLen : 0;
+                fw_write_error = fw_write != bufLen;
+#endif
+            }
+
+            if (cPart(imap)->save_to_file)
+            {
+                if (mbfs->ready(mbfs_type imap->_config->storage.type))
+                    write = mbfs->write(mbfs_type imap->_config->storage.type, (uint8_t *)buf, bufLen);
+            }
 
             idle();
 
-            if (write != bufLen)
-                return false;
+            write_error = write != bufLen;
 
             if (!reconnect(imap))
                 return false;
         }
+
+#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
+        if (cPart(imap)->is_firmware_file)
+        {
+            bool update_result_ok = !fw_write_error;
+
+            if (update_result_ok && cPart(imap)->firmware_downloaded_byte == (size_t)cPart(imap)->attach_data_size)
+            {
+                update_result_ok = Update.end();
+                if (update_result_ok)
+                {
+                    imap->_isFirmwareUpdated = true;
+                    cPart(imap)->is_firmware_file = false;
+                }
+            }
+
+            if (!update_result_ok)
+            {
+                if (fw_write_error)
+                {
+                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED;
+                    imap->_imapStatus.text = MBSTRING_FLASH_MCR("firmware update write failed");
+                }
+                else
+                {
+                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
+                    imap->_imapStatus.text = MBSTRING_FLASH_MCR("firmware update finalize failed");
+                }
+                imapCB(imap, imap->_imapStatus.text.c_str(), true, false);
+
+                if (imap->_debug)
+                {
+                    MB_String e = esp_mail_str_185;
+                    e += imap->errorReason().c_str();
+                    esp_mail_debug_print(e.c_str(), true);
+                }
+            }
+        }
+#endif
+
+        if (write_error || fw_write_error)
+            return false;
     }
 
     chunkIdx++;
@@ -4056,22 +4164,39 @@ void ESP_Mail_Client::downloadReport(IMAPSession *imap, int progress)
         progress = 100;
     if (imap->_readCallback && imap->_lastProgress != progress && (progress == 0 || progress == 100 || imap->_lastProgress + ESP_MAIL_PROGRESS_REPORT_STEP <= progress))
     {
-        MB_String filePath = imap->_config->storage.saved_path;
-        filePath += esp_mail_str_202;
-        filePath += cHeader(imap)->message_uid;
-        filePath += esp_mail_str_202;
-        filePath += cPart(imap)->filename;
+        MB_String s;
+        if (cPart(imap)->is_firmware_file)
+        {
+            s = MBSTRING_FLASH_MCR("update firmware (");
+            s += cPart(imap)->filename;
+            s += MBSTRING_FLASH_MCR("), ");
+            s += progress;
+            s += esp_mail_str_92;
+            imapCB(imap, s.c_str(), false, false);
+            s.clear();
+        }
 
-        MB_String s = esp_mail_str_90;
-        s += esp_mail_str_131;
-        s += esp_mail_str_136;
-        s += filePath;
-        s += esp_mail_str_136;
-        s += esp_mail_str_91;
-        s += progress;
-        s += esp_mail_str_92;
-        imapCB(imap, s.c_str(), false, false);
-        s.clear();
+        if (cPart(imap)->save_to_file)
+        {
+            MB_String filePath = imap->_config->storage.saved_path;
+            filePath += esp_mail_str_202;
+            filePath += cHeader(imap)->message_uid;
+            filePath += esp_mail_str_202;
+            filePath += cPart(imap)->filename;
+
+            s = esp_mail_str_90;
+            s += esp_mail_str_131;
+            s += esp_mail_str_136;
+            s += filePath;
+            s += esp_mail_str_136;
+            s += esp_mail_str_91;
+
+            s += progress;
+            s += esp_mail_str_92;
+            imapCB(imap, s.c_str(), false, false);
+            s.clear();
+        }
+
         imap->_lastProgress = progress;
     }
 }
@@ -4545,6 +4670,11 @@ bool IMAPSession::isAuthenticated()
     return _authenticated;
 }
 
+bool IMAPSession::isFirmwareUpdateSuccess()
+{
+    return _isFirmwareUpdated;
+}
+
 bool IMAPSession::mCustomConnect(ESP_Mail_Session *session, imapResponseCallback callback, MB_StringPtr tag)
 {
     this->_customCmdResCallback = callback;
@@ -4626,7 +4756,7 @@ bool IMAPSession::connect(bool &ssl)
     client.rxBufDivider = 1;
     if (_config)
     {
-        if (!_headerOnly && !_config->enable.html && !_config->enable.text && !_config->download.attachment && !_config->download.inlineImg && !_config->download.html && !_config->download.text)
+        if (!_headerOnly && !_config->firmware_update.attach_filename.length() == 0 && !_config->enable.html && !_config->enable.text && !_config->download.attachment && !_config->download.inlineImg && !_config->download.html && !_config->download.text)
             client.rxBufDivider = 16; // minimum rx buffer size for only message header
     }
 #endif

@@ -140,6 +140,7 @@ mimeDataStreamCallback  KEYWORD2
 characterDecodingCallback   KEYWORD2
 clearAP KEYWORD2
 addAP   KEYWORD2
+isFirmwareUpdated   KEYWORD2
 
 
 #######################################

@@ -434,6 +434,15 @@ bool isAuthenticated();
 ```
 
 
+#### Return firmware update result when attachment filename matches.
+
+return **`boolean`** The boolean value indicates the firmware update status.
+
+```cpp
+bool isFirmwareUpdateSuccess();
+```
+
+
 #### Close the IMAP session.
 
 return **`boolean`** The boolean value which indicates the success of operation.
