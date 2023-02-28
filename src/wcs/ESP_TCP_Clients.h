@@ -9,7 +9,6 @@
 #include "./ESP_Mail_FS.h"
 #include "./extras/MB_MCU.h"
 
-
 #ifdef ENABLE_CUSTOM_CLIENT
 #define ESP_MAIL_ENABLE_CUSTOM_CLIENT
 #endif
@@ -30,7 +29,7 @@
 #include "esp32/ESP32_TCP_Client.h"
 #define ESP_MAIL_TCP_CLIENT ESP32_TCP_Client
 
-#elif defined(ESP8266) || defined(PICO_RP2040)
+#elif defined(ESP8266) || (defined(PICO_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT))
 
 #include <ESP8266WiFi.h>
 #include "esp8266/ESP8266_TCP_Client.h"
