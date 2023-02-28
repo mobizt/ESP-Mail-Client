@@ -3942,6 +3942,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             cHeader(imap)->total_download_size += octetLength;
             imap->_lastProgress = -1;
 
+#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
             if (cPart(imap)->is_firmware_file)
             {
                 cPart(imap)->is_firmware_file = Update.begin(cPart(imap)->attach_data_size);
@@ -3962,6 +3963,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                     }
                 }
             }
+#endif
 
             if (!cPart(imap)->file_open_write)
             {
@@ -4030,7 +4032,10 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         if (cPart(imap)->octetCount > octetLength)
             return true;
 
-        bool write_error = false, fw_write_error = false;
+        bool write_error = false;
+#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
+        bool fw_write_error = false;
+#endif
 
         if (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64)
         {
@@ -4049,12 +4054,12 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
                 sendStreamCB(imap, (void *)decoded, olen, chunkIdx, false);
 
-                size_t write = olen, fw_write = olen;
+                size_t write = olen;
 
                 if (cPart(imap)->is_firmware_file)
                 {
 #if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
-                    fw_write = Update.write((uint8_t *)decoded, olen);
+                    size_t fw_write = Update.write((uint8_t *)decoded, olen);
                     cPart(imap)->firmware_downloaded_byte += fw_write == olen ? olen : 0;
                     fw_write_error = fw_write != olen;
 #endif
@@ -4086,12 +4091,12 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
             sendStreamCB(imap, (void *)buf, bufLen, chunkIdx, false);
 
-            int write = bufLen, fw_write = bufLen;
+            int write = bufLen;
 
             if (cPart(imap)->is_firmware_file)
             {
 #if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
-                fw_write = Update.write((uint8_t *)buf, bufLen);
+                int fw_write = Update.write((uint8_t *)buf, bufLen);
                 cPart(imap)->firmware_downloaded_byte += fw_write == bufLen ? (size_t)bufLen : 0;
                 fw_write_error = fw_write != bufLen;
 #endif
