@@ -4032,10 +4032,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         if (cPart(imap)->octetCount > octetLength)
             return true;
 
-        bool write_error = false;
-#if defined(ESP_MAIL_OTA_UPDATE_ENABLED)
-        bool fw_write_error = false;
-#endif
+        bool write_error = false, fw_write_error = false;
 
         if (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64)
         {
