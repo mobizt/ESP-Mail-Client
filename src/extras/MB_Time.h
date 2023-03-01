@@ -54,7 +54,7 @@
 
 #include "MB_String.h"
 #include "MB_List.h"
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
 #include <WiFiNTP.h>
 #endif
@@ -62,13 +62,13 @@
 #include <Udp.h>
 #include "MB_NTP.h"
 
-#if defined(MB_MCU_ATMEL_ARM) || defined(MB_MCU_RP2040)
+#if defined(MB_ARDUINO_ARCH_SAMD) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 #include "../wcs/samd/lib/WiFiNINA.h"
 #endif
 
 #define ESP_TIME_DEFAULT_TS 1577836800
 
-#if defined(__AVR__) || MB_MCU_TEENSY_ARM
+#if defined(__AVR__) || MB_ARDUINO_TEENSY
 #define MB_TIME_PGM_ATTR
 #else
 #define MB_TIME_PGM_ATTR PROGMEM
@@ -134,14 +134,14 @@ public:
     }
 #else
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
     if (TZ != gmtOffset || DST_MN != daylightOffset)
       configUpdated = true;
 
-#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
-#elif defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
     sys_ts = time(nullptr);
     if ((millis() - lastSyncMillis > 5000 || lastSyncMillis == 0) && (sys_ts < ESP_TIME_DEFAULT_TS || configUpdated))
     {
@@ -199,7 +199,7 @@ public:
 
 #elif defined(ESP8266)
     configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
     NTP.begin(_sv1.c_str(), _sv2.c_str());
     NTP.waitSet();
 #endif
@@ -210,7 +210,7 @@ public:
 
   int setTimestamp(time_t ts)
   {
-#if defined(ESP32) || defined(ESP8266)
+#if defined(MB_ARDUINO_ESP)
     struct timeval tm; // sec, us
     tm.tv_sec = ts;
     tm.tv_usec = 0;
@@ -397,7 +397,7 @@ public:
       configUpdated = false;
     }
 
-#if defined(ESP32) || defined(ESP8266)
+#if defined(MB_ARDUINO_ESP)
     // If system timestamp was set, update the device time
     if (sys_ts > ESP_TIME_DEFAULT_TS && time(nullptr) < sys_ts)
       setTimestamp(sys_ts);
@@ -449,7 +449,7 @@ private:
   void getTime(uint32_t ctime = 0)
   {
 
-#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
     unsigned long ts = WiFi.getTime();
     if (ts > 0)
@@ -457,10 +457,10 @@ private:
 
 #else
 
-#if defined(ENABLE_CUSTOM_CLIENT) || defined(ARDUINO_ARCH_RP2040) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__))
+#if defined(ENABLE_CUSTOM_CLIENT) || defined(MB_ARDUINO_PICO) || (defined(ARDUINO_ARCH_SAMD) && defined(__AVR_ATmega4809__))
     // set sys time using the offset since the time was manually set via setTimestamp function and current seconds count
     sys_ts = ts_offset + millis() / 1000;
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
     // set sys time using device timestamp
     if (sys_ts < time(nullptr))
       sys_ts = time(nullptr);
@@ -468,7 +468,7 @@ private:
 #endif
 #else
 
-#if defined(ESP32) || defined(ESP8266)
+#if defined(MB_ARDUINO_ESP)
     sys_ts = ctime == 0 ? time(nullptr) : ctime;
 #endif
 

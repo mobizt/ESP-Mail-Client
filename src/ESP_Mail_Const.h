@@ -17,7 +17,7 @@
 #include <algorithm>
 #endif
 
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
 #if __has_include(<WiFiMulti.h>)
 #define HAS_WIFIMULTI
 #endif
@@ -32,10 +32,10 @@
 #endif
 #endif
 
-#if defined(ENABLE_IMAP) && (defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040))
+#if defined(ENABLE_IMAP) && (defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO))
 #if defined(ESP32)
 #include <Update.h>
-#elif defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#elif defined(ESP8266) || defined(MB_ARDUINO_PICO)
 #include <Updater.h>
 #endif
 #define ESP_MAIL_OTA_UPDATE_ENABLED
@@ -1725,7 +1725,7 @@ struct esp_mail_spi_ethernet_module_t
 #ifdef INC_W5500_LWIP
     Wiznet5500lwIP *w5500 = nullptr;
 #endif
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 
 #endif
 };
@@ -2367,7 +2367,7 @@ static const char esp_mail_str_348[] PROGMEM = "Flash Storage is not ready.";
 static const char esp_mail_str_349[] PROGMEM = "SD Storage is not ready.";
 static const char esp_mail_str_350[] PROGMEM = "File is still opened.";
 static const char esp_mail_str_351[] PROGMEM = "File not found.";
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
 static const char esp_mail_str_415[] PROGMEM = "Please make sure that the size of flash filesystem is not 0 in Pico.";
 #endif
 #endif

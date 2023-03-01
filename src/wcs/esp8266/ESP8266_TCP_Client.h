@@ -30,10 +30,11 @@
 #define ESP8266_TCP_Client_H
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
 #include <time.h>
 #include <string>
 #include <WiFiClient.h>
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #if defined(ESP8266)
 #include <core_version.h>
@@ -44,7 +45,7 @@
 #endif
 
 #include <ESP8266WiFi.h>
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 #include <WiFi.h>
 #endif
 

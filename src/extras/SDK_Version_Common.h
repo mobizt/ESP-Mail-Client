@@ -1,7 +1,8 @@
 #ifndef _SDK_VERSION_COMMON_H
 #define _SDK_VERSION_COMMON_H
 #include <Arduino.h>
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#include "MB_MCU.h"
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #include <string>
 
@@ -40,7 +41,7 @@
 #include <W5500lwIP.h>
 #endif
 
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
 
 #endif
 

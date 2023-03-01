@@ -55,7 +55,8 @@
 #define ESP8266_SSL_Client_CPP
 
 #include <Arduino.h>
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#include "ESP_Mail_FS.h"
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #include "ESP8266_SSL_Client.h"
 #include "ESP_Mail_Print.h"
@@ -70,7 +71,7 @@
 #include <errno.h>
 #include <algorithm>
 #include "StackThunk.h"
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
 #include "lwip/opt.h"
 #include "lwip/ip.h"
 #include "lwip/tcp.h"

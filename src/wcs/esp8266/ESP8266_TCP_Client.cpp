@@ -30,7 +30,8 @@
 #define ESP8266_TCP_Client_CPP
 
 #include <Arduino.h>
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#include "ESP_Mail_FS.h"
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #include "ESP8266_TCP_Client.h"
 
@@ -176,7 +177,7 @@ bool ESP8266_TCP_Client::ethLinkUp()
     goto ex;
   }
 #endif
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 
 #endif
 
@@ -213,7 +214,7 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
     goto ex;
 #endif
 
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 
 #endif
 

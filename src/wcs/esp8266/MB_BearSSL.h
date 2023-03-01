@@ -54,7 +54,7 @@
 #define MB_BEARSSL_H_
 
 #pragma once
-
+#include "ESP_Mail_FS.h"
 
 #if defined(ESP8266)
 
@@ -72,7 +72,7 @@
 #include <vector>
 #include <algorithm>
 
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 
 #include <Arduino.h>
 #include <bearssl/bearssl.h>

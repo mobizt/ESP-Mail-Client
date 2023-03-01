@@ -1727,7 +1727,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
         if (storageType == esp_mail_file_storage_type_flash)
         {
             esp_mail_debug_print(esp_mail_str_348, true);
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
             esp_mail_debug_print(esp_mail_str_415, true);
 #endif
         }
@@ -1742,7 +1742,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
         {
             e += esp_mail_str_348;
             e += esp_mail_str_34;
-#if defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_PICO)
             e += esp_mail_str_185;
             e += esp_mail_str_415;
 #endif
@@ -3699,7 +3699,7 @@ SMTPSession::SMTPSession()
 SMTPSession::~SMTPSession()
 {
     closeSession();
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
     _caCert.reset();
     _caCert = nullptr;
 #endif
@@ -3758,7 +3758,7 @@ bool SMTPSession::handleConnection(ESP_Mail_Session *config, bool &ssl)
 
     _sesson_cfg = config;
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_ESP)|| defined(MB_ARDUINO_PICO)
 
     _caCert = nullptr;
 
@@ -3845,7 +3845,7 @@ bool SMTPSession::connect(bool &ssl)
 #endif
     }
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
     bool validTime = false;
 #endif
 
@@ -3853,7 +3853,7 @@ bool SMTPSession::connect(bool &ssl)
     validTime = true; // strlen(_sesson_cfg->certificate.cert_file) > 0 || _caCert != nullptr;
 #endif
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(MB_ARDUINO_ESP)|| defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
     if (!_customCmdResCallback && (_sesson_cfg->time.ntp_server.length() > 0 || validTime))
     {

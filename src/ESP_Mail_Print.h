@@ -1,7 +1,7 @@
 #ifndef ESP_MAIL_PRINT_H_
 #define ESP_MAIL_PRINT_H_
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
 
 #define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf
 

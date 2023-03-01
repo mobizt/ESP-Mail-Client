@@ -42,14 +42,14 @@
 
 #include "extras/MB_Time.h"
 #include "extras/MIMEInfo.h"
-
 #include "ESP_Mail_Print.h"
+#include "ESP_Mail_FS.h"
 
 #if __has_include(<WiFi101.h>)
 #include <WiFi101.h>
 #endif
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #define UPLOAD_CHUNKS_NUM 12
 
@@ -65,7 +65,7 @@
 #define SD_CS_PIN 15
 #define ESP_MAIL_MIN_MEM 4000
 
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
 
 #include <WiFi.h>
 #define ESP_MAIL_MIN_MEM 70000
@@ -869,7 +869,7 @@ public:
    */
   bool sdBegin(int8_t ss = -1, int8_t sck = -1, int8_t miso = -1, int8_t mosi = -1, uint32_t frequency = 4000000);
 
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
   /** Initiate SD card with SD FS configurations (ESP8266 only).
    *
@@ -2131,7 +2131,7 @@ private:
   int _uid_tmp = 0;
   int _lastProgress = -1;
   int _certType = -1;
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
   std::shared_ptr<const char> _caCert = nullptr;
 #endif
 
@@ -2364,7 +2364,7 @@ private:
   int _lastProgress = -1;
 
   int _certType = -1;
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
   std::shared_ptr<const char> _caCert = nullptr;
 #endif
 

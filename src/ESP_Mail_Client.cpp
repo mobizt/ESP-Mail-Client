@@ -105,7 +105,7 @@ bool ESP_Mail_Client::sdBegin(int8_t ss, int8_t sck, int8_t miso, int8_t mosi, u
   return mbfs->sdBegin(ss, sck, miso, mosi, frequency);
 }
 
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 bool ESP_Mail_Client::sdBegin(SDFSConfig *sdFSConfig)
 {
   return mbfs->sdFatBegin(sdFSConfig);
@@ -144,9 +144,9 @@ bool ESP_Mail_Client::sdMMCBegin(const char *mountpoint, bool mode1bit, bool for
 
 int ESP_Mail_Client::getFreeHeap()
 {
-#if defined(MB_MCU_ESP)
+#if defined(MB_ARDUINO_ESP)
   return ESP.getFreeHeap();
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(MB_ARDUINO_PICO)
   return rp2040.getFreeHeap();
 #else
   return 0;
@@ -161,7 +161,7 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
   if (!TZ_Var)
     return;
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
   if (strlen(TZ_Var) > 0)
   {
 
@@ -262,7 +262,7 @@ void ESP_Mail_Client::idle()
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait)
 {
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(ARDUINO_NANO_RP2040_CONNECT)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
   _clockReady = Time.clockReady();
 

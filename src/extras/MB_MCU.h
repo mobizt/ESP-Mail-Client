@@ -5,23 +5,43 @@
 
 
 #if defined(ESP8266) || defined(ESP32)
-#define MB_MCU_ESP 1
+#ifndef MB_ARDUINO_ESP
+#define MB_ARDUINO_ESP
+#endif
 #endif
 
 #if defined(__arm__)
-#define MB_MCU_ARM 2
+#ifndef MB_ARDUINO_ARM
+#define MB_ARDUINO_ARM 
+#endif
 #endif
 
 #if defined(ARDUINO_ARCH_SAMD)
-#define MB_MCU_ATMEL_ARM 3
+#ifndef MB_ARDUINO_ARCH_SAMD
+#define MB_ARDUINO_ARCH_SAMD
 #endif
+#endif
+
+#if defined(ARDUINO_ARCH_RP2040)
 
 #if defined(ARDUINO_NANO_RP2040_CONNECT)
-#define MB_MCU_RP2040 4
+#ifndef MB_ARDUINO_NANO_RP2040_CONNECT
+#define MB_ARDUINO_NANO_RP2040_CONNECT
+#endif
+#else
+#ifndef MB_ARDUINO_PICO
+#define MB_ARDUINO_PICO
+#endif
 #endif
 
-#if defined(TEENSYDUINO)
-#define MB_MCU_TEENSY_ARM 5
 #endif
+
+
+#if defined(TEENSYDUINO)
+#ifndef MB_ARDUINO_TEENSY
+#define MB_ARDUINO_TEENSY
+#endif
+#endif
+
 
 #endif

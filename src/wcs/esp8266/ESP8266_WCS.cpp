@@ -30,7 +30,8 @@
 #define ESP8266_WCS_CPP
 
 #include <Arduino.h>
-#if defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)
+#include "ESP_Mail_FS.h"
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #define LWIP_INTERNAL
 
