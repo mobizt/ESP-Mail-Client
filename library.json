@@ -12,5 +12,5 @@
     "email": "suwatchai@outlook.com"
   }],
   "frameworks": "arduino",
-  "platforms": "espressif32, espressif8266, atmelsam, raspberrypi, atmelavr, atmelmegaavr, ststm32, teensy"
+  "platforms": "espressif32, espressif8266, atmelsam, atmelavr, atmelmegaavr, ststm32, teensy, rp2040"
 }
