@@ -300,9 +300,11 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_
         break;
     }
 
-    if (!cPart(imap)->is_firmware_file)
+    bool allowPartialFetch = (cmdCase == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->is_firmware_file) ? false : true;
+
+    if (allowPartialFetch)
     {
-        // Apply partial fetch in case download was not able.
+        //  Apply partial fetch in case download was not able.
         if (!imap->_storageReady && imap->_attDownload && cmdCase == esp_mail_imap_cmd_fetch_body_attachment)
             cmd += "<0.0>"; // This case should not happen because the memory storage was previousely checked.
         else if ((!imap->_msgDownload && cmdCase == esp_mail_imap_cmd_fetch_body_text) || (imap->_msgDownload && !imap->_storageReady))
