@@ -4117,19 +4117,18 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         if (cPart(imap)->is_firmware_file)
         {
             bool update_result_ok = !fw_write_error;
-
+            
             if (update_result_ok && cPart(imap)->firmware_downloaded_byte == (size_t)cPart(imap)->attach_data_size)
             {
                 update_result_ok = Update.end();
                 if (update_result_ok)
-                {
                     imap->_isFirmwareUpdated = true;
-                    cPart(imap)->is_firmware_file = false;
-                }
             }
 
             if (!update_result_ok)
             {
+                cPart(imap)->is_firmware_file = false;
+
                 if (fw_write_error)
                 {
                     imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED;
@@ -4140,7 +4139,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                     imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
                     imap->_imapStatus.text = MBSTRING_FLASH_MCR("firmware update finalize failed");
                 }
-                imapCB(imap, imap->_imapStatus.text.c_str(), true, false);
+                imapCB(imap, imap->_imapStatus.text.c_str(), !imap->_debug, false);
 
                 if (imap->_debug)
                 {

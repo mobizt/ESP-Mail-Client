@@ -68,7 +68,7 @@
 
 #define ESP_TIME_DEFAULT_TS 1577836800
 
-#if defined(__AVR__) || MB_ARDUINO_TEENSY
+#if defined(__AVR__) || defined(MB_ARDUINO_TEENSY)
 #define MB_TIME_PGM_ATTR
 #else
 #define MB_TIME_PGM_ATTR PROGMEM

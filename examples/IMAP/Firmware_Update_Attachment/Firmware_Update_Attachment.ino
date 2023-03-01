@@ -289,7 +289,7 @@ void imapCallback(IMAP_Status status)
             delay(2000);
 #if defined(ESP32) || defined(ESP8266)
             ESP.restart();
-#elif defined(ARDUINO_ARCH_RP2040)
+#elif defined(ARDUINO_ARCH_RP2040) && !defined(ARDUINO_NANO_RP2040_CONNECT)
             rp2040.restart();
 #endif
         }
