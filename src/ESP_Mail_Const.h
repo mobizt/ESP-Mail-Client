@@ -2234,7 +2234,7 @@ static const char esp_mail_str_411[] PROGMEM = "NAMESPACE";
 static const char esp_mail_str_412[] PROGMEM = "Enable capability...";
 static const char esp_mail_str_413[] PROGMEM = "> C: Send IMAP command, ENABLE";
 static const char esp_mail_str_414[] PROGMEM = "ENABLE";
-static const char esp_mail_str_416[] PROGMEM = "Updateing firmware...";
+static const char esp_mail_str_416[] PROGMEM = "Updating firmware...";
 
 // Tagged
 static const char esp_mail_imap_response_1[] PROGMEM = "OK ";

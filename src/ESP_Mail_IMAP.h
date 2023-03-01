@@ -36,6 +36,11 @@
 
 #if defined(ENABLE_IMAP)
 
+#if defined(MB_ARDUINO_PICO)
+extern uint8_t _FS_start;
+extern uint8_t _FS_end;
+#endif
+
 int ESP_Mail_Client::decodeChar(const char *s)
 {
     return 16 * hexval(*(s + 1)) + hexval(*(s + 2));
@@ -742,6 +747,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                             }
                         }
                     }
+
+                    checkFirmwareFile(imap, cPart(imap)->filename.c_str(), *cPart(imap), true);
                 }
 
                 int acnt = 0;
@@ -1841,9 +1848,33 @@ bool ESP_Mail_Client::getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P
     return false;
 }
 
+void ESP_Mail_Client::checkFirmwareFile(IMAPSession *imap, const char *filename, struct esp_mail_message_part_info_t &part, bool defaultSize)
+{
+    if (strcmp(filename, imap->_config->firmware_update.attach_filename.c_str()) == 0 && part.attach_type == esp_mail_att_type_attachment)
+    {
+        part.is_firmware_file = true;
+        // If no file size prop from Content-Disposition header
+        if (part.attach_data_size == 0 && defaultSize)
+        {
+#if defined(ESP32)
+            int sketchFreeSpace = ESP.getFreeSketchSpace();
+            part.attach_data_size = sketchFreeSpace ? sketchFreeSpace : 1024;
+#elif defined(ESP8266)
+            size_t spiffsSize = ((size_t)FS_end - (size_t)FS_start);
+            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024;
+#elif defined(MB_ARDUINO_PICO)
+            size_t spiffsSize = ((size_t)&_FS_end - (size_t)&_FS_start);
+            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024;
+#endif
+        }
+
+        if (!imap->_config->firmware_update.save_to_file)
+            part.save_to_file = false;
+    }
+}
+
 void ESP_Mail_Client::parsePartHeaderResponse(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive)
 {
-
     char *tmp = nullptr;
     if (chunkIdx == 0)
     {
@@ -1890,12 +1921,7 @@ void ESP_Mail_Client::parsePartHeaderResponse(IMAPSession *imap, const char *buf
                     part.filename += ext;
                 }
 
-                if (strcmp(part.filename.c_str(), imap->_config->firmware_update.attach_filename.c_str()) == 0 && part.attach_data_size > 0)
-                {
-                    part.is_firmware_file = true;
-                    if (!imap->_config->firmware_update.save_to_file)
-                        part.save_to_file = false;
-                }
+                checkFirmwareFile(imap, part.filename.c_str(), part);
             }
 
             return;
@@ -4117,10 +4143,11 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
         if (cPart(imap)->is_firmware_file)
         {
             bool update_result_ok = !fw_write_error;
-            
-            if (update_result_ok && cPart(imap)->firmware_downloaded_byte == (size_t)cPart(imap)->attach_data_size)
+
+            if (!imap->_isFirmwareUpdated && update_result_ok &&
+                (cPart(imap)->firmware_downloaded_byte == (size_t)cPart(imap)->attach_data_size || cPart(imap)->octetCount >= octetLength))
             {
-                update_result_ok = Update.end();
+                update_result_ok = Update.end(cPart(imap)->octetCount >= octetLength);
                 if (update_result_ok)
                     imap->_isFirmwareUpdated = true;
             }
