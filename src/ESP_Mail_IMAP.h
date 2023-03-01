@@ -1858,13 +1858,13 @@ void ESP_Mail_Client::checkFirmwareFile(IMAPSession *imap, const char *filename,
         {
 #if defined(ESP32)
             int sketchFreeSpace = ESP.getFreeSketchSpace();
-            part.attach_data_size = sketchFreeSpace ? sketchFreeSpace : 1024;
+            part.attach_data_size = sketchFreeSpace ? sketchFreeSpace : 1024000;
 #elif defined(ESP8266)
             size_t spiffsSize = ((size_t)FS_end - (size_t)FS_start);
-            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024;
+            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024000;
 #elif defined(MB_ARDUINO_PICO)
             size_t spiffsSize = ((size_t)&_FS_end - (size_t)&_FS_start);
-            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024;
+            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024000;
 #endif
         }
 
