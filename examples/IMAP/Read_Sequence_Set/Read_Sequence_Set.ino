@@ -9,6 +9,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and
  * change the config for that card interfaces in src/extras/SDHelper.h
  */
@@ -73,16 +92,16 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
 /* Print all attachments info from the message */
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 
-/* Declare the ESP_Mail_Session for user defined session credentials */
-ESP_Mail_Session session;
+/* Declare the Session_Config for user defined session credentials */
+Session_Config config;
 
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/** Declare the IMAP_Config object used for user defined IMAP operating options
+/** Declare the IMAP_Data object used for user defined IMAP operating options
  * and contains the IMAP operating result
  */
-IMAP_Config config;
+IMAP_Data imap_data;
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 WiFiMulti multi;
@@ -97,15 +116,15 @@ void readEmailsUIDS()
     // Fetch last 10 UIDs
     String sequence_set = String(uid_begin) + ":" + String(uid_last);
 
-    config.fetch.sequence_set.string = sequence_set;
+    imap_data.fetch.sequence_set.string = sequence_set;
 
-    config.fetch.sequence_set.UID = true; // The sequence set are UIDs ranges
+    imap_data.fetch.sequence_set.UID = true; // The sequence set are UIDs ranges
 
-    config.fetch.sequence_set.headerOnly = true; // Do not fetch the content, header only
+    imap_data.fetch.sequence_set.headerOnly = true; // Do not fetch the content, header only
 
     MailClient.readMail(&imap, false /* do not close sessiopn */);
 
-    config.limit.fetch = 5; // Set the limit of number of messages in the fetch results
+    imap_data.limit.fetch = 5; // Set the limit of number of messages in the fetch results
 }
 
 void readEmailsNumbers()
@@ -115,13 +134,13 @@ void readEmailsNumbers()
 
     String sequence_set = String(msg_begin) + ":" + String(msg_last);
 
-    config.fetch.sequence_set.string = sequence_set;
+    imap_data.fetch.sequence_set.string = sequence_set;
 
-    config.fetch.sequence_set.UID = false; // The sequence set are not UIDs
+    imap_data.fetch.sequence_set.UID = false; // The sequence set are not UIDs
 
-    config.fetch.sequence_set.headerOnly = true; // Do not fetch the content, header only
+    imap_data.fetch.sequence_set.headerOnly = true; // Do not fetch the content, header only
 
-    config.limit.fetch = 5; // Set the limit of number of messages in the fetch results
+    imap_data.limit.fetch = 5; // Set the limit of number of messages in the fetch results
 
     // Read Email and close session
     MailClient.readMail(&imap);
@@ -200,47 +219,47 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
     /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = F("/email_data");
+    imap_data.storage.saved_path = F("/email_data");
 
     /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
-     * by the option config.limit.msg_size.
-     * The whole message can be download through config.download.text
-     * or config.download.html which not depends on these enable options.
+     * by the option imap_data.limit.msg_size.
+     * The whole message can be download through imap_data.download.text
+     * or imap_data.download.html which not depends on these enable options.
      */
-    config.enable.html = true;
-    config.enable.text = true;
+    imap_data.enable.html = true;
+    imap_data.enable.text = true;
 
     /* Set to enable the sort the result by message UID in the decending order */
-    config.enable.recent_sort = true;
+    imap_data.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */
-    config.enable.download_status = true;
+    imap_data.enable.download_status = true;
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    // config.enable.header_case_sensitive = true;
+    // imap_data.enable.header_case_sensitive = true;
 
     /** Set the maximum size of message stored in
      * IMAPSession object in byte
      */
-    config.limit.msg_size = 512;
+    imap_data.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
      * that can be downloaded in byte.
      * The file which its size is largger than this limit may be saved
      * as truncated file.
      */
-    config.limit.attachment_size = 1024 * 1024 * 5;
+    imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     /*  {Optional} */
@@ -349,7 +368,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment status in search may be true in case the "multipart/mixed" 
+        // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 

@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and
  * change the config for that card interfaces in src/extras/SDHelper.h
  */
@@ -215,14 +234,14 @@ void setup()
   /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
 
-  /* Declare the ESP_Mail_Session for user defined session credentials */
-  ESP_Mail_Session session;
+  /* Declare the Session_Config for user defined session credentials */
+  Session_Config config;
 
   /* Set the session config */
-  session.server.host_name = SMTP_HOST;
-  session.server.port = SMTP_PORT;
-  session.login.email = AUTHOR_EMAIL;
-  session.login.password = AUTHOR_PASSWORD;
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
 
   /** Assign your host name or you public IPv4 or IPv6 only
    * as this is the part of EHLO/HELO command to identify the client system
@@ -232,12 +251,12 @@ void setup()
    *
    * Assign any text to this option may cause the connection rejection.
    */
-  session.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-  session.time.gmt_offset = 3;
-  session.time.day_light_offset = 0;
+  config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+  config.time.gmt_offset = 3;
+  config.time.day_light_offset = 0;
 
   /* Declare the message class */
   SMTP_Message message;
@@ -349,7 +368,7 @@ void setup()
   message.addAttachment(att[attIndex]);
 
   /* Connect to the server */
-  if (!smtp.connect(&session /* session credentials */))
+  if (!smtp.connect(&config))
     return;
 
   /* Start sending the Email and close the session */

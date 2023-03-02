@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.5
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.6
  *
- * Created March 1, 2023
+ * Created March 2, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -94,7 +94,7 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
   }
 }
 
-void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
+bool ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
 {
 
 #if defined(WCS_USE_BEARSSL)
@@ -102,7 +102,7 @@ void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
 #endif
 
   if (!wcs->mbfs)
-    return;
+    return false;
 
   if (wcs->clockReady && strlen(certFile) > 0)
   {
@@ -138,6 +138,8 @@ void ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
       wcs->baseSetCertType(esp_mail_cert_type_file);
     }
   }
+
+  return getCertType() == esp_mail_cert_type_file;
 }
 
 void ESP8266_TCP_Client::setTimeout(uint32_t timeoutSec)
@@ -150,30 +152,30 @@ void ESP8266_TCP_Client::setTimeout(uint32_t timeoutSec)
 
 bool ESP8266_TCP_Client::ethLinkUp()
 {
-  if (!wcs->session)
+  if (!wcs->session_config)
     return false;
 
   bool ret = false;
 #if defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
 
 #if defined(INC_ENC28J60_LWIP)
-  if (wcs->session->spi_ethernet_module.enc28j60)
+  if (wcs->session_config->spi_ethernet_module.enc28j60)
   {
-    ret = wcs->session->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
+    ret = wcs->session_config->spi_ethernet_module.enc28j60->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
 #if defined(INC_W5100_LWIP)
-  if (wcs->session->spi_ethernet_module.w5100)
+  if (wcs->session_config->spi_ethernet_module.w5100)
   {
-    ret = wcs->session->spi_ethernet_module.w5100->status() == WL_CONNECTED;
+    ret = wcs->session_config->spi_ethernet_module.w5100->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
 #if defined(INC_W5500_LWIP)
-  if (wcs->session->spi_ethernet_module.w5500)
+  if (wcs->session_config->spi_ethernet_module.w5500)
   {
-    ret = wcs->session->spi_ethernet_module.w5500->status() == WL_CONNECTED;
+    ret = wcs->session_config->spi_ethernet_module.w5500->status() == WL_CONNECTED;
     goto ex;
   }
 #endif
@@ -196,21 +198,21 @@ ex:
 void ESP8266_TCP_Client::ethDNSWorkAround()
 {
 
-  if (!wcs->session)
+  if (!wcs->session_config)
     return;
 
 #if defined(ESP8266_CORE_SDK_V3_X_X)
 
 #if defined(INC_ENC28J60_LWIP)
-  if (wcs->session->spi_ethernet_module.enc28j60)
+  if (wcs->session_config->spi_ethernet_module.enc28j60)
     goto ex;
 #endif
 #if defined(INC_W5100_LWIP)
   if wcs
-    ->(session->spi_ethernet_module.w5100) goto ex;
+    ->(session_config->spi_ethernet_module.w5100) goto ex;
 #endif
 #if defined(INC_W5500_LWIP)
-  if (wcs->session->spi_ethernet_module.w5500)
+  if (wcs->session_config->spi_ethernet_module.w5500)
     goto ex;
 #endif
 
@@ -223,7 +225,7 @@ void ESP8266_TCP_Client::ethDNSWorkAround()
 #if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
 ex:
   WiFiClient client;
-  client.connect(wcs->session->server.host_name.c_str(), wcs->session->server.port);
+  client.connect(wcs->session_config->server.host_name.c_str(), wcs->session_config->server.port);
   client.stop();
 #endif
 }

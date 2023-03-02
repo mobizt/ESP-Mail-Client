@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.3
+ * TCP Client Base class, version 2.0.4
  *
- * Created January 21, 2023
+ * Created March 2, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -133,14 +133,14 @@ public:
 
     int getProtocol(uint16_t port)
     {
-        if (session)
+        if (session_config)
         {
-            if (session->ports_functions.list)
+            if (session_config->ports_functions.list)
             {
-                for (int i = 0; i < session->ports_functions.size; i++)
+                for (int i = 0; i < session_config->ports_functions.size; i++)
                 {
-                    if (session->ports_functions.list[i].port == port)
-                        return (int)session->ports_functions.list[i].protocol;
+                    if (session_config->ports_functions.list[i].port == port)
+                        return (int)session_config->ports_functions.list[i].protocol;
                 }
             }
         }
@@ -156,9 +156,9 @@ public:
 private:
     void setMBFS(MB_FS *mbfs) { this->mbfs = mbfs; }
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
-    void setSession(ESP_Mail_Session *session)
+    void setSession(ESP_Mail_Session *session_config)
     {
-        this->session = session;
+        this->session_config = session_config;
     }
 #endif
     int tcpTimeout()
@@ -178,7 +178,7 @@ protected:
     esp_mail_cert_type certType = esp_mail_cert_type_undefined;
     esp_mail_external_client_type ext_client_type = esp_mail_external_client_type_basic;
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
-    ESP_Mail_Session *session = nullptr;
+    ESP_Mail_Session *session_config = nullptr;
 #endif
 };
 

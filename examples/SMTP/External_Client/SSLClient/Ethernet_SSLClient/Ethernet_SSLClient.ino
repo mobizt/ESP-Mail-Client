@@ -134,7 +134,7 @@
  * MailClient.setUDPClient(&udp_client, 0);
  *
  * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
- * session.time.gmt_offset.
+ * config.time.gmt_offset.
  *
  * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
  *
@@ -160,6 +160,25 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
+ *
+ */
+
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
  *
  */
 
@@ -264,14 +283,14 @@ void connectionUpgradeRequestCallback()
 void sendEmail()
 {
 
-    ESP_Mail_Session session;
+    Session_Config config;
 
-    session.server.host_name = SMTP_HOST;
-    session.server.port = SMTP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = SMTP_HOST;
+    config.server.port = SMTP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    session.login.user_domain = F("mydomain.net");
+    config.login.user_domain = F("mydomain.net");
 
     SMTP_Message message;
 
@@ -289,7 +308,7 @@ void sendEmail()
     smtp.networkConnectionRequestCallback(networkConnection);
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    if (!smtp.connect(&session))
+    if (!smtp.connect(&config))
         return;
 
     if (!MailClient.sendMail(&smtp, &message))

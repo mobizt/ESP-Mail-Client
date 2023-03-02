@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For Gmail, to send the Email via port 465 (SSL), less secure app option
  * should be enabled in the account settings. https://myaccount.google.com/lesssecureapps?pli=1
  */
@@ -140,14 +159,14 @@ void setup()
   /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
 
-  /* Declare the ESP_Mail_Session for user defined session credentials */
-  ESP_Mail_Session session;
+  /* Declare the Session_Config for user defined session credentials */
+  Session_Config config;
 
   /* Set the session config */
-  session.server.host_name = SMTP_HOST;
-  session.server.port = SMTP_PORT;
-  session.login.email = AUTHOR_EMAIL;
-  session.login.accessToken = AUTHOR_ACCESS_TOKEN;
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.accessToken = AUTHOR_ACCESS_TOKEN;
 
   /** Assign your host name or you public IPv4 or IPv6 only
    * as this is the part of EHLO/HELO command to identify the client system
@@ -157,12 +176,12 @@ void setup()
    *
    * Assign any text to this option may cause the connection rejection.
    */
-  session.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("mydomain.net");
 
   /* Set the NTP config time */
-  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-  session.time.gmt_offset = 3;
-  session.time.day_light_offset = 0;
+  config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+  config.time.gmt_offset = 3;
+  config.time.day_light_offset = 0;
 
   /* Declare the message class */
   SMTP_Message message;
@@ -211,7 +230,7 @@ void setup()
   // message.response.notify = esp_mail_smtp_notify_success | esp_mail_smtp_notify_failure | esp_mail_smtp_notify_delay;
 
   /* Connect to the server */
-  if (!smtp.connect(&session /* session credentials */))
+  if (!smtp.connect(&config))
     return;
 
   /* Set the custom message header */

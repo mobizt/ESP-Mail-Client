@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 // The account 2 will send Hello message to account 1.
 
 // The account 1 will poll the mailbox for incoming message, when new message received with matched subject
@@ -94,21 +113,21 @@ void replySMTPCallback(SMTP_Status status);
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/*  Declare the global used ESP_Mail_Session for user defined IMAP session credentials */
-ESP_Mail_Session imap_mail_app_session;
+/*  Declare the global used Session_Config for user defined IMAP session credentials */
+Session_Config imap_config;
 
-/** Define the IMAP_Config object used for user defined IMAP operating options
+/** Define the IMAP_Data object used for user defined IMAP operating options
  * and contains the IMAP operating result
  */
-IMAP_Config imap_config;
+IMAP_Data imap_data;
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession hello_smtp;
 SMTPSession reply_smtp;
 
-/* Declare the global used ESP_Mail_Session for user defined SMTP session credentials */
-ESP_Mail_Session hello_smtp_mail_app_session;
-ESP_Mail_Session reply_smtp_mail_app_session;
+/* Declare the global used Session_Config for user defined SMTP session credentials */
+Session_Config hello_smtp_config;
+Session_Config reply_smtp_config;
 
 bool imapSetupOk = false;
 
@@ -207,13 +226,13 @@ void setupIMAP()
     imap.callback(imapCallback);
 
     /* Set the imap app config */
-    imap_mail_app_session.server.host_name = IMAP_HOST;
-    imap_mail_app_session.server.port = IMAP_PORT;
-    imap_mail_app_session.login.email = IMAP_AUTHOR_EMAIL;
-    imap_mail_app_session.login.password = IMAP_AUTHOR_PASSWORD;
+    imap_config.server.host_name = IMAP_HOST;
+    imap_config.server.port = IMAP_PORT;
+    imap_config.login.email = IMAP_AUTHOR_EMAIL;
+    imap_config.login.password = IMAP_AUTHOR_PASSWORD;
 
     /* Connect to the server */
-    if (!imap.connect(&imap_mail_app_session /* session credentials */, &imap_config /* operating options and its result */))
+    if (!imap.connect(&imap_config, &imap_data))
         return;
 
     /* Open or select the mailbox folder to read or search the message */
@@ -231,10 +250,10 @@ bool setupHelloSMTP()
     hello_smtp.callback(helloSMTPCallback);
 
     /* Set the session config */
-    hello_smtp_mail_app_session.server.host_name = HELLO_SMTP_HOST;
-    hello_smtp_mail_app_session.server.port = HELLO_SMTP_PORT;
-    hello_smtp_mail_app_session.login.email = HELLO_SMTP_AUTHOR_EMAIL;
-    hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
+    hello_smtp_config.server.host_name = HELLO_SMTP_HOST;
+    hello_smtp_config.server.port = HELLO_SMTP_PORT;
+    hello_smtp_config.login.email = HELLO_SMTP_AUTHOR_EMAIL;
+    hello_smtp_config.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
 
     /** Assign your host name or you public IPv4 or IPv6 only
      * as this is the part of EHLO/HELO command to identify the client system
@@ -244,15 +263,15 @@ bool setupHelloSMTP()
      *
      * Assign any text to this option may cause the connection rejection.
      */
-    hello_smtp_mail_app_session.login.user_domain = F("mydomain.net");
+    hello_smtp_config.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
-    hello_smtp_mail_app_session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    hello_smtp_mail_app_session.time.gmt_offset = 3;
-    hello_smtp_mail_app_session.time.day_light_offset = 0;
+    hello_smtp_config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    hello_smtp_config.time.gmt_offset = 3;
+    hello_smtp_config.time.day_light_offset = 0;
 
     /* Connect to the server */
-    if (!hello_smtp.connect(&hello_smtp_mail_app_session /* session credentials */))
+    if (!hello_smtp.connect(&hello_smtp_config))
         return false;
 
     return true;
@@ -266,14 +285,14 @@ bool setupReplySMTP()
     reply_smtp.callback(replySMTPCallback);
 
     /* Set the session config */
-    reply_smtp_mail_app_session.server.host_name = REPLY_SMTP_HOST;
-    reply_smtp_mail_app_session.server.port = REPLY_SMTP_PORT;
-    reply_smtp_mail_app_session.login.email = REPLY_SMTP_AUTHOR_EMAIL;
-    reply_smtp_mail_app_session.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
-    reply_smtp_mail_app_session.login.user_domain = F("mydomain.net");
+    reply_smtp_config.server.host_name = REPLY_SMTP_HOST;
+    reply_smtp_config.server.port = REPLY_SMTP_PORT;
+    reply_smtp_config.login.email = REPLY_SMTP_AUTHOR_EMAIL;
+    reply_smtp_config.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
+    reply_smtp_config.login.user_domain = F("mydomain.net");
 
     /* Connect to the server */
-    if (!reply_smtp.connect(&reply_smtp_mail_app_session /* session credentials */))
+    if (!reply_smtp.connect(&reply_smtp_config))
         return false;
 
     return true;
@@ -349,7 +368,7 @@ void printPollingStatus(IMAPSession &imap)
         imap.stopListen();
 
         // Get the UID of new message and fetch
-        imap_config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
+        imap_data.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
 
         // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
         // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag

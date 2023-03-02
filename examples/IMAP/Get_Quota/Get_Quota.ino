@@ -9,6 +9,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory
@@ -131,22 +150,22 @@ void setup()
      */
     imap.debug(1);
 
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
+    /* Declare the Session_Config for user defined session credentials */
+    Session_Config config;
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    /** Declare the IMAP_Config object used for user defined IMAP operating options
+    /** Declare the IMAP_Data object used for user defined IMAP operating options
      * and contains the IMAP operating result
      */
-    IMAP_Config config;
+    IMAP_Data imap_data;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     IMAP_Quota_Root_Info info;

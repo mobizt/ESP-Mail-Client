@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 #include <Arduino.h>
 #if defined(ESP32)
 #include <WiFi.h>
@@ -68,22 +87,22 @@ const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
 
 void sendEmail()
 {
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
+    /* Declare the Session_Config for user defined session credentials */
+    Session_Config config;
 
     /* Set the session config */
-    session.server.host_name = SMTP_HOST;
-    session.server.port = SMTP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
-    session.login.user_domain = F("mydomain.net");
+    config.server.host_name = SMTP_HOST;
+    config.server.port = SMTP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
+    config.login.user_domain = F("mydomain.net");
 
     /* Set the NTP config time */
 
-    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    session.time.gmt_offset = 0;
-    session.time.day_light_offset = 0;
-    session.time.timezone_env_string = "JST-9"; // for Tokyo
+    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    config.time.gmt_offset = 0;
+    config.time.day_light_offset = 0;
+    config.time.timezone_env_string = "JST-9"; // for Tokyo
 
     // See the timezone environment string list from https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 
@@ -159,11 +178,11 @@ void sendEmail()
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
     // For Root CA certificate verification (ESP8266 and ESP32 only)
-    // session.certificate.cert_data = rootCACert;
+    // config.certificate.cert_data = rootCACert;
     // or
-    // session.certificate.cert_file = "/path/to/der/file";
-    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-    // session.certificate.verify = true;
+    // config.certificate.cert_file = "/path/to/der/file";
+    // config.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    // config.certificate.verify = true;
 
     // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
@@ -176,7 +195,7 @@ void sendEmail()
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
     /* Connect to the server */
-    if (!smtp.connect(&session /* session credentials */))
+    if (!smtp.connect(&config))
         return;
 
     /* Start sending Email and close the session */

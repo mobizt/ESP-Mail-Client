@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory
@@ -94,13 +113,13 @@ int totalMessage = 0;
 int msgNum = 0;
 int sign = -1;
 
-/* Declare the global used ESP_Mail_Session for user defined session credentials */
-ESP_Mail_Session session;
+/* Declare the global used Session_Config for user defined session credentials */
+Session_Config config;
 
-/** Declare the global used IMAP_Config object used for user defined IMAP operating options
+/** Declare the global used IMAP_Data object used for user defined IMAP operating options
  * and contains the IMAP operating result
  */
-IMAP_Config config;
+IMAP_Data imap_data;
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 WiFiMulti multi;
@@ -181,75 +200,75 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
     /* Message UID to fetch or read */
-    config.fetch.uid.clear();
+    imap_data.fetch.uid.clear();
 
     /* Search criteria */
-    config.search.criteria.clear();
+    imap_data.search.criteria.clear();
 
     /* Also search the unseen message */
-    config.search.unseen_msg = true;
+    imap_data.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = F("/email_data");
+    imap_data.storage.saved_path = F("/email_data");
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
      * esp_mail_file_storage_type_flash, and
      * esp_mail_file_storage_type_sd
      */
-    config.storage.type = esp_mail_file_storage_type_sd;
+    imap_data.storage.type = esp_mail_file_storage_type_sd;
 
     /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
      */
-    config.download.header = false;
-    config.download.text = false;
-    config.download.html = false;
-    config.download.attachment = false;
-    config.download.inlineImg = false;
+    imap_data.download.header = false;
+    imap_data.download.text = false;
+    imap_data.download.html = false;
+    imap_data.download.attachment = false;
+    imap_data.download.inlineImg = false;
 
     /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
-     * by the option config.limit.msg_size.
-     * The whole message can be download through config.download.text
-     * or config.download.html which not depends on these enable options.
+     * by the option imap_data.limit.msg_size.
+     * The whole message can be download through imap_data.download.text
+     * or imap_data.download.html which not depends on these enable options.
      */
-    config.enable.html = true;
-    config.enable.text = true;
+    imap_data.enable.html = true;
+    imap_data.enable.text = true;
 
     /* Set to enable the sort the result by message UID in the decending order */
-    config.enable.recent_sort = true;
+    imap_data.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */
-    config.enable.download_status = true;
+    imap_data.enable.download_status = true;
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    // config.enable.header_case_sensitive = true;
+    // imap_data.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
-    config.limit.search = 5;
+    imap_data.limit.search = 5;
 
     /** Set the maximum size of message stored in
      * IMAPSession object in byte
      */
-    config.limit.msg_size = 512;
+    imap_data.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
      * that can be downloaded in byte.
      * The file which its size is largger than this limit may be saved
      * as truncated file.
      */
-    config.limit.attachment_size = 1024 * 1024 * 5;
+    imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&session, &imap_data))
         return;
 
     if (imap.isAuthenticated())
@@ -306,10 +325,10 @@ void loop()
         }
 
         /* Message number to fetch or read */
-        config.fetch.number = msgNum;
+        imap_data.fetch.number = msgNum;
 
         /* Set seen flag */
-        // config.fetch.set_seen = true;
+        // imap_data.fetch.set_seen = true;
 
         /** Read or search the Email and keep the TCP session to open
          * The second parameter is for close the session.

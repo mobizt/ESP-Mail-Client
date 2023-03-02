@@ -194,6 +194,52 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
 #endif
 }
 
+void ESP_Mail_Client::preparePortFunction(Session_Config *session_config, bool isSMTP, bool &secure, bool &secureMode, bool &ssl)
+{
+
+  if (session_config->ports_functions.list)
+  {
+    if (session_config->ports_functions.use_internal_list)
+    {
+      session_config->ports_functions.use_internal_list = false;
+      delete[] session_config->ports_functions.list;
+    }
+  }
+
+  if (!session_config->ports_functions.list)
+  {
+    session_config->ports_functions.use_internal_list = true;
+
+    if (isSMTP)
+    {
+      session_config->ports_functions.list = new port_function[3];
+      session_config->ports_functions.size = 3;
+
+      session_config->ports_functions.list[0].port = 25;
+      session_config->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
+
+      session_config->ports_functions.list[1].port = 465;
+      session_config->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+
+      session_config->ports_functions.list[2].port = 587;
+      session_config->ports_functions.list[2].protocol = esp_mail_protocol_tls;
+    }
+    else
+    {
+      session_config->ports_functions.list = new port_function[2];
+      session_config->ports_functions.size = 2;
+
+      session_config->ports_functions.list[0].port = 143;
+      session_config->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
+
+      session_config->ports_functions.list[1].port = 993;
+      session_config->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+    }
+  }
+
+  getPortFunction(session_config->server.port, session_config->ports_functions, secure, secureMode, ssl, session_config->secure.startTLS);
+}
+
 void ESP_Mail_Client::getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls)
 {
   for (size_t i = 0; i < ports_functions.size; i++)
@@ -584,33 +630,156 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
   return idx;
 }
 
+void ESP_Mail_Client::printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP)
+{
+  MB_String s;
+
+  bool isCb = isSMTP ? (smtpResponseCallback)cb != NULL : (imapResponseCallback)cb != NULL;
+
+  // Server connection attempt: no status code
+  if (isSMTP)
+  {
+    if (((SMTPSession *)caller)->_sendCallback != NULL && !isCb)
+      smtpCB((SMTPSession *)caller, esp_mail_str_120, false, false);
+  }
+  else
+  {
+    if (((IMAPSession *)caller)->_readCallback != NULL && !isCb)
+      imapCB((IMAPSession *)caller, esp_mail_str_50, false, false);
+  }
+
+  if (debug && !isCb)
+  {
+    s = esp_mail_str_314;
+    s += ESP_MAIL_VERSION;
+    s += client->fwVersion();
+    esp_mail_debug_print(s.c_str(), true);
+
+#if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
+    if (ESP.getPsramSize() == 0 && !isCb)
+    {
+      s = esp_mail_str_353;
+      esp_mail_debug_print(s.c_str(), true);
+    }
+#endif
+  }
+}
+
+bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode)
+{
+  MB_String s;
+  bool isCb = isSMTP ? (smtpResponseCallback)cb != NULL : (imapResponseCallback)cb != NULL;
+
+  if (debug && !isCb)
+  {
+    esp_mail_debug_print(isSMTP ? esp_mail_str_236 : esp_mail_str_225, true);
+    s = esp_mail_str_261;
+    s += esp_mail_str_211;
+    s += session_config->server.host_name;
+    esp_mail_debug_print(s.c_str(), true);
+    s = esp_mail_str_261;
+    s += esp_mail_str_201;
+    s += session_config->server.port;
+    esp_mail_debug_print(s.c_str(), true);
+  }
+
+#if defined(ESP32) && defined(ESP32_TCP_CLIENT)
+  if (debug && !isCb)
+    client->setDebugCallback(esp_mail_debug_print);
+#endif
+
+  client->begin(session_config->server.host_name.c_str(), session_config->server.port);
+
+  client->ethDNSWorkAround();
+
+  if (!client->connect(secureMode, session_config->certificate.verify))
+  {
+    if (isSMTP)
+      return handleSMTPError((SMTPSession *)caller, SMTP_STATUS_SERVER_CONNECT_FAILED);
+    else
+      return handleIMAPError((IMAPSession *)caller, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
+  }
+  return true;
+}
+
+void ESP_Mail_Client::prepareTime(Session_Config *session_config, void *cb, void *caller, bool isSMTP)
+{
+
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
+  bool validTime = false;
+#endif
+
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-void ESP_Mail_Client::setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert)
+  if (isSMTP)
+    validTime = true;
+  else
+    validTime = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
+#endif
+
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
+
+  bool isCb = isSMTP ? (smtpResponseCallback)cb != NULL : (imapResponseCallback)cb != NULL;
+
+  if (!isCb && (session_config->time.ntp_server.length() > 0 || validTime))
+  {
+    MB_String s = esp_mail_str_355;
+    if (!isCb)
+      esp_mail_debug_print(s.c_str(), true);
+    setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+
+    if (!Time.clockReady())
+    {
+      if (isSMTP)
+        errorStatusCB((SMTPSession *)caller, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+      else
+        errorStatusCB((IMAPSession *)caller, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+    }
+  }
+
+#endif
+}
+
+#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
+
+void ESP_Mail_Client::setCert(Session_Config *session_config, const char *ca)
+{
+  int ptr = reinterpret_cast<int>(ca);
+  if (ptr != session_config->cert_ptr)
+  {
+    session_config->cert_updated = true;
+    session_config->cert_ptr = ptr;
+  }
+}
+
+void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config)
 {
 
   client.setMBFS(mbfs);
 
-  client.setSession(session);
+  client.setSession(session_config);
 
-  if (client.getCertType() == esp_mail_cert_type_undefined)
+  if (client.getCertType() == esp_mail_cert_type_undefined || session_config->cert_updated)
   {
-
-    if (strlen(session->certificate.cert_file) > 0 || caCert != nullptr)
+    if (session_config->certificate.cert_file.length() > 0 || session_config->certificate.cert_data != NULL || session_config->cert_ptr > 0)
     {
       client.setClockReady(_clockReady);
     }
 
-    if (strlen(session->certificate.cert_file) == 0)
+    if (session_config->certificate.cert_file.length() == 0)
     {
-      if (caCert != nullptr)
-        client.setCACert(caCert.get());
+      if (session_config->cert_ptr > 0)
+        client.setCACert(reinterpret_cast<const char *>(session_config->cert_ptr));
+      else if (session_config->certificate.cert_data != NULL)
+        client.setCACert(session_config->certificate.cert_data);
       else
-        client.setCACert(nullptr);
+        client.setCACert(NULL);
     }
     else
     {
-      client.setCertFile(session->certificate.cert_file, mbfs_type session->certificate.cert_file_storage_type);
+      if (!client.setCertFile(session_config->certificate.cert_file.c_str(), mbfs_type session_config->certificate.cert_file_storage_type))
+        client.setCACert(NULL);
     }
+    session_config->cert_updated = false;
   }
 }
 

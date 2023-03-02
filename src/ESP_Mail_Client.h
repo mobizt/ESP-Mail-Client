@@ -985,10 +985,21 @@ private:
 
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
+  
+  // Print library info
+  void printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP);
+  
+  // Begin server connection
+  bool beginConnection(Session_Config *session_config, void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode);
+
+  // Prepare system time
+  void prepareTime(Session_Config *session_config, void *cb, void *caller, bool isSMTP);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-  // Set Root CA cert or CA Cert for server authentication
-  void setCACert(ESP_MAIL_TCP_CLIENT &client, ESP_Mail_Session *session, std::shared_ptr<const char> caCert);
+  // Set cert data
+  void setCert(Session_Config *session_cfg, const char *ca);
+  // Set secure data
+  void setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config);
 #endif
 
   // Get the memory allocation block size of multiple of 4
@@ -1050,6 +1061,9 @@ private:
 
   // Get file extension with dot from MIME string
   void getExtfromMIME(const char *mime, MB_String &ext);
+
+  // Prepare ports
+  void preparePortFunction(Session_Config *session_config, bool isSMTP, bool &secure, bool &secureMode, bool &ssl);
 
   // Get operation config based on port and its protocol
   void getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls);
@@ -1336,7 +1350,7 @@ private:
 
   // Get decoded header
   bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
-  
+
   // Check attachment for firmware file
   void checkFirmwareFile(IMAPSession *imap, const char *filename, struct esp_mail_message_part_info_t &part, bool defaultSize = false);
 
@@ -1452,7 +1466,7 @@ private:
   void parseNamespaceResponse(IMAPSession *imap, char *buf);
 
   // Parse Fetch Sequence set response
-  void parFetchSequenceSetResponse(IMAPSession *imap, char *buf);
+  void parseFetchSequenceSetResponse(IMAPSession *imap, char *buf);
 
   // Parse examine response
   void parseExamineResponse(IMAPSession *imap, char *buf);
@@ -1520,13 +1534,13 @@ public:
 
   /** Begin the IMAP server connection.
    *
-   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * @param session_config The pointer to Session_Config structured data that keeps
    * the server and log in details.
-   * @param config The pointer to IMAP_Config structured data that keeps the
+   * @param imap_data The pointer to IMAP_Data structured data that keeps the
    * operation options.
    * @return The boolean value which indicates the success of operation.
    */
-  bool connect(ESP_Mail_Session *session, IMAP_Config *config);
+  bool connect(Session_Config *session_config, IMAP_Data *imap_data);
 
   /** Return the SASL authentication status.
    * @return The boolean value indicates SASL authentication status.
@@ -1540,14 +1554,14 @@ public:
 
   /** Begin the IMAP server connection without authentication.
    *
-   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * @param session_config The pointer to Session_Config structured data that keeps
    * the server and log in details.
    * @param callback The callback function that accepts IMAP_Response as parameter.
    * @param tag The tag that pass to the callback function.
    * @return The boolean value indicates the success of operation.
    */
   template <typename T = const char *>
-  bool customConnect(ESP_Mail_Session *session, imapResponseCallback callback, T tag = "") { return mCustomConnect(session, callback, toStringPtr(tag)); };
+  bool customConnect(Session_Config *session_config, imapResponseCallback callback, T tag = "") { return mCustomConnect(session_config, callback, toStringPtr(tag)); };
 
   /** Close the IMAP session.
    *
@@ -2066,10 +2080,10 @@ private:
   bool mSelectFolder(MB_StringPtr folderName, bool readOnly);
 
   // Custom TCP connection
-  bool mCustomConnect(ESP_Mail_Session *session, imapResponseCallback callback, MB_StringPtr tag);
+  bool mCustomConnect(Session_Config *session_config, imapResponseCallback callback, MB_StringPtr tag);
 
   // Handle connection
-  bool handleConnection(ESP_Mail_Session *session, IMAP_Config *config, bool &ssl);
+  bool handleConnection(Session_Config *session_config, IMAP_Data *imap_data, bool &ssl);
 
   // Start TCP connection
   bool connect(bool &ssl);
@@ -2099,7 +2113,7 @@ private:
   bool _storageChecked = false;
   struct esp_mail_auth_capability_t _auth_capability;
   struct esp_mail_imap_capability_t _read_capability;
-  ESP_Mail_Session *_sesson_cfg;
+  Session_Config *_session_cfg;
   MB_String _currentFolder;
   bool _mailboxOpened = false;
   unsigned long _lastSameFolderOpenMillis = 0;
@@ -2112,7 +2126,7 @@ private:
   MB_String _ns_tmp;
   MB_String _sdFileList;
 
-  struct esp_mail_imap_read_config_t *_config = nullptr;
+  struct esp_mail_imap_data_config_t *_imap_data = nullptr;
 
   bool _headerOnly = true;
   bool _uidSearch = false;
@@ -2133,10 +2147,6 @@ private:
   SelectedFolderInfo _mbif;
   int _uid_tmp = 0;
   int _lastProgress = -1;
-  int _certType = -1;
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
-  std::shared_ptr<const char> _caCert = nullptr;
-#endif
 
   ESP_MAIL_TCP_CLIENT client;
 
@@ -2237,11 +2247,11 @@ public:
 
   /** Begin the SMTP server connection.
    *
-   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * @param session_config The pointer to Session_Config structured data that keeps
    * the server and log in details.
    * @return The boolean value indicates the success of operation.
    */
-  bool connect(ESP_Mail_Session *session);
+  bool connect(Session_Config *session_config);
 
   /** Return the SASL authentication status.
    * @return The boolean value indicates SASL authentication status.
@@ -2250,7 +2260,7 @@ public:
 
   /** Begin the SMTP server connection without authentication.
    *
-   * @param session The pointer to ESP_Mail_Session structured data that keeps
+   * @param session_config The pointer to Session_Config structured data that keeps
    * the server and log in details.
    * @param callback The callback function that accepts the SMTP_Response as parameter.
    * @param commandID The command identifier number that will pass to the callback.
@@ -2258,7 +2268,7 @@ public:
    *
    * @note If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
    */
-  int customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+  int customConnect(Session_Config *session_config, smtpResponseCallback callback, int commandID = -1);
 
   /** Close the SMTP session.
    *
@@ -2348,7 +2358,7 @@ private:
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
   struct esp_mail_auth_capability_t _auth_capability;
   struct esp_mail_smtp_capability_t _send_capability;
-  ESP_Mail_Session *_sesson_cfg = NULL;
+  Session_Config *_session_cfg = NULL;
 
   bool _debug = false;
   int _debugLevel = 0;
@@ -2366,18 +2376,13 @@ private:
   struct esp_mail_smtp_msg_type_t _msgType;
   int _lastProgress = -1;
 
-  int _certType = -1;
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
-  std::shared_ptr<const char> _caCert = nullptr;
-#endif
-
   ESP_MAIL_TCP_CLIENT client;
 
   // Start TCP connection
   bool connect(bool &ssl);
 
   // Handle TCP connection
-  bool handleConnection(ESP_Mail_Session *config, bool &ssl);
+  bool handleConnection(Session_Config *session_config, bool &ssl);
 
   // Send custom command
   int mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callback, int commandID = -1);

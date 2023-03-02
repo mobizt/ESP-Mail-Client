@@ -1473,7 +1473,7 @@ struct esp_mail_imap_firmware_config_t
     bool save_to_file = false;
 };
 
-struct esp_mail_imap_read_config_t
+struct esp_mail_imap_data_config_t
 {
     /* The config for fetching */
     struct esp_mail_imap_fetch_config_t fetch;
@@ -1493,7 +1493,7 @@ struct esp_mail_imap_read_config_t
     /* The config about the storage and path to save the downloaded file */
     struct esp_mail_imap_storage_config_t storage;
 
-    /* The config about firmware updates and downloads for ESP32, ESP8266 and Raspberry Pi Pico*/
+    /* The config about firmware updates and downloads for ESP32, ESP8266 and Raspberry Pi Pico */
     struct esp_mail_imap_firmware_config_t firmware_update;
 };
 
@@ -1650,10 +1650,10 @@ public:
 struct esp_mail_sesson_cert_config_t
 {
     /* The certificate data (base64 data) */
-    const char *cert_data = "";
+    const char *cert_data = NULL;
 
     /* The certificate file (DER format) */
-    const char *cert_file = "";
+    MB_String cert_file;
 
     /* The storage type */
     esp_mail_file_storage_type cert_file_storage_type;
@@ -1734,6 +1734,7 @@ struct esp_mail_session_config_t
 {
     friend class IMAPSession;
     friend class SMTPSession;
+    friend class ESP_Mail_Client;
 
     /* The server config */
     struct esp_mail_sesson_sever_config_t server;
@@ -1792,6 +1793,8 @@ public:
     }
 
 private:
+    int cert_ptr = 0;
+    bool cert_updated = false;
     void clearPorts()
     {
         if (ports_functions.list)
@@ -1817,7 +1820,8 @@ private:
 typedef struct esp_mail_content_transfer_encoding_t Content_Transfer_Encoding;
 
 /* The session configuations */
-typedef struct esp_mail_session_config_t ESP_Mail_Session;
+typedef struct esp_mail_session_config_t ESP_Mail_Session; //obsoleted
+typedef struct esp_mail_session_config_t Session_Config;
 
 #endif
 
@@ -1844,7 +1848,9 @@ typedef struct esp_mail_folder_info_item_t FolderInfo;
 typedef struct esp_mail_attachment_info_t IMAP_Attach_Item;
 
 /** The IMAP operation configuations */
-typedef struct esp_mail_imap_read_config_t IMAP_Config;
+typedef struct esp_mail_imap_data_config_t IMAP_Config;//obsoleted
+
+typedef struct esp_mail_imap_data_config_t IMAP_Data;
 
 /* The message item data of the IMAP_MSG_List which contains header, body and
  * attachments info for eacch message*/

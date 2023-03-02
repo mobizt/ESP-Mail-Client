@@ -89,8 +89,8 @@ non_authenticated:
     // Alternatively client public IP address string (IPv4 or IPv6) can be assign when no host name is available
     // to prevent connection rejection.
 
-    if (smtp->_sesson_cfg->login.user_domain.length() > 0)
-        s += smtp->_sesson_cfg->login.user_domain;
+    if (smtp->_session_cfg->login.user_domain.length() > 0)
+        s += smtp->_session_cfg->login.user_domain;
     else
         s += esp_mail_str_44;
 
@@ -103,8 +103,8 @@ non_authenticated:
         // In case EHLO command is not acceptable,
         // we would fall back and send SMTP (rfc821) HELO command to identify ourself.
         s = esp_mail_str_5;
-        if (smtp->_sesson_cfg->login.user_domain.length() > 0)
-            s += smtp->_sesson_cfg->login.user_domain;
+        if (smtp->_session_cfg->login.user_domain.length() > 0)
+            s += smtp->_session_cfg->login.user_domain;
         else
             s += esp_mail_str_44;
 
@@ -122,7 +122,7 @@ non_authenticated:
 
     // start TLS when needed
     // rfc3207
-    if ((smtp->_auth_capability.start_tls || smtp->_sesson_cfg->secure.startTLS) && !ssl)
+    if ((smtp->_auth_capability.start_tls || smtp->_session_cfg->secure.startTLS) && !ssl)
     {
         // send starttls command
         if (smtp->_sendCallback)
@@ -147,11 +147,11 @@ non_authenticated:
 
         // connect in secure mode
         // do TLS handshake
-        if (!smtp->client.connectSSL(smtp->_sesson_cfg->certificate.verify))
+        if (!smtp->client.connectSSL(smtp->_session_cfg->certificate.verify))
             return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 
         // set the secure mode
-        smtp->_sesson_cfg->secure.startTLS = false;
+        smtp->_session_cfg->secure.startTLS = false;
         ssl = true;
         smtp->_secure = true;
 
@@ -160,8 +160,8 @@ non_authenticated:
             goto non_authenticated;
     }
 
-    bool creds = smtp->_sesson_cfg->login.email.length() > 0 && smtp->_sesson_cfg->login.password.length() > 0;
-    bool sasl_auth_oauth = smtp->_sesson_cfg->login.accessToken.length() > 0 && smtp->_auth_capability.xoauth2;
+    bool creds = smtp->_session_cfg->login.email.length() > 0 && smtp->_session_cfg->login.password.length() > 0;
+    bool sasl_auth_oauth = smtp->_session_cfg->login.accessToken.length() > 0 && smtp->_auth_capability.xoauth2;
     bool sasl_login = smtp->_auth_capability.login && creds;
     bool sasl_auth_plain = smtp->_auth_capability.plain && creds;
 
@@ -182,7 +182,7 @@ non_authenticated:
             if (smtpSend(smtp, esp_mail_str_289, false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
-            if (smtpSend(smtp, getXOAUTH2String(smtp->_sesson_cfg->login.email, smtp->_sesson_cfg->login.accessToken).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            if (smtpSend(smtp, getXOAUTH2String(smtp->_session_cfg->login.email, smtp->_session_cfg->login.accessToken).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
@@ -196,24 +196,24 @@ non_authenticated:
                 esp_mail_debug_print(esp_mail_str_241, true);
 
                 s = esp_mail_str_261;
-                s += smtp->_sesson_cfg->login.email;
+                s += smtp->_session_cfg->login.email;
                 esp_mail_debug_print(s.c_str(), true);
 
                 s += esp_mail_str_131;
-                for (size_t i = 0; i < smtp->_sesson_cfg->login.password.length(); i++)
+                for (size_t i = 0; i < smtp->_session_cfg->login.password.length(); i++)
                     s += esp_mail_str_183;
                 esp_mail_debug_print(s.c_str(), true);
             }
 
             // rfc4616
-            int len = smtp->_sesson_cfg->login.email.length() + smtp->_sesson_cfg->login.password.length() + 2;
+            int len = smtp->_session_cfg->login.email.length() + smtp->_session_cfg->login.password.length() + 2;
             uint8_t *tmp = (uint8_t *)newP(len);
             memset(tmp, 0, len);
             int p = 1;
-            memcpy(tmp + p, smtp->_sesson_cfg->login.email.c_str(), smtp->_sesson_cfg->login.email.length());
-            p += smtp->_sesson_cfg->login.email.length() + 1;
-            memcpy(tmp + p, smtp->_sesson_cfg->login.password.c_str(), smtp->_sesson_cfg->login.password.length());
-            p += smtp->_sesson_cfg->login.password.length();
+            memcpy(tmp + p, smtp->_session_cfg->login.email.c_str(), smtp->_session_cfg->login.email.length());
+            p += smtp->_session_cfg->login.email.length() + 1;
+            memcpy(tmp + p, smtp->_session_cfg->login.password.c_str(), smtp->_session_cfg->login.password.length());
+            p += smtp->_session_cfg->login.password.length();
 
             MB_String s = esp_mail_str_45;
             s += esp_mail_str_131;
@@ -240,11 +240,11 @@ non_authenticated:
             if (smtp->_debug)
             {
                 s = esp_mail_str_261;
-                s += smtp->_sesson_cfg->login.email;
+                s += smtp->_session_cfg->login.email;
                 esp_mail_debug_print(s.c_str(), true);
             }
 
-            if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.email.c_str(), smtp->_sesson_cfg->login.email.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_session_cfg->login.email.c_str(), smtp->_session_cfg->login.email.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_user, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
@@ -253,12 +253,12 @@ non_authenticated:
             if (smtp->_debug)
             {
                 s = esp_mail_str_261;
-                for (size_t i = 0; i < smtp->_sesson_cfg->login.password.length(); i++)
+                for (size_t i = 0; i < smtp->_session_cfg->login.password.length(); i++)
                     s += esp_mail_str_183;
                 esp_mail_debug_print(s.c_str(), true);
             }
 
-            if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_sesson_cfg->login.password.c_str(), smtp->_sesson_cfg->login.password.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+            if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_session_cfg->login.password.c_str(), smtp->_session_cfg->login.password.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_psw, esp_mail_smtp_status_code_235, SMTP_STATUS_PASSWORD_LOGIN_FAILED))
@@ -3095,7 +3095,7 @@ void ESP_Mail_Client::checkTLSAlert(SMTPSession *smtp, const char *response)
     {
         smtp->client.set_tlsErrr(true);
 
-        int proto = smtp->client.getProtocol(smtp->_sesson_cfg->server.port);
+        int proto = smtp->client.getProtocol(smtp->_session_cfg->server.port);
 
         if (proto == (int)esp_mail_protocol_ssl || proto == (int)esp_mail_protocol_tls)
         {
@@ -3367,7 +3367,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
     if (!smtp)
         return false;
 
-    smtp->client.setSession(smtp->_sesson_cfg);
+    smtp->client.setSession(smtp->_session_cfg);
 
     networkStatus = smtp->client.networkReady();
 
@@ -3390,11 +3390,11 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 
         if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->_tcpConnected)
         {
-            if (smtp->_sesson_cfg->network_connection_handler)
+            if (smtp->_session_cfg->network_connection_handler)
             {
                 // dummy
                 smtp->client.disconnect();
-                smtp->_sesson_cfg->network_connection_handler();
+                smtp->_session_cfg->network_connection_handler();
             }
             else
             {
@@ -3699,22 +3699,18 @@ SMTPSession::SMTPSession()
 SMTPSession::~SMTPSession()
 {
     closeSession();
-#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
-    _caCert.reset();
-    _caCert = nullptr;
-#endif
 }
 
-bool SMTPSession::connect(ESP_Mail_Session *config)
+bool SMTPSession::connect(Session_Config *session_config)
 {
     bool ssl = false;
 
-    if (config)
-        config->clearPorts();
+    if (session_config)
+        session_config->clearPorts();
 
     this->_customCmdResCallback = NULL;
 
-    if (!handleConnection(config, ssl))
+    if (!handleConnection(session_config, ssl))
         return false;
 
     return MailClient.smtpAuth(this, ssl);
@@ -3725,7 +3721,7 @@ bool SMTPSession::isAuthenticated()
     return _authenticated;
 }
 
-int SMTPSession::customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID)
+int SMTPSession::customConnect(Session_Config *session_config, smtpResponseCallback callback, int commandID)
 {
     this->_customCmdResCallback = callback;
 
@@ -3735,13 +3731,13 @@ int SMTPSession::customConnect(ESP_Mail_Session *config, smtpResponseCallback ca
         this->_commandID++;
 
     bool ssl = false;
-    if (!handleConnection(config, ssl))
+    if (!handleConnection(session_config, ssl))
         return -1;
 
     return this->_smtpStatus.respCode;
 }
 
-bool SMTPSession::handleConnection(ESP_Mail_Session *config, bool &ssl)
+bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
 {
 
     if (client.type() == esp_mail_client_type_custom)
@@ -3756,14 +3752,10 @@ bool SMTPSession::handleConnection(ESP_Mail_Session *config, bool &ssl)
     if (_tcpConnected)
         MailClient.closeTCPSession(this);
 
-    _sesson_cfg = config;
+    _session_cfg = session_config;
 
-#if defined(MB_ARDUINO_ESP)|| defined(MB_ARDUINO_PICO)
-
-    _caCert = nullptr;
-
-    if (strlen(_sesson_cfg->certificate.cert_data) > 0)
-        _caCert = std::shared_ptr<const char>(_sesson_cfg->certificate.cert_data);
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
+    MailClient.setCert(_session_cfg, _session_cfg->certificate.cert_data);
 #endif
 
     ssl = false;
@@ -3797,105 +3789,18 @@ bool SMTPSession::connect(bool &ssl)
     client.txBufDivider = 8;  // medium tx buffer for faster attachment/inline data transfer
 #endif
 
-    if (_sesson_cfg->ports_functions.list)
-    {
-        if (_sesson_cfg->ports_functions.use_internal_list)
-        {
-            _sesson_cfg->ports_functions.use_internal_list = false;
-            delete[] _sesson_cfg->ports_functions.list;
-        }
-    }
+    MailClient.preparePortFunction(_session_cfg, true, _secure, secureMode, ssl);
 
-    if (!_sesson_cfg->ports_functions.list)
-    {
-        _sesson_cfg->ports_functions.use_internal_list = true;
+    MailClient.printLibInfo((void *)_customCmdResCallback, (void *)(this), &client, _debug, true);
 
-        _sesson_cfg->ports_functions.list = new port_function[3];
-        _sesson_cfg->ports_functions.size = 3;
-
-        _sesson_cfg->ports_functions.list[0].port = 25;
-        _sesson_cfg->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
-
-        _sesson_cfg->ports_functions.list[1].port = 465;
-        _sesson_cfg->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
-
-        _sesson_cfg->ports_functions.list[2].port = 587;
-        _sesson_cfg->ports_functions.list[2].protocol = esp_mail_protocol_tls;
-    }
-
-    MailClient.getPortFunction(_sesson_cfg->server.port, _sesson_cfg->ports_functions, _secure, secureMode, ssl, _sesson_cfg->secure.startTLS);
-
-    // Server connection attempt: no status code
-    if (_sendCallback && !_customCmdResCallback)
-        MailClient.smtpCB(this, esp_mail_str_120, false, false);
-
-    if (_debug && !_customCmdResCallback)
-    {
-        s = esp_mail_str_314;
-        s += ESP_MAIL_VERSION;
-        s += client.fwVersion();
-        esp_mail_debug_print(s.c_str(), true);
-
-#if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
-        if (ESP.getPsramSize() == 0)
-        {
-            s = esp_mail_str_353;
-            esp_mail_debug_print(s.c_str(), true);
-        }
-#endif
-    }
-
-#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
-    bool validTime = false;
-#endif
+    MailClient.prepareTime(_session_cfg, (void *)_customCmdResCallback, (void *)(this), true);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-    validTime = true; // strlen(_sesson_cfg->certificate.cert_file) > 0 || _caCert != nullptr;
+    MailClient.setSecure(client, _session_cfg);
 #endif
 
-#if defined(MB_ARDUINO_ESP)|| defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
-
-    if (!_customCmdResCallback && (_sesson_cfg->time.ntp_server.length() > 0 || validTime))
-    {
-        s = esp_mail_str_355;
-        if (!_customCmdResCallback)
-            esp_mail_debug_print(s.c_str(), true);
-        MailClient.setTime(_sesson_cfg->time.gmt_offset, _sesson_cfg->time.day_light_offset, _sesson_cfg->time.ntp_server.c_str(), _sesson_cfg->time.timezone_env_string.c_str(), _sesson_cfg->time.timezone_file.c_str(), true);
-
-        if (!MailClient.Time.clockReady())
-            MailClient.errorStatusCB(this, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
-    }
-
-#endif
-
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-    MailClient.setCACert(client, _sesson_cfg, _caCert);
-#endif
-
-    if (_debug && !_customCmdResCallback)
-    {
-        esp_mail_debug_print(esp_mail_str_236, true);
-        s = esp_mail_str_261;
-        s += esp_mail_str_211;
-        s += _sesson_cfg->server.host_name;
-        esp_mail_debug_print(s.c_str(), true);
-        s = esp_mail_str_261;
-        s += esp_mail_str_201;
-        s += _sesson_cfg->server.port;
-        esp_mail_debug_print(s.c_str(), true);
-    }
-
-#if defined(ESP32) && defined(ESP32_TCP_CLIENT)
-    if (_debug && !_customCmdResCallback)
-        client.setDebugCallback(esp_mail_debug_print);
-#endif
-
-    client.begin(_sesson_cfg->server.host_name.c_str(), _sesson_cfg->server.port);
-
-    client.ethDNSWorkAround();
-
-    if (!client.connect(secureMode, _sesson_cfg->certificate.verify))
-        return MailClient.handleSMTPError(this, SMTP_STATUS_SERVER_CONNECT_FAILED);
+    if (!MailClient.beginConnection(_session_cfg, (void *)_customCmdResCallback, (void *)(this), &client, _debug, true, secureMode))
+        return false;
 
     // server connected
     _tcpConnected = true;
@@ -3936,15 +3841,15 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
     {
         bool verify = false;
 
-        if (_sesson_cfg)
-            verify = _sesson_cfg->certificate.verify;
+        if (_session_cfg)
+            verify = _session_cfg->certificate.verify;
 
         if (!client.connectSSL(verify))
             return false;
 
         // set the secure mode
-        if (_sesson_cfg)
-            _sesson_cfg->secure.startTLS = false;
+        if (_session_cfg)
+            _session_cfg->secure.startTLS = false;
 
         _secure = true;
     }

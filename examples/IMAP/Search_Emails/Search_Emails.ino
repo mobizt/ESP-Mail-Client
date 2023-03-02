@@ -11,6 +11,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory
@@ -143,8 +162,8 @@ void setup()
     /* Set the callback function to get the reading results */
     imap.callback(imapCallback);
 
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
+    /* Declare the Session_Config for user defined session credentials */
+    Session_Config config;
 
     /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
      * MailClient.sdBegin function which may be different for ESP32 and ESP8266
@@ -157,18 +176,18 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    /** Declare the IMAP_Config object used for user defined IMAP operating options
+    /** Declare the IMAP_Data object used for user defined IMAP operating options
      * and contains the IMAP operating result
      */
-    IMAP_Config config;
+    IMAP_Data imap_data;
 
     /* We will clear fetching message UID as it used to determine the reading mode i.e., search and fetch */
-    config.fetch.uid.clear();
+    imap_data.fetch.uid.clear();
 
     /** Search criteria
      *
@@ -194,66 +213,66 @@ void setup()
      * Use "ON _date_" for messages with Date header matching _date_
      * Use "BEFORE _date_" for messages with Date header before _date_
      */
-    config.search.criteria = F("SEARCH RECENT");
+    imap_data.search.criteria = F("SEARCH RECENT");
 
     /* Also search the unseen message */
-    config.search.unseen_msg = true;
+    imap_data.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
-    config.storage.saved_path = F("/email_data");
+    imap_data.storage.saved_path = F("/email_data");
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
      * esp_mail_file_storage_type_flash, and
      * esp_mail_file_storage_type_sd
      */
-    config.storage.type = esp_mail_file_storage_type_flash;
+    imap_data.storage.type = esp_mail_file_storage_type_flash;
 
     /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
      */
-    config.download.header = true;
-    config.download.text = true;
-    config.download.html = true;
-    config.download.attachment = true;
-    config.download.inlineImg = true;
+    imap_data.download.header = true;
+    imap_data.download.text = true;
+    imap_data.download.html = true;
+    imap_data.download.attachment = true;
+    imap_data.download.inlineImg = true;
 
     /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
-     * by the option config.limit.msg_size.
-     * The whole message can be download through config.download.text
-     * or config.download.html which not depends on these enable options.
+     * by the option imap_data.limit.msg_size.
+     * The whole message can be download through imap_data.download.text
+     * or imap_data.download.html which not depends on these enable options.
      */
-    config.enable.html = true;
-    config.enable.text = true;
+    imap_data.enable.html = true;
+    imap_data.enable.text = true;
 
     /* Set to enable the sort the result by message UID in the decending order */
-    config.enable.recent_sort = true;
+    imap_data.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */
-    config.enable.download_status = true;
+    imap_data.enable.download_status = true;
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    // config.enable.header_case_sensitive = true;
+    // imap_data.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
-    config.limit.search = 5;
+    imap_data.limit.search = 5;
 
     /** Set the maximum size of message stored in
      * IMAPSession object in byte
      */
-    config.limit.msg_size = 512;
+    imap_data.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
      * that can be downloaded in byte.
      * The file which its size is largger than this limit may be saved
      * as truncated file.
      */
-    config.limit.attachment_size = 1024 * 1024 * 5;
+    imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     if (imap.isAuthenticated())
@@ -291,10 +310,10 @@ void setup()
          * For keywords used in search criteria, see
          * https://github.com/mobizt/ESP-Mail-Client/tree/master/src#search-criteria
          */
-        config.search.criteria = F("SEARCH ALL"); // or "SEARCH NEW" for recent received messages
+        imap_data.search.criteria = F("SEARCH ALL"); // or "SEARCH NEW" for recent received messages
 
         /* We will clear fetching message UID as it used to determine the reading mode i.e., search and fetch */
-        config.fetch.uid.clear();
+        imap_data.fetch.uid.clear();
 
         /* Search the Email and close the session */
         MailClient.readMail(&imap);

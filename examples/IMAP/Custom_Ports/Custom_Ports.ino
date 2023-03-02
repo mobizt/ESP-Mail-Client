@@ -11,6 +11,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory
@@ -131,8 +150,8 @@ void setup()
      */
     imap.debug(1);
 
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
+    /* Declare the Session_Config for user defined session credentials */
+    Session_Config config;
 
     /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
      * MailClient.sdBegin function which may be different for ESP32 and ESP8266
@@ -145,32 +164,32 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
     /** Set the ports and protocols
-     *  The port that assigned with session.server.port will map with the
+     *  The port that assigned with config.server.port will map with the
      *  protocol assigned here
      */
 
-    session.ports_functions.list = new port_function[2];
-    session.ports_functions.size = 2;
+    config.ports_functions.list = new port_function[2];
+    config.ports_functions.size = 2;
 
-    session.ports_functions.list[0].port = 143;
-    session.ports_functions.list[0].protocol = esp_mail_protocol_tls;
+    config.ports_functions.list[0].port = 143;
+    config.ports_functions.list[0].protocol = esp_mail_protocol_tls;
 
-    session.ports_functions.list[1].port = 993;
-    session.ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+    config.ports_functions.list[1].port = 993;
+    config.ports_functions.list[1].protocol = esp_mail_protocol_ssl;
 
-    /** Declare the IMAP_Config object used for user defined IMAP operating options
+    /** Declare the IMAP_Data object used for user defined IMAP operating options
      * and contains the IMAP operating result
      */
-    IMAP_Config config;
+    IMAP_Data imap_data;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     /*  {Optional} */

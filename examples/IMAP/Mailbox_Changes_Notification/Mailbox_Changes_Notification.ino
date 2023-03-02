@@ -9,6 +9,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /** For ESP8266, with BearSSL WiFi Client
  * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
  * may cause your device out of memory reset in case the memory
@@ -83,13 +102,13 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/* Declare the global used ESP_Mail_Session for user defined session credentials */
-ESP_Mail_Session session;
+/* Declare the global used Session_Config for user defined session credentials */
+Session_Config config;
 
-/** Declare the global used IMAP_Config object used for user defined IMAP operating options
+/** Declare the global used IMAP_Data object used for user defined IMAP operating options
  * and contains the IMAP operating result
  */
-IMAP_Config config;
+IMAP_Data imap_data;
 
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 WiFiMulti multi;
@@ -174,22 +193,22 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    session.time.gmt_offset = 3;
-    session.time.day_light_offset = 0;
+    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    config.time.gmt_offset = 3;
+    config.time.day_light_offset = 0;
 
     /** Assign internet connection handler function
      * in case of lost internet connection for re-listening the mailbox.
      */
-    session.network_connection_handler = connectWiFi;
+    config.network_connection_handler = connectWiFi;
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     /*  {Optional} */
@@ -238,7 +257,7 @@ void printPollingStatus(IMAPSession &imap)
         imap.stopListen();
 
         // Get the UID of new message and fetch
-        config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
+        imap_data.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
         MailClient.readMail(&imap, false);
     }
     else if (sFolder.pollingStatus().type == imap_polling_status_type_remove_message)

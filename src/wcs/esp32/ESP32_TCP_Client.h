@@ -1,10 +1,10 @@
 /*
- * ESP32 TCP Client Library v2.0.5
+ * ESP32 TCP Client Library v2.0.6
  *
- * Created February 11, 2023
+ * Created March 2, 2023
  *
  * The MIT License (MIT)
- * Copyright (c) 2021 K. Suwatchai (Mobizt)
+ * Copyright (c) 2023 K. Suwatchai (Mobizt)
  *
  *
  * TCPClient Arduino library for ESP32
@@ -71,8 +71,9 @@ public:
    * Set Root CA certificate to verify.
    * @param certFile The certificate file path.
    * @param storageType The storage type mb_fs_mem_storage_type_flash or mb_fs_mem_storage_type_sd.
+   * @return true when certificate loaded successfully.
    */
-  void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
+  bool setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
 
   /**
    * Set the debug callback function.
@@ -257,9 +258,9 @@ public:
 
   void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
 
-  void setSession(ESP_Mail_Session *session)
+  void setSession(ESP_Mail_Session *session_config)
   {
-    wcs->session = session;
+    wcs->session_config = session_config;
   }
   
   void setClockReady(bool rdy)

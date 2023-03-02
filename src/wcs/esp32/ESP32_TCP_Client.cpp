@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.5
+ * ESP32 TCP Client Library v2.0.6
  *
- * Created February 11, 2023
+ * Created March 2, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -72,10 +72,10 @@ void ESP32_TCP_Client::setCACert(const char *caCert)
     }
 }
 
-void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
+bool ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
 {
     if (!wcs->mbfs)
-        return;
+        return false;
 
     if (strlen(certFile) > 0)
     {
@@ -126,6 +126,8 @@ void ESP32_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_type 
             }
         }
     }
+
+    return getCertType() == esp_mail_cert_type_file;
 }
 
 void ESP32_TCP_Client::setDebugCallback(DebugMsgCallback cb)

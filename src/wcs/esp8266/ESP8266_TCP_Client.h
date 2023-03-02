@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.5
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.6
  *
- * Created March 1, 2023
+ * Created March 2, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -78,8 +78,9 @@ public:
    * Set Root CA certificate to verify.
    * @param certFile The certificate file path.
    * @param storageType The storage type mb_fs_mem_storage_type_flash or mb_fs_mem_storage_type_sd.
+   * @return true when certificate loaded successfully.
    */
-  void setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
+  bool setCertFile(const char *certFile, mb_fs_mem_storage_type storageType);
 
   /**
    * Set TCP connection time out in seconds.
@@ -253,9 +254,9 @@ public:
 
   void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
 
-  void setSession(ESP_Mail_Session *session)
+  void setSession(ESP_Mail_Session *session_config)
   {
-    wcs->session = session;
+    wcs->session_config = session_config;
   }
 
   void setClockReady(bool rdy)

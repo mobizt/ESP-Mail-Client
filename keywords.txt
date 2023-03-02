@@ -11,11 +11,13 @@ IMAPSession KEYWORD1
 SMTPSession KEYWORD1
 SMTP_Message    KEYWORD1
 IMAP_Config KEYWORD1
+IMAP_Data   KEYWORD2
 FoldersCollection   KEYWORD1
 imapStatusCallback  KEYWORD1
 IMAP_MSG_List   KEYWORD1
 SelectedFolderInfo  KEYWORD1
 ESP_Mail_Session    KEYWORD1
+Session_Config  KEYWORD1
 smtpStatusCallback  KEYWORD1
 imapResponseCallback    KEYWORD1
 SMTP_Attachment KEYWORD1

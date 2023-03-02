@@ -414,14 +414,14 @@ void setSystemTime(time_t ts);
 
 #### Begin the IMAP server connection.
 
-param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+param **`session_config`** The pointer to Session_Config structured data that keeps the server and log in details.
 
-param **`config`** The pointer to IMAP_Config structured data that keeps the operation options.
+param **`imap_data`** The pointer to IMAP_Data structured data that keeps the operation options.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool connect(ESP_Mail_Session *session, IMAP_Config *config);
+bool connect(Session_Config *session_config, IMAP_Data *imap_data);
 ```
 
 
@@ -732,7 +732,7 @@ bool sendCustomData(uint8_t *data, size_t size, bool lastData = false);
 
 #### Begin the IMAP server connection without authentication.
 
-param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+param **`session_config`** The pointer to Session_Config structured data that keeps the server and log in details.
 
 param **`callback`** The callback function that accepts IMAP_Response as parameter.
 
@@ -741,7 +741,7 @@ param **`tag`** The tag that pass to the callback function.
 return **`The boolean`** value indicates the success of operation.
 
 ```cpp
-bool customConnect(ESP_Mail_Session *session, imapResponseCallback callback, <string> tag);
+bool customConnect(Session_Config *session_config, imapResponseCallback callback, <string> tag);
 ```
 
 
@@ -1215,12 +1215,12 @@ void setSystemTime(time_t ts);
 
 #### Begin the SMTP server connection.
 
-param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+param **`session_config`** The pointer to Session_Config structured data that keeps the server and log in details.
 
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool connect(ESP_Mail_Session *session);
+bool connect(Session_Config *session_config);
 ```
 
 
@@ -1254,7 +1254,7 @@ bool connected();
 
 #### Begin the SMTP server connection without authentication.
 
-param **`session`** The pointer to ESP_Mail_Session structured data that keeps the server and log in details.
+param **`session_config`** The pointer to Session_Config structured data that keeps the server and log in details.
 
 param **`callback`** The callback function that accepts the SMTP_Response as parameter.
 
@@ -1265,7 +1265,7 @@ return **`The int`** value of response code.
 If commandID was not set or set to -1, the command identifier will be auto increased started from zero.
 
 ```cpp
-int customConnect(ESP_Mail_Session *config, smtpResponseCallback callback, int commandID = -1);
+int customConnect(Session_Config *session_config, smtpResponseCallback callback, int commandID = -1);
 ```
 
 
@@ -2092,10 +2092,10 @@ String flag(size_t index);
 
 
 
-## ESP_Mail_Session type data
+## Session_Config type data
 
 
-The following properties are available from the ESP_Mail_Session data type.
+The following properties are available from the Session_Config data type.
 
 This data type is used for storing the session info about the server and login credentials.
 
@@ -2214,10 +2214,10 @@ esp_mail_protocol protocol;
 
 
 
-## IMAP_Config type data
+## IMAP_Data type data
 
 
-The following properties are available from the IMAP_Config data type.
+The following properties are available from the IMAP_Data data type.
 
 This data type is used for storing the IMAP transport and operating options to 
 control and store the operation result e.g. the messahe contents from search and fetch.
@@ -2366,13 +2366,24 @@ esp_mail_imap_storage_config_t storage;
 ```
 
 
+#### [Properties] The config about firmware updates and downloads for ESP32, ESP8266 and Raspberry Pi Pico.
+
+This property has the sub properties
+
+##### [string] attach_filename - Update firmware using message attachments if one of its filename matches.
+
+##### [bool] save_to_file - Save firmware file option.
+
+```cpp
+esp_mail_imap_firmware_config_t firmware_update;
+```
 
 
 
 ## esp_mail_smtp_embed_message_body_t structured data
 
 
-The following properties are available from the IMAP_Config data type.
+The following properties are available from the IMAP_Data data type.
 
 This data type is used for storing the IMAP transport and operating options to 
 control and store the operation result e.g. the messahe contents from search and fetch.

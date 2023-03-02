@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 /**
  * There are many sources for LAN8720 and ESP32 interconnection on the internet which may
  * work for your LAN8720 board.
@@ -170,18 +189,18 @@ void sendMail()
 
   smtp.callback(smtpCallback);
 
-  ESP_Mail_Session session;
+  Session_Config config;
 
-  session.server.host_name = SMTP_HOST;
-  session.server.port = SMTP_PORT;
-  session.login.email = AUTHOR_EMAIL;
-  session.login.password = AUTHOR_PASSWORD;
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
 
-  session.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("mydomain.net");
 
-  session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-  session.time.gmt_offset = 3;
-  session.time.day_light_offset = 0;
+  config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+  config.time.gmt_offset = 3;
+  config.time.day_light_offset = 0;
 
   SMTP_Message message;
 
@@ -193,7 +212,7 @@ void sendMail()
   String textMsg = "This is simple plain text message";
   message.text.content = textMsg;
 
-  if (!smtp.connect(&session))
+  if (!smtp.connect(&config))
     return;
 
   if (!MailClient.sendMail(&smtp, &message))

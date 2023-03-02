@@ -85,8 +85,8 @@ For setting up the App Passwords, please read [here](https://support.google.com/
 After you created App Password, you can use Gmail Email address and App Password created to sign in as the following.
 
 ```cpp
-session.login.email = "<your email>";
-session.login.password = "<your app password>";
+config.login.email = "<your email>";
+config.login.password = "<your app password>";
 ```
  
 
@@ -419,8 +419,8 @@ The following code will send email with image attachment.
 // Declare the global used SMTPSession object for SMTP transport
 SMTPSession smtp;
 
-// Declare the global used ESP_Mail_Session for user defined session credentials
-ESP_Mail_Session session;
+// Declare the global used Session_Config for user defined session credentials
+Session_Config config;
 
 void setup()
 {
@@ -440,18 +440,18 @@ void setup()
   Serial.println();
 
   // Set the session config
-  session.server.host_name = "smtp.office365.com"; // for outlook.com
-  session.server.port = 587; // for TLS with STARTTLS or 25 (Plain/TLS with STARTTLS) or 465 (SSL)
-  session.login.email = "your Email address"; // set to empty for no SMTP Authentication
-  session.login.password = "your Email password"; // set to empty for no SMTP Authentication
+  config.server.host_name = "smtp.office365.com"; // for outlook.com
+  config.server.port = 587; // for TLS with STARTTLS or 25 (Plain/TLS with STARTTLS) or 465 (SSL)
+  config.login.email = "your Email address"; // set to empty for no SMTP Authentication
+  config.login.password = "your Email password"; // set to empty for no SMTP Authentication
   
   // For client identity, assign invalid string can cause server rejection
-  session.login.user_domain = "client domain or public ip only e.g. mydomain.com";  
+  config.login.user_domain = "client domain or public ip only e.g. mydomain.com";  
 
   // Set the NTP config time
-  session.time.ntp_server = "pool.ntp.org,time.nist.gov";
-  session.time.gmt_offset = 3;
-  session.time.day_light_offset = 0;
+  config.time.ntp_server = "pool.ntp.org,time.nist.gov";
+  config.time.gmt_offset = 3;
+  config.time.day_light_offset = 0;
 
   // Declare the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
@@ -493,7 +493,7 @@ void setup()
   message.addAttachment(att);
 
   // Connect to the server
-  smtp.connect(&session /* session credentials */);
+  smtp.connect(&config);
 
   // Start sending Email and close the session
   if (!MailClient.sendMail(&smtp, &message))
@@ -524,8 +524,8 @@ The following code will read the latest email.
 // Declare the global used IMAPSession object for IMAP transport
 IMAPSession imap;
 
-// Declare the global used ESP_Mail_Session for user defined session credentials
-ESP_Mail_Session session;
+// Declare the global used Session_Config for user defined session credentials
+Session_Config config;
 
 
 void setup()
@@ -546,23 +546,23 @@ void setup()
   Serial.println();
 
   // Set the session config
-  session.server.host_name = "outlook.office365.com"; //for outlook.com
-  session.server.port = 993; // for SSL or 143 for Plain or TLS with STARTTLS
-  session.login.email = "your Email address";
-  session.login.password = "your Email password";
+  config.server.host_name = "outlook.office365.com"; //for outlook.com
+  config.server.port = 993; // for SSL or 143 for Plain or TLS with STARTTLS
+  config.login.email = "your Email address";
+  config.login.password = "your Email password";
 
-  // Declare the IMAP_Config object used for user defined IMAP operating options 
+  // Declare the IMAP_Data object used for user defined IMAP operating options 
   // and contains the IMAP operating result
-  IMAP_Config config;
+  IMAP_Data imap_data;
 
   
-  // Set to enable the message content which will be stored in the IMAP_Config data
+  // Set to enable the message content which will be stored in the IMAP_Data data
   config.enable.html = true;
   config.enable.text = true;
 
 
   // Connect to the server
-  imap.connect(&session /* session credentials */, &config /* operating options and its result */);
+  imap.connect(&config, &imap_data);
 
   // Open or select the mailbox folder to read the message
   imap.selectFolder("INBOX");
@@ -717,11 +717,11 @@ void networkConnection()
 void serup()
 {
 
-    session.server.host_name = "smtp.gmail.com"; //for gmail.com
-    session.server.port = 587; // requires connection upgrade via STARTTLS
-    session.login.email = "your Email address"; //set to empty for no SMTP Authentication
-    session.login.password = "your Email password"; //set to empty for no SMTP Authentication
-    session.login.user_domain = "client domain or ip e.g. mydomain.com";
+    config.server.host_name = "smtp.gmail.com"; //for gmail.com
+    config.server.port = 587; // requires connection upgrade via STARTTLS
+    config.login.email = "your Email address"; //set to empty for no SMTP Authentication
+    config.login.password = "your Email password"; //set to empty for no SMTP Authentication
+    config.login.user_domain = "client domain or ip e.g. mydomain.com";
 
     /**
      * Other setup codes
@@ -760,7 +760,11 @@ SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl);
 // only SMTP port 465 works in the following code.
 
 // Declare the global used session config data which used to store the TCP session configuration
-ESP_Mail_Session session;
+Session_Config config;
+
+// Declare the IMAP_Data object used for user defined IMAP operating options 
+// and contains the IMAP operating result
+IMAP_Data imap_data;
 
 void networkConnection()
 {
@@ -806,11 +810,11 @@ void setup()
   networkConnection();
 
   // Set the session config
-  session.server.host_name = "smtp.gmail.com"; //for gmail.com
-  session.server.port = 465; // SSL 
-  session.login.email = "your Email address"; //set to empty for no SMTP Authentication
-  session.login.password = "your Email password"; //set to empty for no SMTP Authentication
-  session.login.user_domain = "client domain or ip e.g. mydomain.com";
+  config.server.host_name = "smtp.gmail.com"; //for gmail.com
+  config.server.port = 465; // SSL 
+  config.login.email = "your Email address"; //set to empty for no SMTP Authentication
+  config.login.password = "your Email password"; //set to empty for no SMTP Authentication
+  config.login.user_domain = "client domain or ip e.g. mydomain.com";
 
 
   // Declare the SMTP_Message class variable to handle to message being transport
@@ -836,7 +840,7 @@ void setup()
 
 
   // Connect to the server with the defined session and options
-  imap.connect(&session, &config);
+  imap.connect(&config, &imap_data);
 
 
   // Start sending Email and close the session
@@ -881,11 +885,11 @@ void networkConnection()
 void serup()
 {
 
-    session.server.host_name = "smtp.gmail.com"; //for gmail.com
-    session.server.port = 587; // requires connection upgrade via STARTTLS
-    session.login.email = "your Email address"; //set to empty for no SMTP Authentication
-    session.login.password = "your Email password"; //set to empty for no SMTP Authentication
-    session.login.user_domain = "client domain or ip e.g. mydomain.com";
+    config.server.host_name = "smtp.gmail.com"; //for gmail.com
+    config.server.port = 587; // requires connection upgrade via STARTTLS
+    config.login.email = "your Email address"; //set to empty for no SMTP Authentication
+    config.login.password = "your Email password"; //set to empty for no SMTP Authentication
+    config.login.user_domain = "client domain or ip e.g. mydomain.com";
 
     /**
      * Other setup codes

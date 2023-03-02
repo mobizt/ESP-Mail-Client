@@ -13,6 +13,25 @@
  *
  */
 
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
+ *
+ */
+
 #include <Arduino.h>
 #if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
@@ -136,17 +155,17 @@ void setup()
     MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
 #endif
 
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
+    /* Declare the Session_Config for user defined session credentials */
+    Session_Config config;
 
     /* Set the session config */
-    session.server.host_name = SMTP_HOST;
-    session.server.port = SMTP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = SMTP_HOST;
+    config.server.port = SMTP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
     /* Connect to the server */
-    if (smtp.customConnect(&session /* session credentials */, customCommandCallback) != 220)
+    if (smtp.customConnect(&config /* session credentials */, customCommandCallback) != 220)
     {
         Serial.println("> E: Unable to connect to server");
         return;
@@ -164,13 +183,13 @@ void setup()
         return;
     }
 
-    if (smtp.sendCustomCommand(MailClient.toBase64(session.login.email), customCommandCallback) != 334)
+    if (smtp.sendCustomCommand(MailClient.toBase64(config.login.email), customCommandCallback) != 334)
     {
         smtp.closeSession();
         return;
     }
 
-    if (smtp.sendCustomCommand(MailClient.toBase64(session.login.password), customCommandCallback) != 235)
+    if (smtp.sendCustomCommand(MailClient.toBase64(config.login.password), customCommandCallback) != 235)
     {
         smtp.closeSession();
         return;

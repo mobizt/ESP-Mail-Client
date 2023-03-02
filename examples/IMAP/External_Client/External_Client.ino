@@ -132,7 +132,7 @@
  * MailClient.setUDPClient(&udp_client, 0);
  *
  * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
- * session.time.gmt_offset.
+ * config.time.gmt_offset.
  *
  * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
  * 
@@ -158,6 +158,25 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
+ *
+ */
+
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
  *
  */
 
@@ -252,47 +271,47 @@ void setup()
 
     imap.callback(imapCallback);
 
-    ESP_Mail_Session session;
+    Session_Config config;
 
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    IMAP_Config config;
+    IMAP_Data imap_data;
 
-    config.search.criteria.clear();
+    imap_data.search.criteria.clear();
 
-    config.search.unseen_msg = true;
+    imap_data.search.unseen_msg = true;
 
-    config.storage.saved_path = F("/email_data");
+    imap_data.storage.saved_path = F("/email_data");
 
-    config.storage.type = esp_mail_file_storage_type_flash;
+    imap_data.storage.type = esp_mail_file_storage_type_flash;
 
-    config.download.header = true;
-    config.download.text = true;
-    config.download.html = true;
-    config.download.attachment = true;
-    config.download.inlineImg = true;
+    imap_data.download.header = true;
+    imap_data.download.text = true;
+    imap_data.download.html = true;
+    imap_data.download.attachment = true;
+    imap_data.download.inlineImg = true;
 
-    config.enable.html = true;
-    config.enable.text = true;
+    imap_data.enable.html = true;
+    imap_data.enable.text = true;
 
-    config.enable.recent_sort = true;
+    imap_data.enable.recent_sort = true;
 
-    config.enable.download_status = true;
+    imap_data.enable.download_status = true;
 
-    config.limit.search = 5;
+    imap_data.limit.search = 5;
 
-    config.limit.msg_size = 512;
+    imap_data.limit.msg_size = 512;
 
-    config.limit.attachment_size = 1024 * 1024 * 5;
+    imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     imap.networkConnectionRequestCallback(networkConnection);
 
     imap.networkStatusRequestCallback(networkStatusRequestCallback);
 
-    if (!imap.connect(&session, &config))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     printAllMailboxesInfo(imap);
@@ -302,7 +321,7 @@ void setup()
 
     printSelectedMailboxInfo(imap.selectedFolder());
 
-    config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
+    imap_data.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
     MailClient.readMail(&imap);
 
