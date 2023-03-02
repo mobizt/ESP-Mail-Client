@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.1
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.2
  *
- * Created March 1, 2023
+ * Created March 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -48,12 +48,12 @@ ESP8266_WCS::ESP8266_WCS()
 ESP8266_WCS::~ESP8266_WCS()
 {
   stop();
-
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
   if (_basic_client && _use_internal_basic_client)
   {
-    ESP_Mail_WC_CLASS::setClient(nullptr);
+    delete _basic_client;
     _basic_client = nullptr;
+    ESP_Mail_WC_CLASS::setClient(nullptr);
     _use_internal_basic_client = false;
   }
 #endif
