@@ -268,7 +268,7 @@ void setup()
     imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&session, &imap_data))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     if (imap.isAuthenticated())

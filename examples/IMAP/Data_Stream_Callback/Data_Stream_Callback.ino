@@ -226,7 +226,7 @@ void setup()
     imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&config, &config))
+    if (!imap.connect(&config, &imap_data))
         return;
 
     /* Open or select the mailbox folder to read or search the message */
