@@ -1820,7 +1820,7 @@ private:
 typedef struct esp_mail_content_transfer_encoding_t Content_Transfer_Encoding;
 
 /* The session configuations */
-typedef struct esp_mail_session_config_t ESP_Mail_Session; //obsoleted
+typedef struct esp_mail_session_config_t ESP_Mail_Session; // obsoleted
 typedef struct esp_mail_session_config_t Session_Config;
 
 #endif
@@ -1848,7 +1848,7 @@ typedef struct esp_mail_folder_info_item_t FolderInfo;
 typedef struct esp_mail_attachment_info_t IMAP_Attach_Item;
 
 /** The IMAP operation configuations */
-typedef struct esp_mail_imap_data_config_t IMAP_Config;//obsoleted
+typedef struct esp_mail_imap_data_config_t IMAP_Config; // obsoleted
 
 typedef struct esp_mail_imap_data_config_t IMAP_Data;
 

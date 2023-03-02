@@ -271,13 +271,6 @@ non_authenticated:
     return true;
 }
 
-bool ESP_Mail_Client::connected(SMTPSession *smtp)
-{
-    if (!smtp)
-        return false;
-    return smtp->client.connected();
-}
-
 bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result)
 {
     if (!smtp)
@@ -374,13 +367,13 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 
         if (!smtp->connect(ssl))
         {
-            closeTCPSession(smtp);
+            closeTCPSession((void *)smtp, true);
             return addSendingResult(smtp, msg, false);
         }
 
         if (!smtpAuth(smtp, ssl))
         {
-            closeTCPSession(smtp);
+            closeTCPSession((void *)smtp, true);
             return addSendingResult(smtp, msg, false);
         }
         smtp->_sentSuccessCount = 0;
@@ -1946,11 +1939,11 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, PGM_P data, bool newline)
 
     if (!reconnect(smtp))
     {
-        closeTCPSession(smtp);
+        closeTCPSession((void *)smtp, true);
         return sent;
     }
 
-    if (!connected(smtp))
+    if (!connected((void*)smtp, true))
     {
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
         return sent;
@@ -1993,11 +1986,11 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
 
     if (!reconnect(smtp))
     {
-        closeTCPSession(smtp);
+        closeTCPSession((void *)smtp, true);
         return 0;
     }
 
-    if (!connected(smtp))
+    if (!connected((void*)smtp, true))
     {
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
         return 0;
@@ -2029,13 +2022,13 @@ bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
     if (smtp)
     {
         if (smtp->_tcpConnected)
-            closeTCPSession(smtp);
+            closeTCPSession((void *)smtp, true);
     }
     else if (imap && !calDataLen)
     {
 #if defined(ENABLE_IMAP)
         if (imap->_tcpConnected)
-            closeTCPSession(imap);
+            closeTCPSession((void *)imap, false);
 #endif
     }
 
@@ -3138,7 +3131,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     {
         if (!reconnect(smtp, dataTime))
             return false;
-        if (!connected(smtp))
+        if (!connected((void*)smtp, true))
         {
             if (cmd != esp_mail_smtp_cmd_logout)
                 errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
@@ -3160,7 +3153,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             if (!reconnect(smtp, dataTime))
                 return false;
 
-            if (!connected(smtp))
+            if (!connected((void*)smtp, true))
             {
                 if (cmd != esp_mail_smtp_cmd_logout)
                     errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
@@ -3345,23 +3338,6 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
     }
 }
 
-void ESP_Mail_Client::closeTCPSession(SMTPSession *smtp)
-{
-    if (!smtp)
-        return;
-
-    if (smtp->_tcpConnected)
-    {
-        smtp->client.stop();
-        _lastReconnectMillis = millis();
-    }
-
-    smtp->_tcpConnected = false;
-    smtp->_auth_capability.clear();
-    smtp->_send_capability.clear();
-    smtp->_authenticated = false;
-}
-
 bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 {
     if (!smtp)
@@ -3375,7 +3351,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
     {
         if (millis() - dataTime > (unsigned long)smtp->client.tcpTimeout())
         {
-            closeTCPSession(smtp);
+            closeTCPSession((void *)smtp, true);
             errorStatusCB(smtp, MAIL_CLIENT_ERROR_READ_TIMEOUT);
             return false;
         }
@@ -3384,7 +3360,7 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
     if (!networkStatus)
     {
         if (smtp->_tcpConnected)
-            closeTCPSession(smtp);
+            closeTCPSession((void *)smtp, true);
 
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
 
@@ -3750,7 +3726,7 @@ bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
     }
 
     if (_tcpConnected)
-        MailClient.closeTCPSession(this);
+        MailClient.closeTCPSession((void *)this, true);
 
     _session_cfg = session_config;
 
@@ -3762,7 +3738,7 @@ bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
 
     if (!connect(ssl))
     {
-        MailClient.closeTCPSession(this);
+        MailClient.closeTCPSession((void *)this, true);
         return false;
     }
 
@@ -3895,122 +3871,7 @@ void SMTPSession::debug(int level)
 
 String SMTPSession::errorReason()
 {
-    MB_String ret;
-
-    switch (_smtpStatus.statusCode)
-    {
-    case SMTP_STATUS_SERVER_CONNECT_FAILED:
-        ret += esp_mail_str_38;
-        break;
-    case SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED:
-        ret += esp_mail_str_39;
-        break;
-    case SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED:
-        ret += esp_mail_str_39;
-        break;
-    case SMTP_STATUS_AUTHEN_NOT_SUPPORT:
-        ret += esp_mail_str_42;
-        break;
-    case SMTP_STATUS_AUTHEN_FAILED:
-        ret += esp_mail_str_43;
-        break;
-    case SMTP_STATUS_USER_LOGIN_FAILED:
-        ret += esp_mail_str_43;
-        break;
-    case SMTP_STATUS_PASSWORD_LOGIN_FAILED:
-        ret += esp_mail_str_47;
-        break;
-    case SMTP_STATUS_SEND_HEADER_SENDER_FAILED:
-        ret += esp_mail_str_48;
-        break;
-    case SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED:
-        ret += esp_mail_str_222;
-        break;
-    case SMTP_STATUS_SEND_BODY_FAILED:
-        ret += esp_mail_str_49;
-        break;
-    case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
-        ret += esp_mail_str_221;
-        break;
-    case MAIL_CLIENT_ERROR_READ_TIMEOUT:
-        ret += esp_mail_str_258;
-        break;
-    case SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED:
-        ret += esp_mail_str_293;
-        break;
-    case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
-        ret += esp_mail_str_305;
-        break;
-    case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
-        ret += esp_mail_str_132;
-        break;
-    case SMTP_STATUS_NO_VALID_RECIPIENTS_EXISTED:
-        ret += esp_mail_str_206;
-        break;
-    case SMTP_STATUS_NO_VALID_SENDER_EXISTED:
-        ret += esp_mail_str_205;
-        break;
-    case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
-        ret += esp_mail_str_186;
-        break;
-    case SMTP_STATUS_NO_SUPPORTED_AUTH:
-        ret += esp_mail_str_42;
-        break;
-    case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
-        ret += esp_mail_str_344;
-        break;
-    case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
-        ret += esp_mail_str_345;
-        break;
-    case TCP_CLIENT_ERROR_NOT_INITIALIZED:
-        ret += esp_mail_str_346;
-        break;
-    case TCP_CLIENT_ERROR_NOT_CONNECTED:
-        ret += esp_mail_str_357;
-        break;
-    case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
-        ret += esp_mail_str_356;
-        break;
-
-    case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
-        ret += esp_mail_str_352;
-        break;
-    case MB_FS_ERROR_FILE_IO_ERROR:
-        ret += esp_mail_str_282;
-        break;
-
-#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
-
-    case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
-        ret += esp_mail_str_348;
-        break;
-
-    case MB_FS_ERROR_SD_STORAGE_IS_NOT_READY:
-        ret += esp_mail_str_349;
-        break;
-
-    case MB_FS_ERROR_FILE_STILL_OPENED:
-        ret += esp_mail_str_350;
-        break;
-
-    case MB_FS_ERROR_FILE_NOT_FOUND:
-        ret += esp_mail_str_351;
-        break;
-
-#endif
-    default:
-        break;
-    }
-
-    if (_smtpStatus.text.length() > 0 && ret.length() == 0)
-    {
-        ret = esp_mail_str_312;
-        ret += _smtpStatus.respCode;
-        ret += esp_mail_str_313;
-        ret += _smtpStatus.text;
-        return ret.c_str();
-    }
-    return ret.c_str();
+    return MailClient.errorReason(true, _smtpStatus.statusCode, _smtpStatus.respCode, _smtpStatus.text.c_str());
 }
 
 bool SMTPSession::closeSession()

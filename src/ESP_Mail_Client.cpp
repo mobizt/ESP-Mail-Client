@@ -630,7 +630,7 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
   return idx;
 }
 
-void ESP_Mail_Client::printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP)
+void ESP_Mail_Client::printLibInfo(void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP)
 {
   MB_String s;
 
@@ -639,13 +639,13 @@ void ESP_Mail_Client::printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *
   // Server connection attempt: no status code
   if (isSMTP)
   {
-    if (((SMTPSession *)caller)->_sendCallback != NULL && !isCb)
-      smtpCB((SMTPSession *)caller, esp_mail_str_120, false, false);
+    if (((SMTPSession *)sessionPtr)->_sendCallback != NULL && !isCb)
+      smtpCB((SMTPSession *)sessionPtr, esp_mail_str_120, false, false);
   }
   else
   {
-    if (((IMAPSession *)caller)->_readCallback != NULL && !isCb)
-      imapCB((IMAPSession *)caller, esp_mail_str_50, false, false);
+    if (((IMAPSession *)sessionPtr)->_readCallback != NULL && !isCb)
+      imapCB((IMAPSession *)sessionPtr, esp_mail_str_50, false, false);
   }
 
   if (debug && !isCb)
@@ -665,7 +665,7 @@ void ESP_Mail_Client::printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *
   }
 }
 
-bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode)
+bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode)
 {
   MB_String s;
   bool isCb = isSMTP ? (smtpResponseCallback)cb != NULL : (imapResponseCallback)cb != NULL;
@@ -695,9 +695,9 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *cb, 
   if (!client->connect(secureMode, session_config->certificate.verify))
   {
     if (isSMTP)
-      return handleSMTPError((SMTPSession *)caller, SMTP_STATUS_SERVER_CONNECT_FAILED);
+      return handleSMTPError((SMTPSession *)sessionPtr, SMTP_STATUS_SERVER_CONNECT_FAILED);
     else
-      return handleIMAPError((IMAPSession *)caller, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
+      return handleIMAPError((IMAPSession *)sessionPtr, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
   }
   return true;
 }
@@ -784,6 +784,199 @@ void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *ses
 }
 
 #endif
+
+const char *ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, const char *msg)
+{
+  MB_String ret;
+
+  if (!isSMTP && strlen(msg) > 0)
+    return msg;
+
+  switch (statusCode)
+  {
+  case SMTP_STATUS_SERVER_CONNECT_FAILED:
+    ret += esp_mail_str_38;
+    break;
+  case SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED:
+    ret += esp_mail_str_39;
+    break;
+  case SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED:
+    ret += esp_mail_str_39;
+    break;
+  case SMTP_STATUS_AUTHEN_NOT_SUPPORT:
+    ret += esp_mail_str_42;
+    break;
+  case SMTP_STATUS_AUTHEN_FAILED:
+    ret += esp_mail_str_43;
+    break;
+  case SMTP_STATUS_USER_LOGIN_FAILED:
+    ret += esp_mail_str_43;
+    break;
+  case SMTP_STATUS_PASSWORD_LOGIN_FAILED:
+    ret += esp_mail_str_47;
+    break;
+  case SMTP_STATUS_SEND_HEADER_SENDER_FAILED:
+    ret += esp_mail_str_48;
+    break;
+  case SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED:
+    ret += esp_mail_str_222;
+    break;
+  case SMTP_STATUS_SEND_BODY_FAILED:
+    ret += esp_mail_str_49;
+    break;
+  case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
+    ret += esp_mail_str_221;
+    break;
+  case MAIL_CLIENT_ERROR_READ_TIMEOUT:
+    ret += esp_mail_str_258;
+    break;
+  case SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED:
+    ret += esp_mail_str_293;
+    break;
+  case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
+    ret += esp_mail_str_305;
+    break;
+  case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
+    ret += esp_mail_str_132;
+    break;
+  case SMTP_STATUS_NO_VALID_RECIPIENTS_EXISTED:
+    ret += esp_mail_str_206;
+    break;
+  case SMTP_STATUS_NO_VALID_SENDER_EXISTED:
+    ret += esp_mail_str_205;
+    break;
+  case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
+    ret += esp_mail_str_186;
+    break;
+  case SMTP_STATUS_NO_SUPPORTED_AUTH:
+    ret += esp_mail_str_42;
+    break;
+  case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
+    ret += esp_mail_str_344;
+    break;
+  case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
+    ret += esp_mail_str_345;
+    break;
+  case TCP_CLIENT_ERROR_NOT_INITIALIZED:
+    ret += esp_mail_str_346;
+    break;
+  case TCP_CLIENT_ERROR_NOT_CONNECTED:
+    ret += esp_mail_str_357;
+    break;
+  case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
+    ret += esp_mail_str_356;
+    break;
+
+  case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
+    ret += esp_mail_str_352;
+    break;
+  case MB_FS_ERROR_FILE_IO_ERROR:
+    ret += esp_mail_str_282;
+    break;
+
+  case IMAP_STATUS_SERVER_CONNECT_FAILED:
+    ret += esp_mail_str_38;
+    break;
+  case IMAP_STATUS_NO_MESSAGE:
+    ret += esp_mail_str_306;
+    break;
+  case IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT:
+    ret += esp_mail_str_93;
+    break;
+  case IMAP_STATUS_CLOSE_MAILBOX_FAILED:
+    ret += esp_mail_str_188;
+    break;
+  case IMAP_STATUS_OPEN_MAILBOX_FAILED:
+    ret += esp_mail_str_281;
+    break;
+  case IMAP_STATUS_LIST_MAILBOXS_FAILED:
+    ret += esp_mail_str_62;
+    break;
+  case IMAP_STATUS_NO_SUPPORTED_AUTH:
+    ret += esp_mail_str_42;
+    break;
+  case IMAP_STATUS_CHECK_CAPABILITIES_FAILED:
+    ret += esp_mail_str_63;
+    break;
+  case IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED:
+    ret += esp_mail_str_153;
+    break;
+
+#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
+
+  case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
+    ret += esp_mail_str_348;
+    break;
+
+  case MB_FS_ERROR_SD_STORAGE_IS_NOT_READY:
+    ret += esp_mail_str_349;
+    break;
+
+  case MB_FS_ERROR_FILE_STILL_OPENED:
+    ret += esp_mail_str_350;
+    break;
+
+  case MB_FS_ERROR_FILE_NOT_FOUND:
+    ret += esp_mail_str_351;
+    break;
+
+#endif
+  default:
+    break;
+  }
+
+  if (isSMTP && strlen(msg) > 0 && ret.length() == 0)
+  {
+    ret = esp_mail_str_312;
+    ret += respCode;
+    ret += esp_mail_str_313;
+    ret += msg;
+    return ret.c_str();
+  }
+  return ret.c_str();
+}
+
+void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
+{
+  if (!sessionPtr)
+    return;
+
+  if (isSMTP)
+  {
+
+    if (((SMTPSession *)sessionPtr)->_tcpConnected)
+    {
+      ((SMTPSession *)sessionPtr)->client.stop();
+      _lastReconnectMillis = millis();
+    }
+
+    ((SMTPSession *)sessionPtr)->_tcpConnected = false;
+    ((SMTPSession *)sessionPtr)->_auth_capability.clear();
+    ((SMTPSession *)sessionPtr)->_send_capability.clear();
+    ((SMTPSession *)sessionPtr)->_authenticated = false;
+  }
+  else
+  {
+    if (((IMAPSession *)sessionPtr)->_tcpConnected)
+    {
+      ((IMAPSession *)sessionPtr)->client.stop();
+      _lastReconnectMillis = millis();
+    }
+
+    ((IMAPSession *)sessionPtr)->_tcpConnected = false;
+    ((IMAPSession *)sessionPtr)->_auth_capability.clear();
+    ((IMAPSession *)sessionPtr)->_read_capability.clear();
+    ((IMAPSession *)sessionPtr)->_authenticated = false;
+  }
+}
+
+bool ESP_Mail_Client::connected(void *sessionPtr, bool isSMTP)
+{
+  if (isSMTP)
+    return ((SMTPSession *)sessionPtr)->client.connected();
+  else
+    return ((IMAPSession *)sessionPtr)->client.connected();
+}
 
 void ESP_Mail_Client::delP(void *ptr)
 {

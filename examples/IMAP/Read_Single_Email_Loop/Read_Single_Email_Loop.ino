@@ -304,7 +304,7 @@ void loop()
         // If session was closed, reconnect and re-select the mailbox
         if (!imap.connected())
         {
-            if (!imap.connect(&session, &config))
+            if (!imap.connect(&config, &imap_data))
                 return;
 
             if (!imap.selectFolder(F("INBOX")))

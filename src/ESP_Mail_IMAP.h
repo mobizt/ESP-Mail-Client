@@ -381,13 +381,13 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         if (!imap->connect(ssl))
         {
-            closeTCPSession(imap);
+            closeTCPSession((void*)imap, false);
             return false;
         }
 
         if (!imapAuth(imap, ssl))
         {
-            closeTCPSession(imap);
+            closeTCPSession((void*)imap, false);
             return false;
         }
     }
@@ -989,9 +989,9 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
 {
     bool ret = true;
 
-    if (!connected(imap))
+    if (!connected((void*)imap, false))
     {
-        closeTCPSession(imap);
+        closeTCPSession((void*)imap, false);
         return false;
     }
     int cLevel = 0;
@@ -1081,11 +1081,6 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
     }
 
     return true;
-}
-
-bool ESP_Mail_Client::connected(IMAPSession *imap)
-{
-    return imap->client.connected();
 }
 
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
@@ -1322,11 +1317,11 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, PGM_P data, bool newline)
 
     if (!reconnect(imap))
     {
-        closeTCPSession(imap);
+        closeTCPSession((void*)imap, false);
         return sent;
     }
 
-    if (!connected(imap))
+    if (!connected((void*)imap, false))
     {
         errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
         return sent;
@@ -1368,11 +1363,11 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, uint8_t *data, size_t size)
 
     if (!reconnect(imap))
     {
-        closeTCPSession(imap);
+        closeTCPSession((void*)imap, false);
         return sent;
     }
 
-    if (!connected(imap))
+    if (!connected((void*)imap, false))
     {
         errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
         return sent;
@@ -2474,21 +2469,6 @@ char *ESP_Mail_Client::urlDecode(const char *str)
     return dStr;
 }
 
-void ESP_Mail_Client::closeTCPSession(IMAPSession *imap)
-{
-
-    if (imap->_tcpConnected)
-    {
-        imap->client.stop();
-        _lastReconnectMillis = millis();
-    }
-
-    imap->_tcpConnected = false;
-    imap->_auth_capability.clear();
-    imap->_read_capability.clear();
-    imap->_authenticated = false;
-}
-
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
 
@@ -2501,7 +2481,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
         if (millis() - dataTime > (unsigned long)imap->client.tcpTimeout())
         {
 
-            closeTCPSession(imap);
+            closeTCPSession((void*)imap, false);
             if (imap->_headers.size() > 0)
             {
                 if (downloadRequest)
@@ -2530,7 +2510,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
     {
 
         if (imap->_tcpConnected)
-            closeTCPSession(imap);
+            closeTCPSession((void*)imap, false);
 
         if (imap->_mbif._idleTimeMs > 0 || imap->_imap_cmd == esp_mail_imap_cmd_idle || imap->_imap_cmd == esp_mail_imap_cmd_done)
         {
@@ -2657,7 +2637,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         if (!reconnect(imap, dataTime))
             return false;
 
-        if (!connected(imap))
+        if (!connected((void*)imap, false))
         {
 #if defined(ESP32)
             if (imap->_imap_cmd == esp_mail_imap_cmd_logout) // suppress the error due to server closes the connection immediately in ESP32 core v2.0.4
@@ -2710,10 +2690,10 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 dataTime = millis();
             }
 
-            if (!reconnect(imap, dataTime) || !connected(imap))
+            if (!reconnect(imap, dataTime) || !connected((void*)imap, false))
             {
 
-                if (!connected(imap))
+                if (!connected((void*)imap, false))
                 {
 
 #if defined(ESP32)
@@ -3917,7 +3897,7 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
     }
 
     if (imap->_tcpConnected)
-        closeTCPSession(imap);
+        closeTCPSession((void*)imap, false);
 
     imap->_cbData.empty();
 
@@ -4725,7 +4705,7 @@ bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *im
     }
 
     if (_tcpConnected)
-        MailClient.closeTCPSession(this);
+        MailClient.closeTCPSession((void*)this, false);
 
     _session_cfg = session_config;
     _imap_data = imap_data;
@@ -4738,7 +4718,7 @@ bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *im
 
     if (!connect(ssl))
     {
-        MailClient.closeTCPSession(this);
+       MailClient.closeTCPSession((void*)this, false);
         return false;
     }
 
@@ -4792,7 +4772,7 @@ bool IMAPSession::connect(bool &ssl)
     MailClient.setSecure(client, _session_cfg);
 #endif
 
-    if (!MailClient.beginConnection(_session_cfg, (void *)_customCmdResCallback, (void *)(this), &client, _debug, true, secureMode))
+    if (!MailClient.beginConnection(_session_cfg, (void *)_customCmdResCallback, (void *)(this), &client, _debug, false, secureMode))
         return false;
 
     // server connected
@@ -4863,99 +4843,7 @@ void IMAPSession::debug(int level)
 
 String IMAPSession::errorReason()
 {
-    MB_String ret;
-
-    if (_imapStatus.text.length() > 0)
-        return _imapStatus.text.c_str();
-
-    switch (_imapStatus.statusCode)
-    {
-    case IMAP_STATUS_SERVER_CONNECT_FAILED:
-        ret += esp_mail_str_38;
-        break;
-    case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
-        ret += esp_mail_str_221;
-        break;
-    case MAIL_CLIENT_ERROR_READ_TIMEOUT:
-        ret += esp_mail_str_258;
-        break;
-    case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
-        ret += esp_mail_str_305;
-        break;
-    case IMAP_STATUS_NO_MESSAGE:
-        ret += esp_mail_str_306;
-        break;
-    case IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT:
-        ret += esp_mail_str_93;
-        break;
-    case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
-        ret += esp_mail_str_132;
-        break;
-    case IMAP_STATUS_CLOSE_MAILBOX_FAILED:
-        ret += esp_mail_str_188;
-        break;
-    case IMAP_STATUS_OPEN_MAILBOX_FAILED:
-        ret += esp_mail_str_281;
-        break;
-    case IMAP_STATUS_LIST_MAILBOXS_FAILED:
-        ret += esp_mail_str_62;
-        break;
-    case IMAP_STATUS_NO_SUPPORTED_AUTH:
-        ret += esp_mail_str_42;
-        break;
-    case IMAP_STATUS_CHECK_CAPABILITIES_FAILED:
-        ret += esp_mail_str_63;
-        break;
-    case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
-        ret += esp_mail_str_186;
-        break;
-    case IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED:
-        ret += esp_mail_str_153;
-        break;
-
-    case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
-        ret += esp_mail_str_345;
-        break;
-    case TCP_CLIENT_ERROR_NOT_INITIALIZED:
-        ret += esp_mail_str_346;
-        break;
-
-    case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
-        ret += esp_mail_str_356;
-        break;
-
-    case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
-        ret += esp_mail_str_352;
-        break;
-
-    case MB_FS_ERROR_FILE_IO_ERROR:
-        ret += esp_mail_str_282;
-        break;
-
-#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
-
-    case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
-        ret += esp_mail_str_348;
-        break;
-
-    case MB_FS_ERROR_SD_STORAGE_IS_NOT_READY:
-        ret += esp_mail_str_349;
-        break;
-
-    case MB_FS_ERROR_FILE_STILL_OPENED:
-        ret += esp_mail_str_350;
-        break;
-
-    case MB_FS_ERROR_FILE_NOT_FOUND:
-        ret += esp_mail_str_351;
-        break;
-
-#endif
-
-    default:
-        break;
-    }
-    return ret.c_str();
+    return MailClient.errorReason(false, _imapStatus.statusCode, 0, _imapStatus.text.c_str());
 }
 
 bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
@@ -5071,14 +4959,14 @@ bool IMAPSession::mListen(bool recon)
 
         if (!connect(ssl))
         {
-            MailClient.closeTCPSession(this);
+            MailClient.closeTCPSession((void*)this, false);
             return false;
         }
 
         // re-authenticate after session closed
         if (!MailClient.imapAuth(this, ssl))
         {
-            MailClient.closeTCPSession(this);
+            MailClient.closeTCPSession((void*)this, false);
             return false;
         }
 

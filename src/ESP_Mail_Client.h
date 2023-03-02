@@ -985,15 +985,15 @@ private:
 
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
-  
+
   // Print library info
-  void printLibInfo(void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP);
-  
+  void printLibInfo(void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP);
+
   // Begin server connection
-  bool beginConnection(Session_Config *session_config, void *cb, void *caller, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode);
+  bool beginConnection(Session_Config *session_config, void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode);
 
   // Prepare system time
-  void prepareTime(Session_Config *session_config, void *cb, void *caller, bool isSMTP);
+  void prepareTime(Session_Config *session_config, void *cb, void *sessionPtr, bool isSMTP);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   // Set cert data
@@ -1001,6 +1001,14 @@ private:
   // Set secure data
   void setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config);
 #endif
+
+  const char *errorReason(bool isSMTP, int statusCode, int respCode, const char *msg);
+
+  // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
+  void closeTCPSession(void *sessionPtr, bool isSMTP);
+
+  // Get TCP connected status
+  bool connected(void *sessionPtr, bool isSMTP);
 
   // Get the memory allocation block size of multiple of 4
   size_t getReservedLen(size_t len);
@@ -1096,9 +1104,6 @@ private:
 
   // Network reconnection and return the connection status
   bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
-
-  // Close TCP session and clear auth_capability, send_capability, connected and authenticate statuses
-  void closeTCPSession(SMTPSession *smtp);
 
   // Send the error status callback
   void errorStatusCB(SMTPSession *smtp, int error);
@@ -1235,9 +1240,6 @@ private:
   // Parse SMTP authentication capability
   void parseAuthCapability(SMTPSession *smtp, char *buf);
 
-  // Get TCP connected status
-  bool connected(SMTPSession *smtp);
-
   // Add the sending result
   bool addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
 
@@ -1296,12 +1298,6 @@ private:
 
   // Network reconnection and return the connection status
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
-
-  // Get the TCP connection status
-  bool connected(IMAPSession *imap);
-
-  // Close TCP session and clear auth_capability, read_capability, connected and authenticate statuses
-  void closeTCPSession(IMAPSession *imap);
 
   // Get multipart MIME fetch command
   bool getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_String &partText);
