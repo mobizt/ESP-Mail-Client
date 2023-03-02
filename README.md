@@ -557,8 +557,8 @@ void setup()
 
   
   // Set to enable the message content which will be stored in the IMAP_Data data
-  config.enable.html = true;
-  config.enable.text = true;
+  imap_data.enable.html = true;
+  imap_data.enable.text = true;
 
 
   // Connect to the server
@@ -572,10 +572,10 @@ void setup()
   // In this case we will get the UID from the max message number (lastest message)
   // then imap.getUID and imap.selectedFolder().msgCount() should be called after 
   // calling select or open the folder (mailbox).
-  config.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
+  imap_data.fetch.uid = imap.getUID(imap.selectedFolder().msgCount());
 
   // Empty search criteria to disable the messsage search
-  config.search.criteria.clear();
+  imap_data.search.criteria.clear();
 
 
   // Read the Email and close the session
@@ -762,10 +762,6 @@ SMTPSession smtp(&ssl_client, esp_mail_external_client_type_ssl);
 // Declare the global used session config data which used to store the TCP session configuration
 Session_Config config;
 
-// Declare the IMAP_Data object used for user defined IMAP operating options 
-// and contains the IMAP operating result
-IMAP_Data imap_data;
-
 void networkConnection()
 {
     // Reset the network connection
@@ -840,7 +836,7 @@ void setup()
 
 
   // Connect to the server with the defined session and options
-  imap.connect(&config, &imap_data);
+  smtp.connect(&config);
 
 
   // Start sending Email and close the session
