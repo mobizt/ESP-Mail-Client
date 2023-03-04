@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.6
+ * ESP32 TCP Client Library v2.0.7
  *
- * Created March 2, 2023
+ * Created March 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -228,13 +228,13 @@ bool ESP32_TCP_Client::isInitialized()
         if (wcs->debugLevel > 0)
         {
             if (!network_connection_cb)
-                esp_mail_debug_print(esp_mail_str_369, true);
+                esp_mail_debug_print(esp_mail_str_369 /* "> E: Network connection callback is required" */, true);
 
             if (!network_status_cb)
-                esp_mail_debug_print(esp_mail_str_370, true);
+                esp_mail_debug_print(esp_mail_str_370 /* "> E: Network connection status callback is required" */, true);
 
             if (upgradeRequired)
-                esp_mail_debug_print(esp_mail_str_368, true);
+                esp_mail_debug_print(esp_mail_str_368 /* "> E: Client connection upgrade callback (for TLS handshake) is required" */, true);
         }
     }
 
@@ -259,6 +259,7 @@ bool ESP32_TCP_Client::begin(const char *host, uint16_t port)
 
 bool ESP32_TCP_Client::connect(bool secured, bool verify)
 {
+
     wcs->setSecure(secured);
     wcs->setVerify(verify);
 
@@ -278,8 +279,8 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     {
         if (wcs->debugLevel > 0)
         {
-            MB_String s = esp_mail_str_185;
-            s += esp_mail_str_346;
+            MB_String s = esp_mail_str_185; /* "> E: " */
+            s += esp_mail_str_346;          /* "Client and/or necessary callback functions are not yet assigned" */
             esp_mail_debug_print(s.c_str(), true);
         }
         return false;
@@ -289,7 +290,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (wcs->ext_client_type == esp_mail_external_client_type_none)
     {
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_372, true);
+            esp_mail_debug_print(esp_mail_str_372 /* "> E: The Client type must be provided, see example" */, true);
         return false;
     }
 
@@ -297,7 +298,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (!secured && wcs->ext_client_type == esp_mail_external_client_type_ssl)
     {
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_366, true);
+            esp_mail_debug_print(esp_mail_str_366 /* "> E: Simple Client is required" */, true);
         return false;
     }
 

@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.4
+ * TCP Client Base class, version 2.0.5
  *
- * Created March 2, 2023
+ * Created March 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -133,6 +133,7 @@ public:
 
     int getProtocol(uint16_t port)
     {
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
         if (session_config)
         {
             if (session_config->ports_functions.list)
@@ -144,7 +145,7 @@ public:
                 }
             }
         }
-
+#endif
         return -1;
     }
 

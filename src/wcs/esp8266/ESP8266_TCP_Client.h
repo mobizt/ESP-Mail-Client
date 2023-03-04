@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.6
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.7
  *
- * Created March 2, 2023
+ * Created March 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -254,10 +254,12 @@ public:
 
   void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   void setSession(ESP_Mail_Session *session_config)
   {
     wcs->session_config = session_config;
   }
+#endif
 
   void setClockReady(bool rdy)
   {

@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 1, 2023
+ * Created March 5, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -986,6 +986,9 @@ private:
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
 
+  // Check response callback was assigned?
+  bool isResponseCB(void *cb, bool isSMTP);
+
   // Print library info
   void printLibInfo(void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP);
 
@@ -993,7 +996,7 @@ private:
   bool beginConnection(Session_Config *session_config, void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode);
 
   // Prepare system time
-  void prepareTime(Session_Config *session_config, void *cb, void *sessionPtr, bool isSMTP);
+  void prepareTime(Session_Config *session_config, void *cb, void *sessionPtr, bool isSMTP, bool debug);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   // Set cert data
@@ -1035,7 +1038,7 @@ private:
   MB_String mGetBase64(MB_StringPtr str);
 
   // Sub string
-  char *subStr(const char *buf, PGM_P beginH, PGM_P endH, int beginPos, int endPos = 0, bool caseSensitive = true);
+  char *subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, int beginPos, int endPos = 0, bool caseSensitive = true);
 
   // Find string
   int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
@@ -1047,10 +1050,10 @@ private:
   void delP(void *ptr);
 
   // PGM string compare
-  bool strcmpP(const char *buf, int ofs, PGM_P beginH, bool caseSensitive = true);
+  bool strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool caseSensitive = true);
 
   // Find PGM string
-  int strposP(const char *buf, PGM_P beginH, int ofs, bool caseSensitive = true);
+  int strposP(const char *buf, PGM_P begin_PGM, int ofs, bool caseSensitive = true);
 
   // Memory allocation for PGM string
   char *strP(PGM_P pgm);
@@ -1065,7 +1068,7 @@ private:
   void getTimezone(const char *TZ_file, MB_String &out);
 
   // Get header content from response based on the field name
-  bool getHeader(const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  bool getHeader(const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
 
   // Get file extension with dot from MIME string
   void getExtfromMIME(const char *mime, MB_String &ext);
@@ -1140,6 +1143,18 @@ private:
 
   // Get RFC 822 message envelope
   void getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg, MB_String &buf);
+
+  // Append header field to buffer
+  void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+
+  // Append header field name to buffer
+  void appendHeaderName(MB_String &buf, const char *name);
+
+  // Append header field value in brackets to buffer
+  void appendHeaderValue(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+  
+  // Append boundary string to buffer
+  void appendBoundaryString(MB_String &buf, const char *value, bool endMark, bool newLine);
 
   // Send BDAT command RFC 3030
   bool sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bool last);
@@ -1336,16 +1351,16 @@ private:
   int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc);
 
   // Parse header state
-  bool parseHeaderState(IMAPSession *imap, const char *buf, PGM_P beginH, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, esp_mail_imap_header_state state);
+  bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
 
   // Parse header response
   void parseHeaderResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
 
   // Set the header based on state parsed
-  void setHeader(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
+  void collectHeaderField(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
 
   // Get decoded header
-  bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P beginH, MB_String &out, bool caseSensitive);
+  bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
 
   // Check attachment for firmware file
   void checkFirmwareFile(IMAPSession *imap, const char *filename, struct esp_mail_message_part_info_t &part, bool defaultSize = false);
@@ -1404,17 +1419,20 @@ private:
   // Get IMAP response status e.g. OK, NO and Bad status enum value
   esp_mail_imap_response_status imapResponseStatus(IMAPSession *imap, char *response, PGM_P tag);
 
-  // Add header item to string buffer to save to file
+  // Add header item to string buffer
   void addHeaderItem(MB_String &str, esp_mail_message_header_t *header, bool json);
 
-  // Add RFC822 headers to string buffer save to file
+  // Get RFC822 header string pointer by index
+  int getRFC822HeaderPtr(int index, esp_mail_imap_rfc822_msg_header_item_t *header);
+
+  // Add RFC822 headers to string buffer
   void addRFC822Headers(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, bool json);
 
-  // Add header string by name and value to string buffer to save to file
-  void addHeader(MB_String &s, const char *name, const MB_String &value, bool trim, bool json);
+  // Add RFC822 header item to string buffer
+  void addRFC822HeaderItem(MB_String &s, esp_mail_imap_rfc822_msg_header_item_t *header, int index, bool json);
 
-  // Add header string by name and value to string buffer to save to file
-  void addHeader(MB_String &s, const char *name, int value, bool json);
+  // Add header string by name and value to string buffer
+  void addHeader(MB_String &s, const char *name, const char *s_value, int num_value, bool trim, bool isJson);
 
   // Save header string buffer to file
   void saveHeader(IMAPSession *imap, bool json);
@@ -1443,26 +1461,8 @@ private:
   // Parse Idle response
   bool parseIdleResponse(IMAPSession *imap);
 
-  // Parse Get UID response
-  void parseGetUIDResponse(IMAPSession *imap, char *buf);
-
-  // Parse Get Flags response
-  void parseGetFlagsResponse(IMAPSession *imap, char *buf);
-
-  // Parse Get Quota response
-  void parseGetQuotaResponse(IMAPSession *imap, char *buf);
-
-  // Parse Get Quota roots response
-  void parseGetQuotaRootsResponse(IMAPSession *imap, char *buf);
-
-  // Parse Get ACL response
-  void parseGetACLResponse(IMAPSession *imap, char *buf, esp_mail_imap_command cmd);
-
-  // Parse Namespace response
-  void parseNamespaceResponse(IMAPSession *imap, char *buf);
-
-  // Parse Fetch Sequence set response
-  void parseFetchSequenceSetResponse(IMAPSession *imap, char *buf);
+  // Parse command response
+  void parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find);
 
   // Parse examine response
   void parseExamineResponse(IMAPSession *imap, char *buf);

@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.6
+ * ESP32 TCP Client Library v2.0.7
  *
- * Created March 2, 2023
+ * Created March 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -49,7 +49,7 @@ extern "C"
 #include <esp_wifi.h>
 }
 
-class ESP32_TCP_Client 
+class ESP32_TCP_Client
 {
 public:
   ESP32_TCP_Client();
@@ -258,11 +258,13 @@ public:
 
   void setMBFS(MB_FS *mbfs) { wcs->mbfs = mbfs; }
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   void setSession(ESP_Mail_Session *session_config)
   {
     wcs->session_config = session_config;
   }
-  
+#endif
+
   void setClockReady(bool rdy)
   {
     wcs->clockReady = rdy;
@@ -378,8 +380,6 @@ public:
   {
     networkStatus = status;
   }
-
-  
 
 #endif
 
