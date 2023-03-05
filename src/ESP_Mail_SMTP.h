@@ -102,7 +102,7 @@ non_authenticated:
 
         // In case EHLO command is not acceptable,
         // we would fall back and send SMTP (rfc821) HELO command to identify ourself.
-        s = esp_mail_str_5;/* "HELO "*/
+        s = esp_mail_str_5; /* "HELO "*/
         if (smtp->_session_cfg->login.user_domain.length() > 0)
             s += smtp->_session_cfg->login.user_domain;
         else
@@ -441,18 +441,18 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
         if (msg->priority == esp_mail_smtp_priority_high)
         {
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_11, false, true);
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_11, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_11 /* "High" */, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_11 /* "High" */, false, true);
         }
         else if (msg->priority == esp_mail_smtp_priority_normal)
         {
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_12, false, true);
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_12, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_12 /* "Normal" */, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_12 /* "Normal" */, false, true);
         }
         else if (msg->priority == esp_mail_smtp_priority_low)
         {
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_24, false, true);
-            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_24, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_x_msmail_priority].field_name, esp_mail_str_24 /* "Low" */, false, true);
+            appendHeaderField(buf2, message_headers[esp_mail_message_header_field_importance].field_name, esp_mail_str_24 /* "Low" */, false, true);
         }
     }
 

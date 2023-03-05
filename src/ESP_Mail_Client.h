@@ -1989,7 +1989,7 @@ private:
   bool mFetchSequenceSet();
 
   // Prepend TAG for response status parsing
-  MB_String prependTag(PGM_P tag, PGM_P cmd);
+  MB_String prependTag(PGM_P cmd, PGM_P tag = NULL);
 
   // Check capabilities
   bool checkCapabilities();
