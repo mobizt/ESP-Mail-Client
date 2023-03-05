@@ -37,6 +37,7 @@
 #include "ESP_Mail_SMTP.h"
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
 void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
 {
 
@@ -397,23 +398,17 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 
   if (_flags.length() > 0)
   {
-    cmd += esp_mail_str_198 /* "(" */;
-    cmd += _flags;
-    cmd += esp_mail_str_192 /* ")" */;
+    appendHeaderValue(cmd, _flags.c_str(), false, false, esp_mail_string_mark_type_round_bracket);
     cmd += esp_mail_str_131 /* " " */;
   }
 
   if (_dt.length() > 0)
   {
-    cmd += esp_mail_str_136 /* "\"" */;
-    cmd += _dt;
-    cmd += esp_mail_str_136 /* "\"" */;
+    appendHeaderValue(cmd, _dt.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     cmd += esp_mail_str_131 /* " " */;
   }
 
-  cmd += esp_mail_str_193 /* "{" */;
-  cmd += dataLen;
-  cmd += esp_mail_str_194 /* "}" */;
+  appendHeaderValue(cmd, MB_String(dataLen).c_str(), false, false, esp_mail_string_mark_type_curly_bracket);
 
   if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
   {
@@ -583,6 +578,65 @@ bool ESP_Mail_Client::getHeader(const char *buf, PGM_P begin_PGM, MB_String &out
   }
 
   return false;
+}
+
+void ESP_Mail_Client::appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type)
+{
+  appendHeaderName(buf, name);
+  appendHeaderValue(buf, value, comma, newLine, type);
+}
+
+void ESP_Mail_Client::appendHeaderName(MB_String &buf, const char *name)
+{
+  buf += name;
+  buf += esp_mail_str_10;  /* ":" */
+  buf += esp_mail_str_131; /* " " */
+}
+
+void ESP_Mail_Client::appendHeaderValue(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type)
+{
+  if (comma)
+    buf += esp_mail_str_91;
+
+  switch (type)
+  {
+  case esp_mail_string_mark_type_double_quote:
+    buf += esp_mail_str_136; /* "\"" */
+    break;
+  case esp_mail_string_mark_type_angle_bracket:
+    buf += esp_mail_str_14; /* "<" */
+    break;
+  case esp_mail_string_mark_type_round_bracket:
+    buf += esp_mail_str_198; /* "(" */
+    break;
+  case esp_mail_string_mark_type_curly_bracket:
+    buf += esp_mail_str_193; /* "{" */
+    break;
+  default:
+    break;
+  }
+
+  buf += value;
+  switch (type)
+  {
+  case esp_mail_string_mark_type_double_quote:
+    buf += esp_mail_str_136; /* "\"" */
+    break;
+  case esp_mail_string_mark_type_angle_bracket:
+    buf += esp_mail_str_15; /* ">" */
+    break;
+  case esp_mail_string_mark_type_round_bracket:
+    buf += esp_mail_str_192; /* ")" */
+    break;
+  case esp_mail_string_mark_type_curly_bracket:
+    buf += esp_mail_str_194; /* "}" */
+    break;
+  default:
+    break;
+  }
+
+  if (newLine)
+    buf += esp_mail_str_34; /* "\r\n" */
 }
 
 void ESP_Mail_Client::getExtfromMIME(const char *mime, MB_String &ext)

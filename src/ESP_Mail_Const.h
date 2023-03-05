@@ -127,7 +127,9 @@ enum esp_mail_string_mark_type
 {
     esp_mail_string_mark_type_none,
     esp_mail_string_mark_type_double_quote,
-    esp_mail_string_mark_type_angle_bracket
+    esp_mail_string_mark_type_angle_bracket,
+    esp_mail_string_mark_type_round_bracket,
+    esp_mail_string_mark_type_curly_bracket
 };
 
 enum esp_mail_smtp_embed_message_type
@@ -2024,7 +2026,6 @@ static const char esp_mail_str_7[] PROGMEM = "QUIT";
 static const char esp_mail_str_8[] PROGMEM = "MAIL FROM:";
 static const char esp_mail_str_9[] PROGMEM = "RCPT TO:";
 // static const char esp_mail_str_13[] PROGMEM = "";
-static const char esp_mail_str_14[] PROGMEM = "<";
 static const char esp_mail_str_16[] PROGMEM = "DATA";
 // static const char esp_mail_str_17[] PROGMEM = "";
 // static const char esp_mail_str_18[] PROGMEM = "";
@@ -2234,12 +2235,10 @@ static const char esp_mail_str_188[] PROGMEM = "fail to close the mailbox";
 static const char esp_mail_str_189[] PROGMEM = "> C: Get UID...";
 static const char esp_mail_str_190[] PROGMEM = "accept-language:";
 static const char esp_mail_str_191[] PROGMEM = "content-language:";
-static const char esp_mail_str_192[] PROGMEM = ")";
-static const char esp_mail_str_193[] PROGMEM = "{";
-static const char esp_mail_str_194[] PROGMEM = "}";
+
 static const char esp_mail_str_195[] PROGMEM = "CLOSE\r\n";
 static const char esp_mail_str_197[] PROGMEM = "> C: Close the mailbox folder";
-static const char esp_mail_str_198[] PROGMEM = "(";
+
 static const char esp_mail_str_199[] PROGMEM = " EXISTS";
 static const char esp_mail_str_200[] PROGMEM = " [UIDNEXT ";
 static const char esp_mail_str_203[] PROGMEM = "/header.txt";
@@ -2411,6 +2410,7 @@ static const char esp_mail_imap_response_37[] PROGMEM = "ENABLE";
 static const char esp_mail_str_10[] PROGMEM = ":";
 static const char esp_mail_str_11[] PROGMEM = "High";
 static const char esp_mail_str_12[] PROGMEM = "Normal";
+static const char esp_mail_str_14[] PROGMEM = "<";
 static const char esp_mail_str_15[] PROGMEM = ">";
 static const char esp_mail_str_24[] PROGMEM = "Low";
 // static const char esp_mail_str_25[] PROGMEM = "";
@@ -2442,7 +2442,11 @@ static const char esp_mail_str_183[] PROGMEM = "*";
 // static const char esp_mail_str_184[] PROGMEM = "";
 static const char esp_mail_str_185[] PROGMEM = "> E: ";
 static const char esp_mail_str_186[] PROGMEM = "out of memory";
+static const char esp_mail_str_192[] PROGMEM = ")";
+static const char esp_mail_str_193[] PROGMEM = "{";
+static const char esp_mail_str_194[] PROGMEM = "}";
 static const char esp_mail_str_196[] PROGMEM = "> C: Send STARTTLS command";
+static const char esp_mail_str_198[] PROGMEM = "(";
 static const char esp_mail_str_201[] PROGMEM = "Port > ";
 static const char esp_mail_str_204[] PROGMEM = "> E: The alert SSL record received\n> E: Make sure the SSL/TLS handshake was done before sending the data";
 static const char esp_mail_str_221[] PROGMEM = "connection closed";

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 3, 2023
+ * Created March 5, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -4053,10 +4053,8 @@ void ESP_Mail_Client::downloadReport(IMAPSession *imap, int progress)
 
             s = esp_mail_str_90;   /* "download" */
             s += esp_mail_str_131; /* " " */
-            s += esp_mail_str_136; /* "\"" */
-            s += filePath;
-            s += esp_mail_str_136; /* "\"" */
-            s += esp_mail_str_91;  /* ", " */
+            MailClient.appendHeaderValue(s, filePath.c_str(), false, false, esp_mail_string_mark_type_double_quote);
+            s += esp_mail_str_91; /* ", " */
 
             s += progress;
             s += esp_mail_str_92; /* "%" */
@@ -4079,10 +4077,8 @@ void ESP_Mail_Client::fetchReport(IMAPSession *imap, int progress, bool download
         s += esp_mail_str_131; /* " " */
         if (cPart(imap)->filename.length() > 0)
         {
-            s += esp_mail_str_136; /* "\"" */
-            s += cPart(imap)->filename;
-            s += esp_mail_str_136; /* "\"" */
-            s += esp_mail_str_91;  /* ", " */
+            MailClient.appendHeaderValue(s, cPart(imap)->filename.c_str(), false, false, esp_mail_string_mark_type_double_quote);
+            s += esp_mail_str_91; /* ", " */
         }
         s += progress;
         s += esp_mail_str_92; /* "%" */
@@ -5319,15 +5315,9 @@ bool IMAPSession::mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr m
         esp_mail_debug_print(esp_mail_str_375 /* "> C: Send IMAP command, LSUB" */, true);
 
     MB_String cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_377 /* "LSUB" */);
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += reference;
-    cmd += esp_mail_str_136; /* "\"" */
-
+    MailClient.appendHeaderValue(cmd, MB_String(reference).c_str(), false, false, esp_mail_string_mark_type_double_quote);
     cmd += esp_mail_str_131; /* " " */
-
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += mailbox;
-    cmd += esp_mail_str_136; /* "\"" */
+    MailClient.appendHeaderValue(cmd, MB_String(mailbox).c_str(), false, false, esp_mail_string_mark_type_double_quote);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -5364,9 +5354,8 @@ bool IMAPSession::mSubscribe(MB_StringPtr folder)
         esp_mail_debug_print(esp_mail_str_378 /* "> C: Send IMAP command, SUBSCRIBE" */, true);
 
     MB_String cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_380 /* "SUBSCRIBE " */);
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += folder;
-    cmd += esp_mail_str_136; /* "\"" */
+
+    MailClient.appendHeaderValue(cmd, MB_String(folder).c_str(), false, false, esp_mail_string_mark_type_double_quote);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -5388,9 +5377,7 @@ bool IMAPSession::mUnSubscribe(MB_StringPtr folder)
         esp_mail_debug_print(esp_mail_str_381 /* "> C: Send IMAP command, UNSUBSCRIBE" */, true);
 
     MB_String cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_383 /* "UNSUBSCRIBE " */);
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += folder;
-    cmd += esp_mail_str_136; /* "\"" */
+    MailClient.appendHeaderValue(cmd, MB_String(folder).c_str(), false, false, esp_mail_string_mark_type_double_quote);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -5417,9 +5404,7 @@ bool IMAPSession::mFetchSequenceSet()
     cmd += _imap_data->fetch.sequence_set.string;
     cmd += esp_mail_str_131; /* " " */
 
-    cmd += esp_mail_str_198; /* "(" */
-    cmd += esp_mail_str_140; /* "UID" */
-    cmd += esp_mail_str_79;  /* ")" */
+    MailClient.appendHeaderValue(cmd, esp_mail_str_140 /* "UID" */, false, false, esp_mail_string_mark_type_round_bracket);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -5501,15 +5486,9 @@ bool IMAPSession::mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr new
         return false;
 
     MB_String cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_373 /* "RENAME " */);
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += o;
-    cmd += esp_mail_str_136; /* "\"" */
-
+    MailClient.appendHeaderValue(cmd, o.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     cmd += esp_mail_str_131; /* " " */
-
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += n;
-    cmd += esp_mail_str_136; /* "\"" */
+    MailClient.appendHeaderValue(cmd, n.c_str(), false, false, esp_mail_string_mark_type_double_quote);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -6024,17 +6003,13 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_392 /* "GETQUOTA" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _quotaRoot;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, _quotaRoot.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     }
     else
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_393 /* "SETQUOTA" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _quotaRoot;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, _quotaRoot.c_str(), false, false, esp_mail_string_mark_type_double_quote);
         cmd += esp_mail_str_131; /* " " */
         cmd += esp_mail_str_198; /* "(" */
 
@@ -6093,9 +6068,7 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
     cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_392 /* "GETQUOTA" */);
     cmd += esp_mail_str_394; /* "ROOT" */
     cmd += esp_mail_str_131; /* " " */
-    cmd += esp_mail_str_136; /* "\"" */
-    cmd += _mailbox;
-    cmd += esp_mail_str_136; /* "\"" */
+    MailClient.appendHeaderValue(cmd, _mailbox.c_str(), false, false, esp_mail_string_mark_type_double_quote);
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -6167,48 +6140,33 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_405 /* "GETACL" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _mailbox;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, _mailbox.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     }
     else if (type == esp_mail_imap_cmd_set_acl)
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_406 /* "SETACL" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += mailbox;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, MB_String(mailbox).c_str(), false, false, esp_mail_string_mark_type_double_quote);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += acl->identifier.c_str();
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, acl->identifier.c_str(), false, false, esp_mail_string_mark_type_double_quote);
         cmd += esp_mail_str_131; /* " " */
         MB_String s;
         getRights(s, acl);
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += s.c_str();
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, s.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     }
     else if (type == esp_mail_imap_cmd_delete_acl)
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_407 /* "DELETEACL" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _mailbox;
-        cmd += esp_mail_str_136; /* "\"" */
-
+        MailClient.appendHeaderValue(cmd, _mailbox.c_str(), false, false, esp_mail_string_mark_type_double_quote);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _identifier;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, _identifier.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     }
     else if (type == esp_mail_imap_cmd_my_rights)
     {
         cmd = prependTag(esp_mail_str_27 /* "Xmail" */, esp_mail_str_408 /* "MYRIGHTS" */);
         cmd += esp_mail_str_131; /* " " */
-        cmd += esp_mail_str_136; /* "\"" */
-        cmd += _mailbox;
-        cmd += esp_mail_str_136; /* "\"" */
+        MailClient.appendHeaderValue(cmd, _mailbox.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     }
 
     if (MailClient.imapSend(this, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)

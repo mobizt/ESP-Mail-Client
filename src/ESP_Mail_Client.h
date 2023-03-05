@@ -1070,6 +1070,15 @@ private:
   // Get header content from response based on the field name
   bool getHeader(const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
 
+  // Append header field to buffer
+  void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+
+  // Append header field name to buffer
+  void appendHeaderName(MB_String &buf, const char *name);
+
+  // Append header field value in brackets to buffer
+  void appendHeaderValue(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+
   // Get file extension with dot from MIME string
   void getExtfromMIME(const char *mime, MB_String &ext);
 
@@ -1144,15 +1153,6 @@ private:
   // Get RFC 822 message envelope
   void getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg, MB_String &buf);
 
-  // Append header field to buffer
-  void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
-
-  // Append header field name to buffer
-  void appendHeaderName(MB_String &buf, const char *name);
-
-  // Append header field value in brackets to buffer
-  void appendHeaderValue(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
-  
   // Append boundary string to buffer
   void appendBoundaryString(MB_String &buf, const char *value, bool endMark, bool newLine);
 
