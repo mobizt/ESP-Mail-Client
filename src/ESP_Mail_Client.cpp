@@ -1133,7 +1133,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
   if (debug && !isCb)
-    client->setDebugCallback(esp_mail_debug_print);
+    client->setDebugCallback(esp_mail_debug_print_tag);
 #endif
 
   client->ethDNSWorkAround();

@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.7
+ * ESP32 TCP Client Library v2.0.8
  *
- * Created March 3, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -228,13 +228,13 @@ bool ESP32_TCP_Client::isInitialized()
         if (wcs->debugLevel > 0)
         {
             if (!network_connection_cb)
-                esp_mail_debug_print(esp_mail_str_369 /* "> E: Network connection callback is required" */, true);
+                esp_mail_debug_print_tag(esp_mail_error_client_str_6 /* "network connection callback is required" */, esp_mail_debug_tag_type_error, true);
 
             if (!network_status_cb)
-                esp_mail_debug_print(esp_mail_str_370 /* "> E: Network connection status callback is required" */, true);
+                esp_mail_debug_print_tag(esp_mail_error_client_str_7 /* "network connection status callback is required" */, esp_mail_debug_tag_type_error, true);
 
             if (upgradeRequired)
-                esp_mail_debug_print(esp_mail_str_368 /* "> E: Client connection upgrade callback (for TLS handshake) is required" */, true);
+                esp_mail_debug_print_tag(esp_mail_error_client_str_5 /* "client connection upgrade callback (for TLS handshake) is required" */, esp_mail_debug_tag_type_error, true);
         }
     }
 
@@ -278,11 +278,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (!wcs->_ssl->client)
     {
         if (wcs->debugLevel > 0)
-        {
-            MB_String s = esp_mail_str_185; /* "> E: " */
-            s += esp_mail_str_346;          /* "Client and/or necessary callback functions are not yet assigned" */
-            esp_mail_debug_print(s.c_str(), true);
-        }
+            esp_mail_debug_print_tag(esp_mail_error_client_str_1 /* "client and/or necessary callback functions are not yet assigned" */, esp_mail_debug_tag_type_error, true);
         return false;
     }
 
@@ -290,7 +286,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (wcs->ext_client_type == esp_mail_external_client_type_none)
     {
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_372 /* "> E: The Client type must be provided, see example" */, true);
+            esp_mail_debug_print_tag(esp_mail_error_client_str_4 /* "the client type must be provided, see example" */, esp_mail_debug_tag_type_error, true);
         return false;
     }
 
@@ -298,7 +294,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (!secured && wcs->ext_client_type == esp_mail_external_client_type_ssl)
     {
         if (wcs->debugLevel > 0)
-            esp_mail_debug_print(esp_mail_str_366 /* "> E: Simple Client is required" */, true);
+            esp_mail_debug_print_tag(esp_mail_error_client_str_3 /* "simple Client is required" */, esp_mail_debug_tag_type_error, true);
         return false;
     }
 

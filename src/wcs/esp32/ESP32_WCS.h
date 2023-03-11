@@ -58,7 +58,7 @@
 #include <WiFiClient.h>
 #include "./wcs/base/TCP_Client_Base.h"
 
-typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
+typedef void (*DebugMsgCallback)(PGM_P msg, esp_mail_debug_tag_type type, bool newLine);
 
 #define ESP_Mail_WCS_CLASS ESP32_SSL_Client
 #define ESP_Mail_WC_CLASS ESP32_SSL_Client

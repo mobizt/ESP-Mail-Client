@@ -2531,11 +2531,10 @@ static const char esp_mail_error_mem_str_9[] PROGMEM = "please make sure that th
 static const char esp_mail_error_client_str_1[] PROGMEM = "client and/or necessary callback functions are not yet assigned";
 static const char esp_mail_error_client_str_2[] PROGMEM = "custom Client is not yet enabled";
 static const char esp_mail_error_client_str_3[] PROGMEM = "simple Client is required";
-static const char esp_mail_error_client_str_4[] PROGMEM = "client connection callback is required";
+static const char esp_mail_error_client_str_4[] PROGMEM = "the client type must be provided, see example";
 static const char esp_mail_error_client_str_5[] PROGMEM = "client connection upgrade callback (for TLS handshake) is required";
 static const char esp_mail_error_client_str_6[] PROGMEM = "network connection callback is required";
 static const char esp_mail_error_client_str_7[] PROGMEM = "network connection status callback is required";
-static const char esp_mail_error_client_str_8[] PROGMEM = "the client type must be provided, see example";
 
 /////////////////////////
 // Network error string

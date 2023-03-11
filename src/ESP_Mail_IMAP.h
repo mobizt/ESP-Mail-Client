@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 11, 2023
+ * Created March 12, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -4058,7 +4058,7 @@ void ESP_Mail_Client::downloadReport(IMAPSession *imap, int progress)
 
 void ESP_Mail_Client::fetchReport(IMAPSession *imap, int progress, bool download)
 {
-    if (imap->_debug && imap->_lastProgress == -1)
+    if (imap->_debug && imap->_lastProgress == -1 && strcmp_P(cPart(imap)->filename.c_str(), esp_mail_str_84 /* "message" */) != 0)
         esp_mail_debug_print_tag(cPart(imap)->filename.c_str(), esp_mail_debug_tag_type_client, true);
     printProgress(progress, imap->_lastProgress);
 }
@@ -4511,7 +4511,7 @@ bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *im
     _session_cfg = session_config;
     _imap_data = imap_data;
 
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE) && (defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO))
     MailClient.setCert(_session_cfg, _session_cfg->certificate.cert_data);
 #endif
 
@@ -4551,7 +4551,7 @@ bool IMAPSession::connect(bool &ssl)
 
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
     if (_debug && !_customCmdResCallback)
-        client.setDebugCallback(esp_mail_debug_print);
+        client.setDebugCallback(esp_mail_debug_print_tag);
 #elif (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && defined(ESP8266_TCP_CLIENT)
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
     client.rxBufDivider = 1;

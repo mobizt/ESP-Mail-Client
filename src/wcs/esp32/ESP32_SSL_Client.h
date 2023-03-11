@@ -47,34 +47,34 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
 
-static const char esp_ssl_client_str_1[] PROGMEM = "! E: ";
-static const char esp_ssl_client_str_2[] PROGMEM = "> C: starting socket";
-static const char esp_ssl_client_str_3[] PROGMEM = "! E: opening socket";
-static const char esp_ssl_client_str_4[] PROGMEM = "! E: could not get ip from host";
-static const char esp_ssl_client_str_5[] PROGMEM = "> C: connecting to Server";
-static const char esp_ssl_client_str_6[] PROGMEM = "> C: server connected";
-static const char esp_ssl_client_str_7[] PROGMEM = "! E: connect to Server failed!";
-static const char esp_ssl_client_str_8[] PROGMEM = "< S: ";
-static const char esp_ssl_client_str_9[] PROGMEM = "> C: seeding the random number generator";
-static const char esp_ssl_client_str_10[] PROGMEM = "> C: setting up the SSL/TLS structure";
-static const char esp_ssl_client_str_11[] PROGMEM = "> C: loading CA cert";
-static const char esp_ssl_client_str_12[] PROGMEM = "> C: setting up PSK";
-static const char esp_ssl_client_str_13[] PROGMEM = "! E: pre-shared key not valid hex or too long";
-static const char esp_ssl_client_str_14[] PROGMEM = "> C: set mbedtls config";
-static const char esp_ssl_client_str_15[] PROGMEM = "> C: loading CRT cert";
-static const char esp_ssl_client_str_16[] PROGMEM = "> C: loading private key";
-static const char esp_ssl_client_str_17[] PROGMEM = "> C: setting hostname for TLS session";
-static const char esp_ssl_client_str_18[] PROGMEM = "> C: perform the SSL/TLS handshake";
-static const char esp_ssl_client_str_19[] PROGMEM = "> C: verifying peer X.509 certificate";
-static const char esp_ssl_client_str_20[] PROGMEM = "! E: failed to verify peer certificate!";
-static const char esp_ssl_client_str_21[] PROGMEM = "> C: certificate verified";
-static const char esp_ssl_client_str_22[] PROGMEM = "> C: cleaning SSL connection";
-static const char esp_ssl_client_str_23[] PROGMEM = "! E: fingerprint too short";
-static const char esp_ssl_client_str_24[] PROGMEM = "! E: invalid hex sequence";
-static const char esp_ssl_client_str_25[] PROGMEM = "! E: could not fetch peer certificate";
-static const char esp_ssl_client_str_26[] PROGMEM = "! E: fingerprint doesn't match";
-static const char esp_ssl_client_str_27[] PROGMEM = "! E: root certificate, PSK identity or keys are required for secured connection";
-static const char esp_ssl_client_str_28[] PROGMEM = "! W: Skipping SSL Verification. INSECURE!";
+static const char esp_ssl_client_str_1[] PROGMEM = "Skipping SSL Verification. INSECURE!";
+static const char esp_ssl_client_str_2[] PROGMEM = "starting socket";
+static const char esp_ssl_client_str_3[] PROGMEM = "opening socket";
+static const char esp_ssl_client_str_4[] PROGMEM = "could not get ip from host";
+static const char esp_ssl_client_str_5[] PROGMEM = "connecting to Server";
+static const char esp_ssl_client_str_6[] PROGMEM = "server connected";
+static const char esp_ssl_client_str_7[] PROGMEM = "connect to Server failed!";
+static const char esp_ssl_client_str_8[] PROGMEM = "root certificate, PSK identity or keys are required for secured connection";
+static const char esp_ssl_client_str_9[] PROGMEM = "seeding the random number generator";
+static const char esp_ssl_client_str_10[] PROGMEM = "setting up the SSL/TLS structure";
+static const char esp_ssl_client_str_11[] PROGMEM = "loading CA cert";
+static const char esp_ssl_client_str_12[] PROGMEM = "setting up PSK";
+static const char esp_ssl_client_str_13[] PROGMEM = "pre-shared key not valid hex or too long";
+static const char esp_ssl_client_str_14[] PROGMEM = "set mbedtls config";
+static const char esp_ssl_client_str_15[] PROGMEM = "loading CRT cert";
+static const char esp_ssl_client_str_16[] PROGMEM = "loading private key";
+static const char esp_ssl_client_str_17[] PROGMEM = "setting hostname for TLS session";
+static const char esp_ssl_client_str_18[] PROGMEM = "perform the SSL/TLS handshake";
+static const char esp_ssl_client_str_19[] PROGMEM = "verifying peer X.509 certificate";
+static const char esp_ssl_client_str_20[] PROGMEM = "failed to verify peer certificate!";
+static const char esp_ssl_client_str_21[] PROGMEM = "certificate verified";
+static const char esp_ssl_client_str_22[] PROGMEM = "cleaning SSL connection";
+static const char esp_ssl_client_str_23[] PROGMEM = "fingerprint too short";
+static const char esp_ssl_client_str_24[] PROGMEM = "invalid hex sequence";
+static const char esp_ssl_client_str_25[] PROGMEM = "could not fetch peer certificate";
+static const char esp_ssl_client_str_26[] PROGMEM = "fingerprint doesn't match";
+
+
 
 typedef void (*_ConnectionRequestCallback)(const char *, int);
 
@@ -85,7 +85,7 @@ class ESP32_SSL_Client
 public:
     ESP32_SSL_Client(){};
 
-    typedef void (*DebugMsgCallback)(PGM_P msg, bool newLine);
+    typedef void (*DebugMsgCallback)(PGM_P msg, esp_mail_debug_tag_type type, bool newLine);
 
     // The SSL context
     typedef struct ssl_context_t
@@ -191,16 +191,18 @@ public:
      *
      * @param ssl The pointer to ssl data (context) which its ssl->_debugCallback will be used.
      * @param errNo The mbedTLS error number that will be translated to string via mbedtls_strerror.
+     * @param type The debug tag type.
      */
-    void ssl_client_send_mbedtls_error_cb(ssl_ctx *ssl, int errNo);
+    void ssl_client_send_mbedtls_error_cb(ssl_ctx *ssl, int errNo, esp_mail_debug_tag_type type);
 
     /**
      * Send the predefined flash string error to the callback.
      *
      * @param ssl The pointer to ssl data (context) which its ssl->_debugCallback will be used.
      * @param info The PROGMEM error string.
+     * @param type The debug tag type.
      */
-    void ssl_client_debug_pgm_send_cb(ssl_ctx *ssl, PGM_P info);
+    void ssl_client_debug_pgm_send_cb(ssl_ctx *ssl, PGM_P info, esp_mail_debug_tag_type type);
 
     /**
      * Convert Hex char to decimal number
