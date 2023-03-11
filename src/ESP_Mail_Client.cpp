@@ -632,7 +632,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
     cmd += esp_mail_str_2 /* " " */;
   }
 
-  appendString(cmd, MB_String(dataLen).c_str(), false, false, esp_mail_string_mark_type_curly_bracket);
+  appendString(cmd, MB_String((int)dataLen).c_str(), false, false, esp_mail_string_mark_type_curly_bracket);
 
   if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
   {
@@ -1094,6 +1094,10 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
     isCb = isResponseCB((void *)smtp->_customCmdResCallback, isSMTP);
     debug = smtp->_debug;
     client = &smtp->client;
+
+    if (!reconnect(smtp))
+      return false;
+
 #endif
   }
   else
@@ -1103,6 +1107,10 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
     isCb = isResponseCB((void *)imap->_customCmdResCallback, isSMTP);
     debug = imap->_debug;
     client = &imap->client;
+
+    if (!reconnect(imap))
+      return false;
+      
 #endif
   }
 
@@ -1386,11 +1394,12 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
+
+#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
+
   case MB_FS_ERROR_FILE_IO_ERROR:
     ret += esp_mail_error_mem_str_5; /* "file I/O error" */
     break;
-
-#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 
   case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
     ret += esp_mail_error_mem_str_1; /* "flash Storage is not ready." */
@@ -1498,7 +1507,7 @@ T ESP_Mail_Client::alocMem(size_t size, bool clear)
 
 void ESP_Mail_Client::freeMem(void *ptr)
 {
-    mbfs->delP(ptr);
+  mbfs->delP(ptr);
 }
 
 bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool caseSensitive)

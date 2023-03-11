@@ -301,26 +301,27 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
 
         if (showResult)
         {
-            char *buf = alocMem<char *>(50);
+            int bufLen = 512;
+            char *buf = alocMem<char *>(bufLen);
             time_t ts = (time_t)smtp->ts;
             MB_String sep;
             for (int i = 0; i < 25; i++)
                 sep += '-';
 
             sendCallback((void *)smtp, sep.c_str(), true, true, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_93 /* "Message sent success: %d" */), smtp->_sentSuccessCount);
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_93 /* "Message sent success: %d" */), smtp->_sentSuccessCount);
             sendCallback((void *)smtp, buf, true, false, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_94 /* "Message sent failed: %d" */), smtp->_sentFailedCount);
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_94 /* "Message sent failed: %d" */), smtp->_sentFailedCount);
             sendCallback((void *)smtp, buf, true, false, false);
             sendCallback((void *)smtp, sep.c_str(), true, false, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_95 /* "Status: %s" */), result ? pgm2Str(esp_mail_str_98 /* "success" */) : pgm2Str(esp_mail_str_99 /* "failed" */));
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_95 /* "Status: %s" */), result ? pgm2Str(esp_mail_str_98 /* "success" */) : pgm2Str(esp_mail_str_99 /* "failed" */));
             sendCallback((void *)smtp, buf, true, false, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_96 /* "Date/Time: %s" */), asctime(localtime(&ts)));
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_96 /* "Date/Time: %s" */), asctime(localtime(&ts)));
             buf[strlen(buf) - 2] = 0;
             sendCallback((void *)smtp, buf, true, false, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_97 /* "Recipient: %s" */), msg->_rcp[0].email.c_str());
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_97 /* "Recipient: %s" */), msg->_rcp[0].email.c_str());
             sendCallback((void *)smtp, buf, true, false, false);
-            snprintf(buf, 50, pgm2Str(esp_mail_str_92 /* "Subject: %s" */), msg->subject.c_str());
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_92 /* "Subject: %s" */), msg->subject.c_str());
             sendCallback((void *)smtp, buf, true, false, false);
             freeMem(&buf);
         }
@@ -1388,6 +1389,8 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
 
 void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
 {
+#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
+
     if (smtp)
     {
         if (smtp->_sendCallback)
@@ -1414,6 +1417,8 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
         }
 #endif
     }
+
+#endif
 }
 
 bool ESP_Mail_Client::openFileRead(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attachment *att, MB_String &buf, const MB_String &boundary, bool inlined)
@@ -2535,7 +2540,7 @@ void ESP_Mail_Client::getAttachHeader(MB_String &header, const MB_String &bounda
         appendHeaderName(header, message_headers[esp_mail_message_header_field_content_disposition].text);
         appendString(header, isInline ? esp_mail_content_disposition_type_t::inline_ : esp_mail_content_disposition_type_t::attachment, false, false);
         appendHeaderProp(header, message_headers[esp_mail_message_header_field_filename].text, filename.c_str(), true, true, true, false);
-        appendHeaderProp(header, message_headers[esp_mail_message_header_field_size].text, MB_String(size).c_str(), false, true, false, true);
+        appendHeaderProp(header, message_headers[esp_mail_message_header_field_size].text, MB_String((int)size).c_str(), false, true, false, true);
     }
 
     if (isInline)

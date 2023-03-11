@@ -301,6 +301,8 @@ void loop()
 {
     if (millis() - readMillis > 10000 || readMillis == 0)
     {
+        readMillis = millis();
+
         // If session was closed, reconnect and re-select the mailbox
         if (!imap.connected())
         {
@@ -309,9 +311,14 @@ void loop()
 
             if (!imap.selectFolder(F("INBOX")))
                 return;
+                
+            if (totalMessage == 0)
+            {
+                totalMessage = imap.selectedFolder().msgCount();
+                msgNum = totalMessage;
+                sign = -1;
+            }
         }
-
-        readMillis = millis();
 
         if (msgNum <= 0)
         {

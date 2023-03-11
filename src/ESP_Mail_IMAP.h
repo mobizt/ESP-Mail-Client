@@ -475,8 +475,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 callBackSendNewLine((void *)imap, false, false);
                 if (imap->_imap_msg_num.size() > 0)
                 {
-                    char *buf = alocMem<char *>(strlen_P(esp_mail_str_50));
-                    snprintf(buf, strlen_P(esp_mail_str_50), pgm2Str(esp_mail_str_50 /* "Search limit: %d\nFound %d messages\nShow %d messages\n" */), (int)imap->_imap_data->limit.search, imap->_mbif._searchCount, (int)imap->_imap_msg_num.size());
+                    int bufLen = 100;
+                    char *buf = alocMem<char *>(bufLen);
+                    snprintf(buf, bufLen, pgm2Str(esp_mail_str_50 /* "Search limit: %d\nFound %d messages\nShow %d messages\n" */), (int)imap->_imap_data->limit.search, imap->_mbif._searchCount, (int)imap->_imap_msg_num.size());
                     sendCallback((void *)imap, buf, false, false, false);
                     // release memory
                     freeMem(&buf);
@@ -553,10 +554,10 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_readCallback)
         {
             readCount++;
-
+            int bufLen = 100;
             PGM_P p = imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid ? esp_mail_str_52 /* "Fetch message %d, UID: %d\n" */ : esp_mail_str_53 /* "Fetch message %d, Number: %d\n" */;
-            char *buf = alocMem<char *>(strlen_P(p));
-            snprintf(buf, strlen_P(p), pgm2Str(p), imap->_totalRead, (int)imap->_imap_msg_num[i].value);
+            char *buf = alocMem<char *>(bufLen);
+            snprintf(buf, bufLen, pgm2Str(p), imap->_totalRead, (int)imap->_imap_msg_num[i].value);
             sendCallback((void *)imap, buf, false, true, false);
             // release memory
             freeMem(&buf);
@@ -644,9 +645,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
                 if (cHeader(imap)->attachment_count > 0 && imap->_readCallback)
                 {
-
-                    char *buf = alocMem<char *>(strlen_P(esp_mail_str_54));
-                    snprintf(buf, strlen_P(esp_mail_str_54), pgm2Str(esp_mail_str_54 /* "Attachments (%d)" */), cHeader(imap)->attachment_count);
+                    int bufLen = 100;
+                    char *buf = alocMem<char *>(bufLen);
+                    snprintf(buf, bufLen, pgm2Str(esp_mail_str_54 /* "Attachments (%d)" */), cHeader(imap)->attachment_count);
                     callBackSendNewLine((void *)imap, false, false);
                     sendCallback((void *)imap, buf, false, false, false);
                     // release memory
@@ -784,8 +785,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                 if (imap->_debug)
                                 {
                                     debugPrintNewLine();
-                                    char *buf = alocMem<char *>(strlen_P(esp_mail_dbg_str_70));
-                                    snprintf(buf, strlen_P(esp_mail_dbg_str_70), pgm2Str(esp_mail_dbg_str_70 /* "download attachment %d of %d" */), attach_count + 1, (int)cHeader(imap)->attachment_count);
+                                    int bufLen = 100;
+                                    char *buf = alocMem<char *>(bufLen);
+                                    snprintf(buf, bufLen, pgm2Str(esp_mail_dbg_str_70 /* "download attachment %d of %d" */), attach_count + 1, (int)cHeader(imap)->attachment_count);
                                     esp_mail_debug_print_tag(buf, esp_mail_debug_tag_type_client, true);
                                     // release memory
                                     freeMem(&buf);
@@ -907,7 +909,7 @@ void ESP_Mail_Client::appendHeadersFetchCommand(IMAPSession *imap, MB_String &cm
     if (debug && imap->_debug)
         esp_mail_debug_print_tag(esp_mail_dbg_str_26 /* "fetch message header" */, esp_mail_debug_tag_type_client, true);
 
-    joinStringSpace(cmd, false, 2, MB_String(imap->_imap_msg_num[index].value).c_str(), imap_commands[esp_mail_imap_command_body].text);
+    joinStringSpace(cmd, false, 2, MB_String((int)imap->_imap_msg_num[index].value).c_str(), imap_commands[esp_mail_imap_command_body].text);
 
     if (!imap->_imap_data->fetch.set_seen)
         prependDot(cmd, imap_commands[esp_mail_imap_command_peek].text);
@@ -5880,7 +5882,7 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
         MailClient.appendSpace(cmd);
 
         MB_String cmd2;
-        MailClient.joinStringSpace(cmd2, false, 2, data->name.c_str(), MB_String(data->limit).c_str());
+        MailClient.joinStringSpace(cmd2, false, 2, data->name.c_str(), MB_String((int)data->limit).c_str());
         MailClient.appendString(cmd, cmd2.c_str(), false, false, esp_mail_string_mark_type_round_bracket);
     }
 
