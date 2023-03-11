@@ -29,6 +29,7 @@ enum esp_mail_file_extension
   esp_mail_file_extension_zip,
   esp_mail_file_extension_gz,
   esp_mail_file_extension_appcache,
+  esp_mail_file_extension_dat,
   esp_mail_file_extension_none,
   esp_mail_file_extension_maxType
 };
@@ -63,6 +64,8 @@ const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROG
         {".zip", "application/zip"},
         {".gz", "application/x-gzip"},
         {".appcache", "text/cache-manifest"},
-        {"", "application/octet-stream"}};
+        {".dat","application/dat"},
+        {"", "application/octet-stream"}
+        };
 
 #endif

@@ -167,6 +167,11 @@ void setup()
   config.time.gmt_offset = 3;
   config.time.day_light_offset = 0;
 
+  /* The full message sending logs can now save to file */
+  /* Since v3.0.4, the sent logs stored in smtp.sendingResult will store only the latest message logs */
+  // config.sentLogs.filename = "/path/to/log/file";
+  // config.sentLogs.storage_type = esp_mail_file_storage_type_flash;
+
   /* Declare the message class */
   SMTP_Message message;
 

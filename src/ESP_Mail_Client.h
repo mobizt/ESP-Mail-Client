@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 5, 2023
+ * Created March 11, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -373,7 +373,12 @@ typedef void (*imapCharacterDecodingCallback)(IMAP_Decoding_Info *);
 class SMTP_Message
 {
 public:
-  SMTP_Message(){};
+  SMTP_Message()
+  {
+    text.content_type = "text/plain";
+    html.content_type = "text/html";
+  };
+
   ~SMTP_Message() { clear(); };
 
   void resetAttachItem(SMTP_Attachment &att)
@@ -452,6 +457,7 @@ public:
       _parallel[i].file.path.clear();
       _parallel[i].file.storage_type = esp_mail_file_storage_type_none;
     }
+
     _rcp.clear();
     _cc.clear();
     _bcc.clear();
@@ -612,10 +618,10 @@ public:
   byte type = esp_mail_msg_type_none;
 
   /* The PLAIN text message */
-  struct esp_mail_plain_body_t text;
+  esp_mail_plain_body_t text;
 
   /* The HTML text message */
-  struct esp_mail_html_body_t html;
+  esp_mail_html_body_t html;
 
   /* The response config */
   struct esp_mail_smtp_msg_response_t response;
@@ -972,6 +978,7 @@ private:
   unsigned long _lastReconnectMillis = 0;
   uint16_t _reconnectTimeout = ESP_MAIL_NETWORK_RECONNECT_TIMEOUT;
 
+  // Resume network connection
   void resumeNetwork(ESP_MAIL_TCP_CLIENT *client);
 
   // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
@@ -990,13 +997,13 @@ private:
   bool isResponseCB(void *cb, bool isSMTP);
 
   // Print library info
-  void printLibInfo(void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP);
+  void printLibInfo(void *sessionPtr, bool isSMTP);
 
   // Begin server connection
-  bool beginConnection(Session_Config *session_config, void *cb, void *sessionPtr, ESP_MAIL_TCP_CLIENT *client, bool debug, bool isSMTP, bool secureMode);
+  bool beginConnection(Session_Config *session_config, void *sessionPtr, bool isSMTP, bool secureMode);
 
   // Prepare system time
-  void prepareTime(Session_Config *session_config, void *cb, void *sessionPtr, bool isSMTP, bool debug);
+  void prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   // Set cert data
@@ -1005,7 +1012,9 @@ private:
   void setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config);
 #endif
 
-  const char *errorReason(bool isSMTP, int statusCode, int respCode, const char *msg);
+  void appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary);
+
+  String errorReason(bool isSMTP, int statusCode, int respCode, const char *msg);
 
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
   void closeTCPSession(void *sessionPtr, bool isSMTP);
@@ -1044,10 +1053,11 @@ private:
   int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
 
   // Memory allocation
-  void *newP(size_t len);
+  template <typename T>
+  T alocMem(size_t size, bool clear = true);
 
   // Memory deallocation
-  void delP(void *ptr);
+  void freeMem(void *ptr);
 
   // PGM string compare
   bool strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool caseSensitive = true);
@@ -1058,6 +1068,9 @@ private:
   // Memory allocation for PGM string
   char *strP(PGM_P pgm);
 
+  // Memory allocation for PGM lower case string
+  char *strP2Lower(PGM_P pgm);
+
   // Set or sync device system time with NTP server
   void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
 
@@ -1067,6 +1080,12 @@ private:
   // Get TZ environment variable from file
   void getTimezone(const char *TZ_file, MB_String &out);
 
+  // Send SMTP/IMAP callback
+  void sendCallback(void *sessionPtr, PGM_P info, bool isSMTP, bool prependCRLF, bool success);
+
+  // Send IMAP/SMTP response callback and print debug message
+  void printDebug(void *sessionPtr, bool isSMTP, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success);
+
   // Get header content from response based on the field name
   bool getHeader(const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
 
@@ -1074,10 +1093,68 @@ private:
   void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
 
   // Append header field name to buffer
-  void appendHeaderName(MB_String &buf, const char *name);
+  void appendHeaderName(MB_String &buf, const char *name, bool clear = false, bool lowercase = false, bool space = true);
 
-  // Append header field value in brackets to buffer
-  void appendHeaderValue(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+  // Append lowercase string to buffer
+  void appendLowerCaseString(MB_String &buf, PGM_P value, bool clear = false);
+
+  // Append header field property to buffer
+  void appendHeaderProp(MB_String &buf, PGM_P prop, const char *value, bool firstProp, bool lowerCase, bool isString, bool newLine);
+
+  // Append quote string to buffer
+  void appendString(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+
+  // Append list to buffer
+  template <class T>
+  void appendList(MB_String &buf, MB_VECTOR<T> &list);
+
+  // Append space to buffer
+  void appendSpace(MB_String &buf);
+
+  // Append space to buffer after value
+  void appendSpace(MB_String &buf, bool withTag, PGM_P value);
+
+  // Append space to buffer after values
+  void appendSpace(MB_String &buf, bool withTag, int nunArgs, ...);
+
+  // Append space to buffer before value
+  void prependSpace(MB_String &buf, PGM_P value);
+
+  // Append dot to buffer
+  void appendDot(MB_String &buf);
+
+  // Append dot to buffer before value
+  void prependDot(MB_String &buf, PGM_P value);
+
+  // Join 2 strings to buffer with space
+  void joinStringSpace(MB_String &buf, bool withTag, int nunArgs, ...);
+
+  // Join 2 strings to buffer with dot
+  void joinStringDot(MB_String &buf, int nunArgs, ...);
+
+  // Append mask(*) string to buffer
+  void maskString(MB_String &buf, int len);
+
+  // Append domain to buffer
+  void appendDomain(MB_String &buf, const char *domain);
+
+  // Append embedded message header to buffer
+  void appendEmbedMessage(MB_String &buf, esp_mail_message_body_t &body, bool isHtml);
+
+  // Append crlf to buffer
+  void appendNewline(MB_String &buf);
+
+  // Append tag to the buffer
+  void appendTagSpace(MB_String &buf, PGM_P tag = NULL);
+
+  // Print newline
+  void debugPrintNewLine();
+
+  // Send newline to callback
+  void callBackSendNewLine(void *sessionPtr, bool isSMTP, bool success);
+
+  // Print progress bar
+  void printProgress(int progress, int &lastProgress);
 
   // Get file extension with dot from MIME string
   void getExtfromMIME(const char *mime, MB_String &ext);
@@ -1089,6 +1166,7 @@ private:
   void getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls);
 
   void idle();
+
 #endif
 
 #if defined(ENABLE_SMTP)
@@ -1142,7 +1220,7 @@ private:
   bool sendContent(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG);
 
   // Send imap or smtp callback
-  void altSendCallback(SMTPSession *smtp, PGM_P s1, PGM_P s2, bool newline1, bool newline2);
+  void altSendCallback(SMTPSession *smtp, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success);
 
   // Send message data
   bool sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG);
@@ -1158,6 +1236,9 @@ private:
 
   // Send BDAT command RFC 3030
   bool sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bool last);
+
+  // Get transfer encoding
+  void getXEncoding(esp_mail_msg_xencoding &xencoding, const char *enc);
 
   // Set the unencoded xencoding enum for html, text and attachment from its xencoding string
   void checkUnencodedData(SMTPSession *smtp, SMTP_Message *msg);
@@ -1211,13 +1292,10 @@ private:
   bool sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary);
 
   // Get an attachment part header string
-  void getAttachHeader(MB_String &header, const MB_String &boundary, SMTP_Attachment *attach, size_t size);
+  void getAttachHeader(MB_String &header, const MB_String &boundary, SMTP_Attachment *attach, size_t size, bool isInline);
 
   // Get RFC 8222 part header string
   void getRFC822PartHeader(SMTPSession *smtp, MB_String &header, const MB_String &boundary);
-
-  // Get an inline attachment header string
-  void getInlineHeader(MB_String &header, const MB_String &boundary, SMTP_Attachment *inlineAttach, size_t size);
 
   // Send BLOB type text part or html part MIME message
   bool sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t type);
@@ -1243,11 +1321,17 @@ private:
   // Send blob or file as base64 encoded chunk
   bool sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_smtp_send_base64_data_info_t &data_info, bool base64, bool report);
 
+  // Save sending logs to file
+  void saveSendingLogs(SMTPSession *smtp, SMTP_Message *msg, bool result);
+
   // Get imap or smtp report progress var pointer
   uint32_t altProgressPtr(SMTPSession *smtp);
 
   // Send callback
   void smtpCB(SMTPSession *smtp, PGM_P info = "", bool prependCRLF = false, bool success = false);
+
+  // Send error callback
+  void smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF = false, bool success = false);
 
   // Get SMTP response status (respCode and text)
   void getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
@@ -1256,7 +1340,7 @@ private:
   void parseAuthCapability(SMTPSession *smtp, char *buf);
 
   // Add the sending result
-  bool addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result);
+  bool addSendingResult(SMTPSession *smtp, SMTP_Message *msg, bool result, bool showResult);
 
   // Handle SMTP server authentication
   bool smtpAuth(SMTPSession *smtp, bool &ssl);
@@ -1314,11 +1398,20 @@ private:
   // Network reconnection and return the connection status
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
 
+  // Append headers fetch command
+  void appendHeadersFetchCommand(IMAPSession *imap, MB_String &cmd, int index, bool debug);
+
+  // Append rfc822 headers fetch command
+  void appendRFC822HeadersFetchCommand(MB_String &cmd);
+
   // Get multipart MIME fetch command
   bool getMultipartFechCmd(IMAPSession *imap, int msgIdx, MB_String &partText);
 
   // Fetch multipart MIME body header
   bool fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx);
+
+  // Print body part fetching debug
+  void printBodyPartFechingDubug(IMAPSession *imap, const char *partNum, bool multiLevel);
 
   // Handle IMAP server authentication
   bool imapAuth(IMAPSession *imap, bool &ssl);
@@ -1341,14 +1434,14 @@ private:
   // Log out
   bool imapLogout(IMAPSession *imap);
 
-  // Send callback
-  void imapCB(IMAPSession *imap, PGM_P info = "", bool prependCRLF = false, bool success = false);
+  // Send error callback
+  void imapErrorCB(IMAPSession *imap, PGM_P info, bool prependCRLF = false, bool success = false);
 
   // Send storage error callback
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
 
   // Parse search response
-  int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key, const char *pc);
+  int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key);
 
   // Parse header state
   bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
@@ -1408,7 +1501,7 @@ private:
   void fetchReport(IMAPSession *imap, int progress, bool html);
 
   // Print the message search status via debug port
-  void searchReport(IMAPSession *imap, int progress, const char *percent);
+  void searchReport(IMAPSession *imap, int progress);
 
   // Get current message num item
   struct esp_mail_imap_msg_num_t cMSG(IMAPSession *imap);
@@ -1460,6 +1553,9 @@ private:
 
   // Parse Idle response
   bool parseIdleResponse(IMAPSession *imap);
+
+  // Append Fetch UID/Flags string to buffer
+  void appendFechString(MB_String &buf, bool uid);
 
   // Parse command response
   void parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find);
@@ -1988,7 +2084,7 @@ private:
   // Fetch by sequence set
   bool mFetchSequenceSet();
 
-  // Prepend TAG for response status parsing
+  // Return string from TAG prepended command
   MB_String prependTag(PGM_P cmd, PGM_P tag = NULL);
 
   // Check capabilities
@@ -2019,16 +2115,25 @@ private:
   bool mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr newFolderName);
 
   // Copy message
+  bool copyMsg(MessageList *toCopy, const char *sequenceSet, bool UID, MB_StringPtr dest);
+
+  // Copy message
   bool mCopyMessages(MessageList *toCopy, MB_StringPtr dest);
 
   // Copy message using sequence set
   bool mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
 
   // Move message
+  bool moveMsg(MessageList *toMove, const char *sequenceSet, bool UID, MB_StringPtr dest);
+
+  // Move message
   bool mMoveMessages(MessageList *toMove, MB_StringPtr dest);
 
   // Move message using sequence set
   bool mMoveMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
+
+  // Delete message
+  bool deleteMsg(MessageList *toDelete, const char *sequenceSet, bool UID, bool expunge);
 
   // Delete messages
   bool mDeleteMessages(MessageList *toDelete, bool expunge = false);
@@ -2107,8 +2212,9 @@ private:
   bool _attDownload = false;
   bool _storageReady = false;
   bool _storageChecked = false;
-  struct esp_mail_auth_capability_t _auth_capability;
-  struct esp_mail_imap_capability_t _read_capability;
+
+  bool _auth_capability[esp_mail_auth_capability_maxType];
+  bool _read_capability[esp_mail_imap_read_capability_maxType];
   Session_Config *_session_cfg;
   MB_String _currentFolder;
   bool _mailboxOpened = false;
@@ -2352,8 +2458,10 @@ private:
   uint32_t ts = 0;
 
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
-  struct esp_mail_auth_capability_t _auth_capability;
-  struct esp_mail_smtp_capability_t _send_capability;
+
+  bool _auth_capability[esp_mail_auth_capability_maxType];
+  bool _send_capability[esp_mail_smtp_send_capability_maxType];
+
   Session_Config *_session_cfg = NULL;
 
   bool _debug = false;
