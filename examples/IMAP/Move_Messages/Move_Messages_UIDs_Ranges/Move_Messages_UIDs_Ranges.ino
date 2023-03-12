@@ -182,9 +182,9 @@ void setup()
     String sequence_set1 = String(uid_begin) + ":" + String(uid_last);
 
     if (imap.moveMessages(sequence_set1, true /* if sequence set are the UIDs */, F("test")))
-        Serial.println("Moving messages using UIDs ranges success");
+        Serial.println("\nMoving messages using UIDs ranges success");
     else
-        Serial.println("Error, moving messages using UIDs ranges");
+        Serial.println("\nError, moving messages using UIDs ranges");
 
     // imap.deleteolder("test");
 

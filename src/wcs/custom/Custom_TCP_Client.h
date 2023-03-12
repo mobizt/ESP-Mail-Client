@@ -32,6 +32,9 @@
 // This file was included in wcs/clients.h
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
 #include "./wcs/base/TCP_Client_Base.h"
 
 class Custom_TCP_Client : public TCP_Client_Base
@@ -573,5 +576,7 @@ private:
     NetworkStatusRequestCallback network_status_cb = NULL;
     volatile bool networkStatus = false;
 };
+
+#endif
 
 #endif

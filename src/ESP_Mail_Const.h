@@ -69,6 +69,7 @@ using namespace mb_string;
 
 typedef void (*NetworkConnectionHandler)(void);
 
+#if defined(ENABLE_SMTP) 
 enum esp_mail_smtp_command_types
 {
     esp_mail_smtp_command_auth,
@@ -93,6 +94,22 @@ enum esp_mail_smtp_command_types
     esp_mail_smtp_command_starttls,
     esp_mail_smtp_command_maxType
 };
+
+enum esp_mail_smtp_send_capability_types
+{
+    esp_mail_smtp_send_capability_binary_mime,
+    esp_mail_smtp_send_capability_8bit_mime,
+    esp_mail_smtp_send_capability_chunking,
+    esp_mail_smtp_send_capability_utf8,
+    esp_mail_smtp_send_capability_pipelining,
+    esp_mail_smtp_send_capability_dsn,
+    esp_mail_smtp_send_capability_esmtp,
+    esp_mail_smtp_send_capability_maxType
+};
+
+#endif
+
+#if defined(ENABLE_IMAP) 
 enum esp_mail_imap_response_types
 {
     esp_mail_imap_response_ok,
@@ -177,6 +194,36 @@ enum esp_mail_imap_command_types
     esp_mail_imap_command_maxType
 };
 
+
+enum esp_mail_imap_read_capability_types
+{
+    esp_mail_imap_read_capability_imap4,
+    esp_mail_imap_read_capability_imap4rev1,
+    // rfc2177
+    esp_mail_imap_read_capability_idle,
+    esp_mail_imap_read_capability_literal_plus,
+    esp_mail_imap_read_capability_literal_minus,
+    esp_mail_imap_read_capability_multiappend,
+    esp_mail_imap_read_capability_uidplus,
+    // rfc4314
+    esp_mail_imap_read_capability_acl,
+    esp_mail_imap_read_capability_binary,
+    esp_mail_imap_read_capability_logindisable,
+    // rfc6851
+    esp_mail_imap_read_capability_move,
+    // rfc2087
+    esp_mail_imap_read_capability_quota,
+    // rfc2342
+    esp_mail_imap_read_capability_namespace,
+    // rfc5161
+    esp_mail_imap_read_capability_enable,
+    esp_mail_imap_read_capability_auto_caps,
+
+    esp_mail_imap_read_capability_maxType
+};
+
+#endif
+
 enum esp_mail_char_decoding_types
 {
     esp_mail_char_decoding_utf8,
@@ -258,45 +305,6 @@ enum esp_mail_auth_capability_types
     esp_mail_auth_capability_sasl_ir,
 
     esp_mail_auth_capability_maxType,
-};
-
-enum esp_mail_smtp_send_capability_types
-{
-    esp_mail_smtp_send_capability_binary_mime,
-    esp_mail_smtp_send_capability_8bit_mime,
-    esp_mail_smtp_send_capability_chunking,
-    esp_mail_smtp_send_capability_utf8,
-    esp_mail_smtp_send_capability_pipelining,
-    esp_mail_smtp_send_capability_dsn,
-    esp_mail_smtp_send_capability_esmtp,
-    esp_mail_smtp_send_capability_maxType
-};
-
-enum esp_mail_imap_read_capability_types
-{
-    esp_mail_imap_read_capability_imap4,
-    esp_mail_imap_read_capability_imap4rev1,
-    // rfc2177
-    esp_mail_imap_read_capability_idle,
-    esp_mail_imap_read_capability_literal_plus,
-    esp_mail_imap_read_capability_literal_minus,
-    esp_mail_imap_read_capability_multiappend,
-    esp_mail_imap_read_capability_uidplus,
-    // rfc4314
-    esp_mail_imap_read_capability_acl,
-    esp_mail_imap_read_capability_binary,
-    esp_mail_imap_read_capability_logindisable,
-    // rfc6851
-    esp_mail_imap_read_capability_move,
-    // rfc2087
-    esp_mail_imap_read_capability_quota,
-    // rfc2342
-    esp_mail_imap_read_capability_namespace,
-    // rfc5161
-    esp_mail_imap_read_capability_enable,
-    esp_mail_imap_read_capability_auto_caps,
-
-    esp_mail_imap_read_capability_maxType
 };
 
 enum esp_mail_message_type
@@ -581,6 +589,9 @@ struct esp_mail_attachment_info_t
     size_t size;
 };
 
+
+#if defined(ENABLE_SMTP) 
+
 struct esp_mail_smtp_command_t
 {
     char text[9];
@@ -608,6 +619,10 @@ const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType
         "BODY",
         "\r\n.\r\n",
         "STARTTLS"};
+
+#endif
+
+#if defined(ENABLE_IMAP) 
 
 struct esp_mail_imap_command_t
 {
@@ -703,6 +718,8 @@ const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxT
 
 };
 
+#endif
+
 struct esp_mail_char_decoding_t
 {
     char text[12];
@@ -795,6 +812,8 @@ struct esp_mail_auth_capability_t
     char text[15];
 };
 
+#if defined(ENABLE_SMTP) 
+
 const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
 
@@ -808,18 +827,6 @@ const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_cap
 
 };
 
-const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
-    {
-
-        "AUTH=PLAIN",
-        "AUTH=XOAUTH2",
-        "CRAM-MD5",
-        "DIGEST-MD5",
-        "" /* Log in */
-        "STARTTLS",
-        "SASL-IR"
-
-};
 
 struct esp_mail_smtp_send_capability_t
 {
@@ -838,6 +845,24 @@ const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smt
         "" /* ESMTP */
 
 };
+
+#endif
+
+#if defined(ENABLE_IMAP) 
+
+const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
+    {
+
+        "AUTH=PLAIN",
+        "AUTH=XOAUTH2",
+        "CRAM-MD5",
+        "DIGEST-MD5",
+        "" /* Log in */
+        "STARTTLS",
+        "SASL-IR"
+
+};
+
 
 struct esp_mail_imap_read_capability_t
 {
@@ -863,6 +888,8 @@ const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_ima
         "ENABLE",
         "" /* Auto cap */
 };
+
+#endif
 
 #endif
 
@@ -2535,6 +2562,7 @@ static const char esp_mail_error_client_str_4[] PROGMEM = "the client type must 
 static const char esp_mail_error_client_str_5[] PROGMEM = "client connection upgrade callback (for TLS handshake) is required";
 static const char esp_mail_error_client_str_6[] PROGMEM = "network connection callback is required";
 static const char esp_mail_error_client_str_7[] PROGMEM = "network connection status callback is required";
+static const char esp_mail_error_client_str_8[] PROGMEM = "client is not yet initialized";
 
 /////////////////////////
 // Network error string
@@ -2574,6 +2602,7 @@ static const char esp_mail_error_smtp_str_9[] PROGMEM = "set recipient failed";
 
 /////////////////////////
 // IMAP error string
+#if defined(ENABLE_IMAP)
 static const char esp_mail_error_imap_str_1[] PROGMEM = "fail to list the mailboxes";
 static const char esp_mail_error_imap_str_2[] PROGMEM = "fail to check the capabilities";
 static const char esp_mail_error_imap_str_3[] PROGMEM = "no messages found for the specified search criteria";
@@ -2587,6 +2616,7 @@ static const char esp_mail_error_imap_str_10[] PROGMEM = "some of the requested 
 static const char esp_mail_error_imap_str_11[] PROGMEM = "firmware update initialization failed";
 static const char esp_mail_error_imap_str_12[] PROGMEM = "firmware update write failed";
 static const char esp_mail_error_imap_str_13[] PROGMEM = "firmware update finalize failed";
+#endif
 
 /////////////////////////
 // General use string
@@ -2677,7 +2707,7 @@ static const char esp_mail_str_85[] PROGMEM = "rfc822";
 static const char esp_mail_str_86[] PROGMEM = "/msg";
 static const char esp_mail_str_87[] PROGMEM = "/rfc822_msg";
 static const char esp_mail_str_88[] PROGMEM = "polling established on ";
-static const char esp_mail_str_89[] PROGMEM = "folder...";
+static const char esp_mail_str_89[] PROGMEM = " folder...";
 static const char esp_mail_str_90[] PROGMEM = "boundary";
 static const char esp_mail_str_91[] PROGMEM = "\\Deleted";
 static const char esp_mail_str_92[] PROGMEM = "Subject: %s";

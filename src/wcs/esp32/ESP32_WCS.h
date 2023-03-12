@@ -1,7 +1,7 @@
 /*
  * ESP32 WiFi Client Secure v2.0.2
  *
- * Created March 3, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -49,9 +49,10 @@
 #ifndef ESP32_WCS_H
 #define ESP32_WCS_H
 
-#ifdef ESP32
+#include <Arduino.h>
+#include "ESP_Mail_FS.h"
+#if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
-#include "Arduino.h"
 #include "IPAddress.h"
 #include "ESP_Mail_FS.h"
 #include "ESP32_SSL_Client.h"

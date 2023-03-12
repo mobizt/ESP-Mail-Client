@@ -100,16 +100,12 @@ void customCommandCallback(IMAP_Response res)
     // When you send multiple commands with different tag simultaneously,
     // tag will be used as command identifier.
 
-    Serial.print("> C: TAG ");
-    Serial.println(res.tag.c_str());
-    Serial.print("< S: ");
-    Serial.println(res.text.c_str());
+    ESP_MAIL_PRINTF("> C: TAG %s\n", res.tag.c_str());
+    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
 
     if (res.completed)
     {
-        Serial.print("> C: Response finished with status ");
-        Serial.println(res.status.c_str());
-        Serial.println();
+        ESP_MAIL_PRINTF("> C: Response finished with status %s\n\n", res.status.c_str());
     }
 }
 
@@ -161,6 +157,9 @@ void setup()
     MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
 #endif
 
+    // This debug required for showing debug info from imap.connect
+    imap.debug(1);
+
     /** Declare the IMAP_Data object used for user defined IMAP operating options
      * and contains the IMAP operating result
      */
@@ -178,6 +177,8 @@ void setup()
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;
+
+    Serial.println();
 
     // You can also assign tag to the begining of the command e.g. "A01 FETCH 1 UID"
     // Do not assign tag to command when you assign tag to the last parameter of function.

@@ -186,7 +186,7 @@ void setup()
 
     /* Move all messages in the list to the folder "test" */
     if (imap.moveMessages(&toMove, F("test")))
-        Serial.println("Messages moved");
+        Serial.println("\nMessages moved");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

@@ -182,9 +182,9 @@ void setup()
     String sequence_set1 = String(msg_begin) + ":" + String(msg_last);
 
     if (imap.copyMessages(sequence_set1, true /* if sequence set are the UIDs */, F("test")))
-        Serial.println("Copying messages using message numbers ranges success");
+        Serial.println("\nCopying messages using message numbers ranges success");
     else
-        Serial.println("Error, copying messages using message numbers ranges");
+        Serial.println("\nError, copying messages using message numbers ranges");
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("test")))
@@ -199,9 +199,9 @@ void setup()
     sequence_set1 = String(msg_begin) + ":" + String(msg_last);
 
     if (imap.deleteMessages(sequence_set1, true /* if sequence set are the UIDs */, false))
-        Serial.println("Deleting messages using message numbers ranges success");
+        Serial.println("\nDeleting messages using message numbers ranges success");
     else
-        Serial.println("Error, Deleting messages using message numbers ranges");
+        Serial.println("\nError, Deleting messages using message numbers ranges");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

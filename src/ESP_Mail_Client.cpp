@@ -330,7 +330,7 @@ void ESP_Mail_Client::printDebug(void *sessionPtr, bool isSMTP, PGM_P cbMsg, PGM
     if (smtp->_sendCallback != NULL && !isCb)
       sendCallback(sessionPtr, cbMsg, true, prependCRLF, success);
     else if (smtp->_debug)
-      esp_mail_debug_print("", true);
+      debugPrintNewLine();
 
     if (smtp->_debug)
       esp_mail_debug_print_tag(dbMsg, type, true);
@@ -346,7 +346,7 @@ void ESP_Mail_Client::printDebug(void *sessionPtr, bool isSMTP, PGM_P cbMsg, PGM
     if (imap->_readCallback != NULL && !isCb)
       sendCallback(sessionPtr, cbMsg, false, prependCRLF, success);
     else if (imap->_debug)
-      esp_mail_debug_print("", true);
+      debugPrintNewLine();
 
     if (imap->_debug)
       esp_mail_debug_print_tag(dbMsg, type, true);
@@ -1029,7 +1029,7 @@ bool ESP_Mail_Client::isResponseCB(void *cb, bool isSMTP)
 void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 {
   MB_String dbMsg;
-  bool isCb, debug;
+  bool isCb = false, debug = false;
   ESP_MAIL_TCP_CLIENT *client = nullptr;
   PGM_P p = isSMTP ? esp_mail_cb_str_1 /* "Connecting to SMTP server..." */ : esp_mail_cb_str_15 /* "Connecting to IMAP server..." */;
 
@@ -1083,7 +1083,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 {
 
   MB_String dbMsg;
-  bool isCb, debug;
+  bool isCb = false, debug = false;
   ESP_MAIL_TCP_CLIENT *client = nullptr;
   PGM_P p = isSMTP ? esp_mail_dbg_str_2 /* "connecting to SMTP server" */ : esp_mail_dbg_str_18 /* "connecting to IMAP server" */;
 
@@ -1110,7 +1110,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 
     if (!reconnect(imap))
       return false;
-      
+
 #endif
   }
 
@@ -1171,7 +1171,7 @@ void ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
-  bool isCb, debug;
+  bool isCb = false, debug = false;
 
   if (isSMTP)
   {

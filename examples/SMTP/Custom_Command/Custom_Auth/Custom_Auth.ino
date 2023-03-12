@@ -93,17 +93,12 @@ void customCommandCallback(SMTP_Response res)
 
     // If command identifier number was not set in those functions, the res.id received will be auto increased and begins with 0
 
-    Serial.print("> C: Command ID ");
-    Serial.println(res.id);
-
-    Serial.print("< S: ");
-    Serial.println(res.text.c_str());
+    ESP_MAIL_PRINTF("> C: Command ID %d\n", res.id);
+    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
 
     if (res.respCode > 0)
     {
-        Serial.print("> C: Response finished with code ");
-        Serial.println(res.respCode);
-        Serial.println();
+        ESP_MAIL_PRINTF("> C: Response finished with code %d\n\n", res.respCode);
     }
 }
 
@@ -167,7 +162,7 @@ void setup()
     /* Connect to the server */
     if (smtp.customConnect(&config /* session credentials */, customCommandCallback) != 220)
     {
-        Serial.println("> E: Unable to connect to server");
+        Serial.println("! E: Unable to connect to server");
         return;
     }
 

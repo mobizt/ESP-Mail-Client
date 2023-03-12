@@ -251,9 +251,9 @@ void setup()
      * The seesion will keep open.
      */
     if (MailClient.setFlag(&imap, uid, F("\\Seen \\Answered"), false))
-        Serial.println("Setting FLAG success");
+        Serial.println("\nSetting FLAG success");
     else
-        Serial.println("Error, setting FLAG");
+        Serial.println("\nError, setting FLAG");
 
     /* Add \Seen and \Answered to flags for message with UID 100 */
     // MailClient.addFlag(imap, 100, "\\Seen \\Answered", false);
@@ -268,9 +268,9 @@ void setup()
     String sequence_set1 = String(uid_begin) + ":" + String(uid_last);
 
     if (MailClient.removeFlag(&imap, sequence_set1, true /* if sequence set are the UIDs */, F("\\Seen \\Answered"), false /* Close session */, false /* Ignore response */))
-        Serial.println("Removing FLAG with UIDs ranges success");
+        Serial.println("\nRemoving FLAG with UIDs ranges success");
     else
-        Serial.println("Error, removing FLAG with UIDs ranges");
+        Serial.println("\nError, removing FLAG with UIDs ranges");
 
     /* Remove Seen and Answered flags from messages using message sequence ranges (last 10 message numbers) */
     int msg_last = imap.selectedFolder().msgCount();
@@ -279,9 +279,9 @@ void setup()
     String sequence_set2 = String(msg_begin) + ":" + String(msg_last);
 
     if (MailClient.removeFlag(&imap, sequence_set2, false /* if sequence set are message numbers not UIDs */, F("\\Seen \\Answered"), false /* Close session */, false /* Ignore response */))
-        Serial.println("Removing FLAG with message numbers ranges success");
+        Serial.println("\nRemoving FLAG with message numbers ranges success");
     else
-        Serial.println("Error, removing FLAG with message numbers ranges");
+        Serial.println("\nError, removing FLAG with message numbers ranges");
 
     imap_data.fetch.uid = uid;
 

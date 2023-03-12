@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.3
+ * ESP32 SSL Client v2.0.4
  *
- * Created January 21, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -32,10 +32,10 @@
 #ifndef ESP32_SSL_Client_H
 #define ESP32_SSL_Client_H
 
-#ifdef ESP32
 #include <Arduino.h>
-
 #include "ESP_Mail_FS.h"
+#if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+
 #include "./extras/MB_FS.h"
 #include "./wcs/base/TCP_Client_Base.h"
 
@@ -73,7 +73,7 @@ static const char esp_ssl_client_str_23[] PROGMEM = "fingerprint too short";
 static const char esp_ssl_client_str_24[] PROGMEM = "invalid hex sequence";
 static const char esp_ssl_client_str_25[] PROGMEM = "could not fetch peer certificate";
 static const char esp_ssl_client_str_26[] PROGMEM = "fingerprint doesn't match";
-
+static const char esp_ssl_client_str_27[] PROGMEM = "SSL/TLS negotiation";
 
 
 typedef void (*_ConnectionRequestCallback)(const char *, int);

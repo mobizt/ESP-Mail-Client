@@ -31,7 +31,7 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
-#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #include "ESP8266_TCP_Client.h"
 

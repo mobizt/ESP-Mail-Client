@@ -3,7 +3,7 @@
  *
  * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.2
  *
- * Created March 1, 2023
+ * Created March 12, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -56,7 +56,7 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
-#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #include "ESP_Mail_FS.h"
 
@@ -67,6 +67,8 @@
 #endif
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE) && !defined(USING_AXTLS)
+
+static const char esp_ssl_client_str_1[] PROGMEM = "SSL/TLS negotiation";
 
 #include <vector>
 #include <bearssl/bearssl.h>

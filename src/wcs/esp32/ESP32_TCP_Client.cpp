@@ -33,7 +33,9 @@
 #ifndef ESP32_TCP_Client_CPP
 #define ESP32_TCP_Client_CPP
 
-#ifdef ESP32
+#include <Arduino.h>
+#include "ESP_Mail_FS.h"
+#if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #include "ESP32_TCP_Client.h"
 

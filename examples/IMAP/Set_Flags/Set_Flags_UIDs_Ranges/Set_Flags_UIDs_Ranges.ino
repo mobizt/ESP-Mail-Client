@@ -251,15 +251,15 @@ void setup()
     String sequence_set1 = String(uid_begin) + ":" + String(uid_last);
 
     if (MailClient.addFlag(&imap, sequence_set1, true /* if sequence set are the UIDs */, F("\\Seen \\Answered"), false /* Close session */, false /* Ignore response */))
-        Serial.println("Adding FLAG with UIDs ranges success");
+        Serial.println("\nAdding FLAG with UIDs ranges success");
     else
-        Serial.println("Error, adding FLAG with UIDs ranges");
+        Serial.println("\nError, adding FLAG with UIDs ranges");
 
     /* Remove Seen and Answered flags from messages using UID ranges (last 10 UIDs)  */
     if (MailClient.removeFlag(&imap, sequence_set1, true /* if sequence set are the UIDs */, F("\\Seen \\Answered"), false /* Close session */, false /* Ignore response */))
-        Serial.println("Removing FLAG with UIDs ranges success");
+        Serial.println("\nRemoving FLAG with UIDs ranges success");
     else
-        Serial.println("Error, removing FLAG with UIDs ranges");
+        Serial.println("\nError, removing FLAG with UIDs ranges");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }

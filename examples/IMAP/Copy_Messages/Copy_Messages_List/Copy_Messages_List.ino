@@ -186,7 +186,7 @@ void setup()
 
     /* Copy all messages in the list to the folder "test" */
     if (imap.copyMessages(&toCopy, F("test")))
-        Serial.println("Messages copied");
+        ESP_MAIL_PRINTF("\nMessages copied\n");
 
     /* Delete all messages in the list from the opened folder (move to trash) */
     // imap.deleteMessages(&toCopy);

@@ -178,7 +178,7 @@ void setup()
 
     if (!imap.getNamespace(&ns_list))
     {
-        Serial.println("Get namespaces failed");
+        Serial.println("\nGet namespaces failed");
     }
     else
     {

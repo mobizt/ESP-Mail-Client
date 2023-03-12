@@ -3,7 +3,7 @@
  *
  * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.2
  *
- * Created March 1, 2023
+ * Created March 12, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -56,7 +56,7 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
-#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #include "ESP8266_SSL_Client.h"
 #include "ESP_Mail_Print.h"
@@ -259,7 +259,7 @@ namespace BearSSL
         if (!base_client)
         {
             if (debugLevel > 0)
-                ESP_MAIL_PRINTF((const char *)FPSTR("> E: Client is not yet initialized\n"));
+                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
             return 0;
         }
 
@@ -292,7 +292,7 @@ namespace BearSSL
         if (!base_client)
         {
             if (debugLevel > 0)
-                ESP_MAIL_PRINTF((const char *)FPSTR("> E: Client is not yet initialized\n"));
+                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
             return 0;
         }
 
@@ -1478,17 +1478,23 @@ namespace BearSSL
     // Returns if the SSL handshake succeeded.
     bool ESP8266_SSL_Client::_connectSSL(const char *hostName)
     {
+        if (debugLevel > 0)
+        {
+            esp_mail_debug_print("", true);
+            esp_mail_debug_print_tag(esp_ssl_client_str_1, esp_mail_debug_tag_type_client, true);
+        }
+
         if (!base_client)
         {
             if (debugLevel > 0)
-                ESP_MAIL_PRINTF((const char *)FPSTR("> E: Client is not yet initialized\n"));
+                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
             return false;
         }
 
         if (!_clientConnected())
         {
             if (debugLevel > 0)
-                ESP_MAIL_PRINTF((const char *)FPSTR("> E: Client is not connected\n"));
+                esp_mail_debug_print_tag(esp_mail_error_network_str_2 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
             return false;
         }
 

@@ -182,9 +182,9 @@ void setup()
     String sequence_set2 = String(msg_begin) + ":" + String(msg_last);
 
     if (imap.copyMessages(sequence_set2, false /* if sequence set are message numbers not UIDs */, F("test")))
-        Serial.println("Copying messages using message numbers ranges success");
+        ESP_MAIL_PRINTF("\nCopying messages using message numbers ranges success\n");
     else
-        Serial.println("Error, copying messages using message numbers ranges");
+        ESP_MAIL_PRINTF("\nError, copying messages using message numbers ranges\n");
 
     // imap.deleteolder("test");
 

@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.3
+ * ESP32 SSL Client v2.0.4
  *
- * Created January 21, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -36,9 +36,10 @@
 #ifndef ESP32_SSL_Client_CPP
 #define ESP32_SSL_Client_CPP
 
-#ifdef ESP32
-
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
+#if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+
 #include <mbedtls/sha256.h>
 #include <mbedtls/oid.h>
 #include "ESP32_SSL_Client.h"
@@ -170,6 +171,12 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 
     if (!ssl->client)
         return -1;
+
+    if (ssl->_debugCallback)
+    {
+        esp_mail_debug_print("", true);
+        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_27, esp_mail_debug_tag_type_client);
+    }
 
     if (rootCABuff == NULL && pskIdent == NULL && psKey == NULL && !insecure)
     {

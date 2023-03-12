@@ -187,7 +187,7 @@ void setup()
 
     /* Delete all messages in the list (move to trash) */
     if (imap.deleteMessages(&toDelete))
-        Serial.println("Messages deleted");
+        Serial.println("\nMessages deleted");
 
     /* Delete all messages permanently by assign the second param to true*/
     // imap.deleteMessages(&toDelete, true);

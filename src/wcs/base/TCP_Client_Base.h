@@ -1,7 +1,7 @@
 /*
  * TCP Client Base class, version 2.0.5
  *
- * Created March 3, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -29,6 +29,9 @@
 #define TCP_CLIENT_BASE_H
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
 #include <sys/time.h>
 #include "ESP_Mail_Const.h"
 #include <IPAddress.h>
@@ -182,5 +185,7 @@ protected:
     ESP_Mail_Session *session_config = nullptr;
 #endif
 };
+
+#endif
 
 #endif

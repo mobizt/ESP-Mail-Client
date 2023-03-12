@@ -187,7 +187,7 @@ void setup()
 
     if (!imap.getQuotaRoot("INBOX", &quota_roots))
     {
-        Serial.println("Get quota roots list failed");
+        Serial.println("\nGet quota roots list failed");
     }
     else
     {
@@ -202,11 +202,11 @@ void setup()
 
     if (!imap.setQuota("", &info))
     {
-        Serial.println("Set quota root failed");
+        Serial.println("\nSet quota root failed");
     }
     else
     {
-        Serial.println("Set quota root success");
+        Serial.println("\nSet quota root success");
     }
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());

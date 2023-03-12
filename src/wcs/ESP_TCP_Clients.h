@@ -9,6 +9,8 @@
 #include "./ESP_Mail_FS.h"
 #include "./extras/MB_MCU.h"
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
 #ifdef ENABLE_CUSTOM_CLIENT
 #define ESP_MAIL_ENABLE_CUSTOM_CLIENT
 #endif
@@ -51,6 +53,8 @@
 
 #include "custom/Custom_TCP_Client.h"
 #define ESP_MAIL_TCP_CLIENT Custom_TCP_Client
+
+#endif
 
 #endif
 

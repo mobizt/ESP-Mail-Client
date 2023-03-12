@@ -2,7 +2,7 @@
  *
  * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.2
  *
- * Created March 3, 2023
+ * Created March 12, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -31,7 +31,7 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
-#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #define LWIP_INTERNAL
 

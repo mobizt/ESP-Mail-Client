@@ -330,7 +330,7 @@ void customCharacterDecodingCallback(IMAP_Decoding_Info *decoding)
 void imapCallback(IMAP_Status status)
 {
     /* Print the current status */
-    Serial.println(status.info());
+    ESP_MAIL_PRINTF(status.info());
 
     /* Show the result when reading finished */
     if (status.success())

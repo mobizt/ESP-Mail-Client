@@ -54,12 +54,11 @@
 #define MB_BEARSSL_H_
 
 #pragma once
+#include <Arduino.h>
 #include "ESP_Mail_FS.h"
 
-#if defined(ESP8266)
+#if defined(ESP8266) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
-
-#include <Arduino.h>
 #include <bearssl/bearssl.h>
 #include <vector>
 #include <StackThunk.h>

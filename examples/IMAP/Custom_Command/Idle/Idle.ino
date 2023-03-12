@@ -102,16 +102,12 @@ void customCommandCallback(IMAP_Response res)
     // When you send multiple commands with different tag simultaneously,
     // tag will be used as command identifier.
 
-    Serial.print("> C: TAG ");
-    Serial.println(res.tag.c_str());
-    Serial.print("< S: ");
-    Serial.println(res.text.c_str());
+    ESP_MAIL_PRINTF("> C: TAG %s\n", res.tag.c_str());
+    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
 
     if (res.completed)
     {
-        Serial.print("> C: Response finished with status ");
-        Serial.println(res.status.c_str());
-        Serial.println();
+        ESP_MAIL_PRINTF("> C: Response finished with status %s\n\n", res.status.c_str());
     }
 }
 
@@ -197,7 +193,7 @@ void loop()
         if (!imap.sendCustomCommand(F("IDLE"), customCommandCallback, F("A05") /* tag */))
         {
             // If error, need to re-connect if imap.connected() returns false and re-log in again
-            Serial.println("TCP connection closed!");
+            Serial.println("\nTCP connection closed!");
             return;
         }
 

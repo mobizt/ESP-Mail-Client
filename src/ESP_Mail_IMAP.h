@@ -286,6 +286,9 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_
 
     bool allowPartialFetch = (cmdCase == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->is_firmware_file) ? false : true;
 
+    if (imap->_mimeDataStreamCallback)
+        allowPartialFetch = false;
+
     if (allowPartialFetch)
     {
         //  Apply partial fetch in case download was not able.
@@ -589,7 +592,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_number)
         {
 
-            cHeader(imap)->message_uid = imap->getUID(cHeader(imap)->message_no);
+            cHeader(imap)->message_uid = imap->mGetUID(cHeader(imap)->message_no);
         }
 
         cHeader(imap)->flags = imap->getFlags(cHeader(imap)->message_no);
@@ -1144,6 +1147,8 @@ non_authenticated:
     {
         if (imap->_readCallback)
             sendCallback((void *)imap, esp_mail_cb_str_14 /* "Logging in..." */, false, true, false);
+        else if (imap->_debug)
+            debugPrintNewLine();
     }
 
     if (sasl_auth_oauth)
@@ -1789,12 +1794,9 @@ void ESP_Mail_Client::checkFirmwareFile(IMAPSession *imap, const char *filename,
         // If no file size prop from Content-Disposition header
         if (part.attach_data_size == 0 && defaultSize)
         {
-#if defined(ESP32)
+#if defined(ESP32) || defined(ESP8266)
             int sketchFreeSpace = ESP.getFreeSketchSpace();
             part.attach_data_size = sketchFreeSpace ? sketchFreeSpace : 1024000;
-#elif defined(ESP8266)
-            size_t spiffsSize = ((size_t)FS_end - (size_t)FS_start);
-            part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024000;
 #elif defined(MB_ARDUINO_PICO)
             size_t spiffsSize = ((size_t)&_FS_end - (size_t)&_FS_start);
             part.attach_data_size = spiffsSize ? spiffsSize / 2 : 1024000;
@@ -3840,7 +3842,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             {
                 cPart(imap)->is_firmware_file = Update.begin(cPart(imap)->attach_data_size);
 
-                sendCallback((void *)imap, esp_mail_cb_str_42 /* "Updating firmware..." */, false, !imap->_debug, false);
+                sendCallback((void *)imap, esp_mail_cb_str_42 /* "Updating firmware..." */, false, true, false);
 
                 if (!cPart(imap)->is_firmware_file)
                 {
@@ -5464,6 +5466,25 @@ int IMAPSession::getUID(int msgNum)
                           true,
                           false);
 
+    int uid = mGetUID(msgNum);
+
+    MB_String dbMsg = esp_mail_cb_str_54; /* "UID is " */
+    dbMsg += uid;
+
+    MailClient.printDebug((void *)(this),
+                          false,
+                          dbMsg.c_str(),
+                          dbMsg.c_str(),
+                          esp_mail_debug_tag_type_client,
+                          true,
+                          false);
+
+    return uid;
+}
+
+int IMAPSession::mGetUID(int msgNum)
+{
+
     if (_currentFolder.length() == 0)
         return 0;
 
@@ -5477,16 +5498,6 @@ int IMAPSession::getUID(int msgNum)
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return 0;
 
-    MB_String dbMsg = esp_mail_cb_str_54; /* "UID is " */
-    dbMsg += _uid_tmp;
-
-    MailClient.printDebug((void *)(this),
-                          false,
-                          dbMsg.c_str(),
-                          dbMsg.c_str(),
-                          esp_mail_debug_tag_type_client,
-                          true,
-                          false);
 
     return _uid_tmp;
 }
@@ -5547,7 +5558,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
         _imapStatus.tag = tag;
         _imapStatus.tag.trim();
         if (MailClient.strpos(_cmd.c_str(), _imapStatus.tag.c_str(), 0, false) == -1)
-            _cmd = prependTag(_imapStatus.tag.c_str(), _cmd.c_str());
+            _cmd = prependTag(_cmd.c_str(), _imapStatus.tag.c_str());
     }
 
     MB_String idle, append;

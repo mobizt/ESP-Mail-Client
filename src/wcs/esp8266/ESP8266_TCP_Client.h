@@ -34,7 +34,7 @@
 #include <time.h>
 #include <string>
 #include <WiFiClient.h>
-#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #if defined(ESP8266)
 #include <core_version.h>

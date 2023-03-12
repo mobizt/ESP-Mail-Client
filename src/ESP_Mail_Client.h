@@ -44,6 +44,7 @@
 #include "extras/MIMEInfo.h"
 #include "ESP_Mail_Print.h"
 #include "ESP_Mail_FS.h"
+#include "ESP_Mail_Const.h"
 
 #if __has_include(<WiFi101.h>)
 #include <WiFi101.h>
@@ -2080,6 +2081,9 @@ private:
 
   // Unsubscribe the mailbox
   bool mUnSubscribe(MB_StringPtr folder);
+  
+  // Get UID
+  int mGetUID(int msgNum);
 
   // Fetch by sequence set
   bool mFetchSequenceSet();
