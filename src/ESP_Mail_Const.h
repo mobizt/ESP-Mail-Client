@@ -2616,6 +2616,7 @@ static const char esp_mail_error_imap_str_10[] PROGMEM = "some of the requested 
 static const char esp_mail_error_imap_str_11[] PROGMEM = "firmware update initialization failed";
 static const char esp_mail_error_imap_str_12[] PROGMEM = "firmware update write failed";
 static const char esp_mail_error_imap_str_13[] PROGMEM = "firmware update finalize failed";
+static const char esp_mail_error_imap_str_14[] PROGMEM = "this feature was not supported";
 #endif
 
 /////////////////////////

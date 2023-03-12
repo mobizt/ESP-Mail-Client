@@ -2192,6 +2192,9 @@ private:
 
   // Start TCP connection
   bool connect(bool &ssl);
+  
+  // Print features not supported debug error message
+  void printDebugNotSupported();
 
   bool _tcpConnected = false;
   unsigned long _last_polling_error_ms = 0;

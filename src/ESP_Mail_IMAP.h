@@ -4745,6 +4745,11 @@ bool IMAPSession::mCloseFolder(MB_StringPtr folderName)
 bool IMAPSession::mListen(bool recon)
 {
     // no folder opened or IDLE was not supported
+    if (!_read_capability[esp_mail_imap_read_capability_idle])
+    {
+        printDebugNotSupported();
+    }
+
     if (_currentFolder.length() == 0 || !_read_capability[esp_mail_imap_read_capability_idle])
     {
         _mbif._floderChangedState = false;
@@ -5498,7 +5503,6 @@ int IMAPSession::mGetUID(int msgNum)
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return 0;
 
-
     return _uid_tmp;
 }
 
@@ -5876,7 +5880,10 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
                           false);
 
     if (!_read_capability[esp_mail_imap_read_capability_quota])
+    {
+        printDebugNotSupported();
         return false;
+    }
 
     MB_String _quotaRoot = quotaRoot;
 
@@ -5938,7 +5945,10 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
                           false);
 
     if (!_read_capability[esp_mail_imap_read_capability_quota])
+    {
+        printDebugNotSupported();
         return false;
+    }
 
     MB_String _mailbox = mailbox;
 
@@ -6013,7 +6023,10 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
                           false);
 
     if (!_read_capability[esp_mail_imap_read_capability_acl])
+    {
+        printDebugNotSupported();
         return false;
+    }
 
     MB_String _mailbox = mailbox;
     MB_String _identifier = identifier;
@@ -6157,7 +6170,10 @@ bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
                           false);
 
     if (!_read_capability[esp_mail_imap_read_capability_namespace])
+    {
+        printDebugNotSupported();
         return false;
+    }
 
     if (MailClient.imapSend(this, prependTag(imap_commands[esp_mail_imap_command_namespace].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
@@ -6210,7 +6226,10 @@ bool IMAPSession::mEnable(MB_StringPtr capability)
                           false);
 
     if (!_read_capability[esp_mail_imap_read_capability_enable])
+    {
+        printDebugNotSupported();
         return false;
+    }
 
     MB_String _cap = capability;
 
@@ -6271,6 +6290,17 @@ void IMAPSession::clearMessageData()
     _folders.clear();
     _mbif._flags.clear();
 #endif
+}
+
+void IMAPSession::printDebugNotSupported()
+{
+    MailClient.printDebug((void *)(this),
+                          false,
+                          esp_mail_error_imap_str_14 /* "not supported by IMAP server" */,
+                          esp_mail_error_imap_str_14 /* "not supported by IMAP server" */,
+                          esp_mail_debug_tag_type_error,
+                          true,
+                          false);
 }
 
 IMAP_Status::IMAP_Status()
