@@ -1395,8 +1395,19 @@ private:
 
   // Decode Latin1 to UTF-8
   int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
-  
-  // UTF-8 from unicode
+
+  /**
+   * Encode a code point using UTF-8
+   *
+   * @author Ondřej Hruška <ondra@ondrovo.com>
+   * https://gist.github.com/MightyPork/52eda3e5677b4b03524e40c9f0ab1da5
+   * 
+   * @license MIT
+   *
+   * @param out - output buffer (min 5 characters), will be 0-terminated
+   * @param utf - code point 0-0x10FFFF
+   * @return number of bytes on success, 0 on failure (also produces U+FFFD, which uses 3 bytes)
+   */
   int encodeUnicode_UTF8(char *out, uint32_t utf);
 
   // Decode TIS620 to UTF-8

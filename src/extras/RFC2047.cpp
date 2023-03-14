@@ -91,7 +91,6 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
     case 4:
       if (enc == ENCQUOTEDPRINTABLE)
       {
-         Serial.println("==========1");
         while (*pp && len > 0)
         {
           if (*pp == '_')
