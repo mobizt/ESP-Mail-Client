@@ -143,6 +143,8 @@ characterDecodingCallback   KEYWORD2
 clearAP KEYWORD2
 addAP   KEYWORD2
 isFirmwareUpdated   KEYWORD2
+id  KEYWORD2
+serverID    KEYWORD2
 
 
 #######################################
@@ -168,7 +170,7 @@ esp_mail_imap_download_config_t KEYWORD3
 esp_mail_imap_storage_config_t  KEYWORD3
 esp_mail_imap_polling_status_t  KEYWORD3
 IMAP_Polling_Status KEYWORD3
-
+IMAP_Identification KEYWORD3
 
 esp_mail_file_storage_type_none KEYWORD3
 esp_mail_file_storage_type_flash    KEYWORD3

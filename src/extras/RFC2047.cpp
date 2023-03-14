@@ -69,7 +69,7 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
   size_t len = dlen;
   int enc = 0, filter = 0, count = 0, c1, c2, c3, c4;
 
-  while ((pp = strtok(pp, "?")) != NULL)
+  while ((pp = strsep(&p, "?")) != NULL)
   {
     count++;
     switch (count)
@@ -91,6 +91,7 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
     case 4:
       if (enc == ENCQUOTEDPRINTABLE)
       {
+         Serial.println("==========1");
         while (*pp && len > 0)
         {
           if (*pp == '_')
@@ -164,7 +165,7 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
 
 char *RFC2047_Decoder::safe_strdup(const char *s)
 {
-  
+
   if (!mbfs)
     return 0;
 

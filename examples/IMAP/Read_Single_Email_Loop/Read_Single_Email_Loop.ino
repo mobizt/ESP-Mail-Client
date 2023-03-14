@@ -267,9 +267,31 @@ void setup()
      */
     imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
+    // If ID extension was supported by IMAP server, assign the client identification
+    // name, version, vendor, os, os_version, support_url, address, command, arguments, environment
+    // Server ID can be optained from imap.serverID() after calling imap.connect and imap.id.
+
+    // imap_data.identification.name = "User";
+    // imap_data.identification.version = "1.0";
+
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;
+
+    // Client identification can be sent to server later with
+    /**
+     * IMAP_Identification iden;
+     * iden.name = "user";
+     * iden.version = "1.0";
+     *
+     * if (imap.id(&iden))
+     * {
+     *    Serial.println("\nSend Identification success");
+     *    Serial.println(imap.serverID());
+     * }
+     * else
+     *    Serial.println("\nSend Identification error, " + imap.errorReason());
+     */
 
     if (imap.isAuthenticated())
         Serial.println("Successfully logged in.");
@@ -311,7 +333,7 @@ void loop()
 
             if (!imap.selectFolder(F("INBOX")))
                 return;
-                
+
             if (totalMessage == 0)
             {
                 totalMessage = imap.selectedFolder().msgCount();

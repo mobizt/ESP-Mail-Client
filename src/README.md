@@ -399,7 +399,6 @@ void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 ```
 
 
-
 #### Set system time with timestamp.
 
 param **`ts`** timestamp in seconds from midnight Jan 1, 1970.
@@ -409,7 +408,6 @@ This function allows the internal time setting by timestamp i.e. timestamp from 
 ```cpp
 void setSystemTime(time_t ts);
 ```
-
 
 
 #### Begin the IMAP server connection.
@@ -422,6 +420,28 @@ return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
 bool connect(Session_Config *session_config, IMAP_Data *imap_data);
+```
+
+
+#### Send the client identification to the server
+
+param **`identification`** The pointer to IMAP_Identification structured data that keeps
+
+the key properties e.g., name, version, os, os_version, vendor, support_url, address,
+
+date, command, arguments, and environment.
+
+```cpp
+bool id(IMAP_Identification *identification);
+```
+
+
+#### Return the server ID returns from ID command.
+
+return **`The server ID string.`**
+
+```cpp
+String serverID();
 ```
 
 
@@ -538,12 +558,12 @@ bool openFolder(<string> folderName, bool readOnly = true);
 
 #### Close the mailbox folder that was opened. 
 
-param **`folderName`** The mailbox folder name.
+param **`expunge`**  The option to allow emty the deleted flag set messages in case folder was open with editable mode.
 
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool closeFolder(<string> folderName);
+bool closeFolder(bool expunge = false);
 ```
 
 

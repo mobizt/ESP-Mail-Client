@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 11, 2023
+ * Created March 13, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1124,6 +1124,9 @@ private:
   // Append dot to buffer
   void appendDot(MB_String &buf);
 
+  // Append IMAP string key value list
+  void appendImap4KeyValue(MB_String &buf, PGM_P key, PGM_P value);
+
   // Append dot to buffer before value
   void prependDot(MB_String &buf, PGM_P value);
 
@@ -1387,11 +1390,14 @@ private:
   // Get encoding type from character set string
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
 
-  // Decode header field string
-  void decodeHeader(IMAPSession *imap, MB_String &headerField);
+  // Decode string base on encoding
+  void decodeString(IMAPSession *imap, MB_String &string, const char *enc = "");
 
   // Decode Latin1 to UTF-8
   int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+  
+  // UTF-8 from unicode
+  int encodeUnicode_UTF8(char *out, uint32_t utf);
 
   // Decode TIS620 to UTF-8
   void decodeTIS620_UTF8(char *out, const char *in, size_t len);
@@ -1635,6 +1641,19 @@ public:
    */
   bool connect(Session_Config *session_config, IMAP_Data *imap_data);
 
+  /** Send the client identification to the server
+   *
+   * @param identification The pointer to IMAP_Identification structured data that keeps
+   * the key properties e.g., name, version, os, os_version, vendor, support_url, address,
+   * date, command, arguments, and environment.
+   */
+  bool id(IMAP_Identification *identification);
+
+  /** Return the server ID returns from ID command.
+   * @return The server ID string.
+   */
+  String serverID();
+
   /** Return the SASL authentication status.
    * @return The boolean value indicates SASL authentication status.
    */
@@ -1716,11 +1735,10 @@ public:
 
   /** Close the mailbox folder that was opened.
    *
-   * @param folderName The known mailbox folder name.
+   * @param expunge The option to allow emty the deleted flag set messages in case folder was open with editable mode.
    * @return The boolean value which indicates the success of operation.
    */
-  template <typename T = const char *>
-  bool closeFolder(T folderName) { return mCloseFolder(toStringPtr(folderName)); }
+  bool closeFolder(bool expunge = false) { return mCloseFolder(expunge); }
 
   /** Create folder.
    *
@@ -2065,10 +2083,10 @@ private:
   void getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg);
 
   // Close mailbox
-  bool closeMailbox();
+  bool closeMailbox(bool expunge = false);
 
   // Open mailbox
-  bool openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse);
+  bool openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse, bool unselect);
 
   // Get folders list
   bool getMailboxes(FoldersCollection &folders);
@@ -2081,7 +2099,7 @@ private:
 
   // Unsubscribe the mailbox
   bool mUnSubscribe(MB_StringPtr folder);
-  
+
   // Get UID
   int mGetUID(int msgNum);
 
@@ -2176,7 +2194,7 @@ private:
   void parseNamespaces(MB_String &ns_str, IMAP_Namespaces *ns);
 
   // Close folder
-  bool mCloseFolder(MB_StringPtr folderName);
+  bool mCloseFolder(bool expunge = false);
 
   // Open folder
   bool mOpenFolder(MB_StringPtr folderName, bool readOnly);
@@ -2187,12 +2205,15 @@ private:
   // Custom TCP connection
   bool mCustomConnect(Session_Config *session_config, imapResponseCallback callback, MB_StringPtr tag);
 
+  // Append ID list to buffer
+  void appendIdList(MB_String &list, IMAP_Identification *identification);
+
   // Handle connection
   bool handleConnection(Session_Config *session_config, IMAP_Data *imap_data, bool &ssl);
 
   // Start TCP connection
   bool connect(bool &ssl);
-  
+
   // Print features not supported debug error message
   void printDebugNotSupported();
 
@@ -2233,6 +2254,7 @@ private:
   MB_String _quota_root_tmp;
   MB_String _acl_tmp;
   MB_String _ns_tmp;
+  MB_String _server_id_tmp;
   MB_String _sdFileList;
 
   struct esp_mail_imap_data_config_t *_imap_data = nullptr;
