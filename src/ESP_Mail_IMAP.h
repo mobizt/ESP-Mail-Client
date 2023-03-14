@@ -260,10 +260,9 @@ void ESP_Mail_Client::decodeTIS620_UTF8(char *out, const char *in, size_t len)
     int j = 0;
     for (size_t i = 0; i < len; i++)
     {
-
         if (in[i] < 0x80)
             out[j++] = in[i];
-        else if (in[i] >= 0xa0 && in[i] < 0xa0 + 0x7f)
+        else if ((in[i] >= 0xa0 && in[i] < 0xdb) || (in[i] > 0xde && in[i] < 0xfc))
         {
             int unicode = 0x0e00 + in[i] - 0xa0;
             char o[5];
@@ -272,6 +271,12 @@ void ESP_Mail_Client::decodeTIS620_UTF8(char *out, const char *in, size_t len)
             for (int x = 0; x < r; x++)
                 out[j++] = o[x];
         }
+    }
+
+    if (strlen(out) >= 2 && out[strlen(out) - 2] != '\r' && out[strlen(out) - 1] != '\n')
+    {
+        out[j++] = '\r';
+        out[j++] = '\n';
     }
 }
 
