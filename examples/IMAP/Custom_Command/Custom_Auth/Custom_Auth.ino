@@ -178,6 +178,12 @@ void setup()
 
     imap.sendCustomCommand(cmd, customCommandCallback, F("A02") /* tag */);
 
+    
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.\n");
+    else
+        Serial.println("\nConnected with no Auth.\n");
+
     imap.sendCustomCommand(F("SELECT \"INBOX\""), customCommandCallback, F("A03") /* tag */);
 
     imap.sendCustomCommand(F("LIST \"\" *"), customCommandCallback, F("A04") /* tag */);

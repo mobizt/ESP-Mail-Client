@@ -178,7 +178,10 @@ void setup()
     if (!imap.connect(&config, &imap_data))
         return;
 
-    Serial.println();
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.\n");
+    else
+        Serial.println("\nConnected with no Auth.\n");
 
     // You can also assign tag to the begining of the command e.g. "A01 FETCH 1 UID"
     // Do not assign tag to command when you assign tag to the last parameter of function.

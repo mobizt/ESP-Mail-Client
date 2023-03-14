@@ -170,6 +170,11 @@ void setup()
     if (!imap.customConnect(&config, customCommandCallback, F("A01") /* tag */))
         return;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.\n");
+    else
+        Serial.println("\nConnected with no Auth.\n");
+
     String cmd = F("LOGIN ");
     cmd += AUTHOR_EMAIL;
     cmd += F(" ");

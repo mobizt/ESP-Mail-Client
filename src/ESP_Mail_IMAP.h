@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 13, 2023
+ * Created March 14, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1348,6 +1348,8 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
     imap->_imap_cmd = esp_mail_imap_cmd_logout;
     if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
         return false;
+
+    imap->_authenticated = false;
 
     printDebug((void *)(imap),
                false,
@@ -5848,14 +5850,21 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
             _cmd = prependTag(_cmd.c_str(), _imapStatus.tag.c_str());
     }
 
-    MB_String idle, append;
+    // filter for specific command
+    MB_String idle, append, login, logout;
     MailClient.prependSpace(idle, imap_commands[esp_mail_imap_command_idle].text);
     MailClient.prependSpace(append, imap_commands[esp_mail_imap_command_append].text);
+    MailClient.prependSpace(login, imap_commands[esp_mail_imap_command_login].text);
+    MailClient.prependSpace(logout, imap_commands[esp_mail_imap_command_logout].text);
 
     if (_cmd.find(idle.c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_idle;
     else if (_cmd.find(append.c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_append;
+    else if (_cmd.find(login.c_str()) != MB_String::npos)
+        _imap_custom_cmd = esp_mail_imap_cmd_sasl_login;
+    else if (_cmd.find(logout.c_str()) != MB_String::npos)
+        _imap_custom_cmd = esp_mail_imap_cmd_logout;
     else
         _imap_custom_cmd = esp_mail_imap_cmd_custom;
 
@@ -5875,6 +5884,11 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
         _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
         return false;
     }
+
+    if (_imap_custom_cmd == esp_mail_imap_cmd_sasl_login)
+        _authenticated = true;
+    else if (_imap_custom_cmd == esp_mail_imap_cmd_logout)
+        _authenticated = false;
 
     _prev_imap_custom_cmd = _imap_custom_cmd;
 

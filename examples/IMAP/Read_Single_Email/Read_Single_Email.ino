@@ -270,9 +270,9 @@ void setup()
      */
 
     if (imap.isAuthenticated())
-        Serial.println("Successfully logged in.");
+        Serial.println("\nSuccessfully logged in.");
     else
-        Serial.println("Connected with no Auth.");
+        Serial.println("\nConnected with no Auth.");
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);

@@ -229,6 +229,11 @@ void setup()
     if (!imap.connect(&config, &imap_data))
         return;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
+
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
         return;

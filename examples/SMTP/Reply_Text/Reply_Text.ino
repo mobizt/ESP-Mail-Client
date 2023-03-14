@@ -235,6 +235,11 @@ void setupIMAP()
     if (!imap.connect(&imap_config, &imap_data))
         return;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nIMAP client, successfully logged in.");
+    else
+        Serial.println("\nIMAP client, connected with no Auth.");
+
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
         return;
@@ -274,6 +279,11 @@ bool setupHelloSMTP()
     if (!hello_smtp.connect(&hello_smtp_config))
         return false;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nHello SMTP client, successfully logged in.");
+    else
+        Serial.println("\nHello SMTP client, connected with no Auth.");
+
     return true;
 }
 
@@ -294,6 +304,11 @@ bool setupReplySMTP()
     /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_config))
         return false;
+
+    if (imap.isAuthenticated())
+        Serial.println("\nReply SMTP client, successfully logged in.");
+    else
+        Serial.println("\nReply SMTP client, connected with no Auth.");
 
     return true;
 }

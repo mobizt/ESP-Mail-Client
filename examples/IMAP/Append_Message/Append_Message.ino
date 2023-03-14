@@ -213,6 +213,11 @@ void setup()
     if (!imap.connect(&config, &imap_data))
         return;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
+
     if (!imap.selectFolder(F("INBOX")))
         return;
 

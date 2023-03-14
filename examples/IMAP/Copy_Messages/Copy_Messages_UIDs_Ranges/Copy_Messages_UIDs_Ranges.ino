@@ -168,6 +168,11 @@ void setup()
     if (!imap.connect(&config, &imap_data))
         return;
 
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
+
     /*  {Optional} */
     printAllMailboxesInfo(imap);
 
@@ -184,7 +189,7 @@ void setup()
     if (imap.copyMessages(sequence_set1, true /* if sequence set are the UIDs */, F("test")))
         ESP_MAIL_PRINTF("\nCopying messages using UIDs ranges success\n");
     else
-       ESP_MAIL_PRINTF("\nError, copying messages using UIDs ranges\n");
+        ESP_MAIL_PRINTF("\nError, copying messages using UIDs ranges\n");
 
     // imap.deleteolder("test");
 
