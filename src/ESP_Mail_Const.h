@@ -703,8 +703,7 @@ const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType
         "-FLAGS",
         "COPY",
         "ID",
-        "UNSELECT"
-        };
+        "UNSELECT"};
 
 struct esp_mail_imap_response_t
 {
@@ -756,7 +755,6 @@ const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxT
         "iso-8859-11",
         "tis-620",
         "windows-874"
-
 };
 
 struct esp_mail_multipart_t
@@ -1238,11 +1236,12 @@ enum esp_mail_imap_store_flag_type
 
 enum esp_mail_char_decoding_scheme
 {
-    esp_mail_char_decoding_scheme_default,
-    esp_mail_char_decoding_scheme_iso8859_1,
-    esp_mail_char_decoding_scheme_tis620,
+    esp_mail_char_decoding_scheme_default = -1,
     esp_mail_char_decoding_scheme_utf_8,
-    esp_mail_char_decoding_scheme_custom
+    esp_mail_char_decoding_scheme_iso8859_1,
+    esp_mail_char_decoding_scheme_iso8859_11,
+    esp_mail_char_decoding_scheme_tis_620,
+    esp_mail_char_decoding_scheme_windows_874
 };
 
 enum esp_mail_imap_port

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 14, 2023
+ * Created March 15, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -149,6 +149,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
     RFC2047Decoder.decode(mbfs, buf, str.c_str(), bufSize);
 
     // Char set decoding
+    esp_mail_char_decoding_scheme scheme = getEncodingFromCharset(headerEnc.c_str());
     if (imap->_charDecCallback)
     {
         IMAP_Decoding_Info decoding;
@@ -168,7 +169,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
             buf = buf2;
         }
     }
-    else if (getEncodingFromCharset(headerEnc.c_str()) == esp_mail_char_decoding_scheme_iso8859_1)
+    else if (scheme == esp_mail_char_decoding_scheme_iso8859_1)
     {
         int len = strlen(buf);
         int olen = (len + 1) * 2;
@@ -178,7 +179,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
         freeMem(&buf);
         buf = (char *)out;
     }
-    else if (getEncodingFromCharset(headerEnc.c_str()) == esp_mail_char_decoding_scheme_tis620)
+    else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
     {
         size_t len2 = strlen(buf);
         char *tmp = alocMem<char *>((len2 + 1) * 3);
@@ -197,12 +198,11 @@ esp_mail_char_decoding_scheme ESP_Mail_Client::getEncodingFromCharset(const char
 {
     esp_mail_char_decoding_scheme scheme = esp_mail_char_decoding_scheme_default;
 
-    if (strpos(enc, char_decodings[esp_mail_char_decoding_tis_620].text, 0, false) > -1 || strpos(enc, char_decodings[esp_mail_char_decoding_iso_8859_11].text, 0, false) > -1 || strpos(enc, char_decodings[esp_mail_char_decoding_windows_874].text, 0, false) > -1)
-        scheme = esp_mail_char_decoding_scheme_tis620;
-    else if (strpos(enc, char_decodings[esp_mail_char_decoding_iso_8859_1].text, 0, false) > -1)
-        scheme = esp_mail_char_decoding_scheme_iso8859_1;
-    else if (strpos(enc, char_decodings[esp_mail_char_decoding_utf8].text, 0, false) > -1)
-        scheme = esp_mail_char_decoding_scheme_utf_8;
+    for (int i = esp_mail_char_decoding_utf8; i < esp_mail_char_decoding_maxType; i++)
+    {
+        if (strpos(enc, char_decodings[i].text, 0, false) > -1)
+            scheme = (esp_mail_char_decoding_scheme)i;
+    }
 
     return scheme;
 }
@@ -271,12 +271,6 @@ void ESP_Mail_Client::decodeTIS620_UTF8(char *out, const char *in, size_t len)
             for (int x = 0; x < r; x++)
                 out[j++] = o[x];
         }
-    }
-
-    if (strlen(out) >= 2 && out[strlen(out) - 2] != '\r' && out[strlen(out) - 1] != '\n')
-    {
-        out[j++] = '\r';
-        out[j++] = '\n';
     }
 }
 
@@ -2435,7 +2429,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
                         freeMem(&tmp);
                         tmp = buf2;
                     }
-                    else if (scheme == esp_mail_char_decoding_scheme_tis620)
+                    else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
                     {
                         int ilen = strlen(tmp);
                         char *buf2 = alocMem<char *>((ilen + 1) * 3);
@@ -2654,8 +2648,8 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     char *tmp = nullptr;
     imap->_lastProgress = -1;
 
-    // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and base64 encoded message
-    bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64 || cPart(imap)->xencoding == esp_mail_msg_xencoding_binary);
+    // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and encoded/unencoded message
+    bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text;
     crLF |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
 
     // custom cmd IDLE?, waiting incoming server response
@@ -4271,7 +4265,9 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
 
         if (cPart(imap)->octetCount <= octetLength)
         {
-            bool hrdBrk = cPart(imap)->xencoding == esp_mail_msg_xencoding_qp && cPart(imap)->octetCount < octetLength;
+            bool hrdBrk = cPart(imap)->xencoding == esp_mail_msg_xencoding_qp;
+            hrdBrk &= cPart(imap)->octetCount < octetLength;
+            hrdBrk &= bufLen == 2 && buf[bufLen - 2] != '\r' && buf[bufLen - 1] != '\n';
 
             // remove soft break for QP
             if (bufLen <= QP_ENC_MSG_LEN && buf[bufLen - 1] == '=' && cPart(imap)->xencoding == esp_mail_msg_xencoding_qp)
@@ -4344,8 +4340,9 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                     }
                     else
                     {
+                        esp_mail_char_decoding_scheme scheme = getEncodingFromCharset(cPart(imap)->charset.c_str());
 
-                        if (getEncodingFromCharset(cPart(imap)->charset.c_str()) == esp_mail_char_decoding_scheme_iso8859_1)
+                        if (scheme == esp_mail_char_decoding_scheme_iso8859_1)
                         {
                             int ilen = olen;
                             int olen2 = (ilen + 1) * 2;
@@ -4359,7 +4356,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                             olen = olen2;
                             decoded = (char *)tmp;
                         }
-                        else if (getEncodingFromCharset(cPart(imap)->charset.c_str()) == esp_mail_char_decoding_scheme_tis620)
+                        else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
                         {
                             char *out = alocMem<char *>((olen + 1) * 3);
                             decodeTIS620_UTF8(out, decoded, olen);
