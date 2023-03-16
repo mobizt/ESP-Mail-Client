@@ -613,7 +613,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         {
             readCount++;
             int bufLen = 100;
-            PGM_P p = imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid ? esp_mail_str_52 /* "Fetch message %d, UID: %d\n" */ : esp_mail_str_53 /* "Fetch message %d, Number: %d\n" */;
+            PGM_P p = imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid ? esp_mail_str_52 /* "Fetch message %d, UID: %d" */ : esp_mail_str_53 /* "Fetch message %d, Number: %d" */;
             char *buf = allocMem<char *>(bufLen);
             snprintf(buf, bufLen, pgm2Str(p), imap->_totalRead, (int)imap->_imap_msg_num[i].value);
             sendCallback((void *)imap, buf, false, true, false);
