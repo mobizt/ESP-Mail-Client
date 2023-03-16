@@ -1055,7 +1055,7 @@ private:
 
   // Memory allocation
   template <typename T>
-  T alocMem(size_t size, bool clear = true);
+  T allocMem(size_t size, bool clear = true);
 
   // Memory deallocation
   void freeMem(void *ptr);
@@ -2508,6 +2508,7 @@ private:
   int _debugLevel = 0;
   bool _secure = false;
   bool _authenticated = false;
+  bool _waitForAuthenticate = false;
   smtpStatusCallback _sendCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
   int _commandID = -1;

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 13, 2023
+ * Created March 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -206,7 +206,7 @@ non_authenticated:
 
             // rfc4616
             int len = smtp->_session_cfg->login.email.length() + smtp->_session_cfg->login.password.length() + 2;
-            uint8_t *tmp = alocMem<uint8_t *>(len);
+            uint8_t *tmp = allocMem<uint8_t *>(len);
             memset(tmp, 0, len);
             int p = 1;
             memcpy(tmp + p, smtp->_session_cfg->login.email.c_str(), smtp->_session_cfg->login.email.length());
@@ -302,7 +302,7 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
         if (showResult)
         {
             int bufLen = 512;
-            char *buf = alocMem<char *>(bufLen);
+            char *buf = allocMem<char *>(bufLen);
             time_t ts = (time_t)smtp->ts;
             MB_String sep;
             for (int i = 0; i < 25; i++)
@@ -1145,7 +1145,7 @@ bool ESP_Mail_Client::sendBlobAttachment(SMTPSession *smtp, SMTP_Message *msg, S
 
                 size_t chunkSize = ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE;
                 size_t writeLen = 0;
-                uint8_t *buf = alocMem<uint8_t *>(chunkSize);
+                uint8_t *buf = allocMem<uint8_t *>(chunkSize);
                 while (writeLen < att->blob.size)
                 {
                     if (writeLen > att->blob.size - chunkSize)
@@ -1220,7 +1220,7 @@ bool ESP_Mail_Client::sendFile(SMTPSession *smtp, SMTP_Message *msg, SMTP_Attach
                 if (fileSize < chunkSize)
                     chunkSize = fileSize;
 
-                uint8_t *buf = alocMem<uint8_t *>(chunkSize);
+                uint8_t *buf = allocMem<uint8_t *>(chunkSize);
 
                 while (writeLen < fileSize && mbfs->available(mbfs_type att->file.storage_type))
                 {
@@ -1974,7 +1974,7 @@ bool ESP_Mail_Client::sendBlobBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
 
     int available = len;
     int sz = len;
-    uint8_t *buf = alocMem<uint8_t *>(bufLen + 1);
+    uint8_t *buf = allocMem<uint8_t *>(bufLen + 1);
     while (available)
     {
         if (available > bufLen)
@@ -2052,7 +2052,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (fileSize < chunkSize)
                 chunkSize = fileSize;
 
-            uint8_t *buf = alocMem<uint8_t *>(chunkSize);
+            uint8_t *buf = allocMem<uint8_t *>(chunkSize);
 
             while (writeLen < fileSize && mbfs->available(mbfs_type msg->text.file.type))
             {
@@ -2122,7 +2122,7 @@ bool ESP_Mail_Client::sendFileBody(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             if (fileSize < chunkSize)
                 chunkSize = fileSize;
 
-            uint8_t *buf = alocMem<uint8_t *>(chunkSize);
+            uint8_t *buf = allocMem<uint8_t *>(chunkSize);
 
             while (writeLen < fileSize && mbfs->available(mbfs_type msg->html.file.type))
             {
@@ -2182,7 +2182,7 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 content += encodeBase64Str((const unsigned char *)s.c_str(), s.length());
             else if (strcmp(msg->text.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_qp) == 0)
             {
-                char *out = alocMem<char *>(s.length() * 3 + 1);
+                char *out = allocMem<char *>(s.length() * 3 + 1);
                 encodeQP(s.c_str(), out);
                 content += out;
 
@@ -2228,7 +2228,7 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
                 content += encodeBase64Str((const unsigned char *)s.c_str(), s.length());
             else if (strcmp(msg->html.transfer_encoding.c_str(), Content_Transfer_Encoding::enc_qp) == 0)
             {
-                char *out = alocMem<char *>(msg->html.content.length() * 3 + 1);
+                char *out = allocMem<char *>(msg->html.content.length() * 3 + 1);
                 encodeQP(msg->html.content.c_str(), out);
                 content += out;
 
@@ -2626,8 +2626,9 @@ void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
     if (!smtp)
         return;
 
-    MB_String auth;
+    MB_String auth, starttlsStr;
 
+    prependSpace(starttlsStr, smtp_auth_capabilities[esp_mail_auth_capability_starttls].text);
     appendSpace(auth, false, smtp_commands[esp_mail_smtp_command_auth].text);
 
     if (strposP(buf, auth.c_str(), 0) > -1)
@@ -2644,7 +2645,7 @@ void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
             }
         }
     }
-    else if (strposP(buf, smtp_auth_capabilities[esp_mail_auth_capability_starttls].text, 0) > -1)
+    else if (strposP(buf, starttlsStr.c_str(), 0) > -1)
     {
         smtp->_auth_capability[esp_mail_auth_capability_starttls] = true;
         return;
@@ -2770,7 +2771,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             {
 
                 chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
-                response = alocMem<char *>(chunkBufSize + 1);
+                response = allocMem<char *>(chunkBufSize + 1);
 
             read_line:
 
@@ -2926,7 +2927,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
 
         if (p2 < 4 && p2 > -1)
         {
-            tmp = alocMem<char *>(p2 + 1);
+            tmp = allocMem<char *>(p2 + 1);
             memcpy(tmp, &buf[p1], p2);
             status.respCode = atoi(tmp);
             // release memory
@@ -2936,7 +2937,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
             p2 = strlen(buf);
             if (p2 > p1)
             {
-                tmp = alocMem<char *>(p2 + 1);
+                tmp = allocMem<char *>(p2 + 1);
                 memcpy(tmp, &buf[p1], p2 - p1);
                 status.text = tmp;
                 // release memory
@@ -3008,7 +3009,7 @@ void ESP_Mail_Client::uploadReport(const char *filename, uint32_t pgAddr, int pr
 MB_String ESP_Mail_Client::getMIMEBoundary(size_t len)
 {
     MB_String tmp = boundary_table;
-    char *buf = alocMem<char *>(len);
+    char *buf = allocMem<char *>(len);
     if (len)
     {
         --len;
@@ -3110,10 +3111,10 @@ bool ESP_Mail_Client::sendBase64(SMTPSession *smtp, SMTP_Message *msg, esp_mail_
             chunkSize = data_info.size;
     }
 
-    uint8_t *buf = alocMem<uint8_t *>(chunkSize);
+    uint8_t *buf = allocMem<uint8_t *>(chunkSize);
     memset(buf, 0, chunkSize);
 
-    uint8_t *rawChunk = alocMem<uint8_t *>(base64 ? 3 : 4);
+    uint8_t *rawChunk = allocMem<uint8_t *>(base64 ? 3 : 4);
 
     if (report)
         uploadReport(data_info.filename, addr, data_info.dataIndex / data_info.size);
@@ -3413,7 +3414,31 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
     if (!MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_custom, esp_mail_smtp_status_code_0, SMTP_STATUS_SEND_CUSTOM_COMMAND_FAILED))
         return -1;
 
-    if (MailClient.strposP(_cmd.c_str(), smtp_auth_capabilities[esp_mail_auth_capability_starttls].text, 0, false) == 0)
+    bool tlsCmd = false;
+    for (int i = esp_mail_auth_capability_plain; i < esp_mail_auth_capability_maxType; i++)
+    {
+        if (MailClient.strposP(_cmd.c_str(), smtp_auth_capabilities[i].text, 0) > -1)
+        {
+            if (i == esp_mail_auth_capability_starttls)
+                tlsCmd = true;
+            else
+                _waitForAuthenticate = true;
+        }
+    }
+
+    if (MailClient.strposP(_cmd.c_str(), smtp_commands[esp_mail_smtp_command_quit].text, 0, false) > -1)
+    {
+        _authenticated = false;
+        _waitForAuthenticate = false;
+    }
+
+    if (_waitForAuthenticate && _smtpStatus.respCode == esp_mail_smtp_status_code_235)
+    {
+        _authenticated = true;
+        _waitForAuthenticate = false;
+    }
+
+    if (tlsCmd)
     {
         bool verify = false;
 
@@ -3528,6 +3553,9 @@ bool SMTPSession::closeSession()
 
             if (_sendCallback)
                 MailClient.callBackSendNewLine((void *)this, true, true);
+
+            _authenticated = false;
+            _waitForAuthenticate = false;
         }
     }
 

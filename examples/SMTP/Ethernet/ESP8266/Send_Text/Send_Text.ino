@@ -135,6 +135,11 @@ void sendMail()
   if (!smtp.connect(&config))
     return;
 
+  if (smtp.isAuthenticated())
+    Serial.println("\nSuccessfully logged in.");
+  else
+    Serial.println("\nConnected with no Auth.");
+
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 }

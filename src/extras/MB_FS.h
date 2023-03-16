@@ -77,7 +77,9 @@
 #include MB_STRING_INCLUDE_CLASS
 #include "SPI.h"
 
-#if defined(ESP32) && __has_include(<sys/stat.h>)
+#define STAT_INCUDE_PATH <sys/stat.h>
+
+#if defined(ESP32) && __has_include(STAT_INCUDE_PATH)
 #ifdef _LITTLEFS_H_
 #define MB_FS_USE_POSIX_STAT
 #include <sys/stat.h>

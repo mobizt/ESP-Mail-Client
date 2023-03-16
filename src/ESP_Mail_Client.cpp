@@ -699,7 +699,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 #endif
 char *ESP_Mail_Client::getRandomUID()
 {
-  char *tmp = alocMem<char *>(36);
+  char *tmp = allocMem<char *>(36);
   sprintf(tmp, "%d", (int)random(2000, 4000));
   return tmp;
 }
@@ -782,7 +782,7 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, i
 
       int len = p2 - p1 - strlen_P(begin_PGM);
       int ofs = end_PGM ? strlen_P(end_PGM) : 1;
-      tmp = alocMem<char *>(len + ofs);
+      tmp = allocMem<char *>(len + ofs);
       memcpy(tmp, &buf[p1 + strlen_P(begin_PGM)], len);
     }
   }
@@ -791,7 +791,7 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, i
     int p1 = strposP(buf, end_PGM, beginPos);
     if (p1 != -1)
     {
-      tmp = alocMem<char *>(p1);
+      tmp = allocMem<char *>(p1);
       memcpy(tmp, &buf[2], p1 - 1);
     }
   }
@@ -1511,7 +1511,7 @@ size_t ESP_Mail_Client::getReservedLen(size_t len)
 }
 
 template <typename T>
-T ESP_Mail_Client::alocMem(size_t size, bool clear)
+T ESP_Mail_Client::allocMem(size_t size, bool clear)
 {
   return reinterpret_cast<T>(mbfs->newP(size, clear));
 }
@@ -1531,7 +1531,7 @@ bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool ca
     ofs = p;
   }
 
-  char *tmp2 = alocMem<char *>(strlen_P(begin_PGM) + 1);
+  char *tmp2 = allocMem<char *>(strlen_P(begin_PGM) + 1);
   memcpy(tmp2, &buf[ofs], strlen_P(begin_PGM));
   tmp2[strlen_P(begin_PGM)] = 0;
   MB_String s = begin_PGM;
@@ -1550,7 +1550,7 @@ int ESP_Mail_Client::strposP(const char *buf, PGM_P begin_PGM, int ofs, bool cas
 char *ESP_Mail_Client::strP(PGM_P pgm)
 {
   size_t len = strlen_P(pgm) + 1;
-  char *buf = alocMem<char *>(len);
+  char *buf = allocMem<char *>(len);
   strcpy_P(buf, pgm);
   buf[len - 1] = 0;
   return buf;
@@ -1559,7 +1559,7 @@ char *ESP_Mail_Client::strP(PGM_P pgm)
 char *ESP_Mail_Client::strP2Lower(PGM_P pgm)
 {
   size_t len = strlen_P(pgm) + 1;
-  char *buf = alocMem<char *>(len);
+  char *buf = allocMem<char *>(len);
   strcpy_P(buf, pgm);
 
   for (char *p = buf; *p; p++)
@@ -1616,7 +1616,7 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
   int pad = 0;
   size_t extra_pad;
 
-  unsigned char *dtable = alocMem<unsigned char *>(256);
+  unsigned char *dtable = allocMem<unsigned char *>(256);
 
   memset(dtable, 0x80, 256);
 
@@ -1638,7 +1638,7 @@ unsigned char *ESP_Mail_Client::decodeBase64(const unsigned char *src, size_t le
 
   olen = (count + extra_pad) / 4 * 3;
 
-  pos = out = alocMem<unsigned char *>(olen);
+  pos = out = allocMem<unsigned char *>(olen);
 
   if (out == NULL)
     goto exit;

@@ -87,6 +87,10 @@ void smtpCallback(SMTP_Status status);
 WiFiMulti multi;
 #endif
 
+// For Free Heap checking
+#include "HeapStat.h"
+HeapStat heapInfo;
+
 void setup()
 {
 
@@ -290,9 +294,9 @@ void setup()
     return;
 
   if (smtp.isAuthenticated())
-    Serial.println("Successfully logged in.");
+    Serial.println("\nSuccessfully logged in.");
   else
-    Serial.println("Connected with no Auth.");
+    Serial.println("\nConnected with no Auth.");
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
@@ -301,7 +305,11 @@ void setup()
   // to clear sending result log
   // smtp.sendingResult.clear();
 
-  ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+  // Collect memory info
+  heapInfo.collect();
+
+  // Print memory info
+  heapInfo.print();
 }
 
 void loop()

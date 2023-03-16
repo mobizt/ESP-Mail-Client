@@ -233,6 +233,11 @@ void setup()
   if (!smtp.connect(&config))
     return;
 
+  if (smtp.isAuthenticated())
+    Serial.println("\nSuccessfully logged in.");
+  else
+    Serial.println("\nConnected with no Auth.");
+
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 

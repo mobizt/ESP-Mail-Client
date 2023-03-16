@@ -90,7 +90,7 @@ char *ESP_Mail_Client::decode7Bit_UTF8(char *buf)
     }
 
     // some special chars can't send in 7bit unless encoded as queoted printable string
-    char *decoded = alocMem<char *>(s.length() + 10);
+    char *decoded = allocMem<char *>(s.length() + 10);
     decodeQP_UTF8(s.c_str(), decoded);
     s.clear();
     return decoded;
@@ -112,7 +112,7 @@ char *ESP_Mail_Client::decode8Bit_UTF8(char *buf)
             s.append(1, buf[i]);
     }
 
-    char *decoded = alocMem<char *>(s.length() + 1);
+    char *decoded = allocMem<char *>(s.length() + 1);
     strcpy(decoded, s.c_str());
     s.clear();
     return decoded;
@@ -143,7 +143,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
         headerEnc = enc;
 
     int bufSize = str.length() + 10;
-    char *buf = alocMem<char *>(bufSize);
+    char *buf = allocMem<char *>(bufSize);
 
     // Content Q and B decodings
     RFC2047Decoder.decode(mbfs, buf, str.c_str(), bufSize);
@@ -162,7 +162,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
 
         if (decoding.decodedString.length() > 0)
         {
-            char *buf2 = alocMem<char *>(decoding.decodedString.length() + 1);
+            char *buf2 = allocMem<char *>(decoding.decodedString.length() + 1);
             strcpy(buf2, decoding.decodedString.c_str());
             // release memory and point to new buffer
             freeMem(&buf);
@@ -173,7 +173,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
     {
         int len = strlen(buf);
         int olen = (len + 1) * 2;
-        unsigned char *out = alocMem<unsigned char *>(olen);
+        unsigned char *out = allocMem<unsigned char *>(olen);
         decodeLatin1_UTF8(out, &olen, (unsigned char *)buf, &len);
         // release memory and point to new buffer
         freeMem(&buf);
@@ -182,7 +182,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
     else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
     {
         size_t len2 = strlen(buf);
-        char *tmp = alocMem<char *>((len2 + 1) * 3);
+        char *tmp = allocMem<char *>((len2 + 1) * 3);
         decodeTIS620_UTF8(tmp, buf, len2);
         // release memory and point to new buffer
         freeMem(&buf);
@@ -534,7 +534,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 if (imap->_imap_msg_num.size() > 0)
                 {
                     int bufLen = 100;
-                    char *buf = alocMem<char *>(bufLen);
+                    char *buf = allocMem<char *>(bufLen);
                     snprintf(buf, bufLen, pgm2Str(esp_mail_str_50 /* "Search limit: %d\nFound %d messages\nShow %d messages\n" */), (int)imap->_imap_data->limit.search, imap->_mbif._searchCount, (int)imap->_imap_msg_num.size());
                     sendCallback((void *)imap, buf, false, false, false);
                     // release memory
@@ -614,7 +614,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             readCount++;
             int bufLen = 100;
             PGM_P p = imap->_uidSearch || imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_uid ? esp_mail_str_52 /* "Fetch message %d, UID: %d\n" */ : esp_mail_str_53 /* "Fetch message %d, Number: %d\n" */;
-            char *buf = alocMem<char *>(bufLen);
+            char *buf = allocMem<char *>(bufLen);
             snprintf(buf, bufLen, pgm2Str(p), imap->_totalRead, (int)imap->_imap_msg_num[i].value);
             sendCallback((void *)imap, buf, false, true, false);
             // release memory
@@ -704,7 +704,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 if (cHeader(imap)->attachment_count > 0 && imap->_readCallback)
                 {
                     int bufLen = 100;
-                    char *buf = alocMem<char *>(bufLen);
+                    char *buf = allocMem<char *>(bufLen);
                     snprintf(buf, bufLen, pgm2Str(esp_mail_str_54 /* "Attachments (%d)" */), cHeader(imap)->attachment_count);
                     callBackSendNewLine((void *)imap, false, false);
                     sendCallback((void *)imap, buf, false, false, false);
@@ -844,7 +844,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                 {
                                     debugPrintNewLine();
                                     int bufLen = 100;
-                                    char *buf = alocMem<char *>(bufLen);
+                                    char *buf = allocMem<char *>(bufLen);
                                     snprintf(buf, bufLen, pgm2Str(esp_mail_dbg_str_70 /* "download attachment %d of %d" */), attach_count + 1, (int)cHeader(imap)->attachment_count);
                                     esp_mail_debug_print_tag(buf, esp_mail_debug_tag_type_client, true);
                                     // release memory
@@ -1253,7 +1253,7 @@ non_authenticated:
             esp_mail_debug_print_tag(esp_mail_dbg_str_44 /* "send IMAP command, AUTHENTICATE PLAIN" */, esp_mail_debug_tag_type_client, true);
 
         int len = imap->_session_cfg->login.email.length() + imap->_session_cfg->login.password.length() + 2;
-        uint8_t *tmp = alocMem<uint8_t *>(len);
+        uint8_t *tmp = allocMem<uint8_t *>(len);
         memset(tmp, 0, len);
         int p = 1;
         memcpy(tmp + p, imap->_session_cfg->login.email.c_str(), imap->_session_cfg->login.email.length());
@@ -2387,7 +2387,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
                     }
 
                     int len = strlen(buf) - p3;
-                    tmp = alocMem<char *>(len + 1);
+                    tmp = allocMem<char *>(len + 1);
 
                     if (buf[strlen(buf) - 1] == ';')
                         len--;
@@ -2412,7 +2412,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
 
                         if (decoding.decodedString.length() > 0)
                         {
-                            char *buf2 = alocMem<char *>(decoding.decodedString.length() + 1);
+                            char *buf2 = allocMem<char *>(decoding.decodedString.length() + 1);
                             strcpy(buf2, decoding.decodedString.c_str());
                             // release memory and point to new buffer
                             freeMem(&tmp);
@@ -2423,7 +2423,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
                     {
                         int ilen = strlen(tmp);
                         int olen = (ilen + 1) * 2;
-                        char *buf2 = alocMem<char *>(olen);
+                        char *buf2 = allocMem<char *>(olen);
                         decodeLatin1_UTF8((unsigned char *)buf2, &olen, (unsigned char *)tmp, &ilen);
                         // release memory and point to new buffer
                         freeMem(&tmp);
@@ -2432,7 +2432,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
                     else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
                     {
                         int ilen = strlen(tmp);
-                        char *buf2 = alocMem<char *>((ilen + 1) * 3);
+                        char *buf2 = allocMem<char *>((ilen + 1) * 3);
                         decodeTIS620_UTF8(buf2, tmp, ilen);
                         // release memory and point to new buffer
                         freeMem(&tmp);
@@ -2458,7 +2458,7 @@ bool ESP_Mail_Client::getPartHeaderProperties(IMAPSession *imap, const char *buf
 char *ESP_Mail_Client::urlDecode(const char *str)
 {
     int d = 0; /* whether or not the string is decoded */
-    char *dStr = alocMem<char *>(strlen(str) + 1);
+    char *dStr = allocMem<char *>(strlen(str) + 1);
     char eStr[] = "00"; /* for a hex code */
 
     strcpy(dStr, str);
@@ -2705,10 +2705,10 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         // response buffer
         chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
-        response = alocMem<char *>(chunkBufSize + 1);
+        response = allocMem<char *>(chunkBufSize + 1);
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
-            lastBuf = alocMem<char *>(BASE64_CHUNKED_LEN + 1);
+            lastBuf = allocMem<char *>(BASE64_CHUNKED_LEN + 1);
 
         while (!completedResponse) // looking for operation finishing
         {
@@ -2937,7 +2937,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                 {
                                     if (strlen(lastBuf) > 0)
                                     {
-                                        tmp = alocMem<char *>(readLen + strlen(lastBuf) + 2);
+                                        tmp = allocMem<char *>(readLen + strlen(lastBuf) + 2);
                                         strcpy(tmp, lastBuf);
                                         strcat(tmp, response);
                                         readLen = strlen(tmp);
@@ -3012,7 +3012,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         {
             // Headers management
 
-            char *buf = alocMem<char *>(header.content_type.length() + 1);
+            char *buf = allocMem<char *>(header.content_type.length() + 1);
             strcpy(buf, header.content_type.c_str());
             header.content_type.clear();
 
@@ -3542,7 +3542,7 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
             p2 = strposP(buf, esp_mail_str_39 /* ")" */, p1 + 1);
             if (p2 != -1)
             {
-                tmp = alocMem<char *>(p2 - p1);
+                tmp = allocMem<char *>(p2 - p1);
                 strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
                 if (tmp[p2 - p1 - 2] == '\r')
                     tmp[p2 - p1 - 2] = 0;
@@ -3558,7 +3558,7 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
             p2 = strposP(buf, esp_mail_str_11 /* "\"" */, p1 + 1);
             if (p2 != -1)
             {
-                tmp = alocMem<char *>(p2 - p1);
+                tmp = allocMem<char *>(p2 - p1);
                 strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
                 if (tmp[p2 - p1 - 2] == '\r')
                     tmp[p2 - p1 - 2] = 0;
@@ -3572,7 +3572,7 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
         if (p1 != -1)
         {
             p2 = strlen(buf);
-            tmp = alocMem<char *>(p2 - p1);
+            tmp = allocMem<char *>(p2 - p1);
             if (buf[p1 + 1] == '"')
                 p1++;
             strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
@@ -3605,7 +3605,7 @@ bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
     {
         chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
 
-        char *buf = alocMem<char *>(chunkBufSize + 1);
+        char *buf = allocMem<char *>(chunkBufSize + 1);
 
         int octetCount = 0;
 
@@ -3730,7 +3730,7 @@ void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
             if (p2 != -1)
             {
                 int len = strlen(buf) - p2 - 1;
-                tmp = alocMem<char *>(len);
+                tmp = allocMem<char *>(len);
                 strncpy(tmp, buf + p2 + 1, strlen(buf) - p2 - 1);
                 if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota_root)
                 {
@@ -3755,7 +3755,7 @@ void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
                           ? 1
                       : imap->_imap_cmd == esp_mail_imap_cmd_namespace || imap->_imap_cmd == esp_mail_imap_cmd_id ? 0
                                                                                                                   : 2;
-            tmp = alocMem<char *>(len);
+            tmp = allocMem<char *>(len);
 
             strncpy(tmp, buf + p1 + strlen_P(find), strlen(buf) - p1 - strlen_P(find) - ofs);
 
@@ -4289,7 +4289,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
             }
             else if (cPart(imap)->xencoding == esp_mail_msg_xencoding_qp)
             {
-                decoded = alocMem<char *>(bufLen + 10);
+                decoded = allocMem<char *>(bufLen + 10);
                 decodeQP_UTF8(buf, decoded);
                 olen = strlen(decoded);
             }
@@ -4327,7 +4327,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
 
                         if (decoding.decodedString.length() > 0)
                         {
-                            char *buf2 = alocMem<char *>(decoding.decodedString.length() + 1);
+                            char *buf2 = allocMem<char *>(decoding.decodedString.length() + 1);
                             strcpy(buf2, decoding.decodedString.c_str());
 
                             if (decoded && !dontDeleteOrModify)
@@ -4346,7 +4346,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                         {
                             int ilen = olen;
                             int olen2 = (ilen + 1) * 2;
-                            unsigned char *tmp = alocMem<unsigned char *>(olen2);
+                            unsigned char *tmp = allocMem<unsigned char *>(olen2);
                             decodeLatin1_UTF8(tmp, &olen2, (unsigned char *)decoded, &ilen);
 
                             if (decoded && !dontDeleteOrModify)
@@ -4358,7 +4358,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                         }
                         else if (scheme == esp_mail_char_decoding_scheme_tis_620 || scheme == esp_mail_char_decoding_scheme_iso8859_11 || scheme == esp_mail_char_decoding_scheme_windows_874)
                         {
-                            char *out = alocMem<char *>((olen + 1) * 3);
+                            char *out = allocMem<char *>((olen + 1) * 3);
                             decodeTIS620_UTF8(out, decoded, olen);
                             olen = strlen(out);
                             if (decoded && !dontDeleteOrModify)
@@ -4673,7 +4673,7 @@ bool IMAPSession::id(IMAP_Identification *identification)
     else
     {
         int bufLen = 50;
-        char *buf = MailClient.alocMem<char *>(bufLen);
+        char *buf = MailClient.allocMem<char *>(bufLen);
         snprintf(buf, bufLen, pgm2Str(esp_mail_str_100 /* "(\"name\" \"ESP Mail Client\" \"version\" \"%s\")" */), ESP_MAIL_VERSION);
         cmd += buf;
         // release memory
@@ -4814,7 +4814,7 @@ bool IMAPSession::connect(bool &ssl)
 
     if (chunkBufSize > 0)
     {
-        char *buf = MailClient.alocMem<char *>(chunkBufSize + 1);
+        char *buf = MailClient.allocMem<char *>(chunkBufSize + 1);
         client.readBytes(buf, chunkBufSize);
         if (_debug && _debugLevel > esp_mail_debug_level_basic && !_customCmdResCallback)
             esp_mail_debug_print((const char *)buf, true);

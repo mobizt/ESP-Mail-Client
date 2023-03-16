@@ -237,6 +237,11 @@ void setup()
   if (!smtp.connect(&config))
     return;
 
+  if (smtp.isAuthenticated())
+    Serial.println("\nSuccessfully logged in.");
+  else
+    Serial.println("\nConnected with no Auth.");
+
   /** Start sending the first Email and keep open the session
    * The third parameter is for close the config.
    */

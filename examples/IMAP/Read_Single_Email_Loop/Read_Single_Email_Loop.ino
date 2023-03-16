@@ -125,6 +125,10 @@ IMAP_Data imap_data;
 WiFiMulti multi;
 #endif
 
+// For Free Heap checking
+#include "HeapStat.h"
+HeapStat heapInfo;
+
 void setup()
 {
 
@@ -391,6 +395,12 @@ void imapCallback(IMAP_Status status)
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
+
+        // Collect memory info
+        heapInfo.collect();
+
+        // Print memory info
+        heapInfo.print();
     }
 }
 

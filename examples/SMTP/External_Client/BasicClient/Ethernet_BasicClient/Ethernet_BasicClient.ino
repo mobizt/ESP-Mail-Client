@@ -106,7 +106,7 @@
  *
  * This kind of client can be used for IMAP and SMTP transports via non-secure ports e.g., 25 (SMTP) and 143 (IMAP).
  *
- * If the first argument is ssl client that starting connection in secure mode e.g., WiFiClientSecure and 
+ * If the first argument is ssl client that starting connection in secure mode e.g., WiFiClientSecure and
  * WiFiSSLClient, the second argument should be esp_mail_external_client_type_ssl.
  *
  * This kind of client can be used for IMAP and SMTP transports via secure ports e.g., 465 (SMTP) and 993 (IMAP).
@@ -116,17 +116,17 @@
  *
  * This kind of client can be used for IMAP and SMTP transports via Plain/TLS via STARTTLS ports
  * e.g., 25 (SMTP), 25 (587), and 143 (IMAP).
- * 
+ *
  * With this type of client, the callback function connectionUpgradeRequestCallback is required to perform SSL/TLS handshake.
  *
  *
  * When using ESP8266, ESP32 and Raspberry Pi Pico devices with network modules with network interface module, the external SSL client library is not required
  * because internal SSL engine is used.
- * 
+ *
  * User can use the basic client of network module directly and choose esp_mail_external_client_type_basic for the second argument of the method.
  *
  *
- * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external 
+ * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external
  * UDP client is required for internal NTP time synching.
  *
  * User can assign the UDP client via
@@ -137,7 +137,7 @@
  * config.time.gmt_offset.
  *
  * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
- * 
+ *
  * In Raspberry Pi Pico and other Arduino devices, the device time is not available. The valid time can be obtained from
  *
  * uint32_t timestamp = MailClient.Time.getCurrentTimestamp();
@@ -147,9 +147,9 @@
  * MailClient.Time.setTimestamp(timestamp);
  *
  * In Raspberry Pi Pico, the device time can not set manually by user except for using SDK's NTP class that works with WiFi only.
- * When use this device with external client, the device time will not be changed and user should call 
+ * When use this device with external client, the device time will not be changed and user should call
  * MailClient.Time.getCurrentTimestamp() to get the valid time instead.
- * 
+ *
  *
  * ///////////////////////////////////////////////////////////////
  *
@@ -191,7 +191,6 @@
 
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 587
-
 
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
@@ -290,6 +289,11 @@ void sendEmail()
 
     if (!smtp.connect(&config))
         return;
+
+    if (smtp.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
 
     if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());

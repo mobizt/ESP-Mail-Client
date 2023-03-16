@@ -1,4 +1,4 @@
-// Created March 13, 2022
+// Created March 16, 2022
 
 #pragma once
 
@@ -831,7 +831,7 @@ const struct esp_mail_message_header_field_t message_headers[esp_mail_message_he
 
 struct esp_mail_auth_capability_t
 {
-    char text[15];
+    char text[20];
 };
 
 #if defined(ENABLE_SMTP)
@@ -839,19 +839,19 @@ struct esp_mail_auth_capability_t
 const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
 
-        " PLAIN",
-        " XOAUTH2",
-        " CRAM-MD5",
-        " DIGEST-MD5",
-        " LOGIN",
+        "PLAIN",
+        "XOAUTH2",
+        "CRAM-MD5",
+        "DIGEST-MD5",
+        "LOGIN",
         "STARTTLS",
-        "" /* SASL-IR */
+        "DUMMY_AUTH" /* SASL-IR */
 
 };
 
 struct esp_mail_smtp_send_capability_t
 {
-    char text[12];
+    char text[15];
 };
 
 const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM =
@@ -878,7 +878,7 @@ const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_cap
         "AUTH=XOAUTH2",
         "CRAM-MD5",
         "DIGEST-MD5",
-        "" /* Log in */
+        "DUMMY_AUTH" /* Log in */
         "STARTTLS",
         "SASL-IR"
 

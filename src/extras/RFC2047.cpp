@@ -65,12 +65,15 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
 
   char *p = safe_strdup(s);
   char *pp = p;
+  char *end = p;
   char *pd = d;
   size_t len = dlen;
   int enc = 0, filter = 0, count = 0, c1, c2, c3, c4;
 
-  while ((pp = strsep(&p, "?")) != NULL)
+  while (pp != NULL)
   {
+
+    strsep(&end, "?");
     count++;
     switch (count)
     {
@@ -145,12 +148,14 @@ void RFC2047_Decoder::rfc2047DecodeWord(char *d, const char *s, size_t dlen)
       }
       break;
     }
-    pp = 0;
+    
+    pp = end;
   }
+
   mbfs->delP(&p);
+
   if (filter)
   {
-
     pd = d;
     while (*pd)
     {

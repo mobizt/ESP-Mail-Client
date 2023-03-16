@@ -173,6 +173,11 @@ void setup()
     if (!smtp.connect(&config))
         return;
 
+    if (smtp.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
+
     // Please don't forget to change sender@xxxxxx.com to your email
     if (smtp.sendCustomCommand(F("MAIL FROM:<sender@xxxxxx.com>"), customCommandCallback) != 250)
     {
