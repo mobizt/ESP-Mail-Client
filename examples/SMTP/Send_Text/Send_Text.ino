@@ -87,10 +87,6 @@ void smtpCallback(SMTP_Status status);
 WiFiMulti multi;
 #endif
 
-// For Free Heap checking
-#include "HeapStat.h"
-HeapStat heapInfo;
-
 void setup()
 {
 
@@ -304,12 +300,6 @@ void setup()
 
   // to clear sending result log
   // smtp.sendingResult.clear();
-
-  // Collect memory info
-  heapInfo.collect();
-
-  // Print memory info
-  heapInfo.print();
 }
 
 void loop()
