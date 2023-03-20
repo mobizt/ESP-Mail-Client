@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 15, 2023
+ * Created March 20, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -367,6 +367,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 {
     imap->checkUID();
     imap->checkPath();
+    imap->_cbData._success = false;
 
     if (!imap->_tcpConnected)
         imap->_mailboxOpened = false;
@@ -465,6 +466,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         {
             command = esp_mail_imap_tag_str;
 
+#if !defined(SILENT_MODE)
             printDebug((void *)(imap),
                        false,
                        esp_mail_cb_str_18 /* "Searching messages..." */,
@@ -472,6 +474,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                        esp_mail_debug_tag_type_client,
                        true,
                        false);
+
+#endif
 
             MB_String uidStr, newStr;
             appendSpace(uidStr, false, imap_commands[esp_mail_imap_command_uid].text);
@@ -528,6 +532,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, closeSession))
                 return false;
 
+#if !defined(SILENT_MODE)
             if (imap->_readCallback)
             {
                 callBackSendNewLine((void *)imap, false, false);
@@ -543,12 +548,14 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 else
                     sendCallback((void *)imap, esp_mail_error_imap_str_3 /* "no messages found for the specified search criteria" */, false, false, false);
             }
+#endif
         }
         else
         {
+#if !defined(SILENT_MODE)
             if (imap->_readCallback)
                 sendCallback((void *)imap, esp_mail_error_imap_str_4 /* "no search criteria provided, then fetching the latest message" */, false, false, false);
-
+#endif
             imap->_mbif._availableItems++;
 
             esp_mail_imap_msg_num_t msg_num;
@@ -609,6 +616,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         }
 #endif
 
+#if !defined(SILENT_MODE)
         if (imap->_readCallback)
         {
             readCount++;
@@ -623,6 +631,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_37 /* "send IMAP command, FETCH" */, esp_mail_debug_tag_type_client, true);
+#endif
 
         MB_String cmd;
         appendHeadersFetchCommand(imap, cmd, i, true);
@@ -659,8 +668,10 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             // Reset attachment state if it was set by "multipart/mixed" content type header
             cHeader(imap)->hasAttachment = false;
 
+#if !defined(SILENT_MODE)
             if (imap->_debug)
                 debugPrintNewLine();
+#endif
 
             // multipart
             if (cHeader(imap)->multipart)
@@ -701,6 +712,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 if (!mbfs->longNameSupported())
                     imap->_sdFileList = esp_mail_str_40; /* "[" */
 
+#if !defined(SILENT_MODE)
+
                 if (cHeader(imap)->attachment_count > 0 && imap->_readCallback)
                 {
                     int bufLen = 100;
@@ -726,6 +739,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                         }
                     }
                 }
+
+#endif
 
                 MB_String s1, s2;
                 int _idx1 = 0;
@@ -790,6 +805,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                         if (!ret)
                             continue;
 
+#if !defined(SILENT_MODE)
+
                         if ((imap->_imap_data->download.rfc822 && rfc822_body_subtype) || (!rfc822_body_subtype && ((cPart(imap)->msg_type == esp_mail_msg_type_html && imap->_imap_data->download.html) || ((cPart(imap)->msg_type == esp_mail_msg_type_plain || cPart(imap)->msg_type == esp_mail_msg_type_enriched) && imap->_imap_data->download.text))))
                         {
 
@@ -820,6 +837,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                             }
                         }
 
+#endif
+
                         ccnt++;
 
                         if (!sendIMAPCommand(imap, i, esp_mail_imap_cmd_fetch_body_text))
@@ -834,6 +853,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
                         if (cPart(imap)->is_firmware_file || (imap->_imap_data->download.attachment && cPart(imap)->attach_type == esp_mail_att_type_attachment) || (imap->_imap_data->download.inlineImg && cPart(imap)->attach_type == esp_mail_att_type_inline))
                         {
+#if !defined(SILENT_MODE)
                             if (cPart(imap)->save_to_file)
                             {
 
@@ -859,6 +879,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                     esp_mail_debug_print_tag(filePath.c_str(), esp_mail_debug_tag_type_client, true);
                                 }
                             }
+#endif
 
                             attach_count++;
 
@@ -894,10 +915,12 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
             if (imap->_storageReady && imap->_imap_data->download.header && !imap->_headerSaved)
             {
+#if !defined(SILENT_MODE)
                 if (imap->_readCallback)
                     sendCallback((void *)imap, esp_mail_cb_str_21 /* "Saving message header to file..." */, false, true, false);
                 else if (imap->_debug)
                     debugPrintNewLine();
+#endif
 
                 saveHeader(imap, false);
                 saveHeader(imap, true);
@@ -917,13 +940,14 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
             imap->_cMsgIdx++;
         }
-
+#if !defined(SILENT_MODE)
         if (imap->_debug)
         {
             MB_String str = esp_mail_str_55; /* "Free Heap: " */
             str += MailClient.getFreeHeap();
             esp_mail_debug_print_tag(str.c_str(), esp_mail_debug_tag_type_client, true);
         }
+#endif
     }
 #if defined(MB_ARDUINO_ESP)
 out:
@@ -941,7 +965,7 @@ out:
     }
     else
     {
-
+#if !defined(SILENT_MODE)
         printDebug((void *)(imap),
                    false,
                    esp_mail_cb_str_46 /* "Finished reading Email" */,
@@ -949,10 +973,15 @@ out:
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
+#endif
     }
 
+    imap->_cbData._success = true;
+
+#if !defined(SILENT_MODE)
     if (imap->_readCallback)
         callBackSendNewLine((void *)imap, false, true);
+#endif
 
     return true;
 }
@@ -963,10 +992,10 @@ void ESP_Mail_Client::appendHeadersFetchCommand(IMAPSession *imap, MB_String &cm
         appendSpace(cmd, true, 2, imap_commands[esp_mail_imap_command_uid].text, imap_commands[esp_mail_imap_command_fetch].text);
     else
         appendSpace(cmd, true, imap_commands[esp_mail_imap_command_fetch].text);
-
+#if !defined(SILENT_MODE)
     if (debug && imap->_debug)
         esp_mail_debug_print_tag(esp_mail_dbg_str_26 /* "fetch message header" */, esp_mail_debug_tag_type_client, true);
-
+#endif
     joinStringSpace(cmd, false, 2, MB_String((int)imap->_imap_msg_num[index].value).c_str(), imap_commands[esp_mail_imap_command_body].text);
 
     if (!imap->_imap_data->fetch.set_seen)
@@ -1132,9 +1161,11 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
 
 void ESP_Mail_Client::printBodyPartFechingDubug(IMAPSession *imap, const char *partNum, bool multiLevel)
 {
+#if !defined(SILENT_MODE)
     MB_String str = multiLevel ? esp_mail_dbg_str_28 /* "fetch body sub part header, " */ : esp_mail_dbg_str_27; /* "fetch body part header, " */
     str += partNum;
     esp_mail_debug_print_tag(str.c_str(), esp_mail_debug_tag_type_client, true);
+#endif
 }
 
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
@@ -1151,6 +1182,7 @@ non_authenticated:
     // start TLS when needed or the server issues
     if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS) && !ssl)
     {
+#if !defined(SILENT_MODE)
         printDebug((void *)(imap),
                    false,
                    esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
@@ -1158,6 +1190,7 @@ non_authenticated:
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
+#endif
 
         imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_starttls].text).c_str(), true);
 
@@ -1166,8 +1199,10 @@ non_authenticated:
         if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
             return false;
 
+#if !defined(SILENT_MODE)
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+#endif
 
         // connect in secure mode
         // do TLS handshake
@@ -1200,10 +1235,12 @@ non_authenticated:
     // rfc4959
     if (supported_sasl)
     {
+#if !defined(SILENT_MODE)
         if (imap->_readCallback)
             sendCallback((void *)imap, esp_mail_cb_str_14 /* "Logging in..." */, false, true, false);
         else if (imap->_debug)
             debugPrintNewLine();
+#endif
     }
 
     if (sasl_auth_oauth)
@@ -1215,8 +1252,10 @@ non_authenticated:
             return false;
         }
 
+#if !defined(SILENT_MODE)
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_45 /* "send IMAP command, AUTH XOAUTH2" */, esp_mail_debug_tag_type_client, true);
+#endif
 
         MB_String cmd;
         joinStringSpace(cmd, true, 2, imap_commands[esp_mail_imap_command_authenticate].text, imap_commands[esp_mail_imap_command_xoauth2].text);
@@ -1249,8 +1288,10 @@ non_authenticated:
     else if (sasl_auth_plain)
     {
 
+#if !defined(SILENT_MODE)
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_44 /* "send IMAP command, AUTHENTICATE PLAIN" */, esp_mail_debug_tag_type_client, true);
+#endif
 
         int len = imap->_session_cfg->login.email.length() + imap->_session_cfg->login.password.length() + 2;
         uint8_t *tmp = allocMem<uint8_t *>(len);
@@ -1298,9 +1339,10 @@ non_authenticated:
     else if (sasl_login)
     {
 
+#if !defined(SILENT_MODE)
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_34 /* "send IMAP command, LOGIN" */, esp_mail_debug_tag_type_client, true);
-
+#endif
         MB_String cmd;
         joinStringSpace(cmd, true, 3, imap_commands[esp_mail_imap_command_login].text, imap->_session_cfg->login.email.c_str(), imap->_session_cfg->login.password.c_str());
 
@@ -1333,6 +1375,7 @@ non_authenticated:
 
 bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 {
+#if !defined(SILENT_MODE)
     printDebug((void *)(imap),
                false,
                esp_mail_cb_str_20 /* "Logging out..." */,
@@ -1340,7 +1383,7 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
                esp_mail_debug_tag_type_client,
                true,
                false);
-
+#endif
     if (imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_logout].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
@@ -1350,6 +1393,7 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 
     imap->_authenticated = false;
 
+#if !defined(SILENT_MODE)
     printDebug((void *)(imap),
                false,
                esp_mail_cb_str_47 /* "Message fetching cmpleted" */,
@@ -1357,18 +1401,21 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
                esp_mail_debug_tag_type_client,
                true,
                false);
-
+#endif
     return true;
 }
 
 void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error)
 {
     imap->_imapStatus.statusCode = error;
+    imap->_imapStatus.clear();
+#if !defined(SILENT_MODE)
     if (imap->_readCallback && !imap->_customCmdResCallback)
         imapErrorCB(imap, imap->errorReason().c_str(), false, false);
 
     if (imap->_debug && !imap->_customCmdResCallback)
         esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
+#endif
 }
 
 size_t ESP_Mail_Client::imapSend(IMAPSession *imap, PGM_P data, bool newline)
@@ -1463,6 +1510,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
 
     if (imap->_currentFolder.length() == 0)
     {
+#if !defined(SILENT_MODE)
         printDebug((void *)(imap),
                    false,
                    esp_mail_error_imap_str_5 /* "no mailbox opened" */,
@@ -1470,6 +1518,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
+#endif
     }
     else
     {
@@ -1480,6 +1529,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
         }
     }
 
+#if !defined(SILENT_MODE)
     PGM_P p1 = NULL;
     PGM_P p2 = NULL;
     if (type == esp_mail_imap_store_flag_type_set)
@@ -1505,6 +1555,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
                esp_mail_debug_tag_type_client,
                true,
                false);
+#endif
 
     MB_String cmd;
     if (UID)
@@ -1543,9 +1594,11 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
 
 void ESP_Mail_Client::imapErrorCB(IMAPSession *imap, PGM_P info, bool prependCRLF, bool success)
 {
+#if !defined(SILENT_MODE)
     MB_String e = esp_mail_str_12;
     e += info;
     sendCallback((void *)imap, e.c_str(), false, prependCRLF, success);
+#endif
 }
 
 int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key)
@@ -2526,8 +2579,10 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
             }
             else
             {
+#if !defined(SILENT_MODE)
                 if (imap->_debug)
                     esp_mail_debug_print_tag(esp_mail_error_network_str_10 /* "response read timed out" */, esp_mail_debug_tag_type_error, true);
+#endif
             }
 
             return false;
@@ -2612,8 +2667,10 @@ void ESP_Mail_Client::checkTLSAlert(IMAPSession *imap, const char *response)
         {
             if (imap->_debug)
             {
+#if !defined(SILENT_MODE)
                 esp_mail_debug_print_tag(esp_mail_error_ssl_str_2 /* "the alert SSL record received" */, esp_mail_debug_tag_type_error, true);
                 esp_mail_debug_print_tag(esp_mail_error_ssl_str_3 /* "make sure the SSL/TLS handshake was done before sending the data" */, esp_mail_debug_tag_type_error, true);
+#endif
             }
         }
     }
@@ -2993,11 +3050,15 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         else
             imap->_imapStatus.statusCode = IMAP_STATUS_NO_MESSAGE;
 
+#if !defined(SILENT_MODE)
+
         if (imap->_readCallback && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_mime)
             imapErrorCB(imap, imap->errorReason().c_str(), false, false);
 
         if (imap->_debug && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_mime)
             esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
+
+#endif
 
         return false;
     }
@@ -3255,12 +3316,14 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap, bool json)
     int sz = mbfs->open(headerFilePath, mbfs_type imap->_imap_data->storage.type, mb_fs_open_mode_write);
     if (sz < 0)
     {
+        imap->_imapStatus.statusCode = sz;
+        imap->_imapStatus.text.clear();
+#if !defined(SILENT_MODE)
         if (imap->_debug)
         {
-            imap->_imapStatus.statusCode = sz;
-            imap->_imapStatus.text.clear();
             esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
         }
+#endif
         return;
     }
 
@@ -3937,13 +4000,18 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             {
                 cPart(imap)->is_firmware_file = Update.begin(cPart(imap)->attach_data_size);
 
+                if (!cPart(imap)->is_firmware_file)
+                {
+                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED;
+                    imap->_imapStatus.text.clear();
+                }
+
+#if !defined(SILENT_MODE)
+
                 sendCallback((void *)imap, esp_mail_cb_str_42 /* "Updating firmware..." */, false, true, false);
 
                 if (!cPart(imap)->is_firmware_file)
                 {
-                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED;
-                    imap->_imapStatus.text = esp_mail_error_imap_str_11; /* "firmware update initialization failed" */
-
                     printDebug((void *)(imap),
                                false,
                                imap->errorReason().c_str(),
@@ -3952,6 +4020,8 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                                true,
                                false);
                 }
+
+#endif
             }
 #endif
 
@@ -3978,6 +4048,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                     {
                         imap->_imapStatus.statusCode = sz;
                         imap->_imapStatus.text.clear();
+#if !defined(SILENT_MODE)
                         printDebug((void *)(imap),
                                    false,
                                    imap->errorReason().c_str(),
@@ -3985,6 +4056,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                                    esp_mail_debug_tag_type_error,
                                    true,
                                    false);
+#endif
                     }
 
                     cPart(imap)->file_open_write = true;
@@ -4118,17 +4190,10 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             {
                 cPart(imap)->is_firmware_file = false;
 
-                if (fw_write_error)
-                {
-                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED;
-                    imap->_imapStatus.text = esp_mail_error_imap_str_12; /* "firmware update write failed" */
-                }
-                else
-                {
-                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
-                    imap->_imapStatus.text = esp_mail_error_imap_str_13; /* "firmware update finalize failed" */
-                }
+                imap->_imapStatus.statusCode = fw_write_error ? IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED : IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
+                imap->_imapStatus.text.clear();
 
+#if !defined(SILENT_MODE)
                 printDebug((void *)(imap),
                            false,
                            imap->_imapStatus.text.c_str(),
@@ -4136,6 +4201,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
                            esp_mail_debug_tag_type_error,
                            !imap->_debug,
                            false);
+#endif
             }
         }
 #endif
@@ -4155,9 +4221,11 @@ void ESP_Mail_Client::downloadReport(IMAPSession *imap, int progress)
 
 void ESP_Mail_Client::fetchReport(IMAPSession *imap, int progress, bool download)
 {
+#if !defined(SILENT_MODE)
     if (imap->_debug && imap->_lastProgress == -1 && strcmp_P(cPart(imap)->filename.c_str(), esp_mail_str_84 /* "message" */) != 0)
         esp_mail_debug_print_tag(cPart(imap)->filename.c_str(), esp_mail_debug_tag_type_client, true);
     printProgress(progress, imap->_lastProgress);
+#endif
 }
 
 void ESP_Mail_Client::searchReport(IMAPSession *imap, int progress)
@@ -4222,9 +4290,10 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                 {
                     imap->_imapStatus.statusCode = sz;
                     imap->_imapStatus.text.clear();
-
+#if !defined(SILENT_MODE)
                     if (imap->_debug)
                         esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
+#endif
                 }
             }
 
@@ -4232,8 +4301,10 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
         }
         else
         {
+#if !defined(SILENT_MODE)
             if (imap->_debug)
                 esp_mail_debug_print_tag(esp_mail_error_imap_str_8 /* "no centent" */, esp_mail_debug_tag_type_client, false);
+#endif
         }
     }
 
@@ -4499,6 +4570,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_
 {
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
+#if !defined(SILENT_MODE)
     if (imap->_debug)
     {
         MB_String e;
@@ -4508,6 +4580,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_
             e = esp_mail_error_mem_str_2; /* "SD Storage is not ready." */
         esp_mail_debug_print_tag(e.c_str(), esp_mail_debug_tag_type_error, true);
     }
+#endif
 #endif
 }
 
@@ -4644,7 +4717,7 @@ void IMAPSession::appendIdList(MB_String &list, IMAP_Identification *identificat
 
 bool IMAPSession::id(IMAP_Identification *identification)
 {
-
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_61 /* "Send client identification..." */,
@@ -4652,10 +4725,12 @@ bool IMAPSession::id(IMAP_Identification *identification)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     if (!_read_capability[esp_mail_imap_read_capability_id])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -4773,8 +4848,10 @@ bool IMAPSession::connect(bool &ssl)
     bool secureMode = true;
 
 #if defined(ESP32) && defined(ESP32_TCP_CLIENT)
+#if !defined(SILENT_MODE)
     if (_debug && !_customCmdResCallback)
         client.setDebugCallback(esp_mail_debug_print_tag);
+#endif
 #elif (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && defined(ESP8266_TCP_CLIENT)
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
     client.rxBufDivider = 1;
@@ -4787,7 +4864,9 @@ bool IMAPSession::connect(bool &ssl)
 
     MailClient.preparePortFunction(_session_cfg, false, _secure, secureMode, ssl);
 
+#if !defined(SILENT_MODE)
     MailClient.printLibInfo((void *)(this), false);
+#endif
 
     MailClient.prepareTime(_session_cfg, (void *)(this), false);
 
@@ -4839,6 +4918,7 @@ bool IMAPSession::connect(bool &ssl)
 
     if (!_customCmdResCallback)
     {
+#if !defined(SILENT_MODE)
         MailClient.printDebug((void *)(this),
                               false,
                               esp_mail_cb_str_48 /* "IMAP server connected" */,
@@ -4846,6 +4926,7 @@ bool IMAPSession::connect(bool &ssl)
                               esp_mail_debug_tag_type_client,
                               true,
                               false);
+#endif
     }
 
     return true;
@@ -4884,7 +4965,13 @@ bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
         _currentFolder = folderName;
     }
 
-    return true;
+    if (!_tcpConnected)
+    {
+        _imapStatus.statusCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
+        _imapStatus.clear();
+    }
+
+    return _tcpConnected;
 }
 
 void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)
@@ -4942,7 +5029,12 @@ void IMAPSession::setNetworkStatus(bool status)
 bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
 {
     if (!_tcpConnected)
+    {
+        _imapStatus.statusCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
+        _imapStatus.clear();
         return false;
+    }
+
     if (readOnly)
         return openMailbox(folderName, esp_mail_imap_auth_mode::esp_mail_imap_mode_examine, true, false);
     else
@@ -4961,6 +5053,7 @@ bool IMAPSession::mCloseFolder(bool expunge)
 
     if (_currentFolder.length() == 0)
     {
+#if !defined(SILENT_MODE)
         MailClient.printDebug((void *)(this),
                               false,
                               esp_mail_error_imap_str_5 /* "no mailbox opened" */,
@@ -4968,7 +5061,7 @@ bool IMAPSession::mCloseFolder(bool expunge)
                               esp_mail_debug_tag_type_client,
                               true,
                               false);
-
+#endif
         return false;
     }
 
@@ -4980,7 +5073,9 @@ bool IMAPSession::mListen(bool recon)
     // no folder opened or IDLE was not supported
     if (!_read_capability[esp_mail_imap_read_capability_idle])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
     }
 
     if (_currentFolder.length() == 0 || !_read_capability[esp_mail_imap_read_capability_idle])
@@ -5026,6 +5121,7 @@ bool IMAPSession::mListen(bool recon)
         _mbif._recentCount = 0;
         _mbif._folderChanged = false;
 
+#if !defined(SILENT_MODE)
         MB_String dbMsg;
 
         if (!recon)
@@ -5043,6 +5139,8 @@ bool IMAPSession::mListen(bool recon)
                                   false);
         }
 
+#endif
+
         if (MailClient.imapSend(this, prependTag(imap_commands[esp_mail_imap_command_idle].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
@@ -5050,6 +5148,7 @@ bool IMAPSession::mListen(bool recon)
         if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
             return false;
 
+#if !defined(SILENT_MODE)
         if (!recon)
         {
 
@@ -5063,6 +5162,8 @@ bool IMAPSession::mListen(bool recon)
                                   true,
                                   false);
         }
+
+#endif
 
         _mbif._idleTimeMs = millis();
     }
@@ -5128,6 +5229,7 @@ bool IMAPSession::mStopListen(bool recon)
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return false;
 
+#if !defined(SILENT_MODE)
     if (!recon)
     {
         MailClient.printDebug((void *)(this),
@@ -5138,6 +5240,7 @@ bool IMAPSession::mStopListen(bool recon)
                               true,
                               false);
     }
+#endif
 
     return true;
 }
@@ -5366,7 +5469,7 @@ void IMAPSession::getRFC822Messages(uint16_t messageIndex, struct esp_mail_imap_
 
 bool IMAPSession::closeMailbox(bool expunge)
 {
-
+#if !defined(SILENT_MODE)
     MB_String dbMsg = esp_mail_dbg_str_32; /* "closing the " */
     dbMsg += _currentFolder;
     dbMsg += esp_mail_str_89; /* " folder..." */
@@ -5378,7 +5481,7 @@ bool IMAPSession::closeMailbox(bool expunge)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     if (!MailClient.reconnect(this))
         return false;
 
@@ -5457,6 +5560,7 @@ bool IMAPSession::openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode,
         if (!sameFolder)
             _currentFolder = folder;
 
+#if !defined(SILENT_MODE)
         MB_String dbMsg = esp_mail_dbg_str_68; /* "selecting the " */
         dbMsg += _currentFolder;
         dbMsg += esp_mail_str_89; /* " folder..." */
@@ -5468,6 +5572,7 @@ bool IMAPSession::openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode,
                               esp_mail_debug_tag_type_client,
                               true,
                               false);
+#endif
     }
     else
     {
@@ -5513,6 +5618,7 @@ bool IMAPSession::openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode,
 
 bool IMAPSession::getMailboxes(FoldersCollection &folders)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_16 /* "Reading the list of mailboxes..." */,
@@ -5520,7 +5626,7 @@ bool IMAPSession::getMailboxes(FoldersCollection &folders)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     _folders.clear();
 
     MB_String cmd;
@@ -5541,6 +5647,7 @@ bool IMAPSession::getMailboxes(FoldersCollection &folders)
 
 bool IMAPSession::mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr mailbox, FoldersCollection &folders)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_30 /* "Listing the subscribed mailboxes..." */,
@@ -5548,7 +5655,7 @@ bool IMAPSession::mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr m
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     folders.clear();
 
     MB_String cmd;
@@ -5586,6 +5693,7 @@ bool IMAPSession::mGetSubscribesMailboxes(MB_StringPtr reference, MB_StringPtr m
 
 bool IMAPSession::mSubscribe(MB_StringPtr folder)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_31 /* "Subscribe mailbox..." */,
@@ -5593,7 +5701,7 @@ bool IMAPSession::mSubscribe(MB_StringPtr folder)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String cmd;
     MailClient.appendSpace(cmd, true, imap_commands[esp_mail_imap_command_subscribe].text);
     MailClient.appendString(cmd, MB_String(folder).c_str(), false, false, esp_mail_string_mark_type_double_quote);
@@ -5610,6 +5718,7 @@ bool IMAPSession::mSubscribe(MB_StringPtr folder)
 
 bool IMAPSession::mUnSubscribe(MB_StringPtr folder)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_32 /* "Unsubscribe mailbox..." */,
@@ -5617,7 +5726,7 @@ bool IMAPSession::mUnSubscribe(MB_StringPtr folder)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String cmd;
     MailClient.appendSpace(cmd, true, imap_commands[esp_mail_imap_command_unsubscribe].text);
     MailClient.appendString(cmd, MB_String(folder).c_str(), false, false, esp_mail_string_mark_type_double_quote);
@@ -5666,6 +5775,7 @@ MB_String IMAPSession::prependTag(PGM_P cmd, PGM_P tag)
 
 bool IMAPSession::checkCapabilities()
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_52 /* "Checking the capability..." */,
@@ -5673,7 +5783,7 @@ bool IMAPSession::checkCapabilities()
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     if (MailClient.imapSend(this, prependTag(imap_commands[esp_mail_imap_command_capability].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
@@ -5686,6 +5796,7 @@ bool IMAPSession::checkCapabilities()
 
 bool IMAPSession::mCreateFolder(MB_StringPtr folderName)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_59 /* "Creating folder..." */,
@@ -5693,7 +5804,7 @@ bool IMAPSession::mCreateFolder(MB_StringPtr folderName)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String cmd;
     MailClient.joinStringSpace(cmd, true, 2, imap_commands[esp_mail_imap_command_create].text, folderName);
 
@@ -5709,6 +5820,7 @@ bool IMAPSession::mCreateFolder(MB_StringPtr folderName)
 
 bool IMAPSession::mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr newFolderName)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_53 /* "Renaming folder..." */,
@@ -5716,7 +5828,7 @@ bool IMAPSession::mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr new
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String o = currentFolderName;
     MB_String n = newFolderName;
 
@@ -5750,6 +5862,7 @@ bool IMAPSession::mRenameFolder(MB_StringPtr currentFolderName, MB_StringPtr new
 
 int IMAPSession::getUID(int msgNum)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_25 /* "Get UID..." */,
@@ -5757,9 +5870,10 @@ int IMAPSession::getUID(int msgNum)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     int uid = mGetUID(msgNum);
 
+#if !defined(SILENT_MODE)
     MB_String dbMsg = esp_mail_cb_str_54; /* "UID is " */
     dbMsg += uid;
 
@@ -5770,7 +5884,7 @@ int IMAPSession::getUID(int msgNum)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     return uid;
 }
 
@@ -5795,6 +5909,7 @@ int IMAPSession::mGetUID(int msgNum)
 
 const char *IMAPSession::getFlags(int msgNum)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_55 /* "Get Flags..." */,
@@ -5802,6 +5917,7 @@ const char *IMAPSession::getFlags(int msgNum)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     _flags_tmp.clear();
     if (_currentFolder.length() == 0)
@@ -5955,6 +6071,7 @@ bool IMAPSession::mSendData(uint8_t *data, size_t size, bool lastData, esp_mail_
 
 bool IMAPSession::mDeleteFolder(MB_StringPtr folderName)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_56 /* "Deleting folder..." */,
@@ -5962,7 +6079,7 @@ bool IMAPSession::mDeleteFolder(MB_StringPtr folderName)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String cmd;
     MailClient.joinStringSpace(cmd, true, 2, imap_commands[esp_mail_imap_command_delete].text, MB_String(folderName).c_str());
 
@@ -5984,6 +6101,7 @@ bool IMAPSession::deleteMsg(MessageList *toDelete, const char *sequenceSet, bool
     if (!selectFolder(_currentFolder.c_str(), false))
         return false;
 
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_57 /* "Deleting message(s)..." */,
@@ -5991,7 +6109,7 @@ bool IMAPSession::deleteMsg(MessageList *toDelete, const char *sequenceSet, bool
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     MB_String cmd;
     if (UID || toDelete)
     {
@@ -6045,7 +6163,7 @@ bool IMAPSession::mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool ex
 
 bool IMAPSession::copyMsg(MessageList *toCopy, const char *sequenceSet, bool UID, MB_StringPtr dest)
 {
-
+#if !defined(SILENT_MODE)
     MB_String dbMsg = esp_mail_dbg_str_48; /* "copying message(s) to " */
     dbMsg += dest;
 
@@ -6056,7 +6174,7 @@ bool IMAPSession::copyMsg(MessageList *toCopy, const char *sequenceSet, bool UID
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     if ((toCopy && toCopy->_list.size() == 0) || (!toCopy && strlen(sequenceSet) == 0))
         return false;
 
@@ -6101,6 +6219,7 @@ bool IMAPSession::mCopyMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_String
 
 bool IMAPSession::moveMsg(MessageList *toMove, const char *sequenceSet, bool UID, MB_StringPtr dest)
 {
+#if !defined(SILENT_MODE)
     MB_String dbMsg = esp_mail_dbg_str_59; /* "moving message(s) to " */
     dbMsg += dest;
 
@@ -6111,7 +6230,7 @@ bool IMAPSession::moveMsg(MessageList *toMove, const char *sequenceSet, bool UID
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
-
+#endif
     if ((toMove && toMove->_list.size() == 0) || (!toMove && strlen(sequenceSet) == 0))
         return false;
 
@@ -6167,6 +6286,7 @@ bool IMAPSession::mMoveMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_String
 bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *data, bool getMode)
 {
 
+#if !defined(SILENT_MODE)
     PGM_P p1 = getMode ? esp_mail_cb_str_33 /* "Get quota root resource usage and limit..." */ : esp_mail_cb_str_34 /* "Set quota root resource usage and limit..." */;
     PGM_P p2 = getMode ? esp_mail_dbg_str_60 /* "send IMAP command, GETQUOTA" */ : esp_mail_dbg_str_61 /* "send IMAP command, SETQUOTA" */;
 
@@ -6177,10 +6297,13 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     if (!_read_capability[esp_mail_imap_read_capability_quota])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -6235,6 +6358,7 @@ void IMAPSession::mParseQuota(MB_String &quota, IMAP_Quota_Root_Info *data)
 
 bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *quotaRootsList)
 {
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_35 /* "Get the list of quota roots..." */,
@@ -6242,10 +6366,13 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     if (!_read_capability[esp_mail_imap_read_capability_quota])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -6290,6 +6417,7 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
 bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, IMAP_Rights_Info *acl, MB_StringPtr identifier, esp_mail_imap_command type)
 {
 
+#if !defined(SILENT_MODE)
     PGM_P p1 = NULL;
     PGM_P p2 = NULL;
     if (type == esp_mail_imap_cmd_get_acl)
@@ -6320,10 +6448,13 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     if (!_read_capability[esp_mail_imap_read_capability_acl])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -6460,6 +6591,8 @@ void IMAPSession::getRights(MB_String &righs_str, IMAP_Rights_Info *info)
 
 bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
 {
+
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_40 /* "Get namespace..." */,
@@ -6467,10 +6600,13 @@ bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     if (!_read_capability[esp_mail_imap_read_capability_namespace])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -6516,6 +6652,8 @@ bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
 
 bool IMAPSession::mEnable(MB_StringPtr capability)
 {
+
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_cb_str_41 /* "Enable capability..." */,
@@ -6523,10 +6661,13 @@ bool IMAPSession::mEnable(MB_StringPtr capability)
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     if (!_read_capability[esp_mail_imap_read_capability_enable])
     {
+#if !defined(SILENT_MODE)
         printDebugNotSupported();
+#endif
         return false;
     }
 
@@ -6575,6 +6716,11 @@ void IMAPSession::empty()
     clearMessageData();
 }
 
+IMAP_Status IMAPSession::status()
+{
+    return _cbData;
+}
+
 String IMAPSession::fileList()
 {
     return _sdFileList.c_str();
@@ -6600,6 +6746,8 @@ void IMAPSession::clearMessageData()
 
 void IMAPSession::printDebugNotSupported()
 {
+
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
                           esp_mail_error_imap_str_14 /* "not supported by IMAP server" */,
@@ -6607,6 +6755,7 @@ void IMAPSession::printDebugNotSupported()
                           esp_mail_debug_tag_type_error,
                           true,
                           false);
+#endif
 }
 
 IMAP_Status::IMAP_Status()

@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 16, 2023
+ * Created March 20, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -70,7 +70,8 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp, bool &ssl)
 
 non_authenticated:
 
-    // Sending greeting helo response
+// Sending greeting helo response
+#if !defined(SILENT_MODE)
     printDebug((void *)(smtp),
                true,
                esp_mail_cb_str_3 /* "Sending greeting response..." */,
@@ -78,6 +79,7 @@ non_authenticated:
                esp_mail_debug_tag_type_client,
                true,
                false);
+#endif
 
     // Extended HELLO (EHLO) or HELLO (HELO) was used to identify Client (ourself)
 
@@ -126,7 +128,8 @@ non_authenticated:
     // rfc3207
     if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS) && !ssl)
     {
-        // send starttls command
+// send starttls command
+#if !defined(SILENT_MODE)
         printDebug((void *)(smtp),
                    true,
                    esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
@@ -134,6 +137,7 @@ non_authenticated:
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
+#endif
 
         // expected status code 250 for complete the request
         // some server returns 220 to restart to initial state
@@ -142,8 +146,10 @@ non_authenticated:
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
             return false;
 
+#if !defined(SILENT_MODE)
         if (smtp->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+#endif
 
         // connect in secure mode
         // do TLS handshake
@@ -167,15 +173,18 @@ non_authenticated:
 
     if (sasl_auth_oauth || sasl_login || sasl_auth_plain)
     {
+#if !defined(SILENT_MODE)
         if (smtp->_sendCallback)
             smtpCB(smtp, esp_mail_cb_str_14 /* "Logging in..." */, true, false);
+#endif
 
         // log in
         if (sasl_auth_oauth)
         {
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
                 esp_mail_debug_print_tag(esp_mail_dbg_str_15 /* "send smtp command, AUTH XOAUTH2" */, esp_mail_debug_tag_type_client, true);
-
+#endif
             if (!smtp->_auth_capability[esp_mail_auth_capability_xoauth2])
                 return handleSMTPError(smtp, SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
 
@@ -194,7 +203,7 @@ non_authenticated:
         }
         else if (sasl_auth_plain)
         {
-
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
             {
                 esp_mail_debug_print_tag(esp_mail_dbg_str_7 /* "send SMTP command, AUTH PLAIN" */, esp_mail_debug_tag_type_client, true);
@@ -203,7 +212,7 @@ non_authenticated:
                 maskString(mask, smtp->_session_cfg->login.password.length());
                 esp_mail_debug_print_tag(mask.c_str(), esp_mail_debug_tag_type_client, true);
             }
-
+#endif
             // rfc4616
             int len = smtp->_session_cfg->login.email.length() + smtp->_session_cfg->login.password.length() + 2;
             uint8_t *tmp = allocMem<uint8_t *>(len);
@@ -229,9 +238,10 @@ non_authenticated:
         }
         else if (sasl_login)
         {
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
                 esp_mail_debug_print_tag(esp_mail_dbg_str_6 /* "send SMTP command, AUTH LOGIN" */, esp_mail_debug_tag_type_client, true);
-
+#endif
             MB_String cmd;
             joinStringSpace(cmd, false, 2, smtp_commands[esp_mail_smtp_command_auth].text, smtp_commands[esp_mail_smtp_command_login].text);
 
@@ -241,22 +251,24 @@ non_authenticated:
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
                 return false;
 
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
                 esp_mail_debug_print_tag(smtp->_session_cfg->login.email.c_str(), esp_mail_debug_tag_type_client, true);
-
+#endif
             if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_session_cfg->login.email.c_str(), smtp->_session_cfg->login.email.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_user, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
                 return false;
 
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
             {
                 MB_String mask;
                 maskString(mask, smtp->_session_cfg->login.password.length());
                 esp_mail_debug_print_tag(mask.c_str(), esp_mail_debug_tag_type_client, true);
             }
-
+#endif
             if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_session_cfg->login.password.c_str(), smtp->_session_cfg->login.password.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
@@ -293,6 +305,7 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
     status.recipients = msg->_rcp[0].email.c_str();
     smtp->sendingResult.add(&status);
 
+#if !defined(SILENT_MODE)
     if (smtp->_sendCallback)
     {
 
@@ -326,6 +339,7 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
             freeMem(&buf);
         }
     }
+#endif
 
     return result;
 }
@@ -404,6 +418,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     smtp->_smtpStatus.statusCode = 0;
     smtp->_smtpStatus.respCode = 0;
     smtp->_smtpStatus.text.clear();
+    smtp->_cbData._success = false;
     bool rfc822MSG = false;
 
     if (!checkEmail(smtp, msg))
@@ -435,7 +450,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     else
     {
         // reuse session
-
+#if !defined(SILENT_MODE)
         PGM_P p1 = smtp->_sentSuccessCount || smtp->_sentFailedCount ? esp_mail_cb_str_10 /* "Sending next Email..." */ : esp_mail_cb_str_9 /* "Sending Email..." */;
         PGM_P p2 = smtp->_sentSuccessCount || smtp->_sentFailedCount ? esp_mail_dbg_str_13 /* "send next Email" */ : esp_mail_dbg_str_3 /* "send Email" */;
 
@@ -446,8 +461,10 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
+#endif
     }
 
+#if !defined(SILENT_MODE)
     printDebug((void *)(smtp),
                true,
                esp_mail_cb_str_4 /* "Sending message header..." */,
@@ -455,6 +472,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
                esp_mail_debug_tag_type_client,
                true,
                false);
+#endif
 
     imap = nullptr;
     calDataLen = false;
@@ -641,8 +659,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
                 return false;
         }
 
+#if !defined(SILENT_MODE)
         altSendCallback(smtp, esp_mail_cb_str_5 /* "Sending message body..." */, esp_mail_dbg_str_9 /* "send message body" */, esp_mail_debug_tag_type_client, true, false);
-
+#endif
         if (smtp->_send_capability[esp_mail_smtp_send_capability_chunking] && msg->enable.chunking)
         {
             smtp->_chunkedEnable = true;
@@ -657,7 +676,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         }
     }
 
-#if defined(ENABLE_IMAP)
+#if defined(ENABLE_IMAP) && !defined(SILENT_MODE)
     if (imap)
         altSendCallback(smtp, esp_mail_cb_str_14 /* "Appending message..." */, esp_mail_dbg_str_69 /* "appending message" */, esp_mail_debug_tag_type_client, true, false);
 
@@ -772,6 +791,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
 void ESP_Mail_Client::altSendCallback(SMTPSession *smtp, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success)
 {
+#if !defined(SILENT_MODE)
     if (smtp)
         printDebug((void *)(smtp), true, cbMsg, dbMsg, type, prependCRLF, success);
     else if (imap && !calDataLen)
@@ -780,6 +800,7 @@ void ESP_Mail_Client::altSendCallback(SMTPSession *smtp, PGM_P cbMsg, PGM_P dbMs
         printDebug((void *)(imap), false, cbMsg, dbMsg, type, prependCRLF, success);
 #endif
     }
+#endif
 }
 
 bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool closeSession, bool rfc822MSG)
@@ -825,8 +846,9 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
         if (!altSendData(str, false, smtp, msg, true, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
             return false;
 
+#if !defined(SILENT_MODE)
         altSendCallback(smtp, esp_mail_cb_str_6 /* "Sending attachments..." */, esp_mail_dbg_str_10 /* "send attachments" */, esp_mail_debug_tag_type_client, true, false);
-
+#endif
         if (!sendAttachments(smtp, msg, mixed))
             return addSendingResult(smtp, msg, false, true);
 
@@ -848,9 +870,9 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
     if (!rfc822MSG && !imap && smtp)
     {
-
-        altSendCallback(smtp, esp_mail_cb_str_11 /* "Finishing the message sending..." */, esp_mail_dbg_str_17 /* "finishing the message sending" */, esp_mail_debug_tag_type_client, true, false);
-
+#if !defined(SILENT_MODE)
+        altSendCallback(smtp, esp_mail_cb_str_11 /* "Finishing the message sending..." */, esp_mail_dbg_str_16 /* "finishing the message sending" */, esp_mail_debug_tag_type_client, true, false);
+#endif
         if (smtp->_chunkedEnable)
         {
 
@@ -876,6 +898,7 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
         }
     }
 
+    smtp->_cbData._success = true;
     return true;
 }
 
@@ -1313,9 +1336,9 @@ bool ESP_Mail_Client::sendAttachments(SMTPSession *smtp, SMTP_Message *msg, cons
 
         if (att->_int.att_type == esp_mail_att_type_attachment)
         {
-
+#if !defined(SILENT_MODE)
             altSendCallback(smtp, att->descr.filename.c_str(), att->descr.filename.c_str(), esp_mail_debug_tag_type_client, true, false);
-
+#endif
             cnt++;
 
             if (att->file.storage_type == esp_mail_file_storage_type_none)
@@ -1393,26 +1416,31 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
 
     if (smtp)
     {
+        smtp->_smtpStatus.statusCode = err;
+        smtp->_smtpStatus.text.clear();
+
+#if !defined(SILENT_MODE)
         if (smtp->_sendCallback)
             esp_mail_debug_print_tag(esp_mail_error_mem_str_6 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
 
         if (smtp->_debug)
         {
-            smtp->_smtpStatus.statusCode = err;
-            smtp->_smtpStatus.text.clear();
+
             esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
         }
+#endif
     }
     else if (imap && !calDataLen)
     {
-#if defined(ENABLE_IMAP)
+        imap->_imapStatus.statusCode = err;
+        imap->_imapStatus.text.clear();
+
+#if defined(ENABLE_IMAP) && !defined(SILENT_MODE)
         if (imap->_readCallback)
             esp_mail_debug_print_tag(esp_mail_error_mem_str_6 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
 
         if (imap->_debug)
         {
-            imap->_imapStatus.statusCode = err;
-            imap->_imapStatus.text.clear();
             esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
         }
 #endif
@@ -1498,6 +1526,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 
+#if !defined(SILENT_MODE)
     if (altIsCB(smtp))
     {
         if (storageType == esp_mail_file_storage_type_flash)
@@ -1523,6 +1552,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(SMTPSession *smtp, esp_mail_file_
         else if (storageType == esp_mail_file_storage_type_sd)
             esp_mail_debug_print_tag(esp_mail_error_mem_str_2 /* "SD Storage is not ready." */, esp_mail_debug_tag_type_error, true);
     }
+#endif
 
 #endif
 }
@@ -1531,9 +1561,10 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
 {
     size_t num = numAtt(smtp, esp_mail_att_type_inline, msg) > 0;
 
+#if !defined(SILENT_MODE)
     if (num > 0)
         altSendCallback(smtp, esp_mail_cb_str_8 /* "Sending inline data..." */, esp_mail_dbg_str_14 /* "send inline data" */, esp_mail_debug_tag_type_client, true, false);
-
+#endif
     MB_String buf;
     MB_String related = getMIMEBoundary(15);
     int cnt = 0;
@@ -1554,10 +1585,12 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
     if (!sendPartText(smtp, msg, type, related.c_str()))
         return false;
 
+#if !defined(SILENT_MODE)
     bool cb = altIsCB(smtp);
 
     if (cb && numAtt(smtp, esp_mail_att_type_inline, msg) > 0)
         esp_mail_debug_print();
+#endif
 
     if (num > 0)
     {
@@ -1566,8 +1599,9 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
             att = &msg->_att[i];
             if (att->_int.att_type == esp_mail_att_type_inline)
             {
+#if !defined(SILENT_MODE)
                 altSendCallback(smtp, att->descr.filename.c_str(), att->descr.filename.c_str(), esp_mail_debug_tag_type_client, true, false);
-
+#endif
                 cnt++;
 
                 if (att->file.storage_type == esp_mail_file_storage_type_none)
@@ -1577,9 +1611,9 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
 
                     if (att->blob.size == 0)
                         continue;
-
+#if !defined(SILENT_MODE)
                     altSendCallback(smtp, att->descr.filename.c_str(), att->descr.filename.c_str(), esp_mail_debug_tag_type_client, true, false);
-
+#endif
                     buf.clear();
                     getAttachHeader(buf, related, att, att->blob.size, true);
 
@@ -1666,20 +1700,26 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
 
     if (smtp)
     {
+#if !defined(SILENT_MODE)
         if (smtp->_sendCallback && !smtp->_customCmdResCallback)
             smtpErrorCB(smtp, smtp->errorReason().c_str(), false, false);
 
         if (smtp->_debug && !smtp->_customCmdResCallback)
             esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
+#endif
     }
     else if (imap && !calDataLen)
     {
 #if defined(ENABLE_IMAP)
+
+#if !defined(SILENT_MODE)
         if (imap->_readCallback && !imap->_customCmdResCallback)
             imapErrorCB(imap, imap->errorReason().c_str(), false);
 
         if (imap->_debug && !imap->_customCmdResCallback)
             esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
+#endif
+
 #endif
     }
 }
@@ -1713,8 +1753,10 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, PGM_P data, bool newline)
 
     int toSend = newline ? s.length() + 2 : s.length();
 
+#if !defined(SILENT_MODE)
     if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_maintener)
         esp_mail_debug_print(s.c_str(), newline);
+#endif
 
     sent = newline ? smtp->client.println(s.c_str()) : smtp->client.print(s.c_str());
 
@@ -2597,9 +2639,11 @@ void ESP_Mail_Client::smtpCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bo
 
 void ESP_Mail_Client::smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bool success)
 {
+#if !defined(SILENT_MODE)
     MB_String e = esp_mail_str_12;
     e += info;
     smtpCB(smtp, e.c_str(), prependCRLF, success);
+#endif
 }
 
 uint32_t ESP_Mail_Client::altProgressPtr(SMTPSession *smtp)
@@ -2691,11 +2735,13 @@ void ESP_Mail_Client::checkTLSAlert(SMTPSession *smtp, const char *response)
 
         if (proto == (int)esp_mail_protocol_ssl || proto == (int)esp_mail_protocol_tls)
         {
+#if !defined(SILENT_MODE)
             if (smtp->_debug)
             {
                 esp_mail_debug_print_tag(esp_mail_error_ssl_str_2 /* "the alert SSL record received" */, esp_mail_debug_tag_type_error, true);
                 esp_mail_debug_print_tag(esp_mail_error_ssl_str_3 /* "make sure the SSL/TLS handshake was done before sending the data" */, esp_mail_debug_tag_type_error, true);
             }
+#endif
         }
     }
 }
@@ -2807,9 +2853,10 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                                 memset(response, 0, chunkBufSize);
                                 strcpy(response, r.c_str());
                             }
-
+#if !defined(SILENT_MODE)
                             if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_basic)
                                 esp_mail_debug_print((const char *)response, true);
+#endif
                         }
 
                         if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_greeting)
@@ -2823,8 +2870,11 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
                     if (status.respCode == 0 && smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
                     {
+
+#if !defined(SILENT_MODE)
                         if (!smtp->client.tlsErr() && smtp->_debug && !smtp->_customCmdResCallback)
                             esp_mail_debug_print_tag(response, esp_mail_debug_tag_type_server, true);
+#endif
 
                         memset(response, 0, chunkBufSize + 1);
 
@@ -2842,30 +2892,34 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     if (status.respCode > 0 && (status.respCode < 400 || status.respCode == respCode))
                         ret = true;
 
-                    if (smtp->_debug && strlen(response) >= minResLen)
+                    if (strlen(response) >= minResLen)
                     {
-
-                        if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback)
+#if !defined(SILENT_MODE)
+                        if (smtp->_debug)
                         {
-                            appendDebugTag(s, esp_mail_debug_tag_type_server, true);
-                            if (smtp->_smtpStatus.respCode != esp_mail_smtp_status_code_334)
-                                s += response;
-                            else
+                            if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback)
                             {
-                                // base64 response
-                                size_t olen = 0;
-                                char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
-                                if (decoded && olen > 0)
+                                appendDebugTag(s, esp_mail_debug_tag_type_server, true);
+                                if (smtp->_smtpStatus.respCode != esp_mail_smtp_status_code_334)
+                                    s += response;
+                                else
                                 {
-                                    s.append(decoded, olen);
-                                }
+                                    // base64 response
+                                    size_t olen = 0;
+                                    char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
+                                    if (decoded && olen > 0)
+                                    {
+                                        s.append(decoded, olen);
+                                    }
 
-                                // release memory
-                                freeMem(&decoded);
+                                    // release memory
+                                    freeMem(&decoded);
+                                }
+                                esp_mail_debug_print(s.c_str(), true);
                             }
-                            esp_mail_debug_print(s.c_str(), true);
                         }
 
+#endif
                         r.clear();
                     }
 
@@ -3363,7 +3417,9 @@ bool SMTPSession::connect(bool &ssl)
 
     MailClient.preparePortFunction(_session_cfg, true, _secure, secureMode, ssl);
 
+#if !defined(SILENT_MODE)
     MailClient.printLibInfo((void *)(this), true);
+#endif
 
     MailClient.prepareTime(_session_cfg, (void *)(this), true);
 
@@ -3376,6 +3432,7 @@ bool SMTPSession::connect(bool &ssl)
 
     // server connected
     _tcpConnected = true;
+#if !defined(SILENT_MODE)
     if (!_customCmdResCallback)
     {
 
@@ -3387,6 +3444,7 @@ bool SMTPSession::connect(bool &ssl)
                               true,
                               false);
     }
+#endif
 
     client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 
@@ -3509,6 +3567,7 @@ bool SMTPSession::closeSession()
     _cbData._sentSuccess = _sentSuccessCount;
     _cbData._sentFailed = _sentFailedCount;
 
+#if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           true,
                           esp_mail_cb_str_7 /* "Closing the session..." */,
@@ -3516,6 +3575,7 @@ bool SMTPSession::closeSession()
                           esp_mail_debug_tag_type_client,
                           true,
                           false);
+#endif
 
     bool ret = true;
 
@@ -3540,6 +3600,7 @@ bool SMTPSession::closeSession()
         if (ret)
         {
 
+#if !defined(SILENT_MODE)
             if (_sentSuccessCount > 0)
             {
                 MailClient.printDebug((void *)(this),
@@ -3553,13 +3614,17 @@ bool SMTPSession::closeSession()
 
             if (_sendCallback)
                 MailClient.callBackSendNewLine((void *)this, true, true);
+#endif
 
             _authenticated = false;
             _waitForAuthenticate = false;
         }
     }
 
-    sendingResult.clear();
+#if !defined(SILENT_MODE)
+    if (_sendCallback)
+        sendingResult.clear();
+#endif
 
     return MailClient.handleSMTPError(this, 0, ret);
 }
@@ -3572,6 +3637,11 @@ bool SMTPSession::connected()
 void SMTPSession::callback(smtpStatusCallback smtpCallback)
 {
     _sendCallback = smtpCallback;
+}
+
+SMTP_Status SMTPSession::status()
+{
+    return _cbData;
 }
 
 void SMTPSession::setSystemTime(time_t ts)

@@ -754,8 +754,7 @@ const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxT
         "iso-8859-1",
         "iso-8859-11",
         "tis-620",
-        "windows-874"
-};
+        "windows-874"};
 
 struct esp_mail_multipart_t
 {
@@ -2429,6 +2428,8 @@ private:
 };
 
 static const char esp_mail_imap_tag_str[] PROGMEM = "xmail";
+
+#if !defined(SILENT_MODE)
 static const char esp_mail_version_str[] PROGMEM = "ESP Mail Client v";
 
 /////////////////////////
@@ -2451,8 +2452,7 @@ static const char esp_mail_dbg_str_12[] PROGMEM = "message sent successfully";
 static const char esp_mail_dbg_str_13[] PROGMEM = "send next Email";
 static const char esp_mail_dbg_str_14[] PROGMEM = "send inline data";
 static const char esp_mail_dbg_str_15[] PROGMEM = "send smtp command, AUTH XOAUTH2";
-static const char esp_mail_dbg_str_16[] PROGMEM = "OAuth2.0 log in was disabled for this server";
-static const char esp_mail_dbg_str_17[] PROGMEM = "finishing the message sending";
+static const char esp_mail_dbg_str_16[] PROGMEM = "finishing the message sending";
 #endif
 
 /////////////////////////
@@ -2602,6 +2602,8 @@ static const char esp_mail_cb_str_60[] PROGMEM = "Moving message(s)...";
 static const char esp_mail_cb_str_61[] PROGMEM = "Send client identification...";
 #endif
 
+#endif
+
 /////////////////////////
 // Mem error string
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
@@ -2651,6 +2653,7 @@ static const char esp_mail_error_ssl_str_3[] PROGMEM = "make sure the SSL/TLS ha
 /////////////////////////
 // Auth error string
 static const char esp_mail_error_auth_str_1[] PROGMEM = "the provided SASL authentication mechanism is not support";
+static const char esp_mail_error_auth_str_2[] PROGMEM = "OAuth2.0 log in was disabled for this server";
 
 /////////////////////////
 // SMTP error string

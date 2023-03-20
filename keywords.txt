@@ -145,7 +145,8 @@ addAP   KEYWORD2
 isFirmwareUpdated   KEYWORD2
 id  KEYWORD2
 serverID    KEYWORD2
-
+fileList    KEYWORD2
+status  KEYWORD2
 
 #######################################
 # Struct (KEYWORD3)

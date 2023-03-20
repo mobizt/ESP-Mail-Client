@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.8
+ * ESP32 TCP Client Library v2.0.9
  *
- * Created March 12, 2023
+ * Created March 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -227,6 +227,7 @@ bool ESP32_TCP_Client::isInitialized()
     if (!network_connection_cb || !network_status_cb || upgradeRequired)
     {
         rdy = false;
+#if !defined(SILENT_MODE)
         if (wcs->debugLevel > 0)
         {
             if (!network_connection_cb)
@@ -238,6 +239,7 @@ bool ESP32_TCP_Client::isInitialized()
             if (upgradeRequired)
                 esp_mail_debug_print_tag(esp_mail_error_client_str_5 /* "client connection upgrade callback (for TLS handshake) is required" */, esp_mail_debug_tag_type_error, true);
         }
+#endif
     }
 
     return rdy;
@@ -279,24 +281,30 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     // no client assigned?
     if (!wcs->_ssl->client)
     {
+#if !defined(SILENT_MODE)
         if (wcs->debugLevel > 0)
             esp_mail_debug_print_tag(esp_mail_error_client_str_1 /* "client and/or necessary callback functions are not yet assigned" */, esp_mail_debug_tag_type_error, true);
+#endif
         return false;
     }
 
     // no client type assigned?
     if (wcs->ext_client_type == esp_mail_external_client_type_none)
     {
+#if !defined(SILENT_MODE)
         if (wcs->debugLevel > 0)
             esp_mail_debug_print_tag(esp_mail_error_client_str_4 /* "the client type must be provided, see example" */, esp_mail_debug_tag_type_error, true);
+#endif
         return false;
     }
 
     // plain text via ssl client?
     if (!secured && wcs->ext_client_type == esp_mail_external_client_type_ssl)
     {
+#if !defined(SILENT_MODE)
         if (wcs->debugLevel > 0)
             esp_mail_debug_print_tag(esp_mail_error_client_str_3 /* "simple Client is required" */, esp_mail_debug_tag_type_error, true);
+#endif
         return false;
     }
 

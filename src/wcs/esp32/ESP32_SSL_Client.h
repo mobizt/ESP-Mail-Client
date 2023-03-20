@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.4
+ * ESP32 SSL Client v2.0.5
  *
- * Created March 12, 2023
+ * Created March 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -47,6 +47,7 @@
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/error.h"
 
+#if !defined(SILENT_MODE)
 static const char esp_ssl_client_str_1[] PROGMEM = "Skipping SSL Verification. INSECURE!";
 static const char esp_ssl_client_str_2[] PROGMEM = "starting socket";
 static const char esp_ssl_client_str_3[] PROGMEM = "opening socket";
@@ -74,7 +75,7 @@ static const char esp_ssl_client_str_24[] PROGMEM = "invalid hex sequence";
 static const char esp_ssl_client_str_25[] PROGMEM = "could not fetch peer certificate";
 static const char esp_ssl_client_str_26[] PROGMEM = "fingerprint doesn't match";
 static const char esp_ssl_client_str_27[] PROGMEM = "SSL/TLS negotiation";
-
+#endif
 
 typedef void (*_ConnectionRequestCallback)(const char *, int);
 

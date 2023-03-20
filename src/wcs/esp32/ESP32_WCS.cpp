@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.2
+ * ESP32 WiFi Client Secure v2.0.3
  *
- * Created March 12, 2023
+ * Created March 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -223,7 +223,9 @@ int ESP32_WCS::connect(const char *host, uint16_t port, const char *CA_cert, con
     _lastError = ret;
     if (ret < 0)
     {
+#if !defined(SILENT_MODE)
         log_e("ESP32_WCS Error: upgrade connection, %d", ret);
+#endif
         stop();
         return 0;
     }
@@ -241,7 +243,9 @@ int ESP32_WCS::connect(const char *host, uint16_t port, const char *pskIdent, co
 
     _withKey = true;
 
+#if !defined(SILENT_MODE)
     log_v("ESP32_WCS connect with PSK");
+#endif
 
     if (!_connect(host, port))
         return 0;
@@ -264,7 +268,10 @@ int ESP32_WCS::connect(const char *host, uint16_t port, const char *pskIdent, co
     _lastError = ret;
     if (ret < 0)
     {
+
+#if !defined(SILENT_MODE)
         log_e("ESP32_WCS Error: upgrade connection, %d", ret);
+#endif
         stop();
         return 0;
     }
@@ -289,7 +296,10 @@ bool ESP32_WCS::connectSSL(bool verify)
     _lastError = ret;
     if (ret < 0)
     {
+
+#if !defined(SILENT_MODE)
         log_e("ESP32_WCS Error: upgrade connection, %d", ret);
+#endif
         stop();
         return 0;
     }

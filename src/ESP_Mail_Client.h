@@ -1401,7 +1401,7 @@ private:
    *
    * @author Ondřej Hruška <ondra@ondrovo.com>
    * https://gist.github.com/MightyPork/52eda3e5677b4b03524e40c9f0ab1da5
-   * 
+   *
    * @license MIT
    *
    * @param out - output buffer (min 5 characters), will be 0-terminated
@@ -2061,6 +2061,12 @@ public:
    */
   void empty();
 
+  /** Get the status of message fetching and searching.
+   * 
+   * @return The IMAP_Status object contains the fetching and searching statuses.
+   */
+  IMAP_Status status();
+
   /** Get the JSON string of file name list of files that stored in SD card.
    *
    * @return The JSON string of filenames.
@@ -2477,6 +2483,12 @@ public:
    * smtpStatusCallback param.
    */
   void callback(smtpStatusCallback smtpCallback);
+
+  /** Get the status of message fetching and searching.
+   * 
+   * @return The SMTP_Status object contains the sending status.
+   */
+  SMTP_Status status();
 
   /** Set the current timestamp.
    *

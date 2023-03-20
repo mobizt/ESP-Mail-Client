@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.2
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.3
  *
- * Created March 12, 2023
+ * Created March 20, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -258,8 +258,10 @@ namespace BearSSL
     {
         if (!base_client)
         {
+#if !defined(SILENT_MODE)
             if (debugLevel > 0)
                 esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
+#endif
             return 0;
         }
 
@@ -291,8 +293,10 @@ namespace BearSSL
     {
         if (!base_client)
         {
+#if !defined(SILENT_MODE)
             if (debugLevel > 0)
                 esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
+#endif
             return 0;
         }
 
@@ -1478,23 +1482,29 @@ namespace BearSSL
     // Returns if the SSL handshake succeeded.
     bool ESP8266_SSL_Client::_connectSSL(const char *hostName)
     {
+#if !defined(SILENT_MODE)
         if (debugLevel > 0)
         {
             esp_mail_debug_print("", true);
             esp_mail_debug_print_tag(esp_ssl_client_str_1, esp_mail_debug_tag_type_client, true);
         }
+#endif
 
         if (!base_client)
         {
+#if !defined(SILENT_MODE)
             if (debugLevel > 0)
                 esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
+#endif
             return false;
         }
 
         if (!_clientConnected())
         {
+#if !defined(SILENT_MODE)
             if (debugLevel > 0)
                 esp_mail_debug_print_tag(esp_mail_error_network_str_2 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
+#endif
             return false;
         }
 

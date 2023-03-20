@@ -1116,7 +1116,6 @@ IMAP_MSG_List data();
 
 
 
-
 #### Get the details of the selected or opned mailbox folder
 
 return **`The SelectedFolderInfo class`** instance which contains the info about flags, total messages, next UID,  
@@ -1150,6 +1149,25 @@ void empty();
 
 
 
+#### Get the status of message fetching and searching.
+  
+return **`IMAP_Status`** The IMAP_Status object contains the fetching and searching statuses.
+
+```cpp
+IMAP_Status status();
+```
+
+
+
+#### Get the JSON string of file name list of files that stored in SD card.
+
+return **`The JSON string`** of filenames.
+
+note This will available only when standard SD library was used and file storage is SD.
+
+```cpp
+String fileList();
+```
 
 
 ## SMTPSession class functions
@@ -1381,8 +1399,13 @@ void callback(smtpStatusCallback smtpCallback);
 ```
 
 
+#### Get the status of message fetching and searching.
 
+return **`SMTP_Status`** The SMTP_Status object contains the sending status.
 
+```cpp
+SMTP_Status status();
+```
 
 ## SMTP_Message class functions
 

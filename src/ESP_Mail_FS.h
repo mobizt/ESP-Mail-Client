@@ -8,6 +8,9 @@
 #include <Arduino.h>
 #include "extras/MB_MCU.h"
 
+/* 📌 Enable silent mode (no debug printing and callback) */
+// #define SILENT_MODE
+
 /* 📌 Enable IMAP class compilation option */
 #define ENABLE_IMAP // comment this line to disable or exclude it
 

@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.2
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.3
  *
- * Created March 12, 2023
+ * Created March 20, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -68,7 +68,9 @@
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE) && !defined(USING_AXTLS)
 
+#if !defined(SILENT_MODE)
 static const char esp_ssl_client_str_1[] PROGMEM = "SSL/TLS negotiation";
+#endif
 
 #include <vector>
 #include <bearssl/bearssl.h>
