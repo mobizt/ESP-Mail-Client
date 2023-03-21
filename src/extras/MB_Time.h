@@ -81,7 +81,9 @@
 #define MB_TIME_PGM_ATTR PROGMEM
 #endif
 
+#if !defined(MB_ARDUINO_ESP)
 static const char *mb_months[12] MB_TIME_PGM_ATTR = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+#endif
 
 class MB_Time
 {
