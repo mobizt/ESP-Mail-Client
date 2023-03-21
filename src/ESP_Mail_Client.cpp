@@ -1380,7 +1380,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   {
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
-    ret += esp_mail_error_session_str_1; /* "the session config was not assigned" */
+    ret += esp_mail_error_session_str_1; /* "the Session_Config object was not assigned" */
     break;
 #endif
 #if defined(ENABLE_SMTP)
@@ -1427,7 +1427,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     ret += esp_mail_error_auth_str_1; /* "the provided SASL authentication mechanism is not support" */
     break;
   case IMAP_STATUS_SMTP_SESSION_WAS_NOT_ASSIGNED:
-    ret += esp_mail_error_session_str_2; /* "the SMTP session was not assigned" */
+    ret += esp_mail_error_session_str_2; /* "the SMTPSession object was not assigned" */
     break;
 #endif
 
@@ -1469,7 +1469,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     ret += esp_mail_error_imap_str_13; /* "firmware update finalize failed" */
     break;
   case IMAP_STATUS_IMAP_SESSION_WAS_NOT_ASSIGNED:
-    ret += esp_mail_error_session_str_3; /* "the IMAP session was not assigned" */
+    ret += esp_mail_error_session_str_3; /* "the IMAPSession object was not assigned" */
     break;
 #endif
 
