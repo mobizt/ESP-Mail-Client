@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 20, 2023
+ * Created March 21, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -305,13 +305,12 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
     status.recipients = msg->_rcp[0].email.c_str();
     smtp->sendingResult.add(&status);
 
+    smtp->_cbData._sentSuccess = smtp->_sentSuccessCount;
+    smtp->_cbData._sentFailed = smtp->_sentFailedCount;
+
 #if !defined(SILENT_MODE)
     if (smtp->_sendCallback)
     {
-
-        smtp->_cbData._sentSuccess = smtp->_sentSuccessCount;
-        smtp->_cbData._sentFailed = smtp->_sentFailedCount;
-
         if (showResult)
         {
             int bufLen = 512;
@@ -366,7 +365,7 @@ void ESP_Mail_Client::saveSendingLogs(SMTPSession *smtp, SMTP_Message *msg, bool
 
 bool ESP_Mail_Client::sendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession)
 {
-    if (!smtp)
+    if (!smtp || !sessionExisted((void *)smtp, true))
         return false;
 
     smtp->_customCmdResCallback = NULL;
@@ -3338,6 +3337,9 @@ bool SMTPSession::connect(Session_Config *session_config)
 
     if (!handleConnection(session_config, ssl))
         return false;
+
+    int ptr = toAddr(*session_config);
+    session_config->addPtr(&_configPtrList, ptr);
 
     return MailClient.smtpAuth(this, ssl);
 }

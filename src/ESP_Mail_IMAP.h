@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 20, 2023
+ * Created March 21, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -365,6 +365,9 @@ bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_
 
 bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 {
+    if (!imap || !sessionExisted((void *)imap, false))
+        return false;
+
     imap->checkUID();
     imap->checkPath();
     imap->_cbData._success = false;
@@ -1171,6 +1174,9 @@ void ESP_Mail_Client::printBodyPartFechingDubug(IMAPSession *imap, const char *p
 bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 {
 
+    if (!sessionExisted((void *)imap, false))
+        return false;
+
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
 
 non_authenticated:
@@ -1375,6 +1381,10 @@ non_authenticated:
 
 bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 {
+
+    if (!sessionExisted((void *)imap, false))
+        return false;
+
 #if !defined(SILENT_MODE)
     printDebug((void *)(imap),
                false,
@@ -1556,6 +1566,9 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
                true,
                false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
 
     MB_String cmd;
     if (UID)
@@ -2554,6 +2567,7 @@ char *ESP_Mail_Client::urlDecode(const char *str)
 
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
+
     imap->client.setSession(imap->_session_cfg);
     networkStatus = imap->client.networkReady();
 
@@ -4642,6 +4656,9 @@ bool IMAPSession::connect(Session_Config *session_config, IMAP_Data *imap_data)
     if (!handleConnection(session_config, imap_data, ssl))
         return false;
 
+    int ptr = toAddr(*session_config);
+    session_config->addPtr(&_configPtrList, ptr);
+
     return MailClient.imapAuth(this, ssl);
 }
 
@@ -5070,6 +5087,9 @@ bool IMAPSession::mCloseFolder(bool expunge)
 
 bool IMAPSession::mListen(bool recon)
 {
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
     // no folder opened or IDLE was not supported
     if (!_read_capability[esp_mail_imap_read_capability_idle])
     {
@@ -5090,7 +5110,7 @@ bool IMAPSession::mListen(bool recon)
 
     if (!_tcpConnected)
     {
-        if (!_session_cfg || !_imap_data)
+        if (!_imap_data)
             return false;
 
         bool ssl = false;
@@ -5528,6 +5548,9 @@ bool IMAPSession::closeMailbox(bool expunge)
 
 bool IMAPSession::openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse, bool unselect)
 {
+    
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
 
     MB_String _folder = folder;
 
@@ -5873,6 +5896,9 @@ int IMAPSession::getUID(int msgNum)
 #endif
     int uid = mGetUID(msgNum);
 
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
 #if !defined(SILENT_MODE)
     MB_String dbMsg = esp_mail_cb_str_54; /* "UID is " */
     dbMsg += uid;
@@ -6110,6 +6136,10 @@ bool IMAPSession::deleteMsg(MessageList *toDelete, const char *sequenceSet, bool
                           true,
                           false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
     MB_String cmd;
     if (UID || toDelete)
     {
@@ -6175,6 +6205,10 @@ bool IMAPSession::copyMsg(MessageList *toCopy, const char *sequenceSet, bool UID
                           true,
                           false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
     if ((toCopy && toCopy->_list.size() == 0) || (!toCopy && strlen(sequenceSet) == 0))
         return false;
 
@@ -6231,6 +6265,10 @@ bool IMAPSession::moveMsg(MessageList *toMove, const char *sequenceSet, bool UID
                           true,
                           false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
     if ((toMove && toMove->_list.size() == 0) || (!toMove && strlen(sequenceSet) == 0))
         return false;
 
@@ -6368,6 +6406,9 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
                           false);
 #endif
 
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
     if (!_read_capability[esp_mail_imap_read_capability_quota])
     {
 #if !defined(SILENT_MODE)
@@ -6449,6 +6490,9 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
                           true,
                           false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
 
     if (!_read_capability[esp_mail_imap_read_capability_acl])
     {
@@ -6601,6 +6645,9 @@ bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
                           true,
                           false);
 #endif
+
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
 
     if (!_read_capability[esp_mail_imap_read_capability_namespace])
     {

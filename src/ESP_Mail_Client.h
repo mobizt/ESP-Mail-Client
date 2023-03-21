@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 13, 2023
+ * Created March 21, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1081,6 +1081,9 @@ private:
   // Get TZ environment variable from file
   void getTimezone(const char *TZ_file, MB_String &out);
 
+  // Check the session existent
+  bool sessionExisted(void *sessionPtr, bool isSMTP);
+
   // Send SMTP/IMAP callback
   void sendCallback(void *sessionPtr, PGM_P info, bool isSMTP, bool prependCRLF, bool success);
 
@@ -2062,7 +2065,7 @@ public:
   void empty();
 
   /** Get the status of message fetching and searching.
-   * 
+   *
    * @return The IMAP_Status object contains the fetching and searching statuses.
    */
   IMAP_Status status();
@@ -2261,6 +2264,7 @@ private:
   bool _auth_capability[esp_mail_auth_capability_maxType];
   bool _read_capability[esp_mail_imap_read_capability_maxType];
   Session_Config *_session_cfg;
+   MB_List<int> _configPtrList;
   MB_String _currentFolder;
   bool _mailboxOpened = false;
   unsigned long _lastSameFolderOpenMillis = 0;
@@ -2485,7 +2489,7 @@ public:
   void callback(smtpStatusCallback smtpCallback);
 
   /** Get the status of message fetching and searching.
-   * 
+   *
    * @return The SMTP_Status object contains the sending status.
    */
   SMTP_Status status();
@@ -2515,6 +2519,7 @@ private:
   bool _send_capability[esp_mail_smtp_send_capability_maxType];
 
   Session_Config *_session_cfg = NULL;
+  MB_List<int> _configPtrList;
 
   bool _debug = false;
   int _debugLevel = 0;

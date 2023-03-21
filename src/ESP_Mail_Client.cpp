@@ -4,7 +4,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 13, 2023
+ * Created March 21, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -157,6 +157,62 @@ int ESP_Mail_Client::getFreeHeap()
 }
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
+bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
+{
+
+  Session_Config *config = nullptr;
+  MB_List<int> *configPtrList = nullptr;
+
+  if (isSMTP)
+  {
+#if defined(ENABLE_SMTP)
+    SMTPSession *smtp = (SMTPSession *)sessionPtr;
+    config = smtp->_session_cfg;
+    configPtrList = &smtp->_configPtrList;
+#endif
+  }
+  else
+  {
+#if defined(ENABLE_IMAP)
+    IMAPSession *imap = (IMAPSession *)sessionPtr;
+    config = imap->_session_cfg;
+    configPtrList = &imap->_configPtrList;
+#endif
+  }
+
+  if (config)
+  {
+    int ptr = toAddr(*config);
+
+    for (size_t i = 0; i < configPtrList->size(); i++)
+    {
+      if ((*configPtrList)[i] == ptr)
+        return true;
+    }
+
+    if (isSMTP)
+    {
+#if defined(ENABLE_SMTP)
+      SMTPSession *smtp = (SMTPSession *)sessionPtr;
+      smtp->closeSession();
+      smtp->_smtpStatus.statusCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
+      smtp->_smtpStatus.text.clear();
+#endif
+    }
+    else
+    {
+#if defined(ENABLE_IMAP)
+      IMAPSession *imap = (IMAPSession *)sessionPtr;
+      imap->closeSession();
+      imap->_imapStatus.statusCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
+      imap->_imapStatus.text.clear();
+#endif
+    }
+  }
+
+  return false;
+}
 
 void ESP_Mail_Client::debugPrintNewLine()
 {
@@ -619,6 +675,9 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   calDataLen = true;
   dataLen = 0;
   imap_ts = 0;
+
+  if (!sessionExisted((void *)imap, false))
+    return false;
 
   MB_String _flags = flags;
   _flags.trim();
@@ -1319,6 +1378,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
 
   switch (statusCode)
   {
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+  case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
+    ret += esp_mail_error_session_str_1; /* "the session config was not assigned" */
+    break;
+#endif
 #if defined(ENABLE_SMTP)
   case SMTP_STATUS_SERVER_CONNECT_FAILED:
     ret += esp_mail_error_network_str_2; /* "unable to connect to server" */
@@ -1362,6 +1426,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case SMTP_STATUS_NO_SUPPORTED_AUTH:
     ret += esp_mail_error_auth_str_1; /* "the provided SASL authentication mechanism is not support" */
     break;
+  case IMAP_STATUS_SMTP_SESSION_WAS_NOT_ASSIGNED:
+    ret += esp_mail_error_session_str_2; /* "the SMTP session was not assigned" */
+    break;
 #endif
 
 #if defined(ENABLE_IMAP)
@@ -1401,7 +1468,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED:
     ret += esp_mail_error_imap_str_13; /* "firmware update finalize failed" */
     break;
-
+  case IMAP_STATUS_IMAP_SESSION_WAS_NOT_ASSIGNED:
+    ret += esp_mail_error_session_str_3; /* "the IMAP session was not assigned" */
+    break;
 #endif
 
   case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
@@ -1493,6 +1562,7 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
 
     if (((SMTPSession *)sessionPtr)->client.connected())
       ((SMTPSession *)sessionPtr)->client.stop();
+
     _lastReconnectMillis = millis();
 
     ((SMTPSession *)sessionPtr)->_tcpConnected = false;

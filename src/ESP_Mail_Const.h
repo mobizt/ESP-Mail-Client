@@ -1,4 +1,4 @@
-// Created March 16, 2022
+// Created March 21, 2022
 
 #pragma once
 
@@ -2298,9 +2298,45 @@ struct esp_mail_session_config_t
 
 public:
     esp_mail_session_config_t(){};
+
     ~esp_mail_session_config_t()
     {
         clear();
+        aremovePtr();
+    }
+
+    void addPtr(MB_List<int> *listPtr, int ptr)
+    {
+        if (listPtr)
+        {
+            this->listPtr = listPtr;
+            bool existed = false;
+
+            for (size_t i = 0; i < this->listPtr->size(); i++)
+            {
+                if ((*this->listPtr)[i] == ptr)
+                    existed = true;
+            }
+
+            if (!existed)
+                this->listPtr->push_back(ptr);
+        }
+    }
+
+    void aremovePtr()
+    {
+        if (listPtr)
+        {
+            int ptr = toAddr(*this);
+            for (size_t i = 0; i < listPtr->size(); i++)
+            {
+                if ((*listPtr)[i] == ptr)
+                {
+                    listPtr->erase(listPtr->begin() + i, listPtr->begin() + i + 1);
+                    break;
+                }
+            }
+        }
     }
 
     void clear()
@@ -2331,6 +2367,7 @@ public:
 private:
     int cert_ptr = 0;
     bool cert_updated = false;
+    MB_List<int> *listPtr = nullptr;
     void clearPorts()
     {
         if (ports_functions.list)
@@ -2654,6 +2691,12 @@ static const char esp_mail_error_ssl_str_3[] PROGMEM = "make sure the SSL/TLS ha
 // Auth error string
 static const char esp_mail_error_auth_str_1[] PROGMEM = "the provided SASL authentication mechanism is not support";
 static const char esp_mail_error_auth_str_2[] PROGMEM = "OAuth2.0 log in was disabled for this server";
+
+/////////////////////////
+// Session error string
+static const char esp_mail_error_session_str_1[] PROGMEM = "the Session_Config object was not assigned";
+static const char esp_mail_error_session_str_2[] PROGMEM = "the SMTPSession object was not assigned";
+static const char esp_mail_error_session_str_3[] PROGMEM = "the IMAPSession object was not assigned";
 
 /////////////////////////
 // SMTP error string
