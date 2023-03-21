@@ -549,7 +549,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                     freeMem(&buf);
                 }
                 else
-                    sendCallback((void *)imap, esp_mail_error_imap_str_3 /* "no messages found for the specified search criteria" */, false, false, false);
+                    sendCallback((void *)imap, esp_mail_error_imap_str_9 /* "no messages found for the specified search criteria" */, false, false, false);
             }
 #endif
         }
@@ -557,7 +557,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         {
 #if !defined(SILENT_MODE)
             if (imap->_readCallback)
-                sendCallback((void *)imap, esp_mail_error_imap_str_4 /* "no search criteria provided, then fetching the latest message" */, false, false, false);
+                sendCallback((void *)imap, esp_mail_error_imap_str_10 /* "no search criteria provided, then fetching the latest message" */, false, false, false);
 #endif
             imap->_mbif._availableItems++;
 
@@ -1523,8 +1523,8 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
 #if !defined(SILENT_MODE)
         printDebug((void *)(imap),
                    false,
-                   esp_mail_error_imap_str_5 /* "no mailbox opened" */,
-                   esp_mail_error_imap_str_5 /* "no mailbox opened" */,
+                   esp_mail_error_imap_str_11 /* "no mailbox opened" */,
+                   esp_mail_error_imap_str_11 /* "no mailbox opened" */,
                    esp_mail_debug_tag_type_client,
                    true,
                    false);
@@ -4317,7 +4317,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
         {
 #if !defined(SILENT_MODE)
             if (imap->_debug)
-                esp_mail_debug_print_tag(esp_mail_error_imap_str_8 /* "no centent" */, esp_mail_debug_tag_type_client, false);
+                esp_mail_debug_print_tag(esp_mail_error_imap_str_12 /* "no centent" */, esp_mail_debug_tag_type_client, false);
 #endif
         }
     }
@@ -4885,7 +4885,8 @@ bool IMAPSession::connect(bool &ssl)
     MailClient.printLibInfo((void *)(this), false);
 #endif
 
-    MailClient.prepareTime(_session_cfg, (void *)(this), false);
+    if (!MailClient.prepareTime(_session_cfg, (void *)(this), false))
+        return false;
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
     MailClient.setSecure(client, _session_cfg);
@@ -5073,8 +5074,8 @@ bool IMAPSession::mCloseFolder(bool expunge)
 #if !defined(SILENT_MODE)
         MailClient.printDebug((void *)(this),
                               false,
-                              esp_mail_error_imap_str_5 /* "no mailbox opened" */,
-                              esp_mail_error_imap_str_5 /* "no mailbox opened" */,
+                              esp_mail_error_imap_str_11 /* "no mailbox opened" */,
+                              esp_mail_error_imap_str_11 /* "no mailbox opened" */,
                               esp_mail_debug_tag_type_client,
                               true,
                               false);
@@ -5359,8 +5360,9 @@ void IMAPSession::mimeDataStreamCallback(MIMEDataStreamCallback mimeDataStreamCa
     _mimeDataStreamCallback = mimeDataStreamCallback;
 }
 
-void IMAPSession::setSystemTime(time_t ts)
+void IMAPSession::setSystemTime(time_t ts, float gmtOffset)
 {
+    MailClient.Time.TZ = gmtOffset;
     MailClient.Time.setTimestamp(ts);
 }
 
@@ -5548,7 +5550,7 @@ bool IMAPSession::closeMailbox(bool expunge)
 
 bool IMAPSession::openMailbox(MB_StringPtr folder, esp_mail_imap_auth_mode mode, bool waitResponse, bool unselect)
 {
-    
+
     if (!MailClient.sessionExisted((void *)this, false))
         return false;
 
@@ -6797,8 +6799,8 @@ void IMAPSession::printDebugNotSupported()
 #if !defined(SILENT_MODE)
     MailClient.printDebug((void *)(this),
                           false,
-                          esp_mail_error_imap_str_14 /* "not supported by IMAP server" */,
-                          esp_mail_error_imap_str_14 /* "not supported by IMAP server" */,
+                          esp_mail_error_imap_str_13 /* "not supported by IMAP server" */,
+                          esp_mail_error_imap_str_13 /* "not supported by IMAP server" */,
                           esp_mail_debug_tag_type_error,
                           true,
                           false);

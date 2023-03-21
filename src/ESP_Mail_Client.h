@@ -40,6 +40,12 @@
 #include <vector>
 #endif
 
+#if __has_include(<WiFiNINA.h>)
+#include <WiFiNINA.h>
+#elif __has_include(<WiFi101.h>)
+#include <WiFi101.h>
+#endif
+
 #include "extras/MB_Time.h"
 #include "extras/MIMEInfo.h"
 #include "ESP_Mail_Print.h"
@@ -845,11 +851,15 @@ public:
    */
   void networkReconnect(bool reconnect);
 
+#if defined(ENABLE_NTP_TIME)
+
   /** Assign UDP client and gmt offset for NTP time synching when using external SSL client
    * @param client The pointer to UDP client based on the network type.
    * @param gmtOffset The GMT time offset.
    */
   void setUDPClient(UDP *client, float gmtOffset);
+
+#endif
 
   /** Clear all WiFi access points assigned.
    *
@@ -1004,7 +1014,7 @@ private:
   bool beginConnection(Session_Config *session_config, void *sessionPtr, bool isSMTP, bool secureMode);
 
   // Prepare system time
-  void prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP);
+  bool prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   // Set cert data
@@ -1073,12 +1083,14 @@ private:
   char *strP2Lower(PGM_P pgm);
 
   // Set or sync device system time with NTP server
+  // Do not modify or remove
   void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
 
   // Set the device time zone via TZ environment variable
   void setTimezone(const char *TZ_Var, const char *TZ_file);
 
   // Get TZ environment variable from file
+  // Do not modify or remove
   void getTimezone(const char *TZ_file, MB_String &out);
 
   // Check the session existent
@@ -2080,8 +2092,9 @@ public:
   /** Set the current timestamp.
    *
    * @param ts The current timestamp.
+   * @param gmtOffset The GMT offset.
    */
-  void setSystemTime(time_t ts);
+  void setSystemTime(time_t ts, float gmtOffset = 0);
 
   friend class ESP_Mail_Client;
   friend class foldderList;
@@ -2264,7 +2277,7 @@ private:
   bool _auth_capability[esp_mail_auth_capability_maxType];
   bool _read_capability[esp_mail_imap_read_capability_maxType];
   Session_Config *_session_cfg;
-   MB_List<int> _configPtrList;
+  MB_List<int> _configPtrList;
   MB_String _currentFolder;
   bool _mailboxOpened = false;
   unsigned long _lastSameFolderOpenMillis = 0;
@@ -2497,8 +2510,9 @@ public:
   /** Set the current timestamp.
    *
    * @param ts The current timestamp.
+   * @param gmtOffset The GMT offset.
    */
-  void setSystemTime(time_t ts);
+  void setSystemTime(time_t ts, float gmtOffset = 0);
 
   SendingResult sendingResult;
 

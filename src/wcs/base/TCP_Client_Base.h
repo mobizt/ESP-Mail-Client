@@ -32,7 +32,13 @@
 #include "ESP_Mail_FS.h"
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
+
+#if defined(ESP32) && !defined(ESP_ARDUINO_VERSION) /* ESP32 core < v2.0.x */
 #include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
 #include "ESP_Mail_Const.h"
 #include <IPAddress.h>
 #include <Client.h>

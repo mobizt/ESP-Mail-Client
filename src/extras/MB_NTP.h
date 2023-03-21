@@ -1,6 +1,8 @@
 /**
  * Mobizt's UDP NTP Time Client, version 1.0.3
  *
+ * Do not remove or modify this file as it required for AVR, ARM, SAMD devices and external client to work.
+ *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
  *
@@ -27,6 +29,10 @@
 #define MB_NTP_H
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
+
+#if defined(ENABLE_NTP_TIME)
+
 #include "Udp.h"
 
 class MB_NTP
@@ -171,5 +177,7 @@ private:
         return false;
     }
 };
+
+#endif
 
 #endif

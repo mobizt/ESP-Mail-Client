@@ -1,7 +1,9 @@
 /*
- * Time helper class v1.0.4
+ * Time helper class v1.0.5
  *
- * Created March 1, 2023
+ * Created March 21, 2023
+ *
+ * Do not remove or modify this file as it required for AVR, ARM, SAMD devices and external client to work.
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -29,6 +31,7 @@
 #define MB_Time_H
 
 #include <Arduino.h>
+#include "ESP_Mail_FS.h"
 
 #if !defined(__AVR__)
 #include <vector>
@@ -56,11 +59,15 @@
 #include "MB_List.h"
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
+#if defined(ENABLE_NTP_TIME)
 #include <WiFiNTP.h>
 #endif
+#endif
 
+#if defined(ENABLE_NTP_TIME)
 #include <Udp.h>
 #include "MB_NTP.h"
+#endif
 
 #if defined(MB_ARDUINO_ARCH_SAMD) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 #include "../wcs/samd/lib/WiFiNINA.h"
@@ -74,9 +81,6 @@
 #define MB_TIME_PGM_ATTR PROGMEM
 #endif
 
-static const char *mb_months[12] MB_TIME_PGM_ATTR = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-static const char *mb_sdow[7] MB_TIME_PGM_ATTR = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
 class MB_Time
 {
 public:
@@ -86,9 +90,12 @@ public:
 
   ~MB_Time()
   {
+#if defined(ENABLE_NTP_TIME)
+
     _sv1.clear();
     _sv2.clear();
     _sv3.clear();
+
     if (useInternalUDP)
     {
 #if defined(ESP32)
@@ -96,7 +103,11 @@ public:
       udp = nullptr;
 #endif
     }
+
+#endif
   }
+
+#if defined(ENABLE_NTP_TIME)
 
   void setUDPClient(UDP *client, float gmtOffset)
   {
@@ -208,6 +219,8 @@ public:
       ntp.begin(udp, _sv1.c_str() /* NTP host */, 123 /* NTP port */, TZ * 3600 /* timezone offset in seconds */);
   }
 
+#endif
+
   int setTimestamp(time_t ts)
   {
 #if defined(MB_ARDUINO_ESP)
@@ -253,60 +266,15 @@ public:
    */
   time_t getTimestamp(const char *timeString, bool gmt = false)
   {
-    time_t ts = 0;
-    MB_VECTOR<MB_String> tk;
-    MB_String s1 = timeString;
+    struct tm _timeinfo;
 
-    splitToken(s1, tk, ' ');
-    int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
+    if (strstr(timeString, ",") != NULL)
+      strptime(timeString, "%a, %d %b %Y %H:%M:%S %z", &_timeinfo);
+    else
+      strptime(timeString, "%d %b %Y %H:%M:%S %z", &_timeinfo);
 
-    int tkindex = tk.size() == 5 ? -1 : 0; // No week days?
+    time_t ts = mktime(&_timeinfo);
 
-    // some response may include (UTC) and (ICT)
-    if (tk.size() >= 5)
-    {
-      day = atoi(tk[tkindex + 1].c_str());
-      for (size_t i = 0; i < 12; i++)
-      {
-        if (strcmp_P(mb_months[i], tk[tkindex + 2].c_str()) == 0)
-          mon = i;
-      }
-
-      // RFC 822 year to RFC 2822
-      if (tk[tkindex + 3].length() == 2)
-        tk[tkindex + 3].prepend("20");
-
-      year = atoi(tk[tkindex + 3].c_str());
-
-      MB_VECTOR<MB_String> tk2;
-      splitToken(tk[tkindex + 4], tk2, ':');
-      if (tk2.size() == 3)
-      {
-        hr = atoi(tk2[0].c_str());
-        mins = atoi(tk2[1].c_str());
-        sec = atoi(tk2[2].c_str());
-      }
-
-      ts = getTimestamp(year, mon + 1, day, hr, mins, sec);
-
-      if (tk[tkindex + 5].length() == 5 && gmt)
-      {
-        char tmp[6];
-        memset(tmp, 0, 6);
-        strncpy(tmp, tk[tkindex + 5].c_str() + 1, 2);
-        tz_h = atoi(tmp);
-
-        memset(tmp, 0, 6);
-        strncpy(tmp, tk[tkindex + 5].c_str() + 3, 2);
-        tz_m = atoi(tmp);
-
-        time_t tz = tz_h * 60 * 60 + tz_m * 60;
-        if (tk[tkindex + 5][0] == '+')
-          ts -= tz; // remove time zone offset
-        else
-          ts += tz;
-      }
-    }
     return ts;
   }
 
@@ -320,70 +288,49 @@ public:
     return sys_ts;
   }
 
-  /** Get the current date time string that valid for Email.
-   *
+  /** Get the current rfc822 date time string that valid for Email.
    * @return String The current date time string.
    */
   String getDateTimeString()
   {
     getTime();
-    MB_String s;
 
-    s = mb_sdow[timeinfo.tm_wday];
+    char tbuf[40];
+    strftime(tbuf, 40, "%a, %d %b %Y %H:%M:%S %z", &timeinfo);
+    MB_String tStr = tbuf, tzStr;
 
-    s += ',';
-    s += ' ';
-    s += timeinfo.tm_mday;
-
-    s += ' ';
-    s += mb_months[timeinfo.tm_mon];
-
-    s += ' ';
-    s += timeinfo.tm_year + 1900;
-
-    s += ' ';
-    if (timeinfo.tm_hour < 10)
-      s += 0;
-    s += timeinfo.tm_hour;
-
-    s += ':';
-    if (timeinfo.tm_min < 10)
-      s += 0;
-    s += timeinfo.tm_min;
-
-    s += ':';
-    if (timeinfo.tm_sec < 10)
-      s += 0;
-    s += timeinfo.tm_sec;
-
-    int p = 1;
-    if (TZ < 0)
-      p = -1;
-
+    int p = TZ < 0 ? -1 : 1;
     float dif = (p * (TZ * 10 - (int)TZ * 10)) * 60.0 / 10;
-
-    s += ' ';
-
-    s += (TZ < 0) ? '-' : '+';
+    tzStr = (TZ < 0) ? '-' : '+';
 
     if ((int)TZ < 10)
-      s += 0;
-    s += (int)TZ;
+      tzStr += 0;
+
+    tzStr += (int)TZ;
 
     if (dif < 10)
-      s += 0;
+      tzStr += 0;
 
-    s += (int)dif;
+    tzStr += (int)dif;
 
-    return s.c_str();
+    // replace for valid timezone
+    tStr.replaceAll("+0000", tzStr);
+    return tStr.c_str();
   }
 
-  /** get the clock ready state */
+  /** get the clock ready state
+   *  Do not remove or modify this file as it required for AVR, ARM,
+   * SAMD devices and external client to work.
+   */
   bool clockReady(uint32_t wait_ms = 0)
   {
-    uint32_t ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
+    uint32_t ts = 0;
+    
+#if defined(ENABLE_NTP_TIME)
+    ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
     if (ts > 0)
       ts_offset = ts - millis() / 1000;
+#endif
 
     getTime(ts);
 
@@ -403,12 +350,15 @@ public:
       setTimestamp(sys_ts);
 #endif
 
+#if defined(ENABLE_NTP_TIME)
     if (_clockReady)
     {
       _sv1.clear();
       _sv2.clear();
       _sv3.clear();
     }
+#endif
+
     return _clockReady;
   }
   // The library's internal timestamp which can be assigned via
@@ -486,16 +436,21 @@ private:
 #endif
   }
 
+#if defined(ENABLE_NTP_TIME)
+
   UDP *udp = nullptr;
   bool useInternalUDP = false;
   MB_NTP ntp;
+
+  // in ESP8266 these NTP sever strings should be existed during configuring time.
+  MB_String _sv1, _sv2, _sv3;
+#endif
+
   uint32_t ts_offset = 0;
   bool configUpdated = false;
   float gmtOffset = 0;
   bool _clockReady = false;
   unsigned long lastSyncMillis = 0;
-  // in ESP8266 these NTP sever strings should be existed during configuring time.
-  MB_String _sv1, _sv2, _sv3;
 };
 
 #endif // MB_Time_H

@@ -1420,7 +1420,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
 
 #if !defined(SILENT_MODE)
         if (smtp->_sendCallback)
-            esp_mail_debug_print_tag(esp_mail_error_mem_str_6 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
+            esp_mail_debug_print_tag(esp_mail_error_mem_str_3 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
 
         if (smtp->_debug)
         {
@@ -1431,17 +1431,20 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
     }
     else if (imap && !calDataLen)
     {
+#if defined(ENABLE_IMAP)
+
         imap->_imapStatus.statusCode = err;
         imap->_imapStatus.text.clear();
 
-#if defined(ENABLE_IMAP) && !defined(SILENT_MODE)
+#if !defined(SILENT_MODE)
         if (imap->_readCallback)
-            esp_mail_debug_print_tag(esp_mail_error_mem_str_6 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
+            esp_mail_debug_print_tag(esp_mail_error_mem_str_3 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
 
         if (imap->_debug)
         {
             esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
         }
+#endif
 #endif
     }
 
@@ -3423,7 +3426,8 @@ bool SMTPSession::connect(bool &ssl)
     MailClient.printLibInfo((void *)(this), true);
 #endif
 
-    MailClient.prepareTime(_session_cfg, (void *)(this), true);
+    if (!MailClient.prepareTime(_session_cfg, (void *)(this), true))
+        return false;
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
     MailClient.setSecure(client, _session_cfg);
@@ -3646,8 +3650,9 @@ SMTP_Status SMTPSession::status()
     return _cbData;
 }
 
-void SMTPSession::setSystemTime(time_t ts)
+void SMTPSession::setSystemTime(time_t ts, float gmtOffset)
 {
+    MailClient.Time.TZ = gmtOffset;
     MailClient.Time.setTimestamp(ts);
 }
 

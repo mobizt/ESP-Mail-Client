@@ -11,6 +11,12 @@
 /* 📌 Enable silent mode (no debug printing and callback) */
 // #define SILENT_MODE
 
+/* 📌 Enable the NTP server time synching */
+#define ENABLE_NTP_TIME
+
+/* 📌 Enable the error string from error reason */
+#define ENABLE_ERROR_STRING
+
 /* 📌 Enable IMAP class compilation option */
 #define ENABLE_IMAP // comment this line to disable or exclude it
 

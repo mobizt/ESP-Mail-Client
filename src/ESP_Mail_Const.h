@@ -619,6 +619,10 @@ struct esp_mail_smtp_command_t
 
 const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType] PROGMEM =
     {
+        /** The SMTP commands per stansards.
+         *  The arrangement is related to esp_mail_smtp_command_types.
+         *  Do not modify or remove.
+         */
         "AUTH",
         "LOGIN",
         "HELO",
@@ -651,6 +655,10 @@ struct esp_mail_imap_command_t
 
 const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType] PROGMEM =
     {
+        /** The IMAP commands per standards.
+         *  The arrangement is related to esp_mail_imap_command_types.
+         *  Do not modify or remove.
+         */
         "STARTTLS",
         "APPEND",
         "CAPABILITY",
@@ -712,6 +720,11 @@ struct esp_mail_imap_response_t
 
 const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxType] PROGMEM =
     {
+        /** The IMAP response.
+         *  The arrangement is related to esp_mail_imap_response_types.
+         *  Do not modify or remove.
+         */
+
         // Tagged
         "OK ",
         "NO ",
@@ -750,6 +763,10 @@ struct esp_mail_char_decoding_t
 
 const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxType] PROGMEM =
     {
+        /** Supported charactor encodings.
+         *  The arrangement is related esp_mail_char_decoding_types.
+         *  Do not modify or remove.
+         */
         "utf-8",
         "iso-8859-1",
         "iso-8859-11",
@@ -763,6 +780,9 @@ struct esp_mail_multipart_t
 
 const struct esp_mail_multipart_t multipart_types[esp_mail_multipart_maxType] PROGMEM =
     {
+        /** MultiPart MIME.
+         *  Do not modify or remove.
+         */
         "multipart/mixed",
         "multipart/related",
         "multipart/parallel",
@@ -777,7 +797,10 @@ struct esp_mail_rfc822_header_field_t
 
 const struct esp_mail_rfc822_header_field_t rfc822_headers[esp_mail_rfc822_header_field_maxType] PROGMEM =
     {
-        // rfc822 message header fields
+        /** The rfc822 message header fields.
+         *  The arrangement is related esp_mail_rfc822_header_field_types.
+         *  Do not modify or remove.
+         */
         {"From", false, true},
         {"Sender", false, true},
         {"To", false, true},
@@ -801,7 +824,10 @@ struct esp_mail_message_header_field_t
 
 const struct esp_mail_message_header_field_t message_headers[esp_mail_message_header_field_maxType] PROGMEM =
     {
-        // Additional fields and props
+        /** Additional fields and props.
+         *  The arrangement is related esp_mail_message_header_field_types.
+         *  Do not modify or remove.
+         */
         "Number",
         "UID",
         "Accept-Language",
@@ -837,7 +863,10 @@ struct esp_mail_auth_capability_t
 
 const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
-
+        /** The server capability keywords per standard.
+         *  The arrangement is related esp_mail_auth_capability_types.
+         *  Do not modify or remove.
+         */
         "PLAIN",
         "XOAUTH2",
         "CRAM-MD5",
@@ -855,7 +884,10 @@ struct esp_mail_smtp_send_capability_t
 
 const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM =
     {
-
+        /** The server capability keywords per standard.
+         *  The arrangement is related esp_mail_smtp_send_capability_types.
+         *  Do not modify or remove.
+         */
         "BINARYMIME",
         "8BITMIME",
         "CHUNKING",
@@ -872,7 +904,10 @@ const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smt
 
 const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
-
+        /** The server capability keywords per standard.
+         *  The arrangement is related esp_mail_auth_capability_types.
+         *  Do not modify or remove.
+         */
         "AUTH=PLAIN",
         "AUTH=XOAUTH2",
         "CRAM-MD5",
@@ -890,7 +925,10 @@ struct esp_mail_imap_read_capability_t
 
 const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_imap_read_capability_maxType] PROGMEM =
     {
-
+        /** The server capability keywords per standard.
+         *  The arrangement is related esp_mail_imap_read_capability_types.
+         *  Do not modify or remove.
+         */
         "IMAP4",
         "IMAP4rev1",
         "IDLE",
@@ -918,7 +956,10 @@ struct esp_mail_imap_identification_key_t
 
 const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mail_imap_identification_key_maxType] PROGMEM =
     {
-
+        /** The identification keys per standard.
+         *  The arrangement is related esp_mail_imap_identification_key_types.
+         *  Do not modify or remove.
+         */
         "name",
         "version",
         "os",
@@ -2641,24 +2682,41 @@ static const char esp_mail_cb_str_61[] PROGMEM = "Send client identification..."
 
 #endif
 
+
 /////////////////////////
 // Mem error string
+
+#if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 static const char esp_mail_error_mem_str_1[] PROGMEM = "flash Storage is not ready.";
 static const char esp_mail_error_mem_str_2[] PROGMEM = "SD Storage is not ready.";
-static const char esp_mail_error_mem_str_3[] PROGMEM = "file is still opened.";
-static const char esp_mail_error_mem_str_4[] PROGMEM = "file not found.";
-static const char esp_mail_error_mem_str_5[] PROGMEM = "file I/O error";
-static const char esp_mail_error_mem_str_6[] PROGMEM = "file does not exist or can't access";
+static const char esp_mail_error_mem_str_3[] PROGMEM = "file does not exist or can't access";
 #endif
-static const char esp_mail_error_mem_str_7[] PROGMEM = "out of memory";
-static const char esp_mail_error_mem_str_8[] PROGMEM = "PSRAM was enabled but not detected.";
+static const char esp_mail_error_mem_str_4[] PROGMEM = "PSRAM was enabled but not detected.";
+#endif
+
+#if defined(ENABLE_ERROR_STRING)
+
+#if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
+static const char esp_mail_error_mem_str_5[] PROGMEM = "file is still opened.";
+static const char esp_mail_error_mem_str_6[] PROGMEM = "file not found.";
+static const char esp_mail_error_mem_str_7[] PROGMEM = "file I/O error";
+#endif
+
+static const char esp_mail_error_mem_str_8[] PROGMEM = "out of memory";
+
 #if defined(MB_ARDUINO_PICO)
 static const char esp_mail_error_mem_str_9[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
 #endif
 
+#endif
+
+
+
 /////////////////////////
 // Client error string
+
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_client_str_1[] PROGMEM = "client and/or necessary callback functions are not yet assigned";
 static const char esp_mail_error_client_str_2[] PROGMEM = "custom Client is not yet enabled";
 static const char esp_mail_error_client_str_3[] PROGMEM = "simple Client is required";
@@ -2667,9 +2725,14 @@ static const char esp_mail_error_client_str_5[] PROGMEM = "client connection upg
 static const char esp_mail_error_client_str_6[] PROGMEM = "network connection callback is required";
 static const char esp_mail_error_client_str_7[] PROGMEM = "network connection status callback is required";
 static const char esp_mail_error_client_str_8[] PROGMEM = "client is not yet initialized";
+static const char esp_mail_error_client_str_9[] PROGMEM = "UDP client is required for NTP server time synching based on your network type";
+static const char esp_mail_error_client_str_10[] PROGMEM = "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client";
+#endif
 
 /////////////////////////
 // Network error string
+
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_network_str_1[] PROGMEM = "NTP server time synching timed out";
 static const char esp_mail_error_network_str_2[] PROGMEM = "unable to connect to server";
 static const char esp_mail_error_network_str_3[] PROGMEM = "session timed out";
@@ -2679,28 +2742,52 @@ static const char esp_mail_error_network_str_6[] PROGMEM = "connection closed";
 static const char esp_mail_error_network_str_7[] PROGMEM = "connection refused";
 static const char esp_mail_error_network_str_8[] PROGMEM = "connection failed";
 static const char esp_mail_error_network_str_9[] PROGMEM = "data sending failed";
+#endif
+
+#if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
 static const char esp_mail_error_network_str_10[] PROGMEM = "response read timed out";
+#endif
+
 
 /////////////////////////
 // SSL error string
+
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_ssl_str_1[] PROGMEM = "fail to set up the SSL/TLS structure";
+#endif
+#if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
 static const char esp_mail_error_ssl_str_2[] PROGMEM = "the alert SSL record received";
 static const char esp_mail_error_ssl_str_3[] PROGMEM = "make sure the SSL/TLS handshake was done before sending the data";
+#endif
 
 /////////////////////////
 // Auth error string
+
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_auth_str_1[] PROGMEM = "the provided SASL authentication mechanism is not support";
 static const char esp_mail_error_auth_str_2[] PROGMEM = "OAuth2.0 log in was disabled for this server";
+#endif
 
 /////////////////////////
 // Session error string
+
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_session_str_1[] PROGMEM = "the Session_Config object was not assigned";
 static const char esp_mail_error_session_str_2[] PROGMEM = "the SMTPSession object was not assigned";
 static const char esp_mail_error_session_str_3[] PROGMEM = "the IMAPSession object was not assigned";
+#endif
+
+/////////////////////////
+// Time error string
+#if defined(ENABLE_ERROR_STRING)
+static const char esp_mail_error_time_str_1[] PROGMEM = "library or device time was not set, see examples/SMTP/Set_Time.ino for manually time setting";
+#endif
+
 
 /////////////////////////
 // SMTP error string
 #if defined(ENABLE_SMTP)
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_smtp_str_1[] PROGMEM = "SMTP server greeting failed";
 static const char esp_mail_error_smtp_str_2[] PROGMEM = "authentication failed";
 static const char esp_mail_error_smtp_str_3[] PROGMEM = "login password is not valid";
@@ -2710,24 +2797,31 @@ static const char esp_mail_error_smtp_str_7[] PROGMEM = "sender Email address is
 static const char esp_mail_error_smtp_str_8[] PROGMEM = "some of the recipient Email address is not valid";
 static const char esp_mail_error_smtp_str_9[] PROGMEM = "set recipient failed";
 #endif
+#endif
 
 /////////////////////////
 // IMAP error string
 #if defined(ENABLE_IMAP)
+#if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_imap_str_1[] PROGMEM = "fail to list the mailboxes";
 static const char esp_mail_error_imap_str_2[] PROGMEM = "fail to check the capabilities";
-static const char esp_mail_error_imap_str_3[] PROGMEM = "no messages found for the specified search criteria";
-static const char esp_mail_error_imap_str_4[] PROGMEM = "no search criteria provided, then fetching the latest message";
-static const char esp_mail_error_imap_str_5[] PROGMEM = "no mailbox opened";
-static const char esp_mail_error_imap_str_6[] PROGMEM = "fail to close the mailbox";
-static const char esp_mail_error_imap_str_7[] PROGMEM = "could not parse flag";
-static const char esp_mail_error_imap_str_8[] PROGMEM = "no content";
-static const char esp_mail_error_imap_str_9[] PROGMEM = "fail to open the mailbox";
-static const char esp_mail_error_imap_str_10[] PROGMEM = "some of the requested messages no longer exist";
-static const char esp_mail_error_imap_str_11[] PROGMEM = "firmware update initialization failed";
-static const char esp_mail_error_imap_str_12[] PROGMEM = "firmware update write failed";
-static const char esp_mail_error_imap_str_13[] PROGMEM = "firmware update finalize failed";
-static const char esp_mail_error_imap_str_14[] PROGMEM = "this feature was not supported";
+
+static const char esp_mail_error_imap_str_3[] PROGMEM = "fail to close the mailbox";
+
+static const char esp_mail_error_imap_str_4[] PROGMEM = "fail to open the mailbox";
+static const char esp_mail_error_imap_str_5[] PROGMEM = "some of the requested messages no longer exist";
+static const char esp_mail_error_imap_str_6[] PROGMEM = "firmware update initialization failed";
+static const char esp_mail_error_imap_str_7[] PROGMEM = "firmware update write failed";
+static const char esp_mail_error_imap_str_8[] PROGMEM = "firmware update finalize failed";
+
+#endif
+#if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
+static const char esp_mail_error_imap_str_9[] PROGMEM = "no messages found for the specified search criteria";
+static const char esp_mail_error_imap_str_10[] PROGMEM = "no search criteria provided, then fetching the latest message";
+static const char esp_mail_error_imap_str_11[] PROGMEM = "no mailbox opened";
+static const char esp_mail_error_imap_str_12[] PROGMEM = "no content";
+static const char esp_mail_error_imap_str_13[] PROGMEM = "this feature was not supported";
+#endif
 #endif
 
 /////////////////////////

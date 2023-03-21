@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.9
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.10
  *
- * Created March 20, 2023
+ * Created March 21, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -31,10 +31,12 @@
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
+
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+
 #include <time.h>
 #include <string>
 #include <WiFiClient.h>
-#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
 #if defined(ESP8266)
 #include <core_version.h>

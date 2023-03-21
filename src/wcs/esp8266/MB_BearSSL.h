@@ -2,7 +2,9 @@
  *
  * The Network Upgradable BearSSL Client Class, MB_BearSSL.h v2.0.1
  *
- * Created March 1, 2023
+ * Created March 21, 2023
+ * 
+ * Do not modify.
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -57,7 +59,9 @@
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
 
-#if defined(ESP8266) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+#if (defined(ESP8266) || defined(MB_ARDUINO_PICO)) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+
+#if defined(ESP8266)
 
 #include <bearssl/bearssl.h>
 #include <vector>
@@ -172,5 +176,6 @@ namespace BearSSL
 
 };
 
+#endif
 
 #endif // MB_BEARSSL_H_

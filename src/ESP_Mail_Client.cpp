@@ -86,10 +86,12 @@ void ESP_Mail_Client::networkReconnect(bool reconnect)
   networkAutoReconnect = reconnect;
 }
 
+#if defined(ENABLE_NTP_TIME)
 void ESP_Mail_Client::setUDPClient(UDP *client, float gmtOffset)
 {
   Time.setUDPClient(client, gmtOffset);
 }
+#endif
 
 void ESP_Mail_Client::addAP(const String &ssid, const String &password)
 {
@@ -623,11 +625,18 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
   _clockReady = Time.clockReady();
 
+#if defined(ENABLE_NTP_TIME)
+
   if (!_clockReady)
   {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
     if (!Time.initUDP())
-      ESP_MAIL_PRINTF("> W: UDP client is required for NTP server time synching based on your network type \ne.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client.\n");
+    {
+#if !defined(SILENT_MODE)
+      esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time synching based on your network type" */, esp_mail_debug_tag_type_warning, true);
+      esp_mail_debug_print_tag(esp_mail_error_client_str_10 /* "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client" */, esp_mail_debug_tag_type_warning, true);
+#endif
+    }
 #endif
     Time.setClock(gmt_offset, day_light_offset, ntp_server);
 
@@ -653,6 +662,10 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
   // if timezone string assign
   setTimezone(timezone.c_str(), TZ_file);
+
+#else
+  return;
+#endif
 
 #endif
 
@@ -1158,7 +1171,7 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
     if (ESP.getPsramSize() == 0 && !isCb)
-      esp_mail_debug_print_tag(esp_mail_error_mem_str_8 /* "PSRAM was enabled but not detected." */, esp_mail_debug_tag_type_warning, true);
+      esp_mail_debug_print_tag(esp_mail_error_mem_str_4 /* "PSRAM was enabled but not detected." */, esp_mail_debug_tag_type_warning, true);
 #endif
   }
 
@@ -1249,7 +1262,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
   return true;
 }
 
-void ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP)
+bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP)
 {
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
@@ -1287,33 +1300,49 @@ void ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   if (!isCb && (session_config->time.ntp_server.length() > 0 || validTime))
   {
+
+#if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
     if (debug && !isCb)
       esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time synching" */, esp_mail_debug_tag_type_client, true);
 #endif
     setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+#endif
 
-    if (!Time.clockReady())
+    if (Time.clockReady())
+      return true;
+    else
     {
       if (isSMTP)
       {
 #if defined(ENABLE_SMTP)
         SMTPSession *smtp = (SMTPSession *)sessionPtr;
+#if defined(ENABLE_NTP_TIME)
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+#else
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
+#endif
 #endif
       }
       else
       {
 #if defined(ENABLE_IMAP)
         IMAPSession *imap = (IMAPSession *)sessionPtr;
+#if defined(ENABLE_NTP_TIME)
         errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+#else
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
+#endif
 #endif
       }
+      return false;
     }
   }
 #endif
 
 #endif
+
+  return true;
 }
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
@@ -1372,6 +1401,8 @@ void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multip
 String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, const char *msg)
 {
   MB_String ret;
+
+#if defined(ENABLE_ERROR_STRING)
 
   if (!isSMTP && strlen(msg) > 0)
     return msg;
@@ -1436,16 +1467,16 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     ret += esp_mail_error_network_str_2; /* "unable to connect to server" */
     break;
   case IMAP_STATUS_NO_MESSAGE:
-    ret += esp_mail_error_imap_str_10; /* "some of the requested messages no longer exist" */
+    ret += esp_mail_error_imap_str_5; /* "some of the requested messages no longer exist" */
     break;
   case IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT:
     ret += esp_mail_error_network_str_5; /* "connection timeout" */
     break;
   case IMAP_STATUS_CLOSE_MAILBOX_FAILED:
-    ret += esp_mail_error_imap_str_6; /* "fail to close the mailbox" */
+    ret += esp_mail_error_imap_str_3; /* "fail to close the mailbox" */
     break;
   case IMAP_STATUS_OPEN_MAILBOX_FAILED:
-    ret += esp_mail_error_imap_str_9; /* "fail to open the mailbox" */
+    ret += esp_mail_error_imap_str_4; /* "fail to open the mailbox" */
     break;
   case IMAP_STATUS_LIST_MAILBOXS_FAILED:
     ret += esp_mail_error_imap_str_1; /* "fail to list the mailboxes" */
@@ -1460,13 +1491,13 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     ret += esp_mail_error_imap_str_5; /* "no mailbox opened" */
     break;
   case IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED:
-    ret += esp_mail_error_imap_str_11; /* "firmware update initialization failed" */
+    ret += esp_mail_error_imap_str_6; /* "firmware update initialization failed" */
     break;
   case IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED:
-    ret += esp_mail_error_imap_str_12; /* "firmware update write failed" */
+    ret += esp_mail_error_imap_str_7; /* "firmware update write failed" */
     break;
   case IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED:
-    ret += esp_mail_error_imap_str_13; /* "firmware update finalize failed" */
+    ret += esp_mail_error_imap_str_8; /* "firmware update finalize failed" */
     break;
   case IMAP_STATUS_IMAP_SESSION_WAS_NOT_ASSIGNED:
     ret += esp_mail_error_session_str_3; /* "the IMAPSession object was not assigned" */
@@ -1488,7 +1519,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     break;
 
   case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
-    ret += esp_mail_error_mem_str_7; /* "out of memory" */
+    ret += esp_mail_error_mem_str_8; /* "out of memory" */
     break;
   case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
     ret += esp_mail_error_network_str_9; /* "data sending failed" */
@@ -1505,6 +1536,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
     ret += esp_mail_error_network_str_1; /* "NTP server time synching timed out" */
     break;
+  case MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET:
+    ret += esp_mail_error_time_str_1; /* "library or device time was not set" */
+    break;
 
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
@@ -1513,7 +1547,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 
   case MB_FS_ERROR_FILE_IO_ERROR:
-    ret += esp_mail_error_mem_str_5; /* "file I/O error" */
+    ret += esp_mail_error_mem_str_7; /* "file I/O error" */
     break;
 
   case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
@@ -1525,11 +1559,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     break;
 
   case MB_FS_ERROR_FILE_STILL_OPENED:
-    ret += esp_mail_error_mem_str_3; /* "file is still opened." */
+    ret += esp_mail_error_mem_str_5; /* "file is still opened." */
     break;
 
   case MB_FS_ERROR_FILE_NOT_FOUND:
-    ret += esp_mail_error_mem_str_4; /* "file not found." */
+    ret += esp_mail_error_mem_str_6; /* "file not found." */
     break;
 
 #endif
@@ -1546,6 +1580,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
     ret += msg;
     return ret.c_str();
   }
+#endif
+
+#else
+  ret = esp_mail_str_25; /* "status: " */
+  ret += statusCode;
 #endif
 
   return ret.c_str();
