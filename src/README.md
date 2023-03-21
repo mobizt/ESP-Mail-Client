@@ -403,11 +403,14 @@ void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 
 param **`ts`** timestamp in seconds from midnight Jan 1, 1970.
 
+param **`gmtOffset`** The GMT offset.
+
 This function allows the internal time setting by timestamp i.e. timestamp from external RTC. 
 
 ```cpp
-void setSystemTime(time_t ts);
+void setSystemTime(time_t ts, float gmtOffset = 0);
 ```
+
 
 
 #### Begin the IMAP server connection.
@@ -1243,10 +1246,12 @@ void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 
 param **`ts`** timestamp in seconds from midnight Jan 1, 1970.
 
+param **`gmtOffset`** The GMT offset.
+
 This function allows the internal time setting by timestamp i.e. timestamp from external RTC. 
 
 ```cpp
-void setSystemTime(time_t ts);
+void setSystemTime(time_t ts, float gmtOffset = 0);
 ```
 
 

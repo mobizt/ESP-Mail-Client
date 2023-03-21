@@ -81,6 +81,8 @@
 #define MB_TIME_PGM_ATTR PROGMEM
 #endif
 
+static const char *mb_months[12] MB_TIME_PGM_ATTR = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
 class MB_Time
 {
 public:
@@ -266,6 +268,7 @@ public:
    */
   time_t getTimestamp(const char *timeString, bool gmt = false)
   {
+#if defined(MB_ARDUINO_ESP)
     struct tm _timeinfo;
 
     if (strstr(timeString, ",") != NULL)
@@ -274,8 +277,66 @@ public:
       strptime(timeString, "%d %b %Y %H:%M:%S %z", &_timeinfo);
 
     time_t ts = mktime(&_timeinfo);
-
     return ts;
+
+#else
+
+    time_t ts = 0;
+    MB_VECTOR<MB_String> tk;
+    MB_String s1 = timeString;
+
+    splitToken(s1, tk, ' ');
+    int day = 0, mon = 0, year = 0, hr = 0, mins = 0, sec = 0, tz_h = 0, tz_m = 0;
+
+    int tkindex = tk.size() == 5 ? -1 : 0; // No week days?
+
+    // some response may include (UTC) and (ICT)
+    if (tk.size() >= 5)
+    {
+      day = atoi(tk[tkindex + 1].c_str());
+      for (size_t i = 0; i < 12; i++)
+      {
+        if (strcmp_P(mb_months[i], tk[tkindex + 2].c_str()) == 0)
+          mon = i;
+      }
+
+      // RFC 822 year to RFC 2822
+      if (tk[tkindex + 3].length() == 2)
+        tk[tkindex + 3].prepend("20");
+
+      year = atoi(tk[tkindex + 3].c_str());
+
+      MB_VECTOR<MB_String> tk2;
+      splitToken(tk[tkindex + 4], tk2, ':');
+      if (tk2.size() == 3)
+      {
+        hr = atoi(tk2[0].c_str());
+        mins = atoi(tk2[1].c_str());
+        sec = atoi(tk2[2].c_str());
+      }
+
+      ts = getTimestamp(year, mon + 1, day, hr, mins, sec);
+
+      if (tk[tkindex + 5].length() == 5 && gmt)
+      {
+        char tmp[6];
+        memset(tmp, 0, 6);
+        strncpy(tmp, tk[tkindex + 5].c_str() + 1, 2);
+        tz_h = atoi(tmp);
+
+        memset(tmp, 0, 6);
+        strncpy(tmp, tk[tkindex + 5].c_str() + 3, 2);
+        tz_m = atoi(tmp);
+
+        time_t tz = tz_h * 60 * 60 + tz_m * 60;
+        if (tk[tkindex + 5][0] == '+')
+          ts -= tz; // remove time zone offset
+        else
+          ts += tz;
+      }
+    }
+    return ts;
+#endif
   }
 
   /** Get the current timestamp.
@@ -325,7 +386,7 @@ public:
   bool clockReady(uint32_t wait_ms = 0)
   {
     uint32_t ts = 0;
-    
+
 #if defined(ENABLE_NTP_TIME)
     ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
     if (ts > 0)
