@@ -53,6 +53,9 @@
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /** For Gmail, the app password will be used for log in
  *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
  *
@@ -177,7 +180,7 @@ void setup()
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending message as embedded files");
-  message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Admin"), RECIPIENT_EMAIL);
 
   message.html.content = F("<span style=\"color:#0055ff;\">This is html message</span>");
 

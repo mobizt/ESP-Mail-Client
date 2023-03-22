@@ -80,6 +80,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -239,7 +242,7 @@ void setup()
 
     message.subject = F("Test sending Email with attachments and inline images from flash filesystem");
 
-    message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
+    message.addRecipient(F("user1"), RECIPIENT_EMAIL);
 
     /** Two alternative content versions are sending in this example e.g. plain text and html */
     String htmlMsg = "<span style=\"color:#ff0000;\">This message contains 1 inline image and 1 attachment file.</span><br/><br/><img src=\"orange.png\" width=\"100\" height=\"100\">";

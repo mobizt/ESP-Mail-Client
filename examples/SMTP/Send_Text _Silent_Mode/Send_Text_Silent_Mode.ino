@@ -38,6 +38,7 @@
 
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
+#define RECIPIENT_EMAIL "<recipient email here>"
 
 SMTPSession smtp;
 
@@ -110,7 +111,7 @@ void setup()
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending plain text Email");
-  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
   String textMsg = "This is simple plain text message";
   message.text.content = textMsg;

@@ -72,6 +72,10 @@ typedef void (*NetworkConnectionHandler)(void);
 #if defined(ENABLE_SMTP)
 enum esp_mail_smtp_command_types
 {
+    /** The SMTP commands per stansards.
+     *  The arrangement is related to smtp_commands struct.
+     *  Do not modify or remove.
+     */
     esp_mail_smtp_command_auth,
     esp_mail_smtp_command_login,
     esp_mail_smtp_command_helo,
@@ -97,6 +101,10 @@ enum esp_mail_smtp_command_types
 
 enum esp_mail_smtp_send_capability_types
 {
+    /** The server capability keywords per standard.
+     *  The arrangement is related to smtp_send_capabilities struct.
+     *  Do not modify or remove.
+     */
     esp_mail_smtp_send_capability_binary_mime,
     esp_mail_smtp_send_capability_8bit_mime,
     esp_mail_smtp_send_capability_chunking,
@@ -112,6 +120,10 @@ enum esp_mail_smtp_send_capability_types
 #if defined(ENABLE_IMAP)
 enum esp_mail_imap_response_types
 {
+    /** The IMAP response.
+     *  The arrangement is related to imap_responses struct.
+     *  Do not modify or remove.
+     */
     esp_mail_imap_response_ok,
     esp_mail_imap_response_no,
     esp_mail_imap_response_bad,
@@ -141,6 +153,10 @@ enum esp_mail_imap_response_types
 
 enum esp_mail_imap_command_types
 {
+    /** The IMAP commands per standards.
+     *  The arrangement is related to imap_commands struct.
+     *  Do not modify or remove.
+     */
     esp_mail_imap_command_starttls,
     esp_mail_imap_command_append,
     esp_mail_imap_command_capability,
@@ -199,6 +215,11 @@ enum esp_mail_imap_command_types
 
 enum esp_mail_imap_read_capability_types
 {
+    /** The server capability keywords per standard.
+     *  The arrangement is related imap_read_capabilities struct.
+     *  Do not modify or remove.
+     */
+
     esp_mail_imap_read_capability_imap4,
     esp_mail_imap_read_capability_imap4rev1,
     // rfc2177
@@ -229,6 +250,11 @@ enum esp_mail_imap_read_capability_types
 
 enum esp_mail_imap_identification_keys
 {
+    /** The identification keys per standard.
+     *  The arrangement is related imap_identification_keys struct.
+     *  Do not modify or remove.
+     */
+
     esp_mail_imap_identification_key_name,
     esp_mail_imap_identification_key_version,
     esp_mail_imap_identification_key_os,
@@ -247,6 +273,10 @@ enum esp_mail_imap_identification_keys
 
 enum esp_mail_char_decoding_types
 {
+    /** Supported charactor encodings.
+     *  The arrangement is related to char_decodings struct.
+     *  Do not modify or remove.
+     */
     esp_mail_char_decoding_utf8,
     esp_mail_char_decoding_iso_8859_1,
     esp_mail_char_decoding_iso_8859_11,
@@ -257,6 +287,10 @@ enum esp_mail_char_decoding_types
 
 enum esp_mail_multipart_types
 {
+    /** MultiPart MIME.
+     *  The arrangement is related to multipart_types struct.
+     *  Do not modify or remove.
+     */
     esp_mail_multipart_type_mixed,
     esp_mail_multipart_type_related,
     esp_mail_multipart_type_parallel,
@@ -266,6 +300,10 @@ enum esp_mail_multipart_types
 
 enum esp_mail_rfc822_header_field_types
 {
+    /** The rfc822 message header fields.
+     *  The arrangement is related to rfc822_headers struct.
+     *  Do not modify or remove.
+     */
     esp_mail_rfc822_header_field_from,
     esp_mail_rfc822_header_field_sender,
     esp_mail_rfc822_header_field_to,
@@ -286,6 +324,10 @@ enum esp_mail_rfc822_header_field_types
 
 enum esp_mail_message_header_field_types
 {
+    /** Additional fields and props.
+     *  The arrangement is related to message_headers struct.
+     *  Do not modify or remove.
+     */
     esp_mail_message_header_field_number,
     esp_mail_message_header_field_uid,
     esp_mail_message_header_field_accept_language,
@@ -316,6 +358,11 @@ enum esp_mail_message_header_field_types
 
 enum esp_mail_auth_capability_types
 {
+    /** The server capability keywords per standard.
+     *  The arrangement is related to smtp_auth_capabilities and imap_auth_capabilities structs.
+     *  Do not modify or remove.
+     */
+
     esp_mail_auth_capability_plain,
     esp_mail_auth_capability_xoauth2,
     esp_mail_auth_capability_cram_md5,
@@ -620,7 +667,7 @@ struct esp_mail_smtp_command_t
 const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType] PROGMEM =
     {
         /** The SMTP commands per stansards.
-         *  The arrangement is related to esp_mail_smtp_command_types.
+         *  The arrangement is related to esp_mail_smtp_command_types enum.
          *  Do not modify or remove.
          */
         "AUTH",
@@ -644,6 +691,30 @@ const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType
         "\r\n.\r\n",
         "STARTTLS"};
 
+struct esp_mail_smtp_commands_tokens
+{
+public:
+    esp_mail_smtp_commands_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : smtp_commands[index].text;
+        s += !preToken ? " " : smtp_commands[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+// The smtp commands with leading space.
+static esp_mail_smtp_commands_tokens smtp_cmd_pre_tokens(true);
+
+// The smtp commands with trailing space.
+static esp_mail_smtp_commands_tokens smtp_cmd_post_tokens(false);
+
 #endif
 
 #if defined(ENABLE_IMAP)
@@ -656,7 +727,7 @@ struct esp_mail_imap_command_t
 const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType] PROGMEM =
     {
         /** The IMAP commands per standards.
-         *  The arrangement is related to esp_mail_imap_command_types.
+         *  The arrangement is related to esp_mail_imap_command_types enum.
          *  Do not modify or remove.
          */
         "STARTTLS",
@@ -713,6 +784,31 @@ const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType
         "ID",
         "UNSELECT"};
 
+struct esp_mail_imap_commands_tokens
+{
+public:
+    esp_mail_imap_commands_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : imap_commands[index].text;
+        s += !preToken ? " " : imap_commands[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+// The imap commands with leading space.
+static esp_mail_imap_commands_tokens imap_cmd_pre_tokens(true);
+
+// The imap commands with trailing space.
+static esp_mail_imap_commands_tokens imap_cmd_post_tokens(false);
+
+
 struct esp_mail_imap_response_t
 {
     char text[14];
@@ -721,7 +817,7 @@ struct esp_mail_imap_response_t
 const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxType] PROGMEM =
     {
         /** The IMAP response.
-         *  The arrangement is related to esp_mail_imap_response_types.
+         *  The arrangement is related to esp_mail_imap_response_types enum.
          *  Do not modify or remove.
          */
 
@@ -764,7 +860,7 @@ struct esp_mail_char_decoding_t
 const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxType] PROGMEM =
     {
         /** Supported charactor encodings.
-         *  The arrangement is related esp_mail_char_decoding_types.
+         *  The arrangement is related to esp_mail_char_decoding_types enum.
          *  Do not modify or remove.
          */
         "utf-8",
@@ -781,6 +877,7 @@ struct esp_mail_multipart_t
 const struct esp_mail_multipart_t multipart_types[esp_mail_multipart_maxType] PROGMEM =
     {
         /** MultiPart MIME.
+         *  The arrangement is related to esp_mail_multipart_types enum.
          *  Do not modify or remove.
          */
         "multipart/mixed",
@@ -798,7 +895,7 @@ struct esp_mail_rfc822_header_field_t
 const struct esp_mail_rfc822_header_field_t rfc822_headers[esp_mail_rfc822_header_field_maxType] PROGMEM =
     {
         /** The rfc822 message header fields.
-         *  The arrangement is related esp_mail_rfc822_header_field_types.
+         *  The arrangement is related to esp_mail_rfc822_header_field_types enum.
          *  Do not modify or remove.
          */
         {"From", false, true},
@@ -825,7 +922,7 @@ struct esp_mail_message_header_field_t
 const struct esp_mail_message_header_field_t message_headers[esp_mail_message_header_field_maxType] PROGMEM =
     {
         /** Additional fields and props.
-         *  The arrangement is related esp_mail_message_header_field_types.
+         *  The arrangement is related to esp_mail_message_header_field_types enum.
          *  Do not modify or remove.
          */
         "Number",
@@ -864,7 +961,7 @@ struct esp_mail_auth_capability_t
 const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
         /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_auth_capability_types.
+         *  The arrangement is related to esp_mail_auth_capability_types enum.
          *  Do not modify or remove.
          */
         "PLAIN",
@@ -877,6 +974,27 @@ const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_cap
 
 };
 
+struct esp_mail_smtp_auth_tokens
+{
+public:
+    esp_mail_smtp_auth_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : smtp_auth_capabilities[index].text;
+        s += !preToken ? " " : smtp_auth_capabilities[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+// The smtp auth capability with leading space.
+static esp_mail_smtp_auth_tokens smtp_auth_cap_pre_tokens(true);
+
 struct esp_mail_smtp_send_capability_t
 {
     char text[15];
@@ -885,7 +1003,7 @@ struct esp_mail_smtp_send_capability_t
 const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM =
     {
         /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_smtp_send_capability_types.
+         *  The arrangement is related esp_mail_smtp_send_capability_types enum.
          *  Do not modify or remove.
          */
         "BINARYMIME",
@@ -898,6 +1016,26 @@ const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smt
 
 };
 
+struct esp_mail_smtp_send_tokens
+{
+public:
+    esp_mail_smtp_send_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : smtp_send_capabilities[index].text;
+        s += !preToken ? " " : smtp_send_capabilities[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+static esp_mail_smtp_send_tokens smtp_send_cap_pre_tokens(true);
+
 #endif
 
 #if defined(ENABLE_IMAP)
@@ -905,7 +1043,7 @@ const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smt
 const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
         /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_auth_capability_types.
+         *  The arrangement is related esp_mail_auth_capability_types enum.
          *  Do not modify or remove.
          */
         "AUTH=PLAIN",
@@ -918,6 +1056,27 @@ const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_cap
 
 };
 
+struct esp_mail_imap_auth_tokens
+{
+public:
+    esp_mail_imap_auth_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : imap_auth_capabilities[index].text;
+        s += !preToken ? " " : imap_auth_capabilities[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+// The imap auth capability with leading space.
+static esp_mail_imap_auth_tokens imap_auth_cap_pre_tokens(true);
+
 struct esp_mail_imap_read_capability_t
 {
     char text[15];
@@ -926,7 +1085,7 @@ struct esp_mail_imap_read_capability_t
 const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_imap_read_capability_maxType] PROGMEM =
     {
         /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_imap_read_capability_types.
+         *  The arrangement is related esp_mail_imap_read_capability_types enum.
          *  Do not modify or remove.
          */
         "IMAP4",
@@ -949,6 +1108,27 @@ const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_ima
         "" /* Auto cap */
 };
 
+struct esp_mail_imap_read_tokens
+{
+public:
+    esp_mail_imap_read_tokens(bool pre)
+    {
+        preToken = pre;
+    }
+    MB_String operator[](size_t index)
+    {
+        MB_String s = preToken ? " " : imap_read_capabilities[index].text;
+        s += !preToken ? " " : imap_read_capabilities[index].text;
+        return s;
+    }
+
+private:
+    bool preToken = false;
+};
+
+// The imap auth capability with leading space.
+static esp_mail_imap_read_tokens imap_read_cap_pre_tokens(true);
+
 struct esp_mail_imap_identification_key_t
 {
     char text[15];
@@ -957,7 +1137,7 @@ struct esp_mail_imap_identification_key_t
 const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mail_imap_identification_key_maxType] PROGMEM =
     {
         /** The identification keys per standard.
-         *  The arrangement is related esp_mail_imap_identification_key_types.
+         *  The arrangement is related esp_mail_imap_identification_key_types enum.
          *  Do not modify or remove.
          */
         "name",
@@ -2682,7 +2862,6 @@ static const char esp_mail_cb_str_61[] PROGMEM = "Send client identification..."
 
 #endif
 
-
 /////////////////////////
 // Mem error string
 
@@ -2710,8 +2889,6 @@ static const char esp_mail_error_mem_str_9[] PROGMEM = "please make sure that th
 #endif
 
 #endif
-
-
 
 /////////////////////////
 // Client error string
@@ -2748,7 +2925,6 @@ static const char esp_mail_error_network_str_9[] PROGMEM = "data sending failed"
 static const char esp_mail_error_network_str_10[] PROGMEM = "response read timed out";
 #endif
 
-
 /////////////////////////
 // SSL error string
 
@@ -2782,7 +2958,6 @@ static const char esp_mail_error_session_str_3[] PROGMEM = "the IMAPSession obje
 #if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_time_str_1[] PROGMEM = "library or device time was not set, see examples/SMTP/Set_Time.ino for manually time setting";
 #endif
-
 
 /////////////////////////
 // SMTP error string

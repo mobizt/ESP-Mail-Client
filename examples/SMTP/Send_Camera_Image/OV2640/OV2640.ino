@@ -81,6 +81,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* The SMTP Session object used for Email sending */
 SMTPSession smtp;
 
@@ -168,7 +171,7 @@ void setup()
     message.sender.email = AUTHOR_EMAIL;
 
     message.subject = F("Test sending camera image");
-    message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
+    message.addRecipient(F("user1"), RECIPIENT_EMAIL);
 
     message.html.content = F("<span style=\"color:#ff0000;\">The camera image.</span><br/><br/><img src=\"cid:image-001\" alt=\"esp32 cam image\"  width=\"800\" height=\"600\">");
 

@@ -78,6 +78,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -182,7 +185,7 @@ void setup()
   message.sender.email = AUTHOR_EMAIL;
 
   message.subject = F("Test sending Email with parallel attachments");
-  message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("user1"), RECIPIENT_EMAIL);
 
   message.html.content = F("<span style=\"color:#ff0000;\">This message contains image and audio file which will play on the Mail client in parallel or simultaneously (depends on the client supports).");
 

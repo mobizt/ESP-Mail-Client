@@ -202,6 +202,7 @@
 
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
+#define RECIPIENT_EMAIL "<recipient email here>"
 
 #define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
 #define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
@@ -297,7 +298,7 @@ void sendEmail()
     message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
     message.subject = F("Test sending plain text Email");
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+    message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
     String textMsg = "This is simple plain text message";
     message.text.content = "hiiiiii";

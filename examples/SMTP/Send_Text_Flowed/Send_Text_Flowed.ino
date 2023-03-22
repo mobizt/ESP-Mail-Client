@@ -173,10 +173,10 @@ void setup()
 
     /* Set the message headers */
     /* Set the message headers */
-    message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
-    message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
+    message.sender.name = F("ESP Mail");
+    message.sender.email = AUTHOR_EMAIL; 
     message.subject = F("Test sending plain text Email");
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
+    message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
     /** The option to add soft line break to to the message for
      * the long text message > 78 characters (rfc 3676)

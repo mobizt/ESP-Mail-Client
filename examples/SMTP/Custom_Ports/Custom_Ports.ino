@@ -74,6 +74,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -220,7 +223,7 @@ void setup()
     message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
     message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
     message.subject = F("Test sending plain text Email");
-    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
+    message.addRecipient(F("Someone"), RECIPIENT_EMAIL); // This will be used with RCPT TO command and 'To' header field.
 
     String textMsg = "This is simple plain text message";
     message.text.content = textMsg;

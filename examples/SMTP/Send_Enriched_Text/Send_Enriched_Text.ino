@@ -74,6 +74,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -174,7 +177,7 @@ void setup()
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending enriched text Email");
-  message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
   message.text.content = F("This is <bold><italic>enriched </italic></bold> <smaller>as defined in RFC 1896</smaller>\r\n\r\nIsn't it <bigger><bigger>cool?</bigger></bigger>");
 

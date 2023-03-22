@@ -480,17 +480,13 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
 #endif
 
-            MB_String uidStr, newStr;
-            appendSpace(uidStr, false, imap_commands[esp_mail_imap_command_uid].text);
-            prependSpace(newStr, imap_commands[esp_mail_imap_command_new].text);
-
-            if (strposP(imap->_imap_data->search.criteria.c_str(), uidStr.c_str(), 0) != -1)
+            if (strposP(imap->_imap_data->search.criteria.c_str(), imap_cmd_post_tokens[esp_mail_imap_command_uid].c_str(), 0) != -1)
             {
                 imap->_uidSearch = true;
-                prependSpace(command, imap_commands[esp_mail_imap_command_uid].text);
+                command += imap_cmd_pre_tokens[esp_mail_imap_command_uid];
             }
 
-            prependSpace(command, imap_commands[esp_mail_imap_command_search].text);
+            command += imap_cmd_pre_tokens[esp_mail_imap_command_search];
 
             imap->_imap_data->search.criteria.trim();
 
@@ -519,8 +515,8 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 }
             }
 
-            if (imap->_unseen && strpos(imap->_imap_data->search.criteria.c_str(), newStr.c_str(), 0) == -1)
-                command += newStr;
+            if (imap->_unseen && strpos(imap->_imap_data->search.criteria.c_str(), imap_cmd_pre_tokens[esp_mail_imap_command_new].c_str(), 0) == -1)
+                command += imap_cmd_pre_tokens[esp_mail_imap_command_new];
 
             if (buf.length() > 0)
                 prependSpace(command, buf.c_str());
@@ -1567,7 +1563,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
                false);
 #endif
 
-    if (!MailClient.sessionExisted((void *)this, false))
+    if (!sessionExisted((void *)imap, false))
         return false;
 
     MB_String cmd;
@@ -1579,11 +1575,11 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
     cmd += sequenceSet;
 
     if (type == esp_mail_imap_store_flag_type_set)
-        prependSpace(cmd, imap_commands[esp_mail_imap_command_flags].text);
+        cmd += imap_cmd_pre_tokens[esp_mail_imap_command_flags];
     else if (type == esp_mail_imap_store_flag_type_add)
-        prependSpace(cmd, imap_commands[esp_mail_imap_command_plus_flags].text);
+        cmd += imap_cmd_pre_tokens[esp_mail_imap_command_plus_flags];
     else
-        prependSpace(cmd, imap_commands[esp_mail_imap_command_minus_flags].text);
+        cmd += imap_cmd_pre_tokens[esp_mail_imap_command_minus_flags];
 
     if (silent)
         prependDot(cmd, imap_commands[esp_mail_imap_command_silent].text);
@@ -3577,20 +3573,15 @@ bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf
     {
         if (strposP(buf, imap_responses[esp_mail_imap_response_capability_untagged].text, 0) > -1 || strposP(buf, imap_responses[esp_mail_imap_response_capability].text, 0) > -1)
         {
-            MB_String cap;
             for (int i = esp_mail_auth_capability_plain; i < esp_mail_auth_capability_maxType; i++)
             {
-                cap.clear();
-                prependSpace(cap, imap_auth_capabilities[i].text);
-                if (strposP(buf, cap.c_str(), 0) > -1)
+                if (strposP(buf, imap_auth_cap_pre_tokens[i].c_str(), 0) > -1)
                     imap->_auth_capability[i] = true;
             }
 
             for (int i = esp_mail_imap_read_capability_imap4; i < esp_mail_imap_read_capability_maxType; i++)
             {
-                cap.clear();
-                prependSpace(cap, imap_read_capabilities[i].text);
-                if (strposP(buf, cap.c_str(), 0) > -1)
+                if (strposP(buf, imap_read_cap_pre_tokens[i].c_str(), 0) > -1)
                 {
                     imap->_read_capability[i] = true;
                     if (i == esp_mail_imap_read_capability_logindisable)
@@ -3780,12 +3771,12 @@ bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
 
 void ESP_Mail_Client::appendFechString(MB_String &buf, bool uid)
 {
-    prependSpace(buf, imap_commands[esp_mail_imap_command_fetch].text);
+    buf += imap_cmd_pre_tokens[esp_mail_imap_command_fetch];
     prependSpace(buf, esp_mail_str_38 /* "(" */);
     if (uid)
-        appendSpace(buf, false, imap_commands[esp_mail_imap_command_uid].text);
+        buf += imap_cmd_post_tokens[esp_mail_imap_command_uid];
     else
-        appendSpace(buf, false, 3, imap_commands[esp_mail_imap_command_flags].text, esp_mail_str_2 /* " " */, esp_mail_str_38 /* "(" */);
+        joinStringSpace(buf, false, 2, imap_commands[esp_mail_imap_command_flags].text, esp_mail_str_38 /* "(" */);
 }
 
 void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
@@ -5997,19 +5988,13 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
     }
 
     // filter for specific command
-    MB_String idle, append, login, logout;
-    MailClient.prependSpace(idle, imap_commands[esp_mail_imap_command_idle].text);
-    MailClient.prependSpace(append, imap_commands[esp_mail_imap_command_append].text);
-    MailClient.prependSpace(login, imap_commands[esp_mail_imap_command_login].text);
-    MailClient.prependSpace(logout, imap_commands[esp_mail_imap_command_logout].text);
-
-    if (_cmd.find(idle.c_str()) != MB_String::npos)
+    if (_cmd.find(imap_cmd_pre_tokens[esp_mail_imap_command_idle].c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_idle;
-    else if (_cmd.find(append.c_str()) != MB_String::npos)
+    else if (_cmd.find(imap_cmd_pre_tokens[esp_mail_imap_command_append].c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_append;
-    else if (_cmd.find(login.c_str()) != MB_String::npos)
+    else if (_cmd.find(imap_cmd_pre_tokens[esp_mail_imap_command_login].c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_sasl_login;
-    else if (_cmd.find(logout.c_str()) != MB_String::npos)
+    else if (_cmd.find(imap_cmd_pre_tokens[esp_mail_imap_command_logout].c_str()) != MB_String::npos)
         _imap_custom_cmd = esp_mail_imap_cmd_logout;
     else
         _imap_custom_cmd = esp_mail_imap_cmd_custom;
@@ -6156,7 +6141,7 @@ bool IMAPSession::deleteMsg(MessageList *toDelete, const char *sequenceSet, bool
     if (!toDelete && strlen(sequenceSet) > 0)
         cmd += sequenceSet;
 
-    MailClient.prependSpace(cmd, imap_commands[esp_mail_imap_command_plus_flags].text);
+    cmd += imap_cmd_pre_tokens[esp_mail_imap_command_plus_flags];
     MailClient.prependDot(cmd, imap_commands[esp_mail_imap_command_silent].text);
     MailClient.appendSpace(cmd);
     MailClient.appendString(cmd, esp_mail_str_91 /* "\\Deleted" */, false, false, esp_mail_string_mark_type_round_bracket);

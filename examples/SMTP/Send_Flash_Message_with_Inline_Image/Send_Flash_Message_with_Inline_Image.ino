@@ -76,6 +76,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -222,7 +225,7 @@ void setup()
     message.sender.email = AUTHOR_EMAIL;
 
     message.subject = F("Test sending base64 inline image stored in flash memory");
-    message.addRecipient(F("user1"), F("change_this@your_mail_dot_com"));
+    message.addRecipient(F("user1"), RECIPIENT_EMAIL);
 
     /* Two alternative content versions are sending in this example e.g. plain text and html */
 

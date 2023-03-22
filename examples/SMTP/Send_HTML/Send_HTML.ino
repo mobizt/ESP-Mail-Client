@@ -74,6 +74,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -179,7 +182,7 @@ void setup()
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending html Email");
-  message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Admin"), RECIPIENT_EMAIL);
 
   String htmlMsg = "<p>This is the <span style=\"color:#ff0000;\">html text</span> message.</p><p>The message was sent via ESP device.</p>";
   message.html.content = htmlMsg;

@@ -90,13 +90,11 @@ non_authenticated:
     // 502, or 550 failure replies MUST be returned as appropriate.
     // It server accept EHLO, it should response with the extensions it supported.
 
-    MB_String s;
-    appendSpace(s, false, smtp_commands[esp_mail_smtp_command_ehlo].text);
-
     // The EHLO/HELO command parameter should be the primary host name (domain name) of client system.
     // Alternatively client public IP address string (IPv4 or IPv6) can be assign when no host name is available
     // to prevent connection rejection.
 
+    MB_String s = smtp_cmd_post_tokens[esp_mail_smtp_command_ehlo];
     appendDomain(s, smtp->_session_cfg->login.user_domain.c_str());
 
     if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -107,9 +105,7 @@ non_authenticated:
 
         // In case EHLO command is not acceptable,
         // we would fall back and send SMTP (rfc821) HELO command to identify ourself.
-        s.clear();
-        appendSpace(s, false, smtp_commands[esp_mail_smtp_command_helo].text);
-
+        s = smtp_cmd_post_tokens[esp_mail_smtp_command_helo];
         appendDomain(s, smtp->_session_cfg->login.user_domain.c_str());
 
         if (!smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -188,9 +184,8 @@ non_authenticated:
             if (!smtp->_auth_capability[esp_mail_auth_capability_xoauth2])
                 return handleSMTPError(smtp, SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
 
-            MB_String cmd;
-
-            appendSpace(cmd, false, 2, smtp_commands[esp_mail_smtp_command_auth].text, smtp_auth_capabilities[esp_mail_auth_capability_xoauth2].text);
+            MB_String cmd = smtp_cmd_post_tokens[esp_mail_smtp_command_auth];
+            cmd += smtp_auth_cap_pre_tokens[esp_mail_auth_capability_xoauth2];
 
             if (smtpSend(smtp, cmd.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
@@ -223,9 +218,8 @@ non_authenticated:
             memcpy(tmp + p, smtp->_session_cfg->login.password.c_str(), smtp->_session_cfg->login.password.length());
             p += smtp->_session_cfg->login.password.length();
 
-            MB_String cmd;
-            appendSpace(cmd, false, 2, smtp_commands[esp_mail_smtp_command_auth].text, smtp_commands[esp_mail_smtp_command_plain].text);
-
+            MB_String cmd = smtp_cmd_post_tokens[esp_mail_smtp_command_auth];
+            cmd += smtp_cmd_post_tokens[esp_mail_smtp_command_plain];
             cmd += encodeBase64Str(tmp, p);
             // release memory
             freeMem(&tmp);
@@ -242,8 +236,8 @@ non_authenticated:
             if (smtp->_debug)
                 esp_mail_debug_print_tag(esp_mail_dbg_str_6 /* "send SMTP command, AUTH LOGIN" */, esp_mail_debug_tag_type_client, true);
 #endif
-            MB_String cmd;
-            joinStringSpace(cmd, false, 2, smtp_commands[esp_mail_smtp_command_auth].text, smtp_commands[esp_mail_smtp_command_login].text);
+            MB_String cmd = smtp_cmd_post_tokens[esp_mail_smtp_command_auth];
+            cmd += smtp_commands[esp_mail_smtp_command_login].text;
 
             if (smtpSend(smtp, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
@@ -532,9 +526,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
     if (!imap && smtp)
     {
 
-        buf.clear();
-
-        joinStringSpace(buf, false, 2, smtp_commands[esp_mail_smtp_command_mail].text, smtp_commands[esp_mail_smtp_command_from].text);
+        buf = smtp_cmd_post_tokens[esp_mail_smtp_command_mail];
+        buf += smtp_commands[esp_mail_smtp_command_from].text;
 
         appendString(buf, msg->sender.email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
@@ -542,8 +535,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         {
             if (smtp->_send_capability[esp_mail_smtp_send_capability_binary_mime] || (smtp->_send_capability[esp_mail_smtp_send_capability_chunking] && msg->enable.chunking))
             {
-                buf += esp_mail_str_2; /* " " */
-                buf += smtp_commands[esp_mail_smtp_command_body].text;
+                buf += smtp_cmd_pre_tokens[esp_mail_smtp_command_body];
                 buf += esp_mail_str_7; /* "=" */
                 buf += smtp_send_capabilities[esp_mail_smtp_send_capability_binary_mime].text;
             }
@@ -552,8 +544,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         {
             if (smtp->_send_capability[esp_mail_smtp_send_capability_8bit_mime])
             {
-                buf += esp_mail_str_2; /* " " */
-                buf += smtp_commands[esp_mail_smtp_command_body].text;
+                buf += smtp_cmd_pre_tokens[esp_mail_smtp_command_body];
                 buf += esp_mail_str_7; /* "=" */
                 buf += smtp_send_capabilities[esp_mail_smtp_send_capability_8bit_mime].text;
             }
@@ -579,10 +570,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         {
 
             // only address
-            buf.clear();
-
-            joinStringSpace(buf, false, 2, smtp_commands[esp_mail_smtp_command_rcpt].text, smtp_commands[esp_mail_smtp_command_to].text);
-
+            buf = smtp_cmd_post_tokens[esp_mail_smtp_command_rcpt];
+            buf += smtp_commands[esp_mail_smtp_command_to].text;
             appendString(buf, msg->_rcp[i].email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
             // rfc3461, rfc3464
@@ -590,9 +579,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             {
                 if (msg->response.notify != esp_mail_smtp_notify_never)
                 {
-
-                    buf += esp_mail_str_2; /* " " */
-                    buf += smtp_commands[esp_mail_smtp_command_notify].text;
+                    buf += smtp_cmd_pre_tokens[esp_mail_smtp_command_notify];
                     buf += esp_mail_str_7; /* "=" */
 
                     MB_String notify;
@@ -632,10 +619,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         if (!imap)
         {
             // only address
-            buf.clear();
-
-            joinStringSpace(buf, false, 2, smtp_commands[esp_mail_smtp_command_rcpt].text, smtp_commands[esp_mail_smtp_command_to].text);
-
+            buf = smtp_cmd_post_tokens[esp_mail_smtp_command_rcpt];
+            buf += smtp_commands[esp_mail_smtp_command_to].text;
             appendString(buf, msg->_cc[i].email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
@@ -648,10 +633,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         for (uint8_t i = 0; i < msg->_bcc.size(); i++)
         {
             // only address
-            buf.clear();
-
-            joinStringSpace(buf, false, 2, smtp_commands[esp_mail_smtp_command_rcpt].text, smtp_commands[esp_mail_smtp_command_to].text);
-
+            buf = smtp_cmd_post_tokens[esp_mail_smtp_command_rcpt];
+            buf += smtp_commands[esp_mail_smtp_command_to].text;
             appendString(buf, msg->_bcc[i].email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
@@ -1048,15 +1031,11 @@ bool ESP_Mail_Client::sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bo
 
     smtp->_chunkCount++;
 
-    MB_String bdat = smtp_commands[esp_mail_smtp_command_bdat].text;
-    bdat += esp_mail_str_2; /* " " */
+    MB_String bdat = smtp_cmd_post_tokens[esp_mail_smtp_command_bdat];
     bdat += len;
-
     if (last)
-    {
-        bdat += esp_mail_str_2; /* " " */
-        bdat += smtp_commands[esp_mail_smtp_command_last].text;
-    }
+        bdat += smtp_cmd_pre_tokens[esp_mail_smtp_command_last];
+    
 
     if (smtpSend(smtp, bdat.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return addSendingResult(smtp, msg, false, true);
@@ -2672,37 +2651,26 @@ void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
     if (!smtp)
         return;
 
-    MB_String auth, starttlsStr;
-
-    prependSpace(starttlsStr, smtp_auth_capabilities[esp_mail_auth_capability_starttls].text);
-    appendSpace(auth, false, smtp_commands[esp_mail_smtp_command_auth].text);
-
-    if (strposP(buf, auth.c_str(), 0) > -1)
+    if (strposP(buf, smtp_cmd_post_tokens[esp_mail_smtp_command_auth].c_str(), 0) > -1)
     {
-        MB_String cap;
         for (int i = esp_mail_auth_capability_plain; i < esp_mail_auth_capability_maxType; i++)
         {
-            cap.clear();
-            prependSpace(cap, smtp_auth_capabilities[i].text);
-            if (strposP(buf, cap.c_str(), 0) > -1)
+            if (strposP(buf, smtp_auth_cap_pre_tokens[i].c_str(), 0) > -1)
             {
                 smtp->_auth_capability[i] = true;
                 return;
             }
         }
     }
-    else if (strposP(buf, starttlsStr.c_str(), 0) > -1)
+    else if (strposP(buf, smtp_auth_capabilities[esp_mail_auth_capability_starttls].text, 0) > -1)
     {
         smtp->_auth_capability[esp_mail_auth_capability_starttls] = true;
         return;
     }
 
-    MB_String cap;
     for (int i = esp_mail_smtp_send_capability_binary_mime; i < esp_mail_smtp_send_capability_maxType; i++)
     {
-        cap.clear();
-        prependSpace(cap, smtp_send_capabilities[i].text);
-        if (strposP(buf, cap.c_str(), 0) > -1)
+        if (strposP(buf, smtp_send_cap_pre_tokens[i].c_str(), 0) > -1)
         {
             smtp->_send_capability[i] = true;
             return;

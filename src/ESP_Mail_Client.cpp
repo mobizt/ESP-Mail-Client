@@ -1301,13 +1301,16 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   if (!isCb && (session_config->time.ntp_server.length() > 0 || validTime))
   {
 
+    if (!Time.clockReady())
+    {
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
-    if (debug && !isCb)
-      esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time synching" */, esp_mail_debug_tag_type_client, true);
+      if (debug && !isCb)
+        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time synching" */, esp_mail_debug_tag_type_client, true);
 #endif
-    setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+      setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
+    }
 
     if (Time.clockReady())
       return true;

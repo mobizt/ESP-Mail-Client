@@ -66,6 +66,9 @@
 /* The user Email for OAuth2.0 access token */
 #define AUTHOR_EMAIL "<email>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /** The OAuth2.0 access token
  * The generation, exchange and refresh of the access token are not available
  * in this library.
@@ -190,7 +193,7 @@ void setup()
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending Email using Access token");
-  message.addRecipient(F("Admin"), F("change_this@your_mail_dot_com"));
+  message.addRecipient(F("Admin"), RECIPIENT_EMAIL);
 
   message.text.content = F("This is simple plain text message");
 
