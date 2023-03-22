@@ -75,6 +75,9 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Recipient email address */
+#define RECIPIENT_EMAIL "<recipient email here>"
+
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
