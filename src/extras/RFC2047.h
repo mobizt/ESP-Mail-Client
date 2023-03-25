@@ -3,6 +3,11 @@
 #ifndef RFC2047_H
 #define RFC2047_H
 
+#include "ESP_Mail_Client_Version.h"
+#if VALID_VERSION_CHECK(30104)
+#error "Mixed versions compilation."
+#endif
+
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
 #include "MB_FS.h"

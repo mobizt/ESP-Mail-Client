@@ -5,6 +5,11 @@
 #ifndef ESP_MAIL_CONFIG_H
 #define ESP_MAIL_CONFIG_H
 
+#include "ESP_Mail_Client_Version.h"
+#if VALID_VERSION_CHECK(30104)
+#error "Mixed versions compilation."
+#endif
+
 #include <Arduino.h>
 #include "extras/MB_MCU.h"
 

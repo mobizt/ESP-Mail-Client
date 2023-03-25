@@ -1,9 +1,14 @@
-// Created March 21, 2022
+// Created March 25, 2022
 
 #pragma once
 
 #ifndef ESP_MAIL_CONST_H
 #define ESP_MAIL_CONST_H
+
+#include "ESP_Mail_Client_Version.h"
+#if VALID_VERSION_CHECK(30104)
+#error "Mixed versions compilation."
+#endif
 
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Error.h"
@@ -56,6 +61,7 @@
 
 #endif
 
+/* The filesystem types enum */
 enum esp_mail_file_storage_type
 {
     esp_mail_file_storage_type_none,
@@ -69,7 +75,78 @@ using namespace mb_string;
 
 typedef void (*NetworkConnectionHandler)(void);
 
+/* The file types enum */
+enum esp_mail_file_extension
+{
+    /** The arrangement is related to mimeinfo struct.
+     *  Do not modify or remove.
+     */
+    esp_mail_file_extension_html,
+    esp_mail_file_extension_htm,
+    esp_mail_file_extension_css,
+    esp_mail_file_extension_txt,
+    esp_mail_file_extension_js,
+    esp_mail_file_extension_json,
+    esp_mail_file_extension_png,
+    esp_mail_file_extension_gif,
+    esp_mail_file_extension_jpg,
+    esp_mail_file_extension_ico,
+    esp_mail_file_extension_svg,
+    esp_mail_file_extension_ttf,
+    esp_mail_file_extension_otf,
+    esp_mail_file_extension_woff,
+    esp_mail_file_extension_woff2,
+    esp_mail_file_extension_eot,
+    esp_mail_file_extension_sfnt,
+    esp_mail_file_extension_xml,
+    esp_mail_file_extension_pdf,
+    esp_mail_file_extension_zip,
+    esp_mail_file_extension_gz,
+    esp_mail_file_extension_appcache,
+    esp_mail_file_extension_dat,
+    esp_mail_file_extension_none,
+    esp_mail_file_extension_maxType
+};
+
+struct esp_mail_mime_prop_t
+{
+    char endsWith[10];
+    char mimeType[50];
+};
+
+const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROGMEM =
+    {
+        /** The arrangement is related to esp_mail_file_extension enum.
+         *  Do not modify or remove.
+         */
+        {".html", "text/html"},
+        {".htm", "text/html"},
+        {".css", "text/css"},
+        {".txt", "text/plain"},
+        {".js", "application/javascript"},
+        {".json", "application/json"},
+        {".png", "image/png"},
+        {".gif", "image/gif"},
+        {".jpg", "image/jpeg"},
+        {".ico", "image/x-icon"},
+        {".svg", "image/svg+xml"},
+        {".ttf", "application/x-font-ttf"},
+        {".otf", "application/x-font-opentype"},
+        {".woff", "application/font-woff"},
+        {".woff2", "application/font-woff2"},
+        {".eot", "application/vnd.ms-fontobject"},
+        {".sfnt", "application/font-sfnt"},
+        {".xml", "text/xml"},
+        {".pdf", "application/pdf"},
+        {".zip", "application/zip"},
+        {".gz", "application/x-gzip"},
+        {".appcache", "text/cache-manifest"},
+        {".dat", "application/dat"},
+        {"", "application/octet-stream"}};
+
 #if defined(ENABLE_SMTP)
+
+/* The SMTP commands types enum */
 enum esp_mail_smtp_command_types
 {
     /** The SMTP commands per stansards.
@@ -99,6 +176,7 @@ enum esp_mail_smtp_command_types
     esp_mail_smtp_command_maxType
 };
 
+/* The SMTP server capability types enum (except for SASL) */
 enum esp_mail_smtp_send_capability_types
 {
     /** The server capability keywords per standard.
@@ -118,6 +196,8 @@ enum esp_mail_smtp_send_capability_types
 #endif
 
 #if defined(ENABLE_IMAP)
+
+/* The IMAP server response types enum */
 enum esp_mail_imap_response_types
 {
     /** The IMAP response.
@@ -151,6 +231,7 @@ enum esp_mail_imap_response_types
     esp_mail_imap_response_maxType
 };
 
+/* The IMAP commands types enum */
 enum esp_mail_imap_command_types
 {
     /** The IMAP commands per standards.
@@ -213,6 +294,7 @@ enum esp_mail_imap_command_types
     esp_mail_imap_command_maxType
 };
 
+/* The IMAP server capability types enum (except for SASL) */
 enum esp_mail_imap_read_capability_types
 {
     /** The server capability keywords per standard.
@@ -248,6 +330,7 @@ enum esp_mail_imap_read_capability_types
     esp_mail_imap_read_capability_maxType
 };
 
+/* The Identification keys enum used for IMAP ID command */
 enum esp_mail_imap_identification_keys
 {
     /** The identification keys per standard.
@@ -271,6 +354,7 @@ enum esp_mail_imap_identification_keys
 
 #endif
 
+/* The character encoding types enum used for decoding */
 enum esp_mail_char_decoding_types
 {
     /** Supported charactor encodings.
@@ -285,6 +369,7 @@ enum esp_mail_char_decoding_types
     esp_mail_char_decoding_maxType
 };
 
+/* The MIME multipart message types */
 enum esp_mail_multipart_types
 {
     /** MultiPart MIME.
@@ -298,6 +383,7 @@ enum esp_mail_multipart_types
     esp_mail_multipart_maxType
 };
 
+/* The rfc822 message header fileds types enum */
 enum esp_mail_rfc822_header_field_types
 {
     /** The rfc822 message header fields.
@@ -322,9 +408,11 @@ enum esp_mail_rfc822_header_field_types
     esp_mail_rfc822_header_field_maxType
 };
 
+/* The message header fileds types enum and its subproperties enum */
 enum esp_mail_message_header_field_types
 {
     /** Additional fields and props.
+     *  Some are used for the library information data field name.
      *  The arrangement is related to message_headers struct.
      *  Do not modify or remove.
      */
@@ -356,6 +444,7 @@ enum esp_mail_message_header_field_types
     esp_mail_message_header_field_maxType
 };
 
+/* The auth capability types enum which shared usage between SMTP and IMAP */
 enum esp_mail_auth_capability_types
 {
     /** The server capability keywords per standard.
@@ -375,6 +464,7 @@ enum esp_mail_auth_capability_types
     esp_mail_auth_capability_maxType,
 };
 
+/* The smessage types enum */
 enum esp_mail_message_type
 {
     esp_mail_msg_type_none = 0,
@@ -383,6 +473,7 @@ enum esp_mail_message_type
     esp_mail_msg_type_enriched = 1
 };
 
+/* The string mark types enum used in joinStringx functions */
 enum esp_mail_string_mark_type
 {
     esp_mail_string_mark_type_none,
@@ -393,6 +484,7 @@ enum esp_mail_string_mark_type
     esp_mail_string_mark_type_square_bracket
 };
 
+/* The debug TAG types enum */
 enum esp_mail_debug_tag_type
 {
     esp_mail_debug_tag_type_client,
@@ -402,12 +494,14 @@ enum esp_mail_debug_tag_type
     esp_mail_debug_tag_type_warning
 };
 
+/* The embed attachment types enum */
 enum esp_mail_smtp_embed_message_type
 {
     esp_mail_smtp_embed_message_type_attachment = 0,
     esp_mail_smtp_embed_message_type_inline
 };
 
+/* The attachment types enum */
 enum esp_mail_attach_type
 {
     esp_mail_att_type_none,
@@ -415,13 +509,7 @@ enum esp_mail_attach_type
     esp_mail_att_type_inline
 };
 
-enum esp_mail_auth_type
-{
-    esp_mail_auth_type_psw,
-    esp_mail_auth_type_oath2,
-    esp_mail_auth_type_token
-};
-
+/* The debug levels for printing the debug information via Serial port */
 enum esp_mail_debug_level
 {
     esp_mail_debug_level_none = 0,
@@ -430,6 +518,7 @@ enum esp_mail_debug_level
     esp_mail_debug_level_developer = esp_mail_debug_level_maintener + 1
 };
 
+/* The content transfer encoding enum */
 enum esp_mail_msg_xencoding
 {
     esp_mail_msg_xencoding_none,
@@ -443,6 +532,7 @@ enum esp_mail_msg_xencoding
     esp_mail_msg_xencoding_binary
 };
 
+/* The port protocols enum */
 enum esp_mail_protocol
 {
     esp_mail_protocol_plain_text,
@@ -450,18 +540,21 @@ enum esp_mail_protocol
     esp_mail_protocol_tls
 };
 
+/* The internal use strct */
 struct esp_mail_internal_use_t
 {
     esp_mail_msg_xencoding xencoding = esp_mail_msg_xencoding_none;
     MB_String cid;
 };
 
+/* The struct contains port number and its protocol */
 struct port_function
 {
     uint16_t port = 0;
     esp_mail_protocol protocol = esp_mail_protocol_plain_text;
 };
 
+/* The struct that contains the list of port_function and its size */
 struct esp_mail_ports_functions
 {
     friend class IMAPSession;
@@ -473,6 +566,7 @@ struct esp_mail_ports_functions
     bool use_internal_list = false;
 };
 
+/* The content transfer encoding type struct */
 struct esp_mail_transfer_encoding_t
 {
     /* The default 7-bit transfer encoding for US-ACII characters*/
@@ -492,12 +586,7 @@ struct esp_mail_transfer_encoding_t
     static constexpr const char *enc_binary = "binary";
 };
 
-/** content disposition rfc 2183
- *
- * Parameters:
- * "filename", "creation-date","modification-date",
- * "read-date", * "size"
- */
+/* The content disposition types strucr (rfc 2183) */
 struct esp_mail_content_disposition_type_t
 {
     /** if it is intended to be displayed automatically
@@ -512,6 +601,7 @@ struct esp_mail_content_disposition_type_t
     static constexpr const char *attachment = "attachment";
 };
 
+/* The file (SD/flash) message content struct used for providing SMTP message content from file  */
 struct esp_mail_file_message_content_t
 {
     /* The file path include its name */
@@ -525,6 +615,7 @@ struct esp_mail_file_message_content_t
     esp_mail_file_storage_type type = esp_mail_file_storage_type_flash;
 };
 
+/* The blob or flash string message content struct used for providing SMTP message content from blob or flash string  */
 struct esp_mail_blob_message_content_t
 {
     /* The array of content in flash memory */
@@ -550,6 +641,13 @@ struct esp_mail_smtp_embed_message_body_t
     esp_mail_smtp_embed_message_type type = esp_mail_smtp_embed_message_type_attachment;
 };
 
+/** This is the base struct for SMTP message.
+ *  This is for input and later used as esp_mail_plain_body_t
+ *  and esp_mail_html_body_t.
+ *  Its members are similar to esp_mail_imap_plain_body_t
+ *  and esp_mail_imap_html_body_t unless it contains
+ *  MB_String object to hold the string.
+ */
 struct esp_mail_message_body_t
 {
     /* The option to embed this message content as a file */
@@ -582,7 +680,12 @@ struct esp_mail_message_body_t
     struct esp_mail_internal_use_t _int;
 };
 
-/* The PLAIN text body details of the message */
+/** The PLAIN text body details of the fetching message.
+ *  This is for output and its members are similar to
+ *  esp_mail_message_body_t unless there is no string object
+ *  to hold string data unless the pointer to the const strings
+ *  in IMAPSession object.
+ */
 struct esp_mail_imap_plain_body_t
 {
     /* The option to embed this message content as a file */
@@ -613,6 +716,12 @@ struct esp_mail_imap_plain_body_t
     struct esp_mail_internal_use_t _int;
 };
 
+/** The HTML body details of the fetching message.
+ *  This is for output and its members are similar to
+ *  esp_mail_message_body_t unless there is no string object
+ *  to hold string data unless the pointer to the const strings
+ *  in IMAPSession object.
+ */
 struct esp_mail_imap_html_body_t
 {
     /* The option to embedded the content as a file */
@@ -646,6 +755,7 @@ typedef struct esp_mail_message_body_t esp_mail_plain_body_t;
 /* The HTML text body details of the message */
 typedef struct esp_mail_message_body_t esp_mail_html_body_t;
 
+/* The attachment info struct used for output */
 struct esp_mail_attachment_info_t
 {
     const char *filename = "";
@@ -664,12 +774,12 @@ struct esp_mail_smtp_command_t
     char text[9];
 };
 
+/** The SMTP commands per stansards.
+ *  The arrangement is related to esp_mail_smtp_command_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType] PROGMEM =
     {
-        /** The SMTP commands per stansards.
-         *  The arrangement is related to esp_mail_smtp_command_types enum.
-         *  Do not modify or remove.
-         */
         "AUTH",
         "LOGIN",
         "HELO",
@@ -724,12 +834,12 @@ struct esp_mail_imap_command_t
     char text[13];
 };
 
+/** The IMAP commands per standards.
+ *  The arrangement is related to esp_mail_imap_command_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType] PROGMEM =
     {
-        /** The IMAP commands per standards.
-         *  The arrangement is related to esp_mail_imap_command_types enum.
-         *  Do not modify or remove.
-         */
         "STARTTLS",
         "APPEND",
         "CAPABILITY",
@@ -808,19 +918,17 @@ static esp_mail_imap_commands_tokens imap_cmd_pre_tokens(true);
 // The imap commands with trailing space.
 static esp_mail_imap_commands_tokens imap_cmd_post_tokens(false);
 
-
 struct esp_mail_imap_response_t
 {
     char text[14];
 };
 
+/** The IMAP response.
+ *  The arrangement is related to esp_mail_imap_response_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxType] PROGMEM =
     {
-        /** The IMAP response.
-         *  The arrangement is related to esp_mail_imap_response_types enum.
-         *  Do not modify or remove.
-         */
-
         // Tagged
         "OK ",
         "NO ",
@@ -857,12 +965,12 @@ struct esp_mail_char_decoding_t
     char text[12];
 };
 
+/** Supported charactor encodings.
+ *  The arrangement is related to esp_mail_char_decoding_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxType] PROGMEM =
     {
-        /** Supported charactor encodings.
-         *  The arrangement is related to esp_mail_char_decoding_types enum.
-         *  Do not modify or remove.
-         */
         "utf-8",
         "iso-8859-1",
         "iso-8859-11",
@@ -874,12 +982,12 @@ struct esp_mail_multipart_t
     char text[22];
 };
 
+/** MultiPart MIME.
+ *  The arrangement is related to esp_mail_multipart_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_multipart_t multipart_types[esp_mail_multipart_maxType] PROGMEM =
     {
-        /** MultiPart MIME.
-         *  The arrangement is related to esp_mail_multipart_types enum.
-         *  Do not modify or remove.
-         */
         "multipart/mixed",
         "multipart/related",
         "multipart/parallel",
@@ -892,12 +1000,12 @@ struct esp_mail_rfc822_header_field_t
     bool trim;
 };
 
+/** The rfc822 message header fields.
+ *  The arrangement is related to esp_mail_rfc822_header_field_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_rfc822_header_field_t rfc822_headers[esp_mail_rfc822_header_field_maxType] PROGMEM =
     {
-        /** The rfc822 message header fields.
-         *  The arrangement is related to esp_mail_rfc822_header_field_types enum.
-         *  Do not modify or remove.
-         */
         {"From", false, true},
         {"Sender", false, true},
         {"To", false, true},
@@ -919,12 +1027,12 @@ struct esp_mail_message_header_field_t
     char text[26];
 };
 
+/** Additional fields and props.
+ *  The arrangement is related to esp_mail_message_header_field_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_message_header_field_t message_headers[esp_mail_message_header_field_maxType] PROGMEM =
     {
-        /** Additional fields and props.
-         *  The arrangement is related to esp_mail_message_header_field_types enum.
-         *  Do not modify or remove.
-         */
         "Number",
         "UID",
         "Accept-Language",
@@ -958,12 +1066,12 @@ struct esp_mail_auth_capability_t
 
 #if defined(ENABLE_SMTP)
 
+/** The server capability keywords per standard.
+ *  The arrangement is related to esp_mail_auth_capability_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
-        /** The server capability keywords per standard.
-         *  The arrangement is related to esp_mail_auth_capability_types enum.
-         *  Do not modify or remove.
-         */
         "PLAIN",
         "XOAUTH2",
         "CRAM-MD5",
@@ -1000,12 +1108,12 @@ struct esp_mail_smtp_send_capability_t
     char text[15];
 };
 
+/** The server capability keywords per standard.
+ *  The arrangement is related esp_mail_smtp_send_capability_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM =
     {
-        /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_smtp_send_capability_types enum.
-         *  Do not modify or remove.
-         */
         "BINARYMIME",
         "8BITMIME",
         "CHUNKING",
@@ -1013,7 +1121,6 @@ const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smt
         "PIPELINING",
         "DSN",
         "" /* ESMTP */
-
 };
 
 struct esp_mail_smtp_send_tokens
@@ -1040,12 +1147,12 @@ static esp_mail_smtp_send_tokens smtp_send_cap_pre_tokens(true);
 
 #if defined(ENABLE_IMAP)
 
+/** The server capability keywords per standard.
+ *  The arrangement is related esp_mail_auth_capability_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
     {
-        /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_auth_capability_types enum.
-         *  Do not modify or remove.
-         */
         "AUTH=PLAIN",
         "AUTH=XOAUTH2",
         "CRAM-MD5",
@@ -1082,12 +1189,12 @@ struct esp_mail_imap_read_capability_t
     char text[15];
 };
 
+/** The server capability keywords per standard.
+ *  The arrangement is related esp_mail_imap_read_capability_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_imap_read_capability_maxType] PROGMEM =
     {
-        /** The server capability keywords per standard.
-         *  The arrangement is related esp_mail_imap_read_capability_types enum.
-         *  Do not modify or remove.
-         */
         "IMAP4",
         "IMAP4rev1",
         "IDLE",
@@ -1134,12 +1241,12 @@ struct esp_mail_imap_identification_key_t
     char text[15];
 };
 
+/** The identification keys per standard.
+ *  The arrangement is related esp_mail_imap_identification_key_types enum.
+ *  Do not modify or remove.
+ */
 const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mail_imap_identification_key_maxType] PROGMEM =
     {
-        /** The identification keys per standard.
-         *  The arrangement is related esp_mail_imap_identification_key_types enum.
-         *  Do not modify or remove.
-         */
         "name",
         "version",
         "os",
@@ -1152,6 +1259,7 @@ const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mai
         "arguments",
         "environment"};
 
+/* The IMAP ID data struct */
 typedef struct esp_mail_imap_identity_t
 {
     MB_String name;
@@ -1174,6 +1282,7 @@ typedef struct esp_mail_imap_identity_t
 
 #if defined(ENABLE_SMTP)
 
+/* The SMTP message notification types enum */
 enum esp_mail_smtp_notify
 {
     esp_mail_smtp_notify_never = 0,
@@ -1182,6 +1291,7 @@ enum esp_mail_smtp_notify
     esp_mail_smtp_notify_delay = 4
 };
 
+/* The SMTP status codes enum */
 enum esp_mail_smtp_status_code
 {
     esp_mail_smtp_status_code_0, // default
@@ -1250,6 +1360,7 @@ enum esp_mail_smtp_status_code
     esp_mail_smtp_status_code_556 = 556, // Domain does not accept mail[RFC 7504]
 };
 
+/* The SMTP ports enum */
 enum esp_mail_smtp_port
 {
     esp_mail_smtp_port_25 = 25,   // PLAIN/TLS with STARTTLS
@@ -1257,6 +1368,7 @@ enum esp_mail_smtp_port
     esp_mail_smtp_port_587 = 587  // TLS with STARTTLS
 };
 
+/* The SMTP message response [SMTP_Message] */
 struct esp_mail_smtp_msg_response_t
 {
     /* The author Email address to reply */
@@ -1273,12 +1385,14 @@ struct esp_mail_smtp_msg_response_t
     int notify = esp_mail_smtp_notify::esp_mail_smtp_notify_never;
 };
 
+/* The SMTP enable option [SMTP_Message] */
 struct esp_mail_smtp_enable_option_t
 {
     /* Enable chunk data sending for large message */
     bool chunking = false;
 };
 
+/* The SMTP blob data attachment data [Session_Config] */
 struct esp_mail_attach_blob_t
 {
     /* BLOB data (flash or ram) */
@@ -1288,6 +1402,7 @@ struct esp_mail_attach_blob_t
     size_t size = 0;
 };
 
+/* The SMTP file attachment data [Session_Config] */
 struct esp_mail_attach_file_t
 {
     MB_String path;
@@ -1298,6 +1413,7 @@ struct esp_mail_attach_file_t
     esp_mail_file_storage_type storage_type = esp_mail_file_storage_type_none;
 };
 
+/* The SMTP attachment decription [Session_Config] */
 struct esp_mail_attach_descr_t
 {
     /* The name of attachment */
@@ -1322,6 +1438,7 @@ struct esp_mail_attach_descr_t
     MB_String description;
 };
 
+/* Used internally in esp_mail_attachment_t */
 struct esp_mail_attach_internal_t
 {
     esp_mail_attach_type att_type = esp_mail_att_type_attachment;
@@ -1333,6 +1450,7 @@ struct esp_mail_attach_internal_t
     MB_String cid;
 };
 
+/* The struct used as SMTP_Attachment for SMTP and ESP_Mail_Attachment for IMAP */
 struct esp_mail_attachment_t
 {
     /* The attachment description */
@@ -1348,6 +1466,7 @@ struct esp_mail_attachment_t
     struct esp_mail_attach_internal_t _int;
 };
 
+/* Used internally in SMTP to keep the recipient data */
 struct esp_mail_smtp_recipient_t
 {
     /* The recipient's name */
@@ -1357,12 +1476,14 @@ struct esp_mail_smtp_recipient_t
     MB_String email;
 };
 
+/* Used internally in SMTP to keep the cc recipient data */
 struct esp_mail_smtp_recipient_address_t
 {
     /* The recipient's Email address */
     MB_String email;
 };
 
+/* The struct used as SMTP_Result */
 struct esp_mail_smtp_send_status_t
 {
     /* The status of the message */
@@ -1378,12 +1499,14 @@ struct esp_mail_smtp_send_status_t
     uint32_t timestamp = 0;
 };
 
+/* Used internally for SMTPSession */
 struct esp_mail_smtp_msg_type_t
 {
     bool rfc822 = false;
     int rfc822Idx = 0;
 };
 
+/* Used internally for holding base64 data sources */
 struct esp_mail_smtp_send_base64_data_info_t
 {
     esp_mail_file_storage_type storageType = esp_mail_file_storage_type_none;
@@ -1394,6 +1517,7 @@ struct esp_mail_smtp_send_base64_data_info_t
     size_t dataIndex = 0;
 };
 
+/* SMTP commands types enum */
 enum esp_mail_smtp_command
 {
     esp_mail_smtp_cmd_undefined,
@@ -1412,6 +1536,7 @@ enum esp_mail_smtp_command
     esp_mail_smtp_cmd_custom
 };
 
+/* SMTP message priority level enum */
 enum esp_mail_smtp_priority
 {
     esp_mail_smtp_priority_high = 1,
@@ -1419,6 +1544,7 @@ enum esp_mail_smtp_priority
     esp_mail_smtp_priority_low = 5,
 };
 
+/* SMTP response data */
 typedef struct esp_mail_smtp_response_status_t
 {
     int respCode = 0;
@@ -1427,6 +1553,7 @@ typedef struct esp_mail_smtp_response_status_t
     MB_String text;
 } SMTP_Response;
 
+/* The sender/recipient info [SMTP_Message]*/
 struct esp_mail_email_info_t
 {
     /* The name of Email author*/

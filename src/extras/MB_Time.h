@@ -1,7 +1,15 @@
+#ifndef MB_Time_H
+#define MB_Time_H
+
+#include "ESP_Mail_Client_Version.h"
+#if VALID_VERSION_CHECK(30104)
+#error "Mixed versions compilation."
+#endif
+
 /*
- * Time helper class v1.0.5
+ * Time helper class v1.0.6
  *
- * Created March 21, 2023
+ * Created March 25, 2023
  *
  * Do not remove or modify this file as it required for AVR, ARM, SAMD devices and external client to work.
  *
@@ -27,8 +35,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef MB_Time_H
-#define MB_Time_H
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
