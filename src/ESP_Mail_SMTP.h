@@ -431,7 +431,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
         if (smtp->_debug && smtp->_sendCallback && !smtp->_customCmdResCallback)
         {
             esp_mail_debug_print();
-            errorStatusCB(smtp, MAIL_CLIENT_ERROR_NOT_AUTHENTICATE);
+            errorStatusCB(smtp, MAIL_CLIENT_ERROR_NOT_AUTHENTICATED);
         }
 #endif
         return false;

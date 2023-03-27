@@ -1517,14 +1517,12 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:
     ret += esp_mail_error_network_str_3; /* "session timed out" */
     break;
-
   case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
     ret += esp_mail_error_network_str_8; /* "connection failed" */
     break;
   case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
     ret += esp_mail_error_ssl_str_1; /* "fail to set up the SSL/TLS structure" */
     break;
-
   case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
     ret += esp_mail_error_mem_str_8; /* "out of memory" */
     break;
@@ -1546,12 +1544,10 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET:
     ret += esp_mail_error_time_str_1; /* "library or device time was not set" */
     break;
-
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
-
-  case MAIL_CLIENT_ERROR_NOT_AUTHENTICATE:
+  case MAIL_CLIENT_ERROR_NOT_AUTHENTICATED:
     ret += esp_mail_error_auth_str_3; /* "not authenticate" */
     break;
 
@@ -1560,19 +1556,15 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MB_FS_ERROR_FILE_IO_ERROR:
     ret += esp_mail_error_mem_str_7; /* "file I/O error" */
     break;
-
   case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
     ret += esp_mail_error_mem_str_1; /* "flash Storage is not ready." */
     break;
-
   case MB_FS_ERROR_SD_STORAGE_IS_NOT_READY:
     ret += esp_mail_error_mem_str_2; /* "SD Storage is not ready." */
     break;
-
   case MB_FS_ERROR_FILE_STILL_OPENED:
     ret += esp_mail_error_mem_str_5; /* "file is still opened." */
     break;
-
   case MB_FS_ERROR_FILE_NOT_FOUND:
     ret += esp_mail_error_mem_str_6; /* "file not found." */
     break;

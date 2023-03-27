@@ -422,7 +422,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_debug && imap->_readCallback && !imap->_customCmdResCallback)
         {
             esp_mail_debug_print();
-            errorStatusCB(imap, MAIL_CLIENT_ERROR_NOT_AUTHENTICATE);
+            errorStatusCB(imap, MAIL_CLIENT_ERROR_NOT_AUTHENTICATED);
         }
 #endif
         return false;
