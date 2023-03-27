@@ -131,7 +131,6 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
 
     if (strlen(enc) == 0)
     {
-
         while (str[p1] == ' ' && p1 < str.length() - 1)
             p1++;
 
@@ -139,9 +138,7 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
         {
             p2 = str.find('?', p1 + 2);
             if (p2 != MB_String::npos)
-            {
                 headerEnc = str.substr(p1 + 2, p2 - p1 - 2);
-            }
         }
     }
     else
@@ -158,7 +155,6 @@ void ESP_Mail_Client::decodeString(IMAPSession *imap, MB_String &str, const char
     if (imap->_charDecCallback)
     {
         IMAP_Decoding_Info decoding;
-
         decoding.charset = headerEnc.c_str();
         decoding.data = buf;
         decoding.type = IMAP_Decoding_Info::message_part_type_header;
@@ -324,10 +320,8 @@ int ESP_Mail_Client::decodeLatin1_UTF8(unsigned char *out, int *outlen, const un
 bool ESP_Mail_Client::sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_imap_command cmdCase)
 {
 
-    MB_String cmd;
+    MB_String cmd, cmd2, cmd3;
     appendHeadersFetchCommand(imap, cmd, msgIndex, false);
-
-    MB_String cmd2, cmd3;
 
     if (cmdCase == esp_mail_imap_cmd_fetch_body_mime)
     {
@@ -382,9 +376,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
     imap->_isFirmwareUpdated = false;
 
-    MB_String buf;
-    MB_String command;
-    MB_String _uid;
+    MB_String buf, command, _uid;
 
     size_t readCount = 0;
     imap->_multipart_levels.clear();
@@ -412,14 +404,29 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
     if (cmem < ESP_MAIL_MIN_MEM)
     {
-        if (imap->_debug)
+#if !defined(SILENT_MODE)
+        if (imap->_debug && imap->_readCallback && !imap->_customCmdResCallback)
         {
             esp_mail_debug_print();
             errorStatusCB(imap, MAIL_CLIENT_ERROR_OUT_OF_MEMORY);
         }
+#endif
+
         goto out;
     }
 #endif
+
+    if (!imap->_tcpConnected && !imap->_sessionLogin)
+    {
+#if !defined(SILENT_MODE)
+        if (imap->_debug && imap->_readCallback && !imap->_customCmdResCallback)
+        {
+            esp_mail_debug_print();
+            errorStatusCB(imap, MAIL_CLIENT_ERROR_NOT_AUTHENTICATE);
+        }
+#endif
+        return false;
+    }
 
     // new session
     if (!imap->_tcpConnected)
@@ -1383,6 +1390,10 @@ non_authenticated:
 bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 {
 
+#if defined(ESP8266)
+    return false;
+#endif
+
     if (!sessionExisted((void *)imap, false))
         return false;
 
@@ -1395,6 +1406,7 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
                true,
                false);
 #endif
+
     if (imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_logout].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
@@ -1407,8 +1419,8 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 #if !defined(SILENT_MODE)
     printDebug((void *)(imap),
                false,
-               esp_mail_cb_str_47 /* "Message fetching cmpleted" */,
-               esp_mail_dbg_str_31 /* "message fetching completed" */,
+               esp_mail_cb_str_47 /* "Log out completed" */,
+               esp_mail_dbg_str_31 /* "log out completed" */,
                esp_mail_debug_tag_type_client,
                true,
                false);
@@ -4640,22 +4652,37 @@ bool IMAPSession::connected()
     return client.connected();
 }
 
-bool IMAPSession::connect(Session_Config *session_config, IMAP_Data *imap_data)
+bool IMAPSession::connect(Session_Config *session_config, IMAP_Data *imap_data, bool login)
 {
-    bool ssl = false;
+    _sessionSSL = false;
+    _sessionLogin = login;
 
     if (session_config)
         session_config->clearPorts();
 
     this->_customCmdResCallback = NULL;
 
-    if (!handleConnection(session_config, imap_data, ssl))
+    if (!handleConnection(session_config, imap_data, _sessionSSL))
         return false;
 
     int ptr = toAddr(*session_config);
     session_config->addPtr(&_configPtrList, ptr);
 
-    return MailClient.imapAuth(this, ssl);
+    if (!_sessionLogin)
+        return true;
+
+    return MailClient.imapAuth(this, _sessionSSL);
+}
+
+bool IMAPSession::mLogin(MB_StringPtr email, MB_StringPtr password)
+{
+    if (!MailClient.sessionExisted((void *)this, false))
+        return false;
+
+    _session_cfg->login.email = email;
+    _session_cfg->login.password = password;
+
+    return MailClient.imapAuth(this, _sessionSSL);
 }
 
 void IMAPSession::appendIdList(MB_String &list, IMAP_Identification *identification)

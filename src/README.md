@@ -419,11 +419,28 @@ param **`session_config`** The pointer to Session_Config structured data that ke
 
 param **`imap_data`** The pointer to IMAP_Data structured data that keeps the operation options.
 
+param **`login`** The bool option for login after server connection.
+
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bool connect(Session_Config *session_config, IMAP_Data *imap_data);
+bool connect(Session_Config *session_config, IMAP_Data *imap_data, bool login = true);
 ```
+
+
+
+#### Login to IMAP server.
+
+param **`email`** The IMAP server account email.
+
+param **`password`** The IMAP server account password.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bbool login(<string> email, <string> password);
+```
+
 
 
 #### Send the client identification to the server
@@ -1260,11 +1277,28 @@ void setSystemTime(time_t ts, float gmtOffset = 0);
 
 param **`session_config`** The pointer to Session_Config structured data that keeps the server and log in details.
 
+param **`login`** The bool option for login after server connection.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
 ```cpp
-bool connect(Session_Config *session_config);
+bool connect(Session_Config *session_config, bool login = true);
 ```
+
+
+
+#### Login to SMTP server.
+
+param **`email`** The SMTP server account email.
+
+param **`password`** The SMTP server account password.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bbool login(<string> email, <string> password);
+```
+
 
 
 #### Return the SASL authentication status.

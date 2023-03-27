@@ -41,6 +41,7 @@ sdBegin KEYWORD2
 sdMMCBegin  KEYWORD2
 getFreeHeap KEYWORD2
 connect KEYWORD2
+login   KEYWORD2
 isAuthenticated KEYWORD2
 connected   KEYWORD2
 customConnect   KEYWORD2

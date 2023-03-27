@@ -7,7 +7,6 @@
 #error "Mixed versions compilation."
 #endif
 
-
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
@@ -425,6 +424,18 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
 
     smtp->_chunkedEnable = false;
     smtp->_chunkCount = 0;
+
+    if (!smtp->_tcpConnected && !smtp->_sessionLogin)
+    {
+#if !defined(SILENT_MODE)
+        if (smtp->_debug && smtp->_sendCallback && !smtp->_customCmdResCallback)
+        {
+            esp_mail_debug_print();
+            errorStatusCB(smtp, MAIL_CLIENT_ERROR_NOT_AUTHENTICATE);
+        }
+#endif
+        return false;
+    }
 
     // new session
     if (!smtp->_tcpConnected)
@@ -1041,7 +1052,6 @@ bool ESP_Mail_Client::sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bo
     bdat += len;
     if (last)
         bdat += smtp_cmd_pre_tokens[esp_mail_smtp_command_last];
-    
 
     if (smtpSend(smtp, bdat.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return addSendingResult(smtp, msg, false, true);
@@ -3303,22 +3313,37 @@ SMTPSession::~SMTPSession()
     closeSession();
 }
 
-bool SMTPSession::connect(Session_Config *session_config)
+bool SMTPSession::connect(Session_Config *session_config, bool login)
 {
-    bool ssl = false;
+    _sessionSSL = false;
+    _sessionLogin = login;
 
     if (session_config)
         session_config->clearPorts();
 
     this->_customCmdResCallback = NULL;
 
-    if (!handleConnection(session_config, ssl))
+    if (!handleConnection(session_config, _sessionSSL))
         return false;
 
     int ptr = toAddr(*session_config);
     session_config->addPtr(&_configPtrList, ptr);
 
-    return MailClient.smtpAuth(this, ssl);
+    if (!_sessionLogin)
+        return true;
+
+    return MailClient.smtpAuth(this, _sessionSSL);
+}
+
+bool SMTPSession::mLogin(MB_StringPtr email, MB_StringPtr password)
+{
+    if (!MailClient.sessionExisted((void *)this, true))
+        return false;
+
+    _session_cfg->login.email = email;
+    _session_cfg->login.password = password;
+
+    return MailClient.smtpAuth(this, _sessionSSL);
 }
 
 bool SMTPSession::isAuthenticated()

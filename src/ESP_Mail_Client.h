@@ -1667,9 +1667,19 @@ public:
    * the server and log in details.
    * @param imap_data The pointer to IMAP_Data structured data that keeps the
    * operation options.
+   * @param login The bool option for login after server connection.
    * @return The boolean value which indicates the success of operation.
    */
-  bool connect(Session_Config *session_config, IMAP_Data *imap_data);
+  bool connect(Session_Config *session_config, IMAP_Data *imap_data, bool login = true);
+
+  /** Log in to IMAP server.
+   *
+   * @param email The IMAP server account email.
+   * @param password The IMAP server account password.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool login(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password)); };
 
   /** Send the client identification to the server
    *
@@ -2104,6 +2114,9 @@ public:
   friend class foldderList;
 
 private:
+  // Log in to IMAP server
+  bool mLogin(MB_StringPtr email, MB_StringPtr password);
+
   // Clear message data
   void clearMessageData();
 
@@ -2255,6 +2268,8 @@ private:
   void printDebugNotSupported();
 
   bool _tcpConnected = false;
+  bool _sessionSSL = false;
+  bool _sessionLogin = false;
   unsigned long _last_polling_error_ms = 0;
   unsigned long _last_host_check_ms = 0;
   struct esp_mail_imap_response_status_t _imapStatus;
@@ -2418,9 +2433,19 @@ public:
    *
    * @param session_config The pointer to Session_Config structured data that keeps
    * the server and log in details.
+   * @param login The bool option for login after server connection.
    * @return The boolean value indicates the success of operation.
    */
-  bool connect(Session_Config *session_config);
+  bool connect(Session_Config *session_config, bool login = true);
+
+  /** Log in to SMTP server.
+   *
+   * @param email The SMTP server account email.
+   * @param password The SMTP server account password.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool login(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password)); };
 
   /** Return the SASL authentication status.
    * @return The boolean value indicates SASL authentication status.
@@ -2524,6 +2549,8 @@ public:
 
 private:
   bool _tcpConnected = false;
+  bool _sessionSSL = false;
+  bool _sessionLogin = false;
   struct esp_mail_smtp_response_status_t _smtpStatus;
   int _sentSuccessCount = 0;
   int _sentFailedCount = 0;
@@ -2560,6 +2587,9 @@ private:
 
   // Start TCP connection
   bool connect(bool &ssl);
+
+  // Log in to SMTP server
+  bool mLogin(MB_StringPtr email, MB_StringPtr password);
 
   // Handle TCP connection
   bool handleConnection(Session_Config *session_config, bool &ssl);

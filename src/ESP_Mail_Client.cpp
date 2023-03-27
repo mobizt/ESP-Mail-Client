@@ -496,7 +496,6 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
     if (type != mb_fs_mem_storage_type_undefined)
     {
       MB_String filename = TZ_file;
-
       if (mbfs->open(filename, type, mb_fs_open_mode_write) > -1)
       {
         mbfs->print(type, TZ_Var);
@@ -1550,6 +1549,10 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
 
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
+    break;
+
+  case MAIL_CLIENT_ERROR_NOT_AUTHENTICATE:
+    ret += esp_mail_error_auth_str_3; /* "not authenticate" */
     break;
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)

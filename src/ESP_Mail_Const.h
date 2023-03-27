@@ -2857,7 +2857,7 @@ static const char esp_mail_dbg_str_27[] PROGMEM = "fetch body part header, ";
 static const char esp_mail_dbg_str_28[] PROGMEM = "fetch body sub part header, ";
 static const char esp_mail_dbg_str_29[] PROGMEM = "finished reading Email";
 static const char esp_mail_dbg_str_30[] PROGMEM = "UID is ";
-static const char esp_mail_dbg_str_31[] PROGMEM = "message fetching cmpleted";
+static const char esp_mail_dbg_str_31[] PROGMEM = "log out completed";
 static const char esp_mail_dbg_str_32[] PROGMEM = "closing the ";
 static const char esp_mail_dbg_str_33[] PROGMEM = "IMAP server connected";
 static const char esp_mail_dbg_str_34[] PROGMEM = "send IMAP command, LOGIN";
@@ -2970,7 +2970,7 @@ static const char esp_mail_cb_str_43[] PROGMEM = "Downloading messages...";
 static const char esp_mail_cb_str_44[] PROGMEM = "Appending message...";
 static const char esp_mail_cb_str_45[] PROGMEM = "Message append successfully";
 static const char esp_mail_cb_str_46[] PROGMEM = "Finished reading Email";
-static const char esp_mail_cb_str_47[] PROGMEM = "Message fetching cmpleted";
+static const char esp_mail_cb_str_47[] PROGMEM = "Log out completed";
 static const char esp_mail_cb_str_48[] PROGMEM = "IMAP server connected";
 static const char esp_mail_cb_str_49[] PROGMEM = "Polling established";
 static const char esp_mail_cb_str_50[] PROGMEM = "Mailbox listening stopped";
@@ -3069,6 +3069,7 @@ static const char esp_mail_error_ssl_str_3[] PROGMEM = "make sure the SSL/TLS ha
 #if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_auth_str_1[] PROGMEM = "the provided SASL authentication mechanism is not support";
 static const char esp_mail_error_auth_str_2[] PROGMEM = "OAuth2.0 log in was disabled for this server";
+static const char esp_mail_error_auth_str_3[] PROGMEM = "not authenticated";
 #endif
 
 /////////////////////////
