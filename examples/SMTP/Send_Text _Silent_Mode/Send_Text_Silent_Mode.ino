@@ -130,7 +130,7 @@ void setup()
     return;
   }
 
-  if (!imap.isLoggedIn())
+  if (!smtp.isLoggedIn())
   {
     Serial.println("Not yet logged in.");
   }
