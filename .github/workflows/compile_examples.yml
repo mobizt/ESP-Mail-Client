@@ -89,7 +89,7 @@ jobs:
 
     - name: update library
       run: |
-        pio pkg update
+        pio lib --global update
         
     - name: Run PlatformIO Examples
       run: |
@@ -179,7 +179,7 @@ jobs:
 
     - name: update library
       run: |
-        pio pkg update
+        pio lib --global update
 
     - name: Run PlatformIO Examples
       run: |
