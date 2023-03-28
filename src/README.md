@@ -429,7 +429,7 @@ bool connect(Session_Config *session_config, IMAP_Data *imap_data, bool login = 
 
 
 
-#### Login to IMAP server.
+#### Login to IMAP server using Email and password.
 
 param **`email`** The IMAP server account email.
 
@@ -438,9 +438,22 @@ param **`password`** The IMAP server account password.
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bbool login(<string> email, <string> password);
+bbool loginWithPassword(<string> email, <string> password);
 ```
 
+
+
+#### Login to IMAP server using Email and access token.
+
+param **`email`** The IMAP server account email.
+
+param **`token`** The Access token to log in.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bbool loginWithAccessToken(<string> email, <string> token);
+```
 
 
 #### Send the client identification to the server
@@ -471,6 +484,15 @@ return **`boolean`** The boolean value indicates SASL authentication status.
 
 ```cpp
 bool isAuthenticated();
+```
+
+
+#### Return the log in status.
+
+return **`boolean`** The boolean value indicates log in status.
+
+```cpp
+bool isLoggedIn();
 ```
 
 
@@ -1287,7 +1309,7 @@ bool connect(Session_Config *session_config, bool login = true);
 
 
 
-#### Login to SMTP server.
+#### Login to SMTP server using Email and password.
 
 param **`email`** The SMTP server account email.
 
@@ -1296,9 +1318,22 @@ param **`password`** The SMTP server account password.
 return **`boolean`** The boolean value which indicates the success of operation.
 
 ```cpp
-bbool login(<string> email, <string> password);
+bool loginWithPassword(<string> email, <string> password);
 ```
 
+
+
+#### Login to SMTP server using Email and access token.
+
+param **`email`** The SMTP server account email.
+
+param **`token`** The Access token to log in.
+
+return **`boolean`** The boolean value which indicates the success of operation.
+
+```cpp
+bool loginWithAccessToken(<string> email, <string> token);
+```
 
 
 #### Return the SASL authentication status.
@@ -1307,6 +1342,16 @@ return **`boolean`** The boolean value indicates SASL authentication status.
 
 ```cpp
 bool isAuthenticated();
+```
+
+
+
+#### Return the log in status.
+
+return **`boolean`** The boolean value indicates log in status.
+
+```cpp
+bool isLoggedIn();
 ```
 
 

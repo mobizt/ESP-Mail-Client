@@ -130,10 +130,17 @@ void setup()
     return;
   }
 
-  if (smtp.isAuthenticated())
-    Serial.println("Successfully logged in.");
+  if (!imap.isLoggedIn())
+  {
+    Serial.println("Not yet logged in.");
+  }
   else
-    Serial.println("Connected with no Auth.");
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("Successfully logged in.");
+    else
+      Serial.println("Connected with no Auth.");
+  }
 
   if (MailClient.sendMail(&smtp, &message))
   {

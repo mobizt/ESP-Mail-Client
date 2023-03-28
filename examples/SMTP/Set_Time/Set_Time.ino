@@ -112,16 +112,15 @@ void setup()
     // Method 2, set timestamp directly via smtp.setSystemTime or imap.setSystemTime
     // This method doen not require internet connection.
     // This method suites for non-system time (device local time) devices e.g. ARM, SAMD and AVR devices.
-    // The timestamp is the seconds since Midnight Jan 1, 1970 and can be taken from RTC chip 
+    // The timestamp is the seconds since Midnight Jan 1, 1970 and can be taken from RTC chip
     // and other providers.
 
     // If use this method with ESP8266 and ESP32, the device system time will be set automatically.
 
-    //time_t ts = 1577836800;
-    //float gmtOffset = 3.0; // GMT offset in hour
+    // time_t ts = 1577836800;
+    // float gmtOffset = 3.0; // GMT offset in hour
 
-    //smtp.setSystemTime(ts, gmtOffset);
-
+    // smtp.setSystemTime(ts, gmtOffset);
 
     // Note:
     // If time setting faild when using method 1 and method 2, the library internal NTP time synching will
@@ -129,8 +128,6 @@ void setup()
 
     // To disable library internal NTP time synching, please comment or remove the following macro defined in src/ESP_Mail_FS.h
     // #define ENABLE_NTP_TIME
-   
-
 
     MailClient.networkReconnect(true);
 
@@ -170,10 +167,17 @@ void setup()
     if (!smtp.connect(&config))
         return;
 
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!imap.isLoggedIn())
+    {
+        Serial.println("\nNot yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (smtp.isAuthenticated())
+            Serial.println("\nSuccessfully logged in.");
+        else
+            Serial.println("\nConnected with no Auth.");
+    }
 
     if (!MailClient.sendMail(&smtp, &message))
         Serial.println("Error sending Email, " + smtp.errorReason());

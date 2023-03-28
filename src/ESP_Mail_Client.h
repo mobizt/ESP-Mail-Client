@@ -1672,14 +1672,23 @@ public:
    */
   bool connect(Session_Config *session_config, IMAP_Data *imap_data, bool login = true);
 
-  /** Log in to IMAP server.
+  /** Log in to IMAP server using Email and password.
    *
    * @param email The IMAP server account email.
    * @param password The IMAP server account password.
    * @return The boolean value which indicates the success of operation.
    */
   template <typename T1 = const char *, typename T2 = const char *>
-  bool login(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password)); };
+  bool loginWithPassword(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password), false); };
+
+  /** Log in to IMAP server using Email and access token.
+   *
+   * @param email The IMAP server account email.
+   * @param token The Access token to log in.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool loginWithAccessToken(T1 email, T2 token) { return mLogin(toStringPtr(email), toStringPtr(token), true); };
 
   /** Send the client identification to the server
    *
@@ -1698,6 +1707,11 @@ public:
    * @return The boolean value indicates SASL authentication status.
    */
   bool isAuthenticated();
+
+   /** Return the log status.
+   * @return The boolean value log in status.
+   */
+  bool isLoggedIn();
 
   /** Return firmware update result when attachment filename matches.
    * @return The boolean value indicates the firmware update status.
@@ -2115,7 +2129,7 @@ public:
 
 private:
   // Log in to IMAP server
-  bool mLogin(MB_StringPtr email, MB_StringPtr password);
+  bool mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken);
 
   // Clear message data
   void clearMessageData();
@@ -2270,6 +2284,7 @@ private:
   bool _tcpConnected = false;
   bool _sessionSSL = false;
   bool _sessionLogin = false;
+  bool _loginStatus = false;
   unsigned long _last_polling_error_ms = 0;
   unsigned long _last_host_check_ms = 0;
   struct esp_mail_imap_response_status_t _imapStatus;
@@ -2438,19 +2453,33 @@ public:
    */
   bool connect(Session_Config *session_config, bool login = true);
 
-  /** Log in to SMTP server.
+  /** Log in to SMTP server using Email and password.
    *
    * @param email The SMTP server account email.
    * @param password The SMTP server account password.
    * @return The boolean value which indicates the success of operation.
    */
   template <typename T1 = const char *, typename T2 = const char *>
-  bool login(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password)); };
+  bool loginWithPassword(T1 email, T2 password) { return mLogin(toStringPtr(email), toStringPtr(password), false); };
+
+  /** Log in to SMTP server using Email and access token.
+   *
+   * @param email The SMTP server account email.
+   * @param token The Access token to log in.
+   * @return The boolean value which indicates the success of operation.
+   */
+  template <typename T1 = const char *, typename T2 = const char *>
+  bool loginWithAccessToken(T1 email, T2 token) { return mLogin(toStringPtr(email), toStringPtr(token), true); };
 
   /** Return the SASL authentication status.
    * @return The boolean value indicates SASL authentication status.
    */
   bool isAuthenticated();
+
+  /** Return the log status.
+   * @return The boolean value indicates log in status.
+   */
+  bool isLoggedIn();
 
   /** Begin the SMTP server connection without authentication.
    *
@@ -2570,6 +2599,7 @@ private:
   int _debugLevel = 0;
   bool _secure = false;
   bool _authenticated = false;
+  bool _loginStatus = false;
   bool _waitForAuthenticate = false;
   smtpStatusCallback _sendCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
@@ -2589,7 +2619,7 @@ private:
   bool connect(bool &ssl);
 
   // Log in to SMTP server
-  bool mLogin(MB_StringPtr email, MB_StringPtr password);
+  bool mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken);
 
   // Handle TCP connection
   bool handleConnection(Session_Config *session_config, bool &ssl);

@@ -247,10 +247,17 @@ void setup()
   if (!smtp.connect(&config))
     return;
 
-  if (smtp.isAuthenticated())
-    Serial.println("\nSuccessfully logged in.");
+  if (!imap.isLoggedIn())
+  {
+    Serial.println("\nNot yet logged in.");
+  }
   else
-    Serial.println("\nConnected with no Auth.");
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("\nSuccessfully logged in.");
+    else
+      Serial.println("\nConnected with no Auth.");
+  }
 
   /** Start sending the first Email and keep open the session
    * The third parameter is for close the config.
@@ -278,11 +285,6 @@ void setup()
   // message.clearInlineimages();
 
   message.subject = F("Second Email with session reusage");
-
-  message.addRecipient(F("Admin3"), F("change_this@your_mail_dot_com"));
-  message.addRecipient(F("Admin4"), F("change_this@your_mail_dot_com"));
-  message.addCc(F("change_this@your_mail_dot_com"));
-  message.addBcc(F("change_this@your_mail_dot_com"));
 
   message.html.content = F("<p>This is the <span style=\"color:#ff0000;\">second message</span>.</p>");
   message.html.charSet = F("us-ascii");

@@ -1547,8 +1547,8 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
     ret += esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
-  case MAIL_CLIENT_ERROR_NOT_AUTHENTICATED:
-    ret += esp_mail_error_auth_str_3; /* "not authenticate" */
+  case MAIL_CLIENT_ERROR_NOT_YET_LOGIN:
+    ret += esp_mail_error_auth_str_3; /* "not yet log in" */
     break;
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
@@ -1611,6 +1611,7 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
     memset(((SMTPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((SMTPSession *)sessionPtr)->_send_capability, 0, esp_mail_smtp_send_capability_maxType);
     ((SMTPSession *)sessionPtr)->_authenticated = false;
+     ((SMTPSession *)sessionPtr)->_loginStatus = false;
 
 #endif
   }
@@ -1627,6 +1628,7 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
     memset(((IMAPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((IMAPSession *)sessionPtr)->_read_capability, 0, esp_mail_imap_read_capability_maxType);
     ((IMAPSession *)sessionPtr)->_authenticated = false;
+     ((IMAPSession *)sessionPtr)->_loginStatus = false;
 
 #endif
   }

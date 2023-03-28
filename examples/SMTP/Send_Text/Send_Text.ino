@@ -292,10 +292,26 @@ void setup()
   if (!smtp.connect(&config))
     return;
 
-  if (smtp.isAuthenticated())
-    Serial.println("\nSuccessfully logged in.");
+  /** Or connect without log in and log in later
+
+     if (!smtp.connect(&config, false))
+       return;
+
+     if (!smtp.loginWithPassword(AUTHOR_EMAIL, AUTHOR_PASSWORD))
+       return;
+  */
+
+  if (!imap.isLoggedIn())
+  {
+    Serial.println("\nNot yet logged in.");
+  }
   else
-    Serial.println("\nConnected with no Auth.");
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("\nSuccessfully logged in.");
+    else
+      Serial.println("\nConnected with no Auth.");
+  }
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))

@@ -254,6 +254,15 @@ void setup()
     if (!imap.connect(&config, &imap_data))
         return;
 
+    /** Or connect without log in and log in later
+
+      if (!imap.connect(&config, &imap_data, false))
+        return;
+
+      if (!imap.loginWithPassword(AUTHOR_EMAIL, AUTHOR_PASSWORD))
+        return;
+    */
+
     // Client identification can be sent to server later with
     /**
      * IMAP_Identification iden;
@@ -269,10 +278,17 @@ void setup()
      *    Serial.println("\nSend Identification error, " + imap.errorReason());
      */
 
-    if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!imap.isLoggedIn())
+    {
+        Serial.println("\nNot yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (imap.isAuthenticated())
+            Serial.println("\nSuccessfully logged in.");
+        else
+            Serial.println("\nConnected with no Auth.");
+    }
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);

@@ -425,13 +425,13 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     smtp->_chunkedEnable = false;
     smtp->_chunkCount = 0;
 
-    if (!smtp->_tcpConnected && !smtp->_sessionLogin)
+    if (!smtp->_tcpConnected && !smtp->_loginStatus)
     {
 #if !defined(SILENT_MODE)
         if (smtp->_debug && smtp->_sendCallback && !smtp->_customCmdResCallback)
         {
             esp_mail_debug_print();
-            errorStatusCB(smtp, MAIL_CLIENT_ERROR_NOT_AUTHENTICATED);
+            errorStatusCB(smtp, MAIL_CLIENT_ERROR_NOT_YET_LOGIN);
         }
 #endif
         return false;
@@ -3332,23 +3332,42 @@ bool SMTPSession::connect(Session_Config *session_config, bool login)
     if (!_sessionLogin)
         return true;
 
-    return MailClient.smtpAuth(this, _sessionSSL);
+    _loginStatus = MailClient.smtpAuth(this, _sessionSSL);
+
+    return _loginStatus;
 }
 
-bool SMTPSession::mLogin(MB_StringPtr email, MB_StringPtr password)
+bool SMTPSession::mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken)
 {
+    if (_loginStatus)
+        return true;
+
     if (!MailClient.sessionExisted((void *)this, true))
         return false;
 
     _session_cfg->login.email = email;
-    _session_cfg->login.password = password;
 
-    return MailClient.smtpAuth(this, _sessionSSL);
+    _session_cfg->login.accessToken.clear();
+    _session_cfg->login.password.clear();
+
+    if (isToken)
+        _session_cfg->login.accessToken = password;
+    else
+        _session_cfg->login.password = password;
+
+    _loginStatus = MailClient.smtpAuth(this, _sessionSSL);
+
+    return _loginStatus;
 }
 
 bool SMTPSession::isAuthenticated()
 {
     return _authenticated;
+}
+
+bool SMTPSession::isLoggedIn()
+{
+    return _loginStatus;
 }
 
 int SMTPSession::customConnect(Session_Config *session_config, smtpResponseCallback callback, int commandID)
@@ -3499,6 +3518,7 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
     {
         _authenticated = true;
         _waitForAuthenticate = false;
+        _loginStatus = true;
     }
 
     if (tlsCmd)

@@ -3069,7 +3069,7 @@ static const char esp_mail_error_ssl_str_3[] PROGMEM = "make sure the SSL/TLS ha
 #if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_auth_str_1[] PROGMEM = "the provided SASL authentication mechanism is not support";
 static const char esp_mail_error_auth_str_2[] PROGMEM = "OAuth2.0 log in was disabled for this server";
-static const char esp_mail_error_auth_str_3[] PROGMEM = "not authenticated";
+static const char esp_mail_error_auth_str_3[] PROGMEM = "not yet log in";
 #endif
 
 /////////////////////////

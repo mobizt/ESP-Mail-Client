@@ -416,13 +416,13 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     }
 #endif
 
-    if (!imap->_tcpConnected && !imap->_sessionLogin)
+    if (!imap->_tcpConnected && !imap->_loginStatus)
     {
 #if !defined(SILENT_MODE)
         if (imap->_debug && imap->_readCallback && !imap->_customCmdResCallback)
         {
             esp_mail_debug_print();
-            errorStatusCB(imap, MAIL_CLIENT_ERROR_NOT_AUTHENTICATED);
+            errorStatusCB(imap, MAIL_CLIENT_ERROR_NOT_YET_LOGIN);
         }
 #endif
         return false;
@@ -4671,18 +4671,32 @@ bool IMAPSession::connect(Session_Config *session_config, IMAP_Data *imap_data, 
     if (!_sessionLogin)
         return true;
 
-    return MailClient.imapAuth(this, _sessionSSL);
+    _loginStatus = MailClient.imapAuth(this, _sessionSSL);
+
+    return _loginStatus;
 }
 
-bool IMAPSession::mLogin(MB_StringPtr email, MB_StringPtr password)
+bool IMAPSession::mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken)
 {
+    if (_loginStatus)
+        return true;
+
     if (!MailClient.sessionExisted((void *)this, false))
         return false;
 
     _session_cfg->login.email = email;
-    _session_cfg->login.password = password;
 
-    return MailClient.imapAuth(this, _sessionSSL);
+    _session_cfg->login.accessToken.clear();
+     _session_cfg->login.password.clear();
+
+    if (isToken)
+        _session_cfg->login.accessToken = password;
+    else
+        _session_cfg->login.password = password;
+
+    _loginStatus = MailClient.imapAuth(this, _sessionSSL);
+
+    return _loginStatus;
 }
 
 void IMAPSession::appendIdList(MB_String &list, IMAP_Identification *identification)
@@ -4813,6 +4827,11 @@ String IMAPSession::serverID()
 bool IMAPSession::isAuthenticated()
 {
     return _authenticated;
+}
+
+bool IMAPSession::isLoggedIn()
+{
+    return _loginStatus;
 }
 
 bool IMAPSession::isFirmwareUpdateSuccess()
@@ -6049,9 +6068,15 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
     }
 
     if (_imap_custom_cmd == esp_mail_imap_cmd_sasl_login)
+    {
         _authenticated = true;
+         _loginStatus = true;
+    }
     else if (_imap_custom_cmd == esp_mail_imap_cmd_logout)
+    {
         _authenticated = false;
+        _loginStatus = false;
+    }
 
     _prev_imap_custom_cmd = _imap_custom_cmd;
 

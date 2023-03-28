@@ -178,7 +178,7 @@ void setup()
 
   /* Set the message headers */
   message.sender.name = F("ESP Mail");
-  message.sender.email = AUTHOR_EMAIL; 
+  message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending Email with rfc822 attachment");
   message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
@@ -284,6 +284,18 @@ void setup()
   /* Connect to the server */
   if (!smtp.connect(&config))
     return;
+
+  if (!imap.isLoggedIn())
+  {
+    Serial.println("\nNot yet logged in.");
+  }
+  else
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("\nSuccessfully logged in.");
+    else
+      Serial.println("\nConnected with no Auth.");
+  }
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))

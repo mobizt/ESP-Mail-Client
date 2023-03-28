@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.9
+ * ESP32 TCP Client Library v2.0.10
  *
- * Created March 20, 2023
+ * Created March 28, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -152,7 +152,7 @@ void ESP32_TCP_Client::setInsecure()
 
 bool ESP32_TCP_Client::ethLinkUp()
 {
-    if (strcmp(ETH.localIP().toString().c_str(), (const char *)MBSTRING_FLASH_MCR("0.0.0.0")) != 0)
+    if (strcmp(ETH.localIP().toString().c_str(), "0.0.0.0") != 0)
     {
         ETH.linkUp();
         return true;
@@ -250,7 +250,11 @@ bool ESP32_TCP_Client::isInitialized()
 
 int ESP32_TCP_Client::hostByName(const char *name, IPAddress &ip)
 {
+#if !defined(ENABLE_CUSTOM_CLIENT)
     return WiFi.hostByName(name, ip);
+#else
+    return 1;
+#endif
 }
 
 bool ESP32_TCP_Client::begin(const char *host, uint16_t port)

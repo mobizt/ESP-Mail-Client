@@ -297,10 +297,17 @@ void setup()
      *    Serial.println("\nSend Identification error, " + imap.errorReason());
      */
 
-    if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!imap.isLoggedIn())
+    {
+        Serial.println("\nNot yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (imap.isAuthenticated())
+            Serial.println("\nSuccessfully logged in.");
+        else
+            Serial.println("\nConnected with no Auth.");
+    }
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);
