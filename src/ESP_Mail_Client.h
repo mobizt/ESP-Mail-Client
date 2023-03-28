@@ -1592,7 +1592,7 @@ private:
   bool parseIdleResponse(IMAPSession *imap);
 
   // Append Fetch UID/Flags string to buffer
-  void appendFechString(MB_String &buf, bool uid);
+  void appendFetchString(MB_String &buf, bool uid);
 
   // Parse command response
   void parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find);

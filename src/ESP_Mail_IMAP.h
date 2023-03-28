@@ -2955,13 +2955,13 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
                         {
                             MB_String str;
-                            appendFechString(str, true);
+                            appendFetchString(str, true);
                             parseCmdResponse(imap, response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_flags)
                         {
                             MB_String str;
-                            appendFechString(str, false);
+                            appendFetchString(str, false);
                             parseCmdResponse(imap, response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota)
@@ -2993,7 +2993,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_sequence_set)
                         {
                             MB_String str;
-                            appendFechString(str, true);
+                            appendFetchString(str, true);
                             parseCmdResponse(imap, response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header)
@@ -3786,7 +3786,7 @@ bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
     return true;
 }
 
-void ESP_Mail_Client::appendFechString(MB_String &buf, bool uid)
+void ESP_Mail_Client::appendFetchString(MB_String &buf, bool uid)
 {
     buf += imap_cmd_pre_tokens[esp_mail_imap_command_fetch];
     prependSpace(buf, esp_mail_str_38 /* "(" */);
