@@ -3,14 +3,14 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30104)
+#if !VALID_VERSION_CHECK(30105)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 25, 2023
+ * Created March 30, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -4662,11 +4662,11 @@ bool IMAPSession::connect(Session_Config *session_config, IMAP_Data *imap_data, 
 
     this->_customCmdResCallback = NULL;
 
-    if (!handleConnection(session_config, imap_data, _sessionSSL))
-        return false;
-
     int ptr = toAddr(*session_config);
     session_config->addPtr(&_configPtrList, ptr);
+
+    if (!handleConnection(session_config, imap_data, _sessionSSL))
+        return false;
 
     if (!_sessionLogin)
         return true;
@@ -4687,7 +4687,7 @@ bool IMAPSession::mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken
     _session_cfg->login.email = email;
 
     _session_cfg->login.accessToken.clear();
-     _session_cfg->login.password.clear();
+    _session_cfg->login.password.clear();
 
     if (isToken)
         _session_cfg->login.accessToken = password;
@@ -4927,8 +4927,7 @@ bool IMAPSession::connect(bool &ssl)
     MailClient.printLibInfo((void *)(this), false);
 #endif
 
-    if (!MailClient.prepareTime(_session_cfg, (void *)(this), false))
-        return false;
+    MailClient.prepareTime(_session_cfg, (void *)(this), false);
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
     MailClient.setSecure(client, _session_cfg);
@@ -6070,7 +6069,7 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
     if (_imap_custom_cmd == esp_mail_imap_cmd_sasl_login)
     {
         _authenticated = true;
-         _loginStatus = true;
+        _loginStatus = true;
     }
     else if (_imap_custom_cmd == esp_mail_imap_cmd_logout)
     {
