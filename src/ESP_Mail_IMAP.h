@@ -5044,7 +5044,9 @@ void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)
 void IMAPSession::connectionRequestCallback(ConnectionRequestCallback connectCB)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
-    ESP_MAIL_PRINTF("> I: The Connection Request Callback is now optional.\n\n");
+#if !defined(SILENT_MODE)
+    esp_mail_debug_print_tag(esp_mail_error_client_str_11 /* "the Connection Request Callback is now optional" */, esp_mail_debug_tag_type_info, true);
+#endif
     this->client.connectionRequestCallback(connectCB);
 #endif
 }

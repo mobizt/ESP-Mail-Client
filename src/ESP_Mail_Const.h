@@ -3031,6 +3031,7 @@ static const char esp_mail_error_client_str_7[] PROGMEM = "network connection st
 static const char esp_mail_error_client_str_8[] PROGMEM = "client is not yet initialized";
 static const char esp_mail_error_client_str_9[] PROGMEM = "UDP client is required for NTP server time synching based on your network type";
 static const char esp_mail_error_client_str_10[] PROGMEM = "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client";
+static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Request Callback is now optional";
 #endif
 
 /////////////////////////

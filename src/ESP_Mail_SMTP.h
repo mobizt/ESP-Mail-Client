@@ -94,7 +94,7 @@ non_authenticated:
 
     // To prevent connection rejection, EHLO/HELO command parameter should be primary host name (domain name) of client system.
     // Otherwise client public IP address string (IPv4 or IPv6) can be assign when no host name is available
-    
+
     MB_String s = smtp_cmd_post_tokens[esp_mail_smtp_command_ehlo];
     appendDomain(s, smtp->_session_cfg->login.user_domain.c_str());
 
@@ -3682,7 +3682,9 @@ void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)
 void SMTPSession::connectionRequestCallback(ConnectionRequestCallback connectCB)
 {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
-    ESP_MAIL_PRINTF("> I: The Connection Request Callback is now optional.\n\n");
+#if !defined(SILENT_MODE)
+    esp_mail_debug_print_tag(esp_mail_error_client_str_11 /* "the Connection Request Callback is now optional" */, esp_mail_debug_tag_type_info, true);
+#endif
     this->client.connectionRequestCallback(connectCB);
 #endif
 }
