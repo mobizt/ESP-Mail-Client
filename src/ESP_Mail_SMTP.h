@@ -86,19 +86,15 @@ non_authenticated:
                false);
 #endif
 
-    // Extended HELLO (EHLO) or HELLO (HELO) was used to identify Client (ourself)
+    // The Extended HELLO (EHLO) and HELLO (HELO) commands are used to identify Client (ourself)
 
-    // If we (client) are able to process service extensions, let the server know by sending
-    // the ESMTP (rfc5321) EHLO command to identify ourself first
+    // Since we support ESMTP (rfc5321), let server knows by sending EHLO first
 
-    // If the EHLO command is not acceptable to the SMTP server, 501, 500,
-    // 502, or 550 failure replies MUST be returned as appropriate.
-    // It server accept EHLO, it should response with the extensions it supported.
+    // If server was not support ESMTP (rfc5321) the failure 501, 500, 502, or 550 would be replied.
 
-    // The EHLO/HELO command parameter should be the primary host name (domain name) of client system.
-    // Alternatively client public IP address string (IPv4 or IPv6) can be assign when no host name is available
-    // to prevent connection rejection.
-
+    // To prevent connection rejection, EHLO/HELO command parameter should be primary host name (domain name) of client system.
+    // Otherwise client public IP address string (IPv4 or IPv6) can be assign when no host name is available
+    
     MB_String s = smtp_cmd_post_tokens[esp_mail_smtp_command_ehlo];
     appendDomain(s, smtp->_session_cfg->login.user_domain.c_str());
 
@@ -107,9 +103,8 @@ non_authenticated:
 
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
     {
-
-        // In case EHLO command is not acceptable,
-        // we would fall back and send SMTP (rfc821) HELO command to identify ourself.
+        // In case EHLO (rfc5321) is not acceptable,
+        // send HELO command (rfc821) instead.
         s = smtp_cmd_post_tokens[esp_mail_smtp_command_helo];
         appendDomain(s, smtp->_session_cfg->login.user_domain.c_str());
 
