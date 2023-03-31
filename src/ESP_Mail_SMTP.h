@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30105)
+#if !VALID_VERSION_CHECK(30106)
 #error "Mixed versions compilation."
 #endif
 
@@ -3598,7 +3598,7 @@ bool SMTPSession::closeSession()
 
     bool ret = true;
 
-    if (_authenticated)
+    if (_loginStatus)
     {
 
 /* Sign out */

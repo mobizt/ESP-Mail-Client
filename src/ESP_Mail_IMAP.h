@@ -3,14 +3,14 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30105)
+#if !VALID_VERSION_CHECK(30106)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 30, 2023
+ * Created March 31, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -4631,7 +4631,7 @@ bool IMAPSession::closeSession()
     if (_mbif._idleTimeMs > 0)
         mStopListen(false);
 
-    if (_authenticated)
+    if (_loginStatus)
     {
 #if !defined(ESP8266)
         /**
