@@ -1,4 +1,4 @@
-// Created March 30, 2022
+// Created March 31, 2022
 
 #pragma once
 
@@ -104,14 +104,14 @@ enum esp_mail_file_extension
     esp_mail_file_extension_gz,
     esp_mail_file_extension_appcache,
     esp_mail_file_extension_dat,
-    esp_mail_file_extension_none,
+    esp_mail_file_extension_binary,
     esp_mail_file_extension_maxType
 };
 
 struct esp_mail_mime_prop_t
 {
     char endsWith[10];
-    char mimeType[50];
+    char mimeType[30];
 };
 
 const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROGMEM =
@@ -668,7 +668,7 @@ struct esp_mail_message_body_t
     MB_String charSet = "UTF-8";
 
     /* The content type of message */
-    MB_String content_type = "text/plain";
+    MB_String content_type = mimeinfo[esp_mail_file_extension_txt].mimeType;
 
     /* The option to encode the content for data transfer */
     MB_String transfer_encoding = "7bit";
@@ -704,7 +704,7 @@ struct esp_mail_imap_plain_body_t
     const char *charSet = "UTF-8";
 
     /* The content type of message */
-    const char *content_type = "text/plain";
+    const char *content_type = mimeinfo[esp_mail_file_extension_txt].mimeType;
 
     /* The option to encode the content for data transfer */
     const char *transfer_encoding = "7bit";
@@ -740,7 +740,7 @@ struct esp_mail_imap_html_body_t
     const char *charSet = "UTF-8";
 
     /* The content type of message */
-    const char *content_type = "text/html";
+    const char *content_type = mimeinfo[esp_mail_file_extension_html].mimeType;
 
     /* The option to encode the content for data transfer */
     const char *transfer_encoding = "7bit";
@@ -2368,8 +2368,8 @@ struct esp_mail_imap_msg_item_t
 public:
     esp_mail_imap_msg_item_t()
     {
-        text.content_type = "text/plain";
-        html.content_type = "text/html";
+        text.content_type = mimeinfo[esp_mail_file_extension_txt].mimeType;
+        html.content_type = mimeinfo[esp_mail_file_extension_html].mimeType;
     };
 
     /* The message number */
@@ -3149,7 +3149,7 @@ static const char esp_mail_str_17[] PROGMEM = "cid:";
 static const char esp_mail_str_18[] PROGMEM = "\r\n";
 static const char esp_mail_str_19[] PROGMEM = "<";
 static const char esp_mail_str_20[] PROGMEM = ">";
-static const char esp_mail_str_21[] PROGMEM = "application/octet-stream";
+// static const char esp_mail_str_21[] PROGMEM = "";
 static const char esp_mail_str_22[] PROGMEM = "message/rfc822";
 static const char esp_mail_str_23[] PROGMEM = "upload";
 static const char esp_mail_str_24[] PROGMEM = "%";
@@ -3307,6 +3307,6 @@ typedef void (*ConnectionUpgradeRequestCallback)(void);
 typedef void (*NetworkConnectionRequestCallback)(void);
 typedef void (*NetworkDisconnectionRequestCallback)(void);
 typedef void (*NetworkStatusRequestCallback)(void);
-// Optional 
+// Optional
 typedef void (*ConnectionRequestCallback)(const char *, int);
 #endif
