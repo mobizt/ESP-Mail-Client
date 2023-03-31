@@ -827,6 +827,7 @@ int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset
   int hidx = offset, nidx = 0;
   while ((*(haystack + hidx) != '\0') && (*(needle + nidx) != '\0') && hidx < hlen)
   {
+    
     bool nm = caseSensitive ? *(needle + nidx) != *(haystack + hidx) : tolower(*(needle + nidx)) != tolower(*(haystack + hidx));
 
     if (nm)

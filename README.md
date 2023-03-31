@@ -6,18 +6,13 @@
 ![arduino-library-badge](https://www.ardu-badge.com/badge/ESP%20Mail%20Client.svg) ![PlatformIO](https://badges.registry.platformio.org/packages/mobizt/library/ESP%20Mail%20Client.svg)
 
 
-Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266, SAMD21 and RP2040 Pico devices. The library also supported other Arduino devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.
+The comprehensive Arduino Email Client Library to send, read and get Email notification for ESP32, ESP8266, SAMD21 and RP2040 Pico devices. 
 
-This library allows sending and reading Email with various attachments supported and provides more reliable and flexibilities of usages.
+This library was tested and works well with ESP32s, ESP8266s, SAMD21s and RP2040 Pico based modules.
 
-The library was tested and works well with ESP32s, ESP8266s, SAMD21s and RP2040 Pico based modules.
+The library also supported other Arduino devices via client libraries e.g. WiFiClient, EthernetClient, and GSMClient.
 
-
-This library has built-in WiFi client and aim to be full functionality Email client that can send, read and get Email notification without other indirect Email proxy services needed. 
-
-
-External Arduino Client can be used which this allows other devices (with minimum 80k flash space) to work with this library.
-
+The Arduino device to use this libray should has at least 80k flash space and 20k memory.
 
 
 # Features
@@ -25,7 +20,7 @@ External Arduino Client can be used which this allows other devices (with minimu
 * Support Espressif's ESP32 and ESP8266, Raspberry Pi's RP2040 Pico, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
 * Support TCP session reusage.
 * Support PLAIN, LOGIN and XOAUTH2 authentication mechanisms.
-* Support standard and user defined ports.
+* Support standard ports and user defined ports.
 * Support STARTTLS for both SMTP and IMAP.
 * Support mailbox selection for Email reading and searching.
 * Support mailbox changes notification.
@@ -377,9 +372,27 @@ In ESP8266 and ESP32, when no attachments require for uploading and downloading,
 #define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
 ```
 
+In case you want to set your device/library time manually, you can exclude the internal NTP time synching by comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+```cpp
+#define ENABLE_NTP_TIME
+```
+
+To set the time manually, please see [**examples/SMTP/Set_Time/Set_Time.ino**](examples/SMTP/Set_Time/Set_Time.ino)
 
 
+In case you don't want to print any debug and error in debug port and completely exclude all flash string that used for debug and error, please define SILENT_MODE macro in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
+```cpp
+#define SILENT_MODE
+```
+
+In case you only want to exclude the error flash string from library, please comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+
+```cpp
+#define ENABLE_ERROR_STRING
+```
 
 ## Usage
 

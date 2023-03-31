@@ -3303,9 +3303,10 @@ esp_mail_debug_print_tag(PGM_P msg, esp_mail_debug_tag_type type, bool newLine =
 
 #endif
 
-typedef void (*ConnectionRequestCallback)(const char *, int);
 typedef void (*ConnectionUpgradeRequestCallback)(void);
 typedef void (*NetworkConnectionRequestCallback)(void);
 typedef void (*NetworkDisconnectionRequestCallback)(void);
 typedef void (*NetworkStatusRequestCallback)(void);
+// Optional 
+typedef void (*ConnectionRequestCallback)(const char *, int);
 #endif

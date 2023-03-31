@@ -1305,10 +1305,10 @@ private:
   // Send text parts MIME message
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
 
-  // Send imap APPEND data or smtp data
+  // Alternative string data sending to send imap APPEND data or smtp data
   bool altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
 
-  // Send imap APPEND data or smtp data
+  // Alternative bytes data sending to send imap APPEND data or smtp data
   bool altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
 
   // Send MIME message
