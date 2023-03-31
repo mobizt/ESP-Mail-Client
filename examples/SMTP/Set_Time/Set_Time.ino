@@ -99,9 +99,9 @@ void setup()
 
     configTime(3, 0, "pool.ntp.org", "time.nist.gov");
 
-    unsigned long ms = millis();
+    ms = millis();
 
-    while (mollis() - ms < 10000 && timetime(nullptr) < ESP_TIME_DEFAULT_TS)
+    while (millis() - ms < 10000 && time(nullptr) < ESP_TIME_DEFAULT_TS)
     {
         Serial.print(".");
         delay(300);
@@ -167,7 +167,7 @@ void setup()
     if (!smtp.connect(&config))
         return;
 
-    if (!imap.isLoggedIn())
+    if (!smtp.isLoggedIn())
     {
         Serial.println("\nNot yet logged in.");
     }
