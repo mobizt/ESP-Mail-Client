@@ -96,9 +96,9 @@ void customCommandCallback(SMTP_Response res)
     ESP_MAIL_PRINTF("> C: Command ID %d\n", res.id);
     ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
 
-    if (res.respCode > 0)
+    if (res.statusCode > 0)
     {
-        ESP_MAIL_PRINTF("> C: Response finished with code %d\n\n", res.respCode);
+        ESP_MAIL_PRINTF("> C: Response finished with status code %d\n\n", res.statusCode);
     }
 }
 
