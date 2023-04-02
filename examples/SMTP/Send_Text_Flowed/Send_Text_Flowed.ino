@@ -233,7 +233,7 @@ void setup()
     /* Connect to the server */
     if (!smtp.connect(&config))
         return;
-        
+
     if (!smtp.isLoggedIn())
     {
         Serial.println("\nNot yet logged in.");
@@ -248,7 +248,7 @@ void setup()
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
-        Serial.println("Error sending Email, " + smtp.errorReason());
+        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
 
     // to clear sending result log
     // smtp.sendingResult.clear();

@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 31, 2023
+ * Created April 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -203,7 +203,7 @@ bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 #if defined(ENABLE_SMTP)
       SMTPSession *smtp = (SMTPSession *)sessionPtr;
       smtp->closeSession();
-      smtp->_smtpStatus.statusCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
+      smtp->_smtpStatus.errorCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
       smtp->_smtpStatus.text.clear();
 #endif
     }
@@ -212,7 +212,7 @@ bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 #if defined(ENABLE_IMAP)
       IMAPSession *imap = (IMAPSession *)sessionPtr;
       imap->closeSession();
-      imap->_imapStatus.statusCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
+      imap->_imapStatus.errorCode = MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED;
       imap->_imapStatus.text.clear();
 #endif
     }
@@ -1406,7 +1406,7 @@ void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multip
   appendNewline(buf);
 }
 
-String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, const char *msg)
+String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, int statusCode, const char *msg)
 {
   MB_String ret;
 
@@ -1415,7 +1415,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
   if (!isSMTP && strlen(msg) > 0)
     return msg;
 
-  switch (statusCode)
+  switch (errorCode)
   {
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
@@ -1578,17 +1578,14 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int statusCode, int respCode, c
 #if defined(ENABLE_SMTP)
   if (isSMTP && strlen(msg) > 0 && ret.length() == 0)
   {
-    ret = esp_mail_str_25; /* "code: " */
-    ret += respCode;
+    ret = esp_mail_str_25; /* "status code: " */
+    ret += statusCode;
     ret += esp_mail_str_26; /* ", text: " */
     ret += msg;
     return ret.c_str();
   }
 #endif
 
-#else
-  ret = esp_mail_str_25; /* "status: " */
-  ret += statusCode;
 #endif
 
   return ret.c_str();

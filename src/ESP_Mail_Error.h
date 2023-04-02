@@ -1,5 +1,5 @@
 /**
- * Created March 31, 2023
+ * Created April 2, 2023
  */
 #pragma once
 
@@ -7,7 +7,7 @@
 #define ESP_MAIL_ERROR_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 

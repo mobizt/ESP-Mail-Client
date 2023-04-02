@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 31, 2023
+ * Created April 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -158,7 +158,7 @@ non_authenticated:
         smtp->_secure = true;
 
         // return to initial state if the response status is 220.
-        if (smtp->_smtpStatus.respCode == esp_mail_smtp_status_code_220)
+        if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
             goto non_authenticated;
     }
 
@@ -408,8 +408,8 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     if (!smtp)
         return false;
 
+    smtp->_smtpStatus.errorCode = 0;
     smtp->_smtpStatus.statusCode = 0;
-    smtp->_smtpStatus.respCode = 0;
     smtp->_smtpStatus.text.clear();
     smtp->_cbData._success = false;
     bool rfc822MSG = false;
@@ -1405,7 +1405,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
 
     if (smtp)
     {
-        smtp->_smtpStatus.statusCode = err;
+        smtp->_smtpStatus.errorCode = err;
         smtp->_smtpStatus.text.clear();
 
 #if !defined(SILENT_MODE)
@@ -1423,7 +1423,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
     {
 #if defined(ENABLE_IMAP)
 
-        imap->_imapStatus.statusCode = err;
+        imap->_imapStatus.errorCode = err;
         imap->_imapStatus.text.clear();
 
 #if !defined(SILENT_MODE)
@@ -1682,11 +1682,11 @@ bool ESP_Mail_Client::sendInline(SMTPSession *smtp, SMTP_Message *msg, const MB_
 void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
 {
     if (smtp)
-        smtp->_smtpStatus.statusCode = error;
+        smtp->_smtpStatus.errorCode = error;
     else if (imap && !calDataLen)
     {
 #if defined(ENABLE_IMAP)
-        imap->_imapStatus.statusCode = error;
+        imap->_imapStatus.errorCode = error;
 #endif
     }
 
@@ -2404,7 +2404,7 @@ void ESP_Mail_Client::softBreak(MB_String &content, const char *quoteMarks)
     tokens.clear();
 }
 
-bool ESP_Mail_Client::altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode)
+bool ESP_Mail_Client::altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode)
 {
     if (!imap && smtp)
     {
@@ -2418,7 +2418,7 @@ bool ESP_Mail_Client::altSendData(MB_String &s, bool newLine, SMTPSession *smtp,
 
         if (getResponse)
         {
-            if (!handleSMTPResponse(smtp, cmd, respCode, errCode))
+            if (!handleSMTPResponse(smtp, cmd, statusCode, errCode))
             {
                 if (addSendResult)
                     return addSendingResult(smtp, msg, false, true);
@@ -2444,7 +2444,7 @@ bool ESP_Mail_Client::altSendData(MB_String &s, bool newLine, SMTPSession *smtp,
     return true;
 }
 
-bool ESP_Mail_Client::altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode)
+bool ESP_Mail_Client::altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode)
 {
     if (!imap && smtp)
     {
@@ -2458,7 +2458,7 @@ bool ESP_Mail_Client::altSendData(uint8_t *data, size_t size, SMTPSession *smtp,
 
         if (getResponse)
         {
-            if (!handleSMTPResponse(smtp, cmd, respCode, errCode))
+            if (!handleSMTPResponse(smtp, cmd, statusCode, errCode))
             {
                 if (addSendResult)
                     return addSendingResult(smtp, msg, false, true);
@@ -2727,7 +2727,7 @@ void ESP_Mail_Client::checkTLSAlert(SMTPSession *smtp, const char *response)
     }
 }
 
-bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode)
+bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode)
 {
     if (!smtp)
         return false;
@@ -2746,8 +2746,8 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     int chunkIndex = 0;
     int count = 0;
     bool completedResponse = false;
+    smtp->_smtpStatus.errorCode = 0;
     smtp->_smtpStatus.statusCode = 0;
-    smtp->_smtpStatus.respCode = 0;
     smtp->_smtpStatus.text.clear();
     uint8_t minResLen = 5;
     struct esp_mail_smtp_response_status_t status;
@@ -2844,12 +2844,12 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                             parseAuthCapability(smtp, response);
                     }
 
-                    getResponseStatus(response, respCode, 0, status);
+                    getResponseStatus(response, statusCode, 0, status);
 
                     // No response code from greeting?
                     // Assumed multi-line greeting responses.
 
-                    if (status.respCode == 0 && smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
+                    if (status.statusCode == 0 && smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_initial_state)
                     {
 
 #if !defined(SILENT_MODE)
@@ -2864,13 +2864,13 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     }
 
                     // get the status code again for unexpected return code
-                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.respCode == 0)
+                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.statusCode == 0)
                         getResponseStatus(response, esp_mail_smtp_status_code_0, 0, status);
 
-                    ret = respCode == status.respCode;
+                    ret = statusCode == status.statusCode;
                     smtp->_smtpStatus = status;
 
-                    if (status.respCode > 0 && (status.respCode < 400 || status.respCode == respCode))
+                    if (status.statusCode > 0 && (status.statusCode < 400 || status.statusCode == statusCode))
                         ret = true;
 
                     if (strlen(response) >= minResLen)
@@ -2881,7 +2881,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                             if (!smtp->client.tlsErr() && !smtp->_customCmdResCallback)
                             {
                                 appendDebugTag(s, esp_mail_debug_tag_type_server, true);
-                                if (smtp->_smtpStatus.respCode != esp_mail_smtp_status_code_334)
+                                if (smtp->_smtpStatus.statusCode != esp_mail_smtp_status_code_334)
                                     s += response;
                                 else
                                 {
@@ -2911,13 +2911,13 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                         smtp->_customCmdResCallback(res);
                     }
 
-                    completedResponse = smtp->_smtpStatus.respCode > 0 && status.text.length() > minResLen;
+                    completedResponse = smtp->_smtpStatus.statusCode > 0 && status.text.length() > minResLen;
 
-                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth && smtp->_smtpStatus.respCode == esp_mail_smtp_status_code_334)
+                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth && smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_334)
                     {
                         if (authFailed(response, readLen, chunkIndex, 4))
                         {
-                            smtp->_smtpStatus.statusCode = -1;
+                            smtp->_smtpStatus.errorCode = -1;
                             ret = false;
                         }
                     }
@@ -2940,14 +2940,14 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     return ret;
 }
 
-void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status)
+void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_code statusCode, int beginPos, struct esp_mail_smtp_response_status_t &status)
 {
     MB_String s;
     char *tmp = nullptr;
     int p1 = 0;
-    if (respCode > esp_mail_smtp_status_code_0)
+    if (statusCode > esp_mail_smtp_status_code_0)
     {
-        s = (int)respCode;
+        s = (int)statusCode;
         s += esp_mail_str_2; /* " " */
         p1 = strpos(buf, (const char *)s.c_str(), beginPos);
     }
@@ -2964,7 +2964,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
         {
             tmp = allocMem<char *>(p2 + 1);
             memcpy(tmp, &buf[p1], p2);
-            status.respCode = atoi(tmp);
+            status.statusCode = atoi(tmp);
             // release memory
             freeMem(&tmp);
 
@@ -3378,7 +3378,7 @@ int SMTPSession::customConnect(Session_Config *session_config, smtpResponseCallb
     if (!handleConnection(session_config, ssl))
         return -1;
 
-    return this->_smtpStatus.respCode;
+    return this->_smtpStatus.statusCode;
 }
 
 bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
@@ -3508,7 +3508,7 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
         _waitForAuthenticate = false;
     }
 
-    if (_waitForAuthenticate && _smtpStatus.respCode == esp_mail_smtp_status_code_235)
+    if (_waitForAuthenticate && _smtpStatus.statusCode == esp_mail_smtp_status_code_235)
     {
         _authenticated = true;
         _waitForAuthenticate = false;
@@ -3532,7 +3532,7 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
         _secure = true;
     }
 
-    return this->_smtpStatus.respCode;
+    return this->_smtpStatus.statusCode;
 }
 
 bool SMTPSession::mSendData(MB_StringPtr data)
@@ -3573,8 +3573,18 @@ void SMTPSession::debug(int level)
 
 String SMTPSession::errorReason()
 {
-    String s = MailClient.errorReason(true, _smtpStatus.statusCode, _smtpStatus.respCode, _smtpStatus.text.c_str());
+    String s = MailClient.errorReason(true, _smtpStatus.errorCode, _smtpStatus.statusCode, _smtpStatus.text.c_str());
     return s;
+}
+
+int SMTPSession::statusCode()
+{
+    return _smtpStatus.statusCode;
+}
+
+int SMTPSession::errorCode()
+{
+    return _smtpStatus.errorCode;
 }
 
 bool SMTPSession::closeSession()

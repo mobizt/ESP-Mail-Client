@@ -196,7 +196,7 @@ void loop()
         }
 
         if (!MailClient.sendMail(&smtp, &message, false))
-            Serial.println("Email sending error, " + smtp.errorReason());
+            ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
 
     exit:
 

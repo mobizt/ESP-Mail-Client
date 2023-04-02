@@ -1,4 +1,4 @@
-// Created March 31, 2022
+// Created April 2, 2022
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 
@@ -1547,8 +1547,11 @@ enum esp_mail_smtp_priority
 /* SMTP response data */
 typedef struct esp_mail_smtp_response_status_t
 {
-    int respCode = 0;
+    /* The SMTP server response status code */
     int statusCode = 0;
+
+    /* error code */
+    int errorCode = 0;
     int id = -1;
     MB_String text;
 } SMTP_Response;
@@ -1719,7 +1722,10 @@ enum esp_mail_imap_message_sub_type
 
 typedef struct esp_mail_imap_response_status_t
 {
-    int statusCode = 0;
+    // No IMAP server response status code (statusCode), server returns OK, NO and BAD response instead 
+
+    /*  error code */
+    int errorCode = 0;
     MB_String tag;
     MB_String text;
     MB_String status;
@@ -3154,7 +3160,7 @@ static const char esp_mail_str_20[] PROGMEM = ">";
 static const char esp_mail_str_22[] PROGMEM = "message/rfc822";
 static const char esp_mail_str_23[] PROGMEM = "upload";
 static const char esp_mail_str_24[] PROGMEM = "%";
-static const char esp_mail_str_25[] PROGMEM = "code: ";
+static const char esp_mail_str_25[] PROGMEM = "status code: ";
 static const char esp_mail_str_26[] PROGMEM = ", text: ";
 static const char esp_mail_str_27[] PROGMEM = ".";
 static const char esp_mail_str_28[] PROGMEM = "> C: ";

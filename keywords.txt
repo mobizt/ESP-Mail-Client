@@ -58,6 +58,8 @@ headerOnly  KEYWORD2
 data    KEYWORD2
 selectedFolder  KEYWORD2
 errorReason KEYWORD2
+statusCode  KEYWORD2
+errorCode   KEYWORD2
 empty   KEYWORD2
 resetAttachItem KEYWORD2
 clear   KEYWORD2

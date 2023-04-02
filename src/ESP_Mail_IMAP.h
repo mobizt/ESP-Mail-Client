@@ -3,14 +3,14 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 31, 2023
+ * Created April 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1430,7 +1430,7 @@ bool ESP_Mail_Client::imapLogout(IMAPSession *imap)
 
 void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error)
 {
-    imap->_imapStatus.statusCode = error;
+    imap->_imapStatus.errorCode = error;
     imap->_imapStatus.clear();
 #if !defined(SILENT_MODE)
     if (imap->_readCallback && !imap->_customCmdResCallback)
@@ -3073,9 +3073,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         // We don't get any response
 
         if (imapResp == esp_mail_imap_resp_no)
-            imap->_imapStatus.statusCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
+            imap->_imapStatus.errorCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
         else
-            imap->_imapStatus.statusCode = IMAP_STATUS_NO_MESSAGE;
+            imap->_imapStatus.errorCode = IMAP_STATUS_NO_MESSAGE;
 
 #if !defined(SILENT_MODE)
 
@@ -3343,7 +3343,7 @@ void ESP_Mail_Client::saveHeader(IMAPSession *imap, bool json)
     int sz = mbfs->open(headerFilePath, mbfs_type imap->_imap_data->storage.type, mb_fs_open_mode_write);
     if (sz < 0)
     {
-        imap->_imapStatus.statusCode = sz;
+        imap->_imapStatus.errorCode = sz;
         imap->_imapStatus.text.clear();
 #if !defined(SILENT_MODE)
         if (imap->_debug)
@@ -4024,7 +4024,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
                 if (!cPart(imap)->is_firmware_file)
                 {
-                    imap->_imapStatus.statusCode = IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED;
+                    imap->_imapStatus.errorCode = IMAP_STATUS_FIRMWARE_UPDATE_INIT_FAILED;
                     imap->_imapStatus.text.clear();
                 }
 
@@ -4068,7 +4068,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
 
                     if (sz < 0)
                     {
-                        imap->_imapStatus.statusCode = sz;
+                        imap->_imapStatus.errorCode = sz;
                         imap->_imapStatus.text.clear();
 #if !defined(SILENT_MODE)
                         printDebug((void *)(imap),
@@ -4212,7 +4212,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, int 
             {
                 cPart(imap)->is_firmware_file = false;
 
-                imap->_imapStatus.statusCode = fw_write_error ? IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED : IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
+                imap->_imapStatus.errorCode = fw_write_error ? IMAP_STATUS_FIRMWARE_UPDATE_WRITE_FAILED : IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED;
                 imap->_imapStatus.text.clear();
 
 #if !defined(SILENT_MODE)
@@ -4310,7 +4310,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, char *buf, int bufLen, int &
                 }
                 else
                 {
-                    imap->_imapStatus.statusCode = sz;
+                    imap->_imapStatus.errorCode = sz;
                     imap->_imapStatus.text.clear();
 #if !defined(SILENT_MODE)
                     if (imap->_debug)
@@ -5009,7 +5009,12 @@ void IMAPSession::debug(int level)
 
 String IMAPSession::errorReason()
 {
-    return MailClient.errorReason(false, _imapStatus.statusCode, 0, _imapStatus.text.c_str());
+    return MailClient.errorReason(false, _imapStatus.errorCode, 0, _imapStatus.text.c_str());
+}
+
+int IMAPSession::errorCode()
+{
+    return _imapStatus.errorCode;
 }
 
 bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
@@ -5026,7 +5031,7 @@ bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
 
     if (!_tcpConnected)
     {
-        _imapStatus.statusCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
+        _imapStatus.errorCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
         _imapStatus.clear();
     }
 
@@ -5091,7 +5096,7 @@ bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
 {
     if (!_tcpConnected)
     {
-        _imapStatus.statusCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
+        _imapStatus.errorCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
         _imapStatus.clear();
         return false;
     }

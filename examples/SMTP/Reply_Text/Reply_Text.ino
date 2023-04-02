@@ -332,7 +332,7 @@ void sendHelloMessage()
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&hello_smtp, &message))
-        Serial.println("Error sending Email, " + hello_smtp.errorReason());
+        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
 }
 
 void sendReplyMessage(const char *subject, const char *reply_email, const char *msgID, const char *references)
@@ -364,7 +364,7 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&reply_smtp, &message))
-        Serial.println("Error sending Email, " + reply_smtp.errorReason());
+        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
 }
 
 void printPollingStatus(IMAPSession &imap)

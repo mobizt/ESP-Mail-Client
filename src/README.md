@@ -1171,7 +1171,7 @@ SelectedFolderInfo selectedFolder();
 
 
 
-#### Get the error details when readingg the Emails
+#### Get the error details when readingg the Emails.
 
 return **`String`** The string of error details.
 
@@ -1180,6 +1180,17 @@ String errorReason();
 ```
 
 
+#### Get the operating status error code.
+
+return **`int`** The value of operating status error code.
+
+The negative value indicated error.
+
+See src/ESP_Mail_Error.h and extras/MB_FS.h
+
+```cpp
+int errorCode();
+```
 
 
 
@@ -1471,6 +1482,29 @@ String errorReason();
 ```
 
 
+#### Get the operating status error code.
+
+return **`int`** The value of operating status error code.
+
+The negative value indicated error.
+
+See src/ESP_Mail_Error.h and extras/MB_FS.h
+
+```cpp
+int errorCode();
+```
+
+
+
+#### Get the SMTP server response status code.
+
+return **`int`** The value of SMTP server response status code.
+
+See RFC 5321 standard's documentation.
+
+```cpp
+int statusCode();
+```
 
 
 

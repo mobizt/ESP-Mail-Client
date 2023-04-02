@@ -222,7 +222,7 @@ void sendMail()
     Serial.println("\nConnected with no Auth.");
 
   if (!MailClient.sendMail(&smtp, &message))
-    Serial.println("Error sending Email, " + smtp.errorReason());
+    ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
 }
 
 void setup()

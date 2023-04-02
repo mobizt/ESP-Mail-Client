@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30106)
+#if !VALID_VERSION_CHECK(30107)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created March 31, 2023
+ * Created April 2, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1029,7 +1029,7 @@ private:
 
   void appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary);
 
-  String errorReason(bool isSMTP, int statusCode, int respCode, const char *msg);
+  String errorReason(bool isSMTP, int errorCode, int statusCode, const char *msg);
 
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
   void closeTCPSession(void *sessionPtr, bool isSMTP);
@@ -1306,10 +1306,10 @@ private:
   bool sendPartText(SMTPSession *smtp, SMTP_Message *msg, byte type, const char *boundary);
 
   // Alternative string data sending to send imap APPEND data or smtp data
-  bool altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
+  bool altSendData(MB_String &s, bool newLine, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode);
 
   // Alternative bytes data sending to send imap APPEND data or smtp data
-  bool altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
+  bool altSendData(uint8_t *data, size_t size, SMTPSession *smtp, SMTP_Message *msg, bool addSendResult, bool getResponse, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode);
 
   // Send MIME message
   bool sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_String &boundary);
@@ -1356,8 +1356,8 @@ private:
   // Send error callback
   void smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF = false, bool success = false);
 
-  // Get SMTP response status (respCode and text)
-  void getResponseStatus(const char *buf, esp_mail_smtp_status_code respCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
+  // Get SMTP response status (statusCode and text)
+  void getResponseStatus(const char *buf, esp_mail_smtp_status_code statusCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
 
   // Parse SMTP authentication capability
   void parseAuthCapability(SMTPSession *smtp, char *buf);
@@ -1373,7 +1373,7 @@ private:
   void checkTLSAlert(SMTPSession *smtp, const char *response);
 
   // Handle SMTP response
-  bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code respCode, int errCode);
+  bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode);
 
   // Print the upload status to the debug port
   void uploadReport(const char *filename, uint32_t pgAddr, int progress);
@@ -1708,7 +1708,7 @@ public:
    */
   bool isAuthenticated();
 
-   /** Return the log status.
+  /** Return the log status.
    * @return The boolean value log in status.
    */
   bool isLoggedIn();
@@ -2099,6 +2099,15 @@ public:
    * @return The string of error details.
    */
   String errorReason();
+
+  /** Get the operating status error code.
+   *
+   * @return The int value of operating status error code.
+   * 
+   * The negative value indicated error.
+   * See src/ESP_Mail_Error.h and extras/MB_FS.h
+   */
+  int errorCode();
 
   /** Clear all the cache data stored in the IMAP session object.
    */
@@ -2551,6 +2560,23 @@ public:
    * @return The string of error details.
    */
   String errorReason();
+
+  /** Get the SMTP server response status code.
+   *
+   * @return The int value of SMTP server response status code.
+   * 
+   * See RFC 5321 standard's documentation.
+   */
+  int statusCode();
+
+  /** Get the operating status error code.
+   *
+   * @return The int value of operating status error code.
+   * 
+   * The negative value indicated error.
+   * See src/ESP_Mail_Error.h and extras/MB_FS.h
+   */
+  int errorCode();
 
   /** Set the Email sending status callback function.
    *
