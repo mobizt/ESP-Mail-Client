@@ -278,7 +278,7 @@ bool setupHelloSMTP()
     /* Connect to the server */
     if (!hello_smtp.connect(&hello_smtp_config))
     {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
         return;
     }
 
@@ -307,7 +307,7 @@ bool setupReplySMTP()
     /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_config))
     {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
         return;
     }
 
