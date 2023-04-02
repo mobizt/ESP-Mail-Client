@@ -279,7 +279,7 @@ bool setupHelloSMTP()
     if (!hello_smtp.connect(&hello_smtp_config))
     {
         ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
-        return;
+        return false;
     }
 
     if (imap.isAuthenticated())
@@ -308,7 +308,7 @@ bool setupReplySMTP()
     if (!reply_smtp.connect(&reply_smtp_config))
     {
         ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
-        return;
+        return false;
     }
 
     if (imap.isAuthenticated())
