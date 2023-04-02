@@ -165,7 +165,10 @@ void setup()
     message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
 
     if (!smtp.connect(&config))
+    {
+        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
+    }
 
     if (!smtp.isLoggedIn())
     {
@@ -180,7 +183,7 @@ void setup()
     }
 
     if (!MailClient.sendMail(&smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
+        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
 
 void loop()

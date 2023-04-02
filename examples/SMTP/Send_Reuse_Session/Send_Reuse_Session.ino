@@ -77,7 +77,6 @@
 /* Recipient email address */
 #define RECIPIENT_EMAIL "<recipient email here>"
 
-
 SMTPSession smtp;
 
 Session_Config config;
@@ -156,7 +155,7 @@ void setup()
 
 void loop()
 {
-    if (millis() - sentMillis > 3 * 60 *1000 || sentMillis == 0)
+    if (millis() - sentMillis > 3 * 60 * 1000 || sentMillis == 0)
     {
         sentMillis = millis();
 
@@ -177,7 +176,7 @@ void loop()
         {
             if (!smtp.connect(&config))
             {
-                Serial.println("\nError, SMTP server connection failed.");
+                ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
                 goto exit;
             }
 
@@ -196,7 +195,7 @@ void loop()
         }
 
         if (!MailClient.sendMail(&smtp, &message, false))
-            ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason());
+            ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     exit:
 

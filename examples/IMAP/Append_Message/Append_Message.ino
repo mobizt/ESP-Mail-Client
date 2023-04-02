@@ -225,10 +225,10 @@ void setup()
     // If not, one message can append for a APPEND command.
     // Outlook.com does not accept flag and date/time arguments in APPEND command
     if (!MailClient.appendMessage(&imap, &message[0], false /* if not last message to append */, "\\Flagged" /* flags or empty string for Outlook.com */, "Thu, 16 Jun 2022 12:30:25 -0800 (PST)" /* date/time or empty string for Outlook.com */))
-        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
 
     if (!MailClient.appendMessage(&imap, &message[1], true /* last message to append */))
-        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 

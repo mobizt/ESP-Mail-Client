@@ -157,7 +157,7 @@ void setup()
 
     if (!imap.connect(&config, &imap_data))
     {
-        ESP_MAIL_PRINTF("Connection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+        ESP_MAIL_PRINTF("Connection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 
@@ -170,7 +170,7 @@ void setup()
 
     if (!imap.selectFolder(F("INBOX")))
     {
-        ESP_MAIL_PRINTF("Folder selection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+        ESP_MAIL_PRINTF("Folder selection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 
@@ -223,7 +223,7 @@ void loop()
         }
         else
         {
-            ESP_MAIL_PRINTF("Message reading error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+            ESP_MAIL_PRINTF("Message reading error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
         }
 
        

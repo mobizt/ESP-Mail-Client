@@ -126,7 +126,7 @@ void setup()
 
   if (!smtp.connect(&config))
   {
-    Serial.println(smtp.errorReason());
+    ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
     return;
   }
 
@@ -148,7 +148,7 @@ void setup()
   }
   else
   {
-    Serial.println("Error sending Email, " + smtp.errorReason());
+    ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
   }
 
   smtp.sendingResult.clear();

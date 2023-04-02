@@ -286,7 +286,7 @@ void setup()
      *    Serial.println(imap.serverID());
      * }
      * else
-     *    ESP_MAIL_PRINTF("nIdentification sending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason());
+     *    ESP_MAIL_PRINTF("nIdentification sending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
      */
 
     /*  {Optional} */
