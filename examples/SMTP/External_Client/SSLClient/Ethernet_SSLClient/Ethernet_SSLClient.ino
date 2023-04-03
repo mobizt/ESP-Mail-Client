@@ -367,11 +367,9 @@ void smtpCallback(SMTP_Status status)
         {
             SMTP_Result result = smtp.sendingResult.getItem(i);
 
-            time_t ts = (time_t)result.timestamp;
-
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", asctime(localtime(&ts)));
+            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }

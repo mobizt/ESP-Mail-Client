@@ -447,12 +447,10 @@ void helloSMTPCallback(SMTP_Status status)
         {
             /* Get the result item */
             SMTP_Result result = hello_smtp.sendingResult.getItem(i);
-            time_t ts = (time_t)result.timestamp;
-            localtime_r(&ts, &dt);
 
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }
@@ -481,12 +479,10 @@ void replySMTPCallback(SMTP_Status status)
         {
             /* Get the result item */
             SMTP_Result result = reply_smtp.sendingResult.getItem(i);
-            time_t ts = (time_t)result.timestamp;
-            localtime_r(&ts, &dt);
 
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
+            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }

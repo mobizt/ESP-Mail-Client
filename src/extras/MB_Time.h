@@ -35,7 +35,6 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
 
@@ -385,6 +384,13 @@ public:
     // replace for valid timezone
     tStr.replaceAll("+0000", tzStr);
     return tStr.c_str();
+  }
+
+  String getDateTimeString(time_t ts, const char *format)
+  {
+    char tbuf[50];
+    strftime(tbuf, 50, format, localtime(&ts));
+    return tbuf;
   }
 
   /** get the clock ready state

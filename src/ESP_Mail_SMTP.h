@@ -322,9 +322,7 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
             sendCallback((void *)smtp, sep.c_str(), true, false, false);
             snprintf(buf, bufLen, pgm2Str(esp_mail_str_95 /* "Status: %s" */), result ? pgm2Str(esp_mail_str_98 /* "success" */) : pgm2Str(esp_mail_str_99 /* "failed" */));
             sendCallback((void *)smtp, buf, true, false, false);
-            char tbuf[40];
-            strftime(tbuf, 40, "%B %d, %Y %H:%M:%S", localtime(&ts));
-            snprintf(buf, bufLen, pgm2Str(esp_mail_str_96 /* "Date/Time: %s" */), tbuf);
+            snprintf(buf, bufLen, pgm2Str(esp_mail_str_96 /* "Date/Time: %s" */), Time.getDateTimeString(ts, "%B %d, %Y %H:%M:%S").c_str());
             sendCallback((void *)smtp, buf, true, false, false);
             snprintf(buf, bufLen, pgm2Str(esp_mail_str_97 /* "Recipient: %s" */), msg->_rcp[0].email.c_str());
             sendCallback((void *)smtp, buf, true, false, false);
