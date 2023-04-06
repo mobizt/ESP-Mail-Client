@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30107)
+#if !VALID_VERSION_CHECK(30108)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 2, 2023
+ * Created April 6, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2866,10 +2866,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_start_tls || status.statusCode == 0)
                         getResponseStatus(response, esp_mail_smtp_status_code_0, 0, status);
 
-                    ret = statusCode == status.statusCode;
                     smtp->_smtpStatus = status;
 
-                    if (status.statusCode > 0 && (status.statusCode < 400 || status.statusCode == statusCode))
+                    if (status.statusCode > 0 && status.statusCode == statusCode)
                         ret = true;
 
                     if (strlen(response) >= minResLen)
@@ -2941,42 +2940,24 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
 void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_code statusCode, int beginPos, struct esp_mail_smtp_response_status_t &status)
 {
-    MB_String s;
-    char *tmp = nullptr;
-    int p1 = 0;
     if (statusCode > esp_mail_smtp_status_code_0)
     {
-        s = (int)statusCode;
-        s += esp_mail_str_2; /* " " */
-        p1 = strpos(buf, (const char *)s.c_str(), beginPos);
-    }
+        int numLen = 3;
+        int textLen = strlen(buf) - numLen - 1;
 
-    if (p1 != -1)
-    {
-        int ofs = s.length() - 2;
-        if (ofs < 0)
-            ofs = 1;
-
-        int p2 = strposP(buf, esp_mail_str_2 /* " " */, p1 + ofs);
-
-        if (p2 < 4 && p2 > -1)
+        if (strlen(buf) > numLen && buf[numLen] == ' ' && textLen > 0)
         {
-            tmp = allocMem<char *>(p2 + 1);
-            memcpy(tmp, &buf[p1], p2);
+            char *tmp = allocMem<char *>(numLen + 1);
+            memcpy(tmp, &buf[0], numLen);
             status.statusCode = atoi(tmp);
             // release memory
             freeMem(&tmp);
 
-            p1 = p2 + 1;
-            p2 = strlen(buf);
-            if (p2 > p1)
-            {
-                tmp = allocMem<char *>(p2 + 1);
-                memcpy(tmp, &buf[p1], p2 - p1);
-                status.text = tmp;
-                // release memory
-                freeMem(&tmp);
-            }
+            tmp = allocMem<char *>(textLen + 1);
+            memcpy(tmp, &buf[numLen + 1], textLen);
+            status.text = tmp;
+            // release memory
+            freeMem(&tmp);
         }
     }
 }
