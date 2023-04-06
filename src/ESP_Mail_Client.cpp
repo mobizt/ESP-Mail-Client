@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 
@@ -1406,13 +1406,13 @@ void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multip
   appendNewline(buf);
 }
 
-String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, int statusCode, const char *msg)
+String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
 {
   MB_String ret;
 
 #if defined(ENABLE_ERROR_STRING)
 
-  if (!isSMTP && strlen(msg) > 0)
+  if (strlen(msg) > 0)
     return msg;
 
   switch (errorCode)
@@ -1575,17 +1575,6 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, int statusCode, 
     break;
   }
 
-#if defined(ENABLE_SMTP)
-  if (isSMTP && strlen(msg) > 0 && ret.length() == 0)
-  {
-    ret = esp_mail_str_25; /* "status code: " */
-    ret += statusCode;
-    ret += esp_mail_str_26; /* ", text: " */
-    ret += msg;
-    return ret.c_str();
-  }
-#endif
-
 #endif
 
   return ret.c_str();
@@ -1729,7 +1718,7 @@ void ESP_Mail_Client::strReplaceP(MB_String &buf, PGM_P name, PGM_P value)
   freeMem(&v);
 }
 
-bool ESP_Mail_Client::authFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
+bool ESP_Mail_Client::oauthFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
 {
   bool ret = false;
   if (chunkIdx == 0)

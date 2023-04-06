@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 
@@ -1526,7 +1526,8 @@ enum esp_mail_smtp_command
     esp_mail_smtp_cmd_start_tls,
     esp_mail_smtp_cmd_login_user,
     esp_mail_smtp_cmd_auth_plain,
-    esp_mail_smtp_cmd_auth,
+    esp_mail_smtp_cmd_auth_login,
+    esp_mail_smtp_cmd_auth_xoauth2,
     esp_mail_smtp_cmd_login_psw,
     esp_mail_smtp_cmd_send_header_sender,
     esp_mail_smtp_cmd_send_header_recipient,

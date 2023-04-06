@@ -7,7 +7,7 @@
 #define ESP_MAIL_ERROR_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 

@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 
@@ -1002,8 +1002,8 @@ private:
   // PGM string replacement
   void strReplaceP(MB_String &buf, PGM_P key, PGM_P value);
 
-  // Check for XOAUTH2 log in error response
-  bool authFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
+  // Check for OAUTH log in error response
+  bool oauthFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
 
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
@@ -1029,7 +1029,7 @@ private:
 
   void appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary);
 
-  String errorReason(bool isSMTP, int errorCode, int statusCode, const char *msg);
+  String errorReason(bool isSMTP, int errorCode, const char *msg);
 
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
   void closeTCPSession(void *sessionPtr, bool isSMTP);
@@ -2568,6 +2568,13 @@ public:
    * See RFC 5321 standard's documentation.
    */
   int statusCode();
+  
+  /** Get the SMTP server response status message.
+   *
+   * @return The int value of SMTP server response status message.
+   * 
+   */
+  String statusMessage();
 
   /** Get the operating status error code.
    *
@@ -2615,6 +2622,7 @@ private:
 
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
 
+
   bool _auth_capability[esp_mail_auth_capability_maxType];
   bool _send_capability[esp_mail_smtp_send_capability_maxType];
 
@@ -2627,6 +2635,7 @@ private:
   bool _authenticated = false;
   bool _loginStatus = false;
   bool _waitForAuthenticate = false;
+  bool _canForward = false;
   smtpStatusCallback _sendCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
   int _commandID = -1;

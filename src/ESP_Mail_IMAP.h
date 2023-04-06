@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 
@@ -2933,7 +2933,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
                             {
-                                if (authFailed(response, readLen, chunkIdx, 2))
+                                if (oauthFailed(response, readLen, chunkIdx, 2))
                                     completedResponse = true;
                             }
 
@@ -5009,7 +5009,7 @@ void IMAPSession::debug(int level)
 
 String IMAPSession::errorReason()
 {
-    return MailClient.errorReason(false, _imapStatus.errorCode, 0, _imapStatus.text.c_str());
+    return MailClient.errorReason(false, _imapStatus.errorCode, _imapStatus.text.c_str());
 }
 
 int IMAPSession::errorCode()

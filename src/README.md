@@ -1508,6 +1508,16 @@ int statusCode();
 
 
 
+#### Get the SMTP server response status message.
+
+return **`String`** The value of SMTP server response status message.
+
+```cpp
+String statusMessage();
+```
+
+
+
 #### Set the Email sending status callback function.
 
 param **`smtpCallback`** The callback function that accept the `smtpStatusCallback` param.

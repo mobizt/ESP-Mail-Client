@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30108)
+#if !VALID_VERSION_CHECK(30109)
 #error "Mixed versions compilation."
 #endif
 
@@ -193,7 +193,7 @@ non_authenticated:
             if (smtpSend(smtp, getXOAUTH2String(smtp->_session_cfg->login.email, smtp->_session_cfg->login.accessToken).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
-            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
+            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth_xoauth2, esp_mail_smtp_status_code_235, SMTP_STATUS_AUTHEN_FAILED))
                 return false;
         }
         else if (sasl_auth_plain)
@@ -242,7 +242,8 @@ non_authenticated:
             if (smtpSend(smtp, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
-            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
+            // expected server challenge response
+            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_auth_login, esp_mail_smtp_status_code_334, SMTP_STATUS_AUTHEN_FAILED))
                 return false;
 
 #if !defined(SILENT_MODE)
@@ -252,6 +253,7 @@ non_authenticated:
             if (smtpSend(smtp, encodeBase64Str((const unsigned char *)smtp->_session_cfg->login.email.c_str(), smtp->_session_cfg->login.email.length()).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
 
+            // expected server challenge response
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_login_user, esp_mail_smtp_status_code_334, SMTP_STATUS_USER_LOGIN_FAILED))
                 return false;
 
@@ -614,6 +616,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
                 }
             }
 
+            smtp->_canForward = true;
+
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
         }
@@ -634,6 +638,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             buf += smtp_commands[esp_mail_smtp_command_to].text;
             appendString(buf, msg->_cc[i].email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
+            smtp->_canForward = true;
+
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
         }
@@ -647,6 +653,8 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             buf = smtp_cmd_post_tokens[esp_mail_smtp_command_rcpt];
             buf += smtp_commands[esp_mail_smtp_command_to].text;
             appendString(buf, msg->_bcc[i].email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
+
+            smtp->_canForward = true;
 
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
@@ -2668,7 +2676,8 @@ void ESP_Mail_Client::parseAuthCapability(SMTPSession *smtp, char *buf)
             if (strposP(buf, smtp_auth_cap_pre_tokens[i].c_str(), 0) > -1)
             {
                 smtp->_auth_capability[i] = true;
-                return;
+                // Don't exit the loop
+                // and continue checking for all auth types
             }
         }
     }
@@ -2750,6 +2759,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     smtp->_smtpStatus.text.clear();
     uint8_t minResLen = 5;
     struct esp_mail_smtp_response_status_t status;
+
+    bool canForward = smtp->_canForward;
+    smtp->_canForward = false;
 
     status.id = smtp->_commandID;
 
@@ -2868,8 +2880,14 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
                     smtp->_smtpStatus = status;
 
-                    if (status.statusCode > 0 && status.statusCode == statusCode)
+                    if ((status.statusCode > 0 && status.statusCode == statusCode) ||
+                        (smtp->_smtp_cmd == esp_mail_smtp_cmd_start_tls && status.statusCode == esp_mail_smtp_status_code_220) ||
+                        (canForward && statusCode == esp_mail_smtp_status_code_250 && status.statusCode == esp_mail_smtp_status_code_251)
+
+                    )
+                    {
                         ret = true;
+                    }
 
                     if (strlen(response) >= minResLen)
                     {
@@ -2883,13 +2901,11 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                                     s += response;
                                 else
                                 {
-                                    // base64 response
+                                    // base64 encoded server challenge message
                                     size_t olen = 0;
                                     char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
                                     if (decoded && olen > 0)
-                                    {
                                         s.append(decoded, olen);
-                                    }
 
                                     // release memory
                                     freeMem(&decoded);
@@ -2911,9 +2927,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
                     completedResponse = smtp->_smtpStatus.statusCode > 0 && status.text.length() > minResLen;
 
-                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth && smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_334)
+                    if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth_xoauth2 && smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_334)
                     {
-                        if (authFailed(response, readLen, chunkIndex, 4))
+                        if (oauthFailed(response, readLen, chunkIndex, 4))
                         {
                             smtp->_smtpStatus.errorCode = -1;
                             ret = false;
@@ -2945,19 +2961,39 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
         int numLen = 3;
         int textLen = strlen(buf) - numLen - 1;
 
-        if (strlen(buf) > numLen && buf[numLen] == ' ' && textLen > 0)
+        if (strlen(buf) > numLen && (buf[numLen] == ' ' || buf[numLen] == '-') && textLen > 0)
         {
-            char *tmp = allocMem<char *>(numLen + 1);
+            char *tmp = nullptr;
+            tmp = allocMem<char *>(numLen + 1);
             memcpy(tmp, &buf[0], numLen);
-            status.statusCode = atoi(tmp);
+
+            int code = atoi(tmp);
+
             // release memory
             freeMem(&tmp);
 
-            tmp = allocMem<char *>(textLen + 1);
-            memcpy(tmp, &buf[numLen + 1], textLen);
-            status.text = tmp;
-            // release memory
-            freeMem(&tmp);
+            if (buf[numLen] == ' ')
+                status.statusCode = code;
+
+            int i = numLen + 1;
+
+            // We will collect the status text starting from status code 334 and 4xx
+            // The status text of 334 will be used for debugging display of the base64 server challenge
+            if (code == 334 || code > 400)
+            {
+                // find the next sp
+                while (i < strlen(buf) && buf[i] != ' ')
+                    i++;
+
+                // if sp found, set index to the next pos, otherwise set index to num length + 1
+                i = (i < strlen(buf) - 1) ? i + 1 : numLen + 1;
+
+                tmp = allocMem<char *>(textLen + 1);
+                memcpy(tmp, &buf[i], strlen(buf) - i - 1);
+                status.text += tmp;
+                // release memory
+                freeMem(&tmp);
+            }
         }
     }
 }
@@ -3553,13 +3589,18 @@ void SMTPSession::debug(int level)
 
 String SMTPSession::errorReason()
 {
-    String s = MailClient.errorReason(true, _smtpStatus.errorCode, _smtpStatus.statusCode, _smtpStatus.text.c_str());
+    String s = MailClient.errorReason(true, _smtpStatus.errorCode, "");
     return s;
 }
 
 int SMTPSession::statusCode()
 {
     return _smtpStatus.statusCode;
+}
+
+String SMTPSession::statusMessage()
+{
+    return _smtpStatus.text.c_str();
 }
 
 int SMTPSession::errorCode()
