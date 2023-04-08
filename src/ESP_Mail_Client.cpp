@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30109)
+#if !VALID_VERSION_CHECK(30110)
 #error "Mixed versions compilation."
 #endif
 
@@ -485,7 +485,7 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
 
 #if defined(ESP32)
 
-    mb_fs_mem_storage_type type;
+    mb_fs_mem_storage_type type = mb_fs_mem_storage_type_undefined;
 
 #if defined(MBFS_FLASH_FS)
     type = mb_fs_mem_storage_type_flash;
@@ -588,7 +588,7 @@ void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
 
 #if defined(ESP32)
 
-  mb_fs_mem_storage_type type;
+  mb_fs_mem_storage_type type = mb_fs_mem_storage_type_undefined;
 
 #if defined(MBFS_FLASH_FS)
   type = mb_fs_mem_storage_type_flash;
@@ -804,12 +804,14 @@ void ESP_Mail_Client::splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const
   while (current != MB_String::npos)
   {
     s = str.substr(previous, current - previous);
-    tk.push_back(s);
+    if (s.length() > 0)
+      tk.push_back(s);
     previous = current + strlen(delim);
     current = str.find(delim, previous);
   }
   s = str.substr(previous, current - previous);
-  tk.push_back(s);
+  if (s.length() > 0)
+    tk.push_back(s);
   s.clear();
 }
 
@@ -827,7 +829,7 @@ int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset
   int hidx = offset, nidx = 0;
   while ((*(haystack + hidx) != '\0') && (*(needle + nidx) != '\0') && hidx < hlen)
   {
-    
+
     bool nm = caseSensitive ? *(needle + nidx) != *(haystack + hidx) : tolower(*(needle + nidx)) != tolower(*(haystack + hidx));
 
     if (nm)
@@ -1337,9 +1339,9 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_IMAP)
         IMAPSession *imap = (IMAPSession *)sessionPtr;
 #if defined(ENABLE_NTP_TIME)
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT, true);
 #else
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, true);
 #endif
 #endif
       }
@@ -1477,6 +1479,12 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case IMAP_STATUS_NO_MESSAGE:
     ret += esp_mail_error_imap_str_5; /* "some of the requested messages no longer exist" */
     break;
+  case IMAP_STATUS_CHANGEDSINC_MODSEQ_TEST_FAILED:
+    ret += esp_mail_error_imap_str_14; /* "no message changed since (assigned) modsec" */
+    break;
+  case IMAP_STATUS_MODSEQ_WAS_NOT_SUPPORTED:
+    ret += esp_mail_error_imap_str_15; /* "CONDSTORE was not supported or modsec was not supported for selected mailbox" */
+    break;
   case IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT:
     ret += esp_mail_error_network_str_5; /* "connection timeout" */
     break;
@@ -1509,6 +1517,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     break;
   case IMAP_STATUS_IMAP_SESSION_WAS_NOT_ASSIGNED:
     ret += esp_mail_error_session_str_3; /* "the IMAPSession object was not assigned" */
+    break;
+  case IMAP_STATUS_BAD_COMMAND:
+    ret += esp_mail_error_imap_str_17; /* "could not parse command" */
     break;
 #endif
 

@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30109)
+#if !VALID_VERSION_CHECK(30110)
 #error "Mixed versions compilation."
 #endif
 
@@ -228,6 +228,10 @@ enum esp_mail_imap_response_types
     esp_mail_imap_response_uidnext,
     esp_mail_imap_response_unseen,
     esp_mail_imap_response_id,
+    esp_mail_imap_response_highest_modsec,
+    esp_mail_imap_response_nomodsec,
+    esp_mail_imap_response_permanent_flags,
+    esp_mail_imap_response_uidvalidity,
     esp_mail_imap_response_maxType
 };
 
@@ -291,6 +295,11 @@ enum esp_mail_imap_command_types
     esp_mail_imap_command_copy,
     esp_mail_imap_command_id,
     esp_mail_imap_command_unselect,
+    esp_mail_imap_command_condstore,
+    esp_mail_imap_command_noop,
+    esp_mail_imap_command_unchangedsince,
+    esp_mail_imap_command_changedsince,
+    esp_mail_imap_command_modsec,
     esp_mail_imap_command_maxType
 };
 
@@ -326,6 +335,8 @@ enum esp_mail_imap_read_capability_types
     esp_mail_imap_read_capability_id,
     esp_mail_imap_read_capability_unselect,
     esp_mail_imap_read_capability_children,
+    // rfc7162 (rfc4551 obsoleted)
+    esp_mail_imap_read_capability_condstore,
     esp_mail_imap_read_capability_auto_caps,
     esp_mail_imap_read_capability_maxType
 };
@@ -831,7 +842,7 @@ static esp_mail_smtp_commands_tokens smtp_cmd_post_tokens(false);
 
 struct esp_mail_imap_command_t
 {
-    char text[13];
+    char text[15];
 };
 
 /** The IMAP commands per standards.
@@ -892,7 +903,12 @@ const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType
         "-FLAGS",
         "COPY",
         "ID",
-        "UNSELECT"};
+        "UNSELECT",
+        "CONDSTORE",
+        "NOOP",
+        "UNCHANGEDSINCE",
+        "CHANGEDSINCE",
+        "MODSEC"};
 
 struct esp_mail_imap_commands_tokens
 {
@@ -920,7 +936,7 @@ static esp_mail_imap_commands_tokens imap_cmd_post_tokens(false);
 
 struct esp_mail_imap_response_t
 {
-    char text[14];
+    char text[18];
 };
 
 /** The IMAP response.
@@ -954,9 +970,11 @@ const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxT
         " RECENT",
         " [UIDNEXT ",
         " [UNSEEN ",
-        "* ID "
-
-};
+        "* ID ",
+        " [HIGHESTMODSEQ ",
+        " [NOMODSEQ]",
+        " [PERMANENTFLAGS ",
+        " [UIDVALIDITY "};
 
 #endif
 
@@ -1212,6 +1230,7 @@ const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_ima
         "ID",
         "UNSELECT",
         "CHILDREN",
+        "CONDSTORE"
         "" /* Auto cap */
 };
 
@@ -1679,6 +1698,8 @@ enum esp_mail_imap_command
     esp_mail_imap_cmd_enable,
     esp_mail_imap_cmd_id,
     esp_mail_imap_cmd_unselect,
+    esp_mail_imap_cmd_noop,
+    esp_mail_imap_cmd_copy,
     esp_mail_imap_cmd_custom
 };
 
@@ -1723,7 +1744,7 @@ enum esp_mail_imap_message_sub_type
 
 typedef struct esp_mail_imap_response_status_t
 {
-    // No IMAP server response status code (statusCode), server returns OK, NO and BAD response instead 
+    // No IMAP server response status code (statusCode), server returns OK, NO and BAD response instead
 
     /*  error code */
     int errorCode = 0;
@@ -2273,8 +2294,8 @@ struct esp_mail_imap_limit_config_t
     /* The maximum size of each attachment to download */
     size_t attachment_size = 1024 * 1024 * 5;
 
-    /* The IMAP idle timeout in ms (1 min to 29 min). Default is 10 min */
-    size_t imap_idle_timeout = 10 * 60 * 1000;
+    /* The IMAP idle timeout in ms (1 min to 29 min). Default is 8 min */
+    size_t imap_idle_timeout = 8 * 60 * 1000;
 
     /** The IMAP idle host check interval in ms (30 sec to imap_idle_timeout)
      * for internet availability checking to ensure the connection is active.
@@ -2330,6 +2351,9 @@ struct esp_mail_imap_fetch_config_t
 
     /* Set the message flag as seen */
     bool set_seen = false;
+
+    /* The uint32_t option for CHANGESINCE conditional test. */
+    uint32_t modsequence = 0;
 };
 
 struct esp_mail_imap_firmware_config_t
@@ -2916,6 +2940,7 @@ static const char esp_mail_dbg_str_79[] PROGMEM = "get UID";
 static const char esp_mail_dbg_str_80[] PROGMEM = "get Flags";
 static const char esp_mail_dbg_str_81[] PROGMEM = "delete folder";
 static const char esp_mail_dbg_str_82[] PROGMEM = "send IMAP command, ID";
+static const char esp_mail_dbg_str_83[] PROGMEM = "send IMAP command, NOOP";
 #endif
 
 /////////////////////////
@@ -2992,6 +3017,7 @@ static const char esp_mail_cb_str_58[] PROGMEM = "Copying message(s)...";
 static const char esp_mail_cb_str_59[] PROGMEM = "Creating folder...";
 static const char esp_mail_cb_str_60[] PROGMEM = "Moving message(s)...";
 static const char esp_mail_cb_str_61[] PROGMEM = "Send client identification...";
+static const char esp_mail_cb_str_62[] PROGMEM = "Send noop...";
 #endif
 
 #endif
@@ -3132,6 +3158,9 @@ static const char esp_mail_error_imap_str_10[] PROGMEM = "no search criteria pro
 static const char esp_mail_error_imap_str_11[] PROGMEM = "no mailbox opened";
 static const char esp_mail_error_imap_str_12[] PROGMEM = "no content";
 static const char esp_mail_error_imap_str_13[] PROGMEM = "this feature was not supported";
+static const char esp_mail_error_imap_str_14[] PROGMEM = "no message changed since (assigned) modsec";
+static const char esp_mail_error_imap_str_15[] PROGMEM ="CONDSTORE was not supported or modsec was not supported for selected mailbox";
+static const char esp_mail_error_imap_str_17[] PROGMEM ="could not parse command";
 #endif
 #endif
 

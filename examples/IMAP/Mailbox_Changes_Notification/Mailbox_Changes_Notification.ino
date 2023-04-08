@@ -271,17 +271,23 @@ void printPollingStatus(IMAPSession &imap)
         ESP_MAIL_PRINTF("Message %d, has been fetched with the argument %s\n\n", (int)sFolder.pollingStatus().messageNum, sFolder.pollingStatus().argument.c_str());
 }
 
-void printSelectedMailboxInfo(IMAPSession &imap)
+void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
-    /* Declare the selected folder info class to get the info of selected mailbox folder */
-    SelectedFolderInfo sFolder = imap.selectedFolder();
-
     /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
+    ESP_MAIL_PRINTF("UID Validity: %d\n", sFolder.uidValidity());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
     ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
+    if (sFolder.modSeqSupported())
+        ESP_MAIL_PRINTF("Highest Modification Sequence: %d\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+
+    if (sFolder.flagCount(true))
+    {
+        for (size_t i = 0; i < sFolder.flagCount(true); i++)
+            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Permanent Flags: " : ", ", sFolder.flag(i, true).c_str(), i == sFolder.flagCount(true) - 1 ? "\n" : "");
+    }
 }
 
 /* Callback function to get the Email reading status */
@@ -362,7 +368,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment status in search may be true in case the "multipart/mixed" 
+        // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 

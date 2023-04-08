@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30109)
+#if !VALID_VERSION_CHECK(30110)
 #error "Mixed versions compilation."
 #endif
 
@@ -101,6 +101,8 @@ non_authenticated:
     if (smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
         return false;
 
+    // expected success status code 250
+    // expected error status code 500, 501, 504, 421
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
     {
         // In case EHLO (rfc5321) is not acceptable,
@@ -111,6 +113,8 @@ non_authenticated:
         if (!smtpSend(smtp, s.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
+        // expected success status code 250
+        // expected error status code 500, 501, 504, 421
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
             return false;
 
@@ -135,9 +139,10 @@ non_authenticated:
                    false);
 #endif
 
-        // expected status code 250 for complete the request
+        // expected success status code 250 for complete the request
         // some server returns 220 to restart to initial state
 
+        // expected error status code 500, 501, 504, 421
         smtpSend(smtp, smtp_commands[esp_mail_smtp_command_starttls].text, true);
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
             return false;
@@ -563,6 +568,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             }
         }
 
+        // expected success status code 250
+        // expected failure status code 552, 451, 452
+        // expected error status code 500, 501, 421
         if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_sender, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_SENDER_FAILED))
             return false;
     }
@@ -618,6 +626,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
             smtp->_canForward = true;
 
+            // expected success status code 250, 251
+            // expected failure status code 550, 551, 552, 553, 450, 451, 452
+            // expected error status code 500, 501, 503, 421
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
         }
@@ -640,6 +651,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
             smtp->_canForward = true;
 
+            // expected success status code 250, 251
+            // expected failure status code 550, 551, 552, 553, 450, 451, 452
+            // expected error status code 500, 501, 503, 421
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
         }
@@ -656,6 +670,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
             smtp->_canForward = true;
 
+            // expected success status code 250, 251
+            // expected failure status code 550, 551, 552, 553, 450, 451, 452
+            // expected error status code 500, 501, 503, 421
             if (!altSendData(buf, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_header_recipient, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_HEADER_RECIPIENT_FAILED))
                 return false;
         }
@@ -671,6 +688,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         }
         else
         {
+            // expected success status code 354
+            // expected failure status code 451, 554
+            // expected error status code 500, 501, 503, 421
             MB_String sdata = smtp_commands[esp_mail_smtp_command_data].text;
             if (!altSendData(sdata, true, smtp, msg, true, true, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_354, SMTP_STATUS_SEND_BODY_FAILED))
                 return false;
@@ -880,11 +900,17 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
             if (!sendBDAT(smtp, msg, 0, true))
                 return false;
 
+            // expected success status code 250
+            // expected failure status code 451, 554
+            // expected error status code 500, 501, 503, 421
             if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_chunk_termination, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
                 return false;
         }
         else
         {
+            // expected success status code 250
+            // expected failure status code 451, 554
+            // expected error status code 500, 501, 503, 421
             MB_String str = smtp_commands[esp_mail_smtp_command_terminate].text;
             if (!altSendData(str, false, smtp, msg, true, true, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
                 return false;
@@ -1060,6 +1086,9 @@ bool ESP_Mail_Client::sendBDAT(SMTPSession *smtp, SMTP_Message *msg, int len, bo
 
     if (!smtp->_send_capability[esp_mail_smtp_send_capability_pipelining])
     {
+        // expected success status code 250
+        // expected failure status code 451, 554
+        // expected error status code 500, 501, 503, 421
         if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_send_body, esp_mail_smtp_status_code_250, SMTP_STATUS_SEND_BODY_FAILED))
             return addSendingResult(smtp, msg, false, true);
         smtp->_chunkCount = 0;
@@ -2958,37 +2987,37 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
 {
     if (statusCode > esp_mail_smtp_status_code_0)
     {
-        int numLen = 3;
-        int textLen = strlen(buf) - numLen - 1;
+        int codeLength = 3;
+        int textLength = strlen(buf) - codeLength - 1;
 
-        if (strlen(buf) > numLen && (buf[numLen] == ' ' || buf[numLen] == '-') && textLen > 0)
+        if (strlen(buf) > codeLength && (buf[codeLength] == ' ' || buf[codeLength] == '-') && textLength > 0)
         {
             char *tmp = nullptr;
-            tmp = allocMem<char *>(numLen + 1);
-            memcpy(tmp, &buf[0], numLen);
+            tmp = allocMem<char *>(codeLength + 1);
+            memcpy(tmp, &buf[0], codeLength);
 
             int code = atoi(tmp);
 
             // release memory
             freeMem(&tmp);
 
-            if (buf[numLen] == ' ')
+            if (buf[codeLength] == ' ')
                 status.statusCode = code;
 
-            int i = numLen + 1;
+            int i = codeLength + 1;
 
             // We will collect the status text starting from status code 334 and 4xx
             // The status text of 334 will be used for debugging display of the base64 server challenge
-            if (code == 334 || code > 400)
+            if (code == esp_mail_smtp_status_code_334 || code >= esp_mail_smtp_status_code_421)
             {
                 // find the next sp
                 while (i < strlen(buf) && buf[i] != ' ')
                     i++;
 
                 // if sp found, set index to the next pos, otherwise set index to num length + 1
-                i = (i < strlen(buf) - 1) ? i + 1 : numLen + 1;
+                i = (i < strlen(buf) - 1) ? i + 1 : codeLength + 1;
 
-                tmp = allocMem<char *>(textLen + 1);
+                tmp = allocMem<char *>(textLength + 1);
                 memcpy(tmp, &buf[i], strlen(buf) - i - 1);
                 status.text += tmp;
                 // release memory
@@ -3482,7 +3511,8 @@ bool SMTPSession::connect(bool &ssl)
 
     client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 
-    // expected status code 220 for ready to service
+    // expected success status code 220 for ready to service
+    // expected failure status code 421
     if (!MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_initial_state, esp_mail_smtp_status_code_220, SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED))
         return false;
 
@@ -3644,7 +3674,13 @@ bool SMTPSession::closeSession()
         ret = MailClient.smtpSend(this, smtp_commands[esp_mail_smtp_command_quit].text, true) > 0;
 
         // This may return false due to connection drops before get any response.
+
+        // expected success status code 221
+        // expected error status code 500
         MailClient.handleSMTPResponse(this, esp_mail_smtp_cmd_logout, esp_mail_smtp_status_code_221, SMTP_STATUS_SEND_BODY_FAILED);
+
+        if (_smtpStatus.statusCode == esp_mail_smtp_status_code_500)
+            return false;
 #endif
 
         if (ret)

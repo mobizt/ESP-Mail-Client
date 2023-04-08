@@ -72,10 +72,14 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
+
 ```cpp
-bool setFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession, bool silent = false);
+bool setFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession, bool silent = false, int32_t modsequence = -1);
 ```
 
 
@@ -97,10 +101,14 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
+
 ```cpp
-bool setFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
+bool setFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false, int32_t modsequence = -1);
 ```
 
 
@@ -119,10 +127,14 @@ param **`closeSession`** The option to close the IMAP session after add flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
- 
+
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
+
 ```cpp
-bool addFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
+bool addFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession, int32_t modsequence = -1);
 ```
 
 
@@ -144,10 +156,14 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
+
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
  
 ```cpp
-bool addFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
+bool addFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false, int32_t modsequence = -1);
 ```
 
 
@@ -166,10 +182,14 @@ param **`closeSession`** The option to close the IMAP session after remove flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
 
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
+
 ```cpp
-bool removeFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession);
+bool removeFlag(IMAPSession *imap, int msgUID, <string> flags, bool closeSession, int32_t modsequence = -1);
 ```
 
 
@@ -191,10 +211,14 @@ param **`closeSession`** The option to close the IMAP session after set flag.
 
 param **`silent`** The option to ignore the response.
 
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
 return **`boolean`** The boolean value indicates the success of operation.
+
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
  
 ```cpp
-bool removeFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false);
+bool removeFlag(IMAPSession *imap, <string> sequenceSet, bool UID, <string> flags, bool closeSession, bool silent = false, int32_t modsequence = -1);
 ```
 
 
@@ -887,10 +911,14 @@ param **`toDelete`** The pointer to the MessageList class that contains the list
 
 param **`expunge`** The boolean option to expunge all messages.
 
-return **`boolean`** The boolean value which indicates the success of operation.
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
 
 ```cpp
-bool deleteMessages(MessageList *toDelete, bool expunge = false);
+bool deleteMessages(MessageList *toDelete, bool expunge = false, int32_t modsequence = -1);
 ```
 
 
@@ -907,10 +935,14 @@ param **`UID`** The option for sequenceSet whether it is UID or message sequence
 
 param **`expunge`** The boolean option to expunge all messages.
 
-return **`boolean`** The boolean value which indicates the success of operation.
+param **`modsequence`** The int32_t option for UNCHANGESINCE conditional test.
+
+return **`boolean`** The boolean value indicates the success of operation.
+
+The modsequence value can be used only if IMAP server supports Conditional STORE extension and the selected mailbox supports modsequences.
 
 ```cpp
-bool deleteMessages(<string> sequenceSet, bool UID, bool expunge = false);
+bool deleteMessages(<string> sequenceSet, bool UID, bool expunge = false, int32_t modsequence = -1);
 ```
 
 

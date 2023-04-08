@@ -81,12 +81,6 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Print the list of mailbox folders */
-void printAllMailboxesInfo(IMAPSession &imap);
-
-/* Print the selected folder info */
-void printSelectedMailboxInfo(IMAPSession &imap);
-
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 

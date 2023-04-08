@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30109)
+#if !VALID_VERSION_CHECK(30110)
 #error "Mixed versions compilation."
 #endif
 
@@ -140,7 +140,7 @@ public:
   ~SelectedFolderInfo() { clear(); };
 
   /* Get the flags count for this mailbox */
-  size_t flagCount() { return _flags.size(); };
+  size_t flagCount(bool permanent = false) { return permanent ? _permanent_flags.size() : _flags.size(); };
 
   /* Get the numbers of messages in this mailbox */
   size_t msgCount() { return _msgCount; };
@@ -161,11 +161,20 @@ public:
    */
   IMAP_Polling_Status pollingStatus() { return _polling_status; };
 
+  /* Get the The unique identifier (UID) validity value */
+  size_t uidValidity() { return _uidValidity; };
+
   /* Get the predict next message UID */
   size_t nextUID() { return _nextUID; };
 
   /* Get the index of first unseen message */
   size_t unseenIndex() { return _unseenMsgIndex; };
+
+  /* Get the highest modification sequence */
+  int32_t highestModSeq() { return _highestModSeq; };
+
+  /* Get the highest modification sequence */
+  int32_t modSeqSupported() { return _highestModSeq > -1 && !_nomodsec; };
 
   /* Get the numbers of messages from search result based on the search criteria
    */
@@ -175,36 +184,49 @@ public:
   size_t availableMessages() { return _availableItems; };
 
   /* Get the flag argument at the specified index */
-  String flag(size_t index)
+  String flag(size_t index, bool permanent = false)
   {
-    if (index < _flags.size())
-      return _flags[index].c_str();
+    size_t size = permanent ? _permanent_flags.size() : _flags.size();
+    if (index < size)
+      return permanent ? _permanent_flags[index].c_str() : _flags[index].c_str();
     return "";
   }
 
 private:
-  void addFlag(const char *flag)
+  void addFlag(const char *flag, bool permanent)
   {
     MB_String s = flag;
-    _flags.push_back(s);
+    if (permanent)
+      _permanent_flags.push_back(s);
+    else
+      _flags.push_back(s);
   };
   void clear()
   {
     for (size_t i = 0; i < _flags.size(); i++)
       _flags[i].clear();
     _flags.clear();
+
+    for (size_t i = 0; i < _permanent_flags.size(); i++)
+      _permanent_flags[i].clear();
+    _permanent_flags.clear();
   }
+
   size_t _msgCount = 0;
   size_t _recentCount = 0;
+  size_t _uidValidity = 0;
   size_t _nextUID = 0;
   size_t _unseenMsgIndex = 0;
+  int32_t _highestModSeq = -1;
   size_t _searchCount = 0;
   size_t _availableItems = 0;
   unsigned long _idleTimeMs = 0;
   bool _folderChanged = false;
   bool _floderChangedState = false;
+  bool _nomodsec = false;
   IMAP_Polling_Status _polling_status;
   MB_VECTOR<MB_String> _flags;
+  MB_VECTOR<MB_String> _permanent_flags;
 };
 
 /* The class that provides the list of FolderInfo e.g. name, attributes and
@@ -774,10 +796,14 @@ public:
    * @param flags The flag list to set.
    * @param closeSession The option to close the IMAP session after set flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T = const char *>
-  bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent); }
+  bool setFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent, true, modsequence); }
 
   /** Set the argument to the Flags for the specified message.
    *
@@ -788,10 +814,14 @@ public:
    * @param flags The flag list to set.
    * @param closeSession The option to close the IMAP session after set flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T1 = const char *, typename T2 = const char *>
-  bool setFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent, UID); }
+  bool setFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_set, closeSession, silent, UID, modsequence); }
 
   /** Add the argument to the Flags for the specified message.
    *
@@ -801,10 +831,14 @@ public:
    * @param flags The flag list to add.
    * @param closeSession The option to close the IMAP session after add flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T = const char *>
-  bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent); }
+  bool addFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent, true, modsequence); }
 
   /** Add the argument to the Flags for the specified message.
    *
@@ -815,10 +849,14 @@ public:
    * @param flags The flag list to add.
    * @param closeSession The option to close the IMAP session after set flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T1 = const char *, typename T2 = const char *>
-  bool addFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent, UID); }
+  bool addFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_add, closeSession, silent, UID, modsequence); }
 
   /** Remove the argument from the Flags for the specified message.
    *
@@ -828,10 +866,14 @@ public:
    * @param flags The flag list to remove.
    * @param closeSession The option to close the IMAP session after remove flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T = const char *>
-  bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent); }
+  bool removeFlag(IMAPSession *imap, int msgUID, T flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(msgUID), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent, true, modsequence); }
 
   /** Remove the argument from the Flags for the specified message.
    *
@@ -842,10 +884,14 @@ public:
    * @param flags The flag list to remove.
    * @param closeSession The option to close the IMAP session after set flag.
    * @param silent The option to ignore the response.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T1 = const char *, typename T2 = const char *>
-  bool removeFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent, UID); }
+  bool removeFlag(IMAPSession *imap, T1 sequenceSet, bool UID, T2 flags, bool closeSession, bool silent = false, int32_t modsequence = -1) { return mSetFlag(imap, toStringPtr(sequenceSet), toStringPtr(flags), esp_mail_imap_store_flag_type_remove, closeSession, silent, UID, modsequence); }
 
 #endif
 
@@ -1454,10 +1500,10 @@ private:
   bool imapAuth(IMAPSession *imap, bool &ssl);
 
   // Send IMAP command
-  bool sendIMAPCommand(IMAPSession *imap, int msgIndex, esp_mail_imap_command cmdCase);
+  bool sendFetchCommand(IMAPSession *imap, int msgIndex, esp_mail_imap_command cmdCase);
 
   // Send error callback
-  void errorStatusCB(IMAPSession *imap, int error);
+  void errorStatusCB(IMAPSession *imap, int error, bool clearStatus);
 
   // Send data
   size_t imapSend(IMAPSession *imap, PGM_P data, bool newline = false);
@@ -1604,7 +1650,7 @@ private:
   bool handleIMAPError(IMAPSession *imap, int err, bool ret);
 
   // Set Flag
-  bool mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_StringPtr flags, esp_mail_imap_store_flag_type type, bool closeSession, bool silent = false, bool UID = true);
+  bool mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_StringPtr flags, esp_mail_imap_store_flag_type type, bool closeSession, bool silent = false, bool UID = true, int32_t modsequence = -1);
 
 #endif
 };
@@ -1942,19 +1988,27 @@ public:
    * @param toDelete The pointer to the MessageList class that contains the
    * list of messages to delete.
    * @param expunge The boolean option to expunge all messages.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value which indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
-  bool deleteMessages(MessageList *toDelete, bool expunge = false) { return mDeleteMessages(toDelete, expunge); }
+  bool deleteMessages(MessageList *toDelete, bool expunge = false, int32_t modsequence = -1) { return mDeleteMessages(toDelete, expunge, modsequence); }
 
   /** Delete the messages in the opened mailbox folder.
    *
    * @param sequenceSet The sequence set string i.g., unique identifier (UID) or message sequence number or ranges of UID or sequence number.
    * @param UID The option for sequenceSet whether it is UID or message sequence number.
    * @param expunge The boolean option to expunge all messages.
+   * @param modsequence The int32_t option for UNCHANGESINCE conditional test.
    * @return The boolean value which indicates the success of operation.
+   *
+   * The modsequence value can be used only if IMAP server supports Conditional STORE extension
+   * and the selected mailbox supports modsequences.
    */
   template <typename T = const char *>
-  bool deleteMessages(T sequenceSet, bool UID, bool expunge = false) { return mDeleteMessagesSet(toStringPtr(sequenceSet), UID, expunge); }
+  bool deleteMessages(T sequenceSet, bool UID, bool expunge = false, int32_t modsequence = -1) { return mDeleteMessagesSet(toStringPtr(sequenceSet), UID, expunge, modsequence); }
 
   /** Get the quota root's resource usage and limits.
    *
@@ -2050,6 +2104,11 @@ public:
    */
   bool folderChanged();
 
+  /** Send NOOP command to IMAP server.
+   * @return The boolean value which indicates the success of operation.
+   */
+  bool noop();
+
   /** Assign the callback function that returns the operating status when
    * fetching or reading the Email.
    *
@@ -2103,7 +2162,7 @@ public:
   /** Get the operating status error code.
    *
    * @return The int value of operating status error code.
-   * 
+   *
    * The negative value indicated error.
    * See src/ESP_Mail_Error.h and extras/MB_FS.h
    */
@@ -2227,14 +2286,23 @@ private:
   // Move message using sequence set
   bool mMoveMessagesSet(MB_StringPtr sequenceSet, bool UID, MB_StringPtr dest);
 
+  // Check for conditional STORE extention support
+  bool isCondStoreSupported();
+
+  // Check for mailbox mod-sequence support
+  bool isModseqSupported();
+
+  // add UNCHANGEDSINCE STORE modifier and CHANGEDSINCE FETCH modifier to command
+  void addModifier(MB_String &cmd, esp_mail_imap_command_types type, int32_t modsequence);
+
   // Delete message
-  bool deleteMsg(MessageList *toDelete, const char *sequenceSet, bool UID, bool expunge);
+  bool deleteMsg(MessageList *toDelete, const char *sequenceSet, bool UID, bool expunge, int32_t modsequence = -1);
 
   // Delete messages
-  bool mDeleteMessages(MessageList *toDelete, bool expunge = false);
+  bool mDeleteMessages(MessageList *toDelete, bool expunge = false, int32_t modsequence = -1);
 
   // Delete messages
-  bool mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool expunge = false);
+  bool mDeleteMessagesSet(MB_StringPtr sequenceSet, bool UID, bool expunge = false, int32_t modsequence = -1);
 
   // Get or set the quota root's resource usage and limits.
   bool mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *data, bool getMode);
@@ -2564,22 +2632,22 @@ public:
   /** Get the SMTP server response status code.
    *
    * @return The int value of SMTP server response status code.
-   * 
+   *
    * See RFC 5321 standard's documentation.
    */
   int statusCode();
-  
+
   /** Get the SMTP server response status message.
    *
    * @return The int value of SMTP server response status message.
-   * 
+   *
    */
   String statusMessage();
 
   /** Get the operating status error code.
    *
    * @return The int value of operating status error code.
-   * 
+   *
    * The negative value indicated error.
    * See src/ESP_Mail_Error.h and extras/MB_FS.h
    */
@@ -2621,7 +2689,6 @@ private:
   uint32_t ts = 0;
 
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
-
 
   bool _auth_capability[esp_mail_auth_capability_maxType];
   bool _send_capability[esp_mail_smtp_send_capability_maxType];
