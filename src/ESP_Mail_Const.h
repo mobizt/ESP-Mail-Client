@@ -2540,6 +2540,29 @@ struct esp_mail_imap_multipart_level_t
     bool append_body_text = false;
 };
 
+struct esp_mail_imap_response_data
+{
+    esp_mail_imap_response_status imapResp = esp_mail_imap_resp_unknown;
+    char *response = nullptr;
+    int readLen = 0;
+    long dataTime = millis();
+    int chunkBufSize = 512;
+    int chunkIdx = 0;
+    bool completedResponse = false;
+    bool endSearch = false;
+    struct esp_mail_message_header_t header;
+    struct esp_mail_message_part_info_t part;
+    MB_String filePath;
+    bool downloadRequest = false;
+    int octetCount = 0;
+    int octetLength = 0;
+    bool tmo = false;
+    int headerState = 0;
+    int searchCount = 0;
+    char *lastBuf = nullptr;
+    char *buf = nullptr;
+};
+
 #endif
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
@@ -2857,7 +2880,7 @@ static const char esp_mail_dbg_str_2[] PROGMEM = "connecting to SMTP server";
 #if defined(ENABLE_SMTP)
 static const char esp_mail_dbg_str_3[] PROGMEM = "send Email";
 static const char esp_mail_dbg_str_4[] PROGMEM = "SMTP server connected";
-static const char esp_mail_dbg_str_5[] PROGMEM = "send SMTP command, HELO";
+static const char esp_mail_dbg_str_5[] PROGMEM = "send SMTP command, EHLO";
 static const char esp_mail_dbg_str_6[] PROGMEM = "send SMTP command, AUTH LOGIN";
 static const char esp_mail_dbg_str_7[] PROGMEM = "send SMTP command, AUTH PLAIN";
 static const char esp_mail_dbg_str_8[] PROGMEM = "send message header";
@@ -2869,6 +2892,7 @@ static const char esp_mail_dbg_str_13[] PROGMEM = "send next Email";
 static const char esp_mail_dbg_str_14[] PROGMEM = "send inline data";
 static const char esp_mail_dbg_str_15[] PROGMEM = "send smtp command, AUTH XOAUTH2";
 static const char esp_mail_dbg_str_16[] PROGMEM = "finishing the message sending";
+static const char esp_mail_dbg_str_17[] PROGMEM = "No ESMTP supported, send SMTP command, HELO";
 #endif
 
 /////////////////////////
@@ -3215,7 +3239,7 @@ static const char esp_mail_str_46[] PROGMEM = "\1auth=Bearer ";
 static const char esp_mail_str_47[] PROGMEM = "0123456789ABCDEF";
 static const char esp_mail_str_48[] PROGMEM = "<0.0>";
 static const char esp_mail_str_49[] PROGMEM = "<0.";
-static const char esp_mail_str_50[] PROGMEM = "Search limit: %d\nFound %d messages\nShow %d messages\n";
+static const char esp_mail_str_50[] PROGMEM = "Search limit: %d\nFound %d messages\nShow %d messages";
 static const char esp_mail_str_51[] PROGMEM = "1.0";
 static const char esp_mail_str_52[] PROGMEM = "Fetch message %d, UID: %d";
 static const char esp_mail_str_53[] PROGMEM = "Fetch message %d, Number: %d";

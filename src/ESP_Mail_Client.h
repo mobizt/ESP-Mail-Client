@@ -1530,7 +1530,7 @@ private:
   bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
 
   // Parse header response
-  void parseHeaderResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive = true);
+  void parseHeaderResponse(IMAPSession *imap, esp_mail_imap_response_data &res, bool caseSensitive = true);
 
   // Set the header based on state parsed
   void collectHeaderField(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);

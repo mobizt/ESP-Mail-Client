@@ -80,7 +80,7 @@ non_authenticated:
     printDebug((void *)(smtp),
                true,
                esp_mail_cb_str_3 /* "Sending greeting response..." */,
-               esp_mail_dbg_str_5 /* "send SMTP command, HELO" */,
+               esp_mail_dbg_str_5 /* "send SMTP command, EHLO" */,
                esp_mail_debug_tag_type_client,
                true,
                false);
@@ -105,6 +105,11 @@ non_authenticated:
     // expected error status code 500, 501, 504, 421
     if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_greeting, esp_mail_smtp_status_code_250, 0))
     {
+
+#if !defined(SILENT_MODE)
+        if (smtp->_debug)
+            esp_mail_debug_print_tag(esp_mail_dbg_str_17 /* "No ESMTP supported, send SMTP command, HELO" */, esp_mail_debug_tag_type_client, true);
+#endif
         // In case EHLO (rfc5321) is not acceptable,
         // send HELO command (rfc821) instead.
         s = smtp_cmd_post_tokens[esp_mail_smtp_command_helo];

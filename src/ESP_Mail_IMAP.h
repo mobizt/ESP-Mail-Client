@@ -670,7 +670,11 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         imap->addModifier(cmd, esp_mail_imap_command_changedsince, imap->_imap_data->fetch.modsequence);
 
         if (imapSend(imap, cmd.c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
+        {
+            if (i < imap->_imap_msg_num.size() - 1)
+                continue;
             return false;
+        }
 
         imap->_imap_cmd = esp_mail_imap_cmd_fetch_body_header;
 
@@ -679,13 +683,17 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             err = IMAP_STATUS_IMAP_RESPONSE_FAILED;
 
         if (!handleIMAPResponse(imap, err, closeSession))
+        {
+            if (i < imap->_imap_msg_num.size() - 1)
+                continue;
             return false;
+        }
+
+        if (!cHeader(imap))
+            continue;
 
         if (imap->_imap_msg_num[i].type == esp_mail_imap_msg_num_type_number)
-        {
-
             cHeader(imap)->message_uid = imap->mGetUID(cHeader(imap)->message_no);
-        }
 
         cHeader(imap)->flags = imap->getFlags(cHeader(imap)->message_no);
 
@@ -1786,12 +1794,16 @@ void ESP_Mail_Client::numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr)
 
 struct esp_mail_message_part_info_t *ESP_Mail_Client::cPart(IMAPSession *imap)
 {
-    return &cHeader(imap)->part_headers[imap->_cPartIdx];
+    if (cHeader(imap) && imap->_cPartIdx < cHeader(imap)->part_headers.size())
+        return &cHeader(imap)->part_headers[imap->_cPartIdx];
+    return nullptr;
 }
 
 struct esp_mail_message_header_t *ESP_Mail_Client::cHeader(IMAPSession *imap)
 {
-    return &imap->_headers[cIdx(imap)];
+    if (cIdx(imap) < imap->_headers.size())
+        return &imap->_headers[cIdx(imap)];
+    return nullptr;
 }
 
 bool ESP_Mail_Client::parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state)
@@ -1812,79 +1824,81 @@ bool ESP_Mail_Client::parseHeaderField(IMAPSession *imap, const char *buf, PGM_P
     return false;
 }
 
-void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, struct esp_mail_message_header_t &header, int &headerState, int &octetCount, bool caseSensitive)
+void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_response_data &res, bool caseSensitive)
 {
+    // res.response, res.readLen, res.chunkIdx, res.header, res.headerState, res.octetCount
+
     char *tmp = nullptr;
-    if (chunkIdx == 0)
+    if (res.chunkIdx == 0)
     {
         MB_String str;
         joinStringDot(str, 2, imap_commands[esp_mail_imap_command_header].text, imap_commands[esp_mail_imap_command_fields].text);
 
-        if (strposP(buf, str.c_str(), 0, caseSensitive) != -1 && buf[0] == '*')
-            chunkIdx++;
+        if (strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*' && res.response[strlen(res.response) - 1] == '}')
+            res.chunkIdx++;
 
-        tmp = subStr(buf, esp_mail_str_36 /* "{" */, esp_mail_str_37 /* "}" */, 0, 0, caseSensitive);
+        tmp = subStr(res.response, imap_responses[esp_mail_imap_response_untagged].text, imap_responses[esp_mail_imap_response_fetch].text, 0);
         if (tmp)
         {
-            octetCount = 2;
-            header.header_data_len = atoi(tmp);
+            res.header.message_no = atoi(tmp);
             // release memory
             freeMem(&tmp);
         }
 
-        tmp = subStr(buf, imap_responses[esp_mail_imap_response_untagged].text, imap_responses[esp_mail_imap_response_fetch].text, 0);
+        tmp = subStr(res.response, esp_mail_str_36 /* "{" */, esp_mail_str_37 /* "}" */, 0, 0, caseSensitive);
         if (tmp)
         {
-            header.message_no = atoi(tmp);
+            res.octetCount = 2;
+            res.header.header_data_len = atoi(tmp);
             // release memory
             freeMem(&tmp);
         }
     }
     else
     {
-        if (octetCount > header.header_data_len + 2)
+        if (res.octetCount > res.header.header_data_len + 2)
             return;
 
-        chunkIdx++;
+        res.chunkIdx++;
 
         MB_String field;
 
         for (int i = esp_mail_rfc822_header_field_from; i < esp_mail_rfc822_header_field_maxType; i++)
         {
             appendHeaderName(field, rfc822_headers[i].text, true, false, false);
-            if (parseHeaderField(imap, buf, field.c_str(), caseSensitive, header, headerState, i))
+            if (parseHeaderField(imap, res.response, field.c_str(), caseSensitive, res.header, res.headerState, i))
                 return;
         }
 
         appendHeaderName(field, message_headers[esp_mail_message_header_field_content_transfer_encoding].text, true, true, false);
 
-        if (parseHeaderField(imap, buf, field.c_str(), caseSensitive, header, headerState, esp_mail_imap_state_content_transfer_encoding))
+        if (parseHeaderField(imap, res.response, field.c_str(), caseSensitive, res.header, res.headerState, esp_mail_imap_state_content_transfer_encoding))
             return;
 
         appendHeaderName(field, message_headers[esp_mail_message_header_field_accept_language].text, true, true, false);
 
-        if (parseHeaderField(imap, buf, field.c_str(), caseSensitive, header, headerState, esp_mail_imap_state_accept_language))
+        if (parseHeaderField(imap, res.response, field.c_str(), caseSensitive, res.header, res.headerState, esp_mail_imap_state_accept_language))
             return;
 
         appendHeaderName(field, message_headers[esp_mail_message_header_field_content_language].text, true, true, false);
 
-        if (parseHeaderField(imap, buf, field.c_str(), caseSensitive, header, headerState, esp_mail_imap_state_content_language))
+        if (parseHeaderField(imap, res.response, field.c_str(), caseSensitive, res.header, res.headerState, esp_mail_imap_state_content_language))
             return;
 
         MB_String contentTypeName;
         appendHeaderName(contentTypeName, message_headers[esp_mail_message_header_field_content_type].text, false, false, false);
-        if (strcmpP(buf, 0, contentTypeName.c_str(), caseSensitive))
+        if (strcmpP(res.response, 0, contentTypeName.c_str(), caseSensitive))
         {
-            headerState = esp_mail_imap_state_content_type;
-            tmp = subStr(buf, contentTypeName.c_str(), esp_mail_str_35 /* ";" */, 0, 0, caseSensitive);
+            res.headerState = esp_mail_imap_state_content_type;
+            tmp = subStr(res.response, contentTypeName.c_str(), esp_mail_str_35 /* ";" */, 0, 0, caseSensitive);
             if (tmp)
             {
                 // We set attachment status here as attachment should be included in multipart/mixed message,
                 // unless no real attachments included which we don't know until fetching the sub part.
                 if (strpos(tmp, esp_mail_imap_multipart_sub_type_t::mixed, 0, caseSensitive) != -1)
-                    header.hasAttachment = true;
+                    res.header.hasAttachment = true;
 
-                collectHeaderField(imap, buf, header, headerState);
+                collectHeaderField(imap, res.response, res.header, res.headerState);
                 // release memory
                 freeMem(&tmp);
             }
@@ -2729,27 +2743,8 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     if (!reconnect(imap))
         return false;
 
-    esp_mail_imap_response_status imapResp = esp_mail_imap_resp_unknown;
-    char *response = nullptr;
-    int readLen = 0;
-    long dataTime = millis();
-    int chunkBufSize = imap->client.available();
-    int chunkIdx = 0;
-    MB_String s;
-    bool completedResponse = false;
-    bool endSearch = false;
-    struct esp_mail_message_header_t header;
-    struct esp_mail_message_part_info_t part;
-
-    MB_String filePath;
-    bool downloadRequest = false;
-    int octetCount = 0;
-    int octetLength = 0;
-    bool tmo = false;
-    int headerState = 0;
-    int scnt = 0;
-    char *lastBuf = nullptr;
-    char *tmp = nullptr;
+    esp_mail_imap_response_data res;
+    res.chunkBufSize = imap->client.available();
     imap->_lastProgress = -1;
 
     // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and encoded/unencoded message
@@ -2757,7 +2752,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     crLF |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
 
     // custom cmd IDLE?, waiting incoming server response
-    if (chunkBufSize == 0 && imap->_prev_imap_custom_cmd == imap->_imap_custom_cmd && imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
+    if (res.chunkBufSize == 0 && imap->_prev_imap_custom_cmd == imap->_imap_custom_cmd && imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
     {
         if (!reconnect(imap))
             return false;
@@ -2765,10 +2760,10 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         return true;
     }
 
-    while (imap->_tcpConnected && chunkBufSize <= 0)
+    while (imap->_tcpConnected && res.chunkBufSize <= 0)
     {
 
-        if (!reconnect(imap, dataTime))
+        if (!reconnect(imap, res.dataTime))
             return false;
 
         if (!connected((void *)imap, false))
@@ -2781,13 +2776,13 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
             return false;
         }
-        chunkBufSize = imap->client.available();
+        res.chunkBufSize = imap->client.available();
         idle();
     }
 
-    dataTime = millis();
+    res.dataTime = millis();
 
-    if (chunkBufSize > 0)
+    if (res.chunkBufSize > 0)
     {
         if (imap->_imap_cmd == esp_mail_imap_cmd_examine)
         {
@@ -2808,23 +2803,23 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         }
 
         // response buffer
-        chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
-        response = allocMem<char *>(chunkBufSize + 1);
+        res.chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
+        res.response = allocMem<char *>(res.chunkBufSize + 1);
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
-            lastBuf = allocMem<char *>(BASE64_CHUNKED_LEN + 1);
+            res.lastBuf = allocMem<char *>(BASE64_CHUNKED_LEN + 1);
 
-        while (!completedResponse) // looking for operation finishing
+        while (!res.completedResponse) // looking for operation finishing
         {
             idle();
 
             if (imap->_imap_cmd == esp_mail_imap_cmd_append || (imap->_imap_custom_cmd == esp_mail_imap_cmd_append && imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback))
             {
                 // No waiting time out for APPEND
-                dataTime = millis();
+                res.dataTime = millis();
             }
 
-            if (!reconnect(imap, dataTime) || !connected((void *)imap, false))
+            if (!reconnect(imap, res.dataTime) || !connected((void *)imap, false))
             {
 
                 if (!connected((void *)imap, false))
@@ -2841,26 +2836,26 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 return false;
             }
 
-            chunkBufSize = imap->client.available();
+            res.chunkBufSize = imap->client.available();
 
-            if (chunkBufSize > 0)
+            if (res.chunkBufSize > 0)
             {
-                chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
+                res.chunkBufSize = ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE;
 
                 if (imap->_imap_cmd == esp_mail_imap_cmd_search)
                 {
 
-                    readLen = parseSearchResponse(imap, imapResp, response, chunkBufSize, chunkIdx, esp_mail_imap_tag_str, endSearch, scnt, imap_responses[esp_mail_imap_response_search].text);
+                    res.readLen = parseSearchResponse(imap, res.imapResp, res.response, res.chunkBufSize, res.chunkIdx, esp_mail_imap_tag_str, res.endSearch, res.searchCount, imap_responses[esp_mail_imap_response_search].text);
                     imap->_mbif._availableItems = imap->_imap_msg_num.size();
 
                     if (imap->_mbif._availableItems == 0)
                     {
-                        imapResp = imapResponseStatus(imap, response, esp_mail_imap_tag_str);
-                        
-                        if (imapResp != esp_mail_imap_resp_unknown)
-                            endSearch = true;
+                        res.imapResp = imapResponseStatus(imap, res.response, esp_mail_imap_tag_str);
 
-                        if (imapResp == esp_mail_imap_resp_bad)
+                        if (res.imapResp != esp_mail_imap_resp_unknown)
+                            res.endSearch = true;
+
+                        if (res.imapResp == esp_mail_imap_resp_bad)
                         {
                             errorStatusCB(imap, IMAP_STATUS_BAD_COMMAND, false);
                             return false;
@@ -2870,51 +2865,52 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 else
                 {
                     // response read as chunk ended with CRLF or complete buffer size
-                    int o = octetCount;
-                    readLen = readLine(&(imap->client), response, chunkBufSize, crLF, octetCount);
-                    if (readLen == 0 && o != octetCount && octetCount <= octetLength && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64 && cPart(imap)->xencoding != esp_mail_msg_xencoding_binary && cPart(imap)->xencoding != esp_mail_msg_xencoding_qp)
+                    int o = res.octetCount;
+                    res.readLen = readLine(&(imap->client), res.response, res.chunkBufSize, crLF, res.octetCount);
+                    if (res.readLen == 0 && o != res.octetCount && res.octetCount <= res.octetLength && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64 && cPart(imap)->xencoding != esp_mail_msg_xencoding_binary && cPart(imap)->xencoding != esp_mail_msg_xencoding_qp)
                     {
-                        strcpy_P(response, esp_mail_str_42 /* "\r\n" */);
-                        readLen = 2;
+                        strcpy_P(res.response, esp_mail_str_42 /* "\r\n" */);
+                        res.readLen = 2;
                     }
                 }
 
-                if (readLen)
+                if (res.readLen)
                 {
-                    checkTLSAlert(imap, response);
+
+                    checkTLSAlert(imap, res.response);
 
                     if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
                     {
                         if (imap->_imap_cmd != esp_mail_imap_cmd_search && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_text && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_attachment && imap->_imap_cmd != esp_mail_imap_cmd_fetch_body_inline)
-                            esp_mail_debug_print((const char *)response, true);
+                            esp_mail_debug_print((const char *)res.response, true);
                     }
 
-                    if (imap->_imap_cmd != esp_mail_imap_cmd_search || (imap->_imap_cmd == esp_mail_imap_cmd_search && endSearch))
-                        imapResp = imapResponseStatus(imap, response, esp_mail_imap_tag_str);
+                    if (imap->_imap_cmd != esp_mail_imap_cmd_search || (imap->_imap_cmd == esp_mail_imap_cmd_search && res.endSearch))
+                        res.imapResp = imapResponseStatus(imap, res.response, esp_mail_imap_tag_str);
 
-                    if (imapResp != esp_mail_imap_resp_unknown)
+                    if (res.imapResp != esp_mail_imap_resp_unknown)
                     {
 
                         // We've got the right response,
                         // prepare to exit
 
-                        completedResponse = true;
+                        res.completedResponse = true;
 
                         if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
                         {
                             if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
-                                esp_mail_debug_print((const char *)response, true);
+                                esp_mail_debug_print((const char *)res.response, true);
                         }
 
                         while (imap->client.available())
                         {
-                            readLen = readLine(&(imap->client), response, chunkBufSize, true, octetCount);
-                            if (readLen)
+                            res.readLen = readLine(&(imap->client), res.response, res.chunkBufSize, true, res.octetCount);
+                            if (res.readLen)
                             {
                                 if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
                                 {
                                     if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
-                                        esp_mail_debug_print((const char *)response, true);
+                                        esp_mail_debug_print((const char *)res.response, true);
                                 }
                             }
                         }
@@ -2927,79 +2923,79 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_login || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain)
                         {
                             int i = 0;
-                            if (parseCapabilityResponse(imap, response, i))
+                            if (parseCapabilityResponse(imap, res.response, i))
                                 imap->_read_capability[esp_mail_imap_read_capability_auto_caps] = true;
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback)
                         {
 
-                            imapResp = imapResponseStatus(imap, response, imap->_imapStatus.tag.c_str());
+                            res.imapResp = imapResponseStatus(imap, res.response, imap->_imapStatus.tag.c_str());
 
                             // get response or custom cmd APPEND or custom cmd IDLE?
-                            if (imapResp > esp_mail_imap_resp_unknown || strposP(imap->_cmd.c_str(), imap_commands[esp_mail_imap_command_append].text, 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
-                                completedResponse = true;
+                            if (res.imapResp > esp_mail_imap_resp_unknown || strposP(imap->_cmd.c_str(), imap_commands[esp_mail_imap_command_append].text, 0, false) > -1 || imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
+                                res.completedResponse = true;
 
-                            imap->_imapStatus.text = response;
+                            imap->_imapStatus.text = res.response;
 
                             imap->_customCmdResCallback(imap->_imapStatus);
 
-                            if (completedResponse)
+                            if (res.completedResponse)
                             {
                                 // release memory
-                                freeMem(&response);
-                                freeMem(&lastBuf);
+                                freeMem(&res.response);
+                                freeMem(&res.lastBuf);
                                 return true;
                             }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_append)
                         {
-                            imapResp = esp_mail_imap_resp_ok;
-                            completedResponse = true;
+                            res.imapResp = esp_mail_imap_resp_ok;
+                            res.completedResponse = true;
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
                         {
                             if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
                             {
-                                if (oauthFailed(response, readLen, chunkIdx, 2))
-                                    completedResponse = true;
+                                if (oauthFailed(res.response, res.readLen, res.chunkIdx, 2))
+                                    res.completedResponse = true;
                             }
 
                             // multiline auth SASL (no SASL-IR extension supported)
-                            if (strcmp(response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
+                            if (strcmp(res.response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
                             {
-                                imapResp = esp_mail_imap_resp_ok;
-                                completedResponse = true;
+                                res.imapResp = esp_mail_imap_resp_ok;
+                                res.completedResponse = true;
                             }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_capability)
-                            parseCapabilityResponse(imap, response, chunkIdx);
+                            parseCapabilityResponse(imap, res.response, res.chunkIdx);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_list)
-                            parseFoldersResponse(imap, response, true);
+                            parseFoldersResponse(imap, res.response, true);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_lsub)
-                            parseFoldersResponse(imap, response, false);
+                            parseFoldersResponse(imap, res.response, false);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_select || imap->_imap_cmd == esp_mail_imap_cmd_examine)
-                            parseExamineResponse(imap, response);
+                            parseExamineResponse(imap, res.response);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
                         {
                             MB_String str;
                             appendFetchString(str, true);
-                            parseCmdResponse(imap, response, str.c_str());
+                            parseCmdResponse(imap, res.response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_flags)
                         {
                             MB_String str;
                             appendFetchString(str, false);
-                            parseCmdResponse(imap, response, str.c_str());
+                            parseCmdResponse(imap, res.response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota)
-                            parseCmdResponse(imap, response, imap_responses[esp_mail_imap_response_quota].text);
+                            parseCmdResponse(imap, res.response, imap_responses[esp_mail_imap_response_quota].text);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_id)
-                            parseCmdResponse(imap, response, imap_responses[esp_mail_imap_response_id].text);
+                            parseCmdResponse(imap, res.response, imap_responses[esp_mail_imap_response_id].text);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota_root)
                         {
-                            parseCmdResponse(imap, response, imap_responses[esp_mail_imap_response_quotaroot].text);
+                            parseCmdResponse(imap, res.response, imap_responses[esp_mail_imap_response_quotaroot].text);
                             imap->_quota_tmp.clear();
-                            parseCmdResponse(imap, response, imap_responses[esp_mail_imap_response_quota].text);
+                            parseCmdResponse(imap, res.response, imap_responses[esp_mail_imap_response_quota].text);
                             if (imap->_quota_tmp.length() > 0)
                             {
                                 imap->_quota_root_tmp += (char)':';
@@ -3007,13 +3003,13 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_get_acl || imap->_imap_cmd == esp_mail_imap_cmd_my_rights)
-                            parseCmdResponse(imap, response, imap->_imap_cmd == esp_mail_imap_cmd_get_acl ? imap_responses[esp_mail_imap_response_acl].text : imap_responses[esp_mail_imap_response_myrights].text);
+                            parseCmdResponse(imap, res.response, imap->_imap_cmd == esp_mail_imap_cmd_get_acl ? imap_responses[esp_mail_imap_response_acl].text : imap_responses[esp_mail_imap_response_myrights].text);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_namespace)
-                            parseCmdResponse(imap, response, imap_responses[esp_mail_imap_response_namespace].text);
+                            parseCmdResponse(imap, res.response, imap_responses[esp_mail_imap_response_namespace].text);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_idle)
                         {
-                            completedResponse = response[0] == '+';
-                            imapResp = esp_mail_imap_resp_ok;
+                            res.completedResponse = res.response[0] == '+';
+                            res.imapResp = esp_mail_imap_resp_ok;
 
                             imap->_last_host_check_ms = millis();
                         }
@@ -3021,70 +3017,70 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             MB_String str;
                             appendFetchString(str, true);
-                            parseCmdResponse(imap, response, str.c_str());
+                            parseCmdResponse(imap, res.response, str.c_str());
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header)
                         {
 
-                            if (headerState == 0 && cMSG(imap).type == esp_mail_imap_msg_num_type_uid)
-                                header.message_uid = cMSG(imap).value;
+                            if (res.headerState == 0 && cMSG(imap).type == esp_mail_imap_msg_num_type_uid)
+                                res.header.message_uid = cMSG(imap).value;
 
-                            int _st = headerState;
-                            parseHeaderResponse(imap, response, readLen, chunkIdx, header, headerState, octetCount, imap->_imap_data->enable.header_case_sensitive);
-                            if (_st == headerState && headerState > 0 && octetCount <= header.header_data_len)
-                                collectHeaderField(imap, response, header, headerState);
+                            int _st = res.headerState;
+                            parseHeaderResponse(imap, res, imap->_imap_data->enable.header_case_sensitive);
+                            if (_st == res.headerState && res.headerState > 0 && res.octetCount <= res.header.header_data_len)
+                                collectHeaderField(imap, res.response, res.header, res.headerState);
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_mime)
-                            parsePartHeaderResponse(imap, response, chunkIdx, part, octetCount, imap->_imap_data->enable.header_case_sensitive);
+                            parsePartHeaderResponse(imap, res.response, res.chunkIdx, res.part, res.octetCount, imap->_imap_data->enable.header_case_sensitive);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text)
-                            decodeText(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetLength, octetCount);
+                            decodeText(imap, res.response, res.readLen, res.chunkIdx, res.filePath, res.downloadRequest, res.octetLength, res.octetCount);
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
                         {
 
                             if (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64)
                             {
                                 // Multi-line chunked base64 string attachment handle
-                                if (octetCount < octetLength && readLen < BASE64_CHUNKED_LEN)
+                                if (res.octetCount < res.octetLength && res.readLen < BASE64_CHUNKED_LEN)
                                 {
-                                    if (strlen(lastBuf) > 0)
+                                    if (strlen(res.lastBuf) > 0)
                                     {
-                                        tmp = allocMem<char *>(readLen + strlen(lastBuf) + 2);
-                                        strcpy(tmp, lastBuf);
-                                        strcat(tmp, response);
-                                        readLen = strlen(tmp);
-                                        tmo = parseAttachmentResponse(imap, tmp, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
+                                        res.buf = allocMem<char *>(res.readLen + strlen(res.lastBuf) + 2);
+                                        strcpy(res.buf, res.lastBuf);
+                                        strcat(res.buf, res.response);
+                                        res.readLen = strlen(res.buf);
+                                        res.tmo = parseAttachmentResponse(imap, res.buf, res.readLen, res.chunkIdx, res.filePath, res.downloadRequest, res.octetCount, res.octetLength);
                                         // release memory
-                                        freeMem(&tmp);
-                                        memset(lastBuf, 0, BASE64_CHUNKED_LEN + 1);
-                                        if (!tmo)
+                                        freeMem(&res.buf);
+                                        memset(res.lastBuf, 0, BASE64_CHUNKED_LEN + 1);
+                                        if (!res.tmo)
                                             break;
                                     }
-                                    else if (readLen < BASE64_CHUNKED_LEN + 1)
-                                        strcpy(lastBuf, response);
+                                    else if (res.readLen < BASE64_CHUNKED_LEN + 1)
+                                        strcpy(res.lastBuf, res.response);
                                 }
                                 else
                                 {
-                                    tmo = parseAttachmentResponse(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
-                                    if (!tmo)
+                                    res.tmo = parseAttachmentResponse(imap, res.response, res.readLen, res.chunkIdx, res.filePath, res.downloadRequest, res.octetCount, res.octetLength);
+                                    if (!res.tmo)
                                         break;
                                 }
                             }
                             else
-                                tmo = parseAttachmentResponse(imap, response, readLen, chunkIdx, filePath, downloadRequest, octetCount, octetLength);
+                                res.tmo = parseAttachmentResponse(imap, res.response, res.readLen, res.chunkIdx, res.filePath, res.downloadRequest, res.octetCount, res.octetLength);
                         }
 
-                        dataTime = millis();
+                        res.dataTime = millis();
                     }
                 }
-                memset(response, 0, chunkBufSize);
+                memset(res.response, 0, res.chunkBufSize);
             }
         }
         // release memory
-        freeMem(&response);
+        freeMem(&res.response);
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_search)
         {
-            if (imap->_debug && scnt > 0 && scnt < 100)
+            if (imap->_debug && res.searchCount > 0 && res.searchCount < 100)
             {
                 searchReport(imap, 100);
             }
@@ -3092,16 +3088,18 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment)
             // release memory
-            freeMem(&lastBuf);
+            freeMem(&res.lastBuf);
     }
 
-    if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && header.header_data_len == 0) || imapResp == esp_mail_imap_resp_no)
+    if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && res.header.header_data_len == 0) || res.imapResp == esp_mail_imap_resp_no)
     {
         // We don't get any response
 
-        if (imapResp == esp_mail_imap_resp_no)
+        Serial.println("-------------------------------------------------------------");
+
+        if (res.imapResp == esp_mail_imap_resp_no)
             imap->_imapStatus.errorCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
-        else if (imap->isModseqSupported() && imapResp == esp_mail_imap_resp_ok && header.header_data_len == 0)
+        else if (imap->_imap_data->fetch.modsequence > -1 && imap->isModseqSupported() && res.imapResp == esp_mail_imap_resp_ok && res.header.header_data_len == 0)
             imap->_imapStatus.errorCode = IMAP_STATUS_CHANGEDSINC_MODSEQ_TEST_FAILED;
         else
             imap->_imapStatus.errorCode = IMAP_STATUS_NO_MESSAGE;
@@ -3121,7 +3119,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
     // We've got OK or NO responses
 
-    if (imapResp == esp_mail_imap_resp_ok)
+    if (res.imapResp == esp_mail_imap_resp_ok)
     {
         // Response OK
 
@@ -3129,86 +3127,89 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         {
             // Headers management
 
-            char *buf = allocMem<char *>(header.content_type.length() + 1);
-            strcpy(buf, header.content_type.c_str());
-            header.content_type.clear();
+            char *buf = allocMem<char *>(res.header.content_type.length() + 1);
+            strcpy(buf, res.header.content_type.c_str());
+            res.header.content_type.clear();
 
             MB_String contentTypeName;
             appendHeaderName(contentTypeName, message_headers[esp_mail_message_header_field_content_type].text, false, false, false);
 
-            tmp = subStr(buf, contentTypeName.c_str(), esp_mail_str_35 /* ";" */, 0, 0, false);
-            if (tmp)
+            res.buf = subStr(buf, contentTypeName.c_str(), esp_mail_str_35 /* ";" */, 0, 0, false);
+            if (res.buf)
             {
-                headerState = esp_mail_imap_state_content_type;
-                collectHeaderField(imap, tmp, header, headerState);
+                res.headerState = esp_mail_imap_state_content_type;
+                collectHeaderField(imap, res.buf, res.header, res.headerState);
                 // release memory
-                freeMem(&tmp);
+                freeMem(&res.buf);
 
-                int p1 = strposP(header.content_type.c_str(), esp_mail_imap_composite_media_type_t::multipart, 0);
-                if (p1 != -1)
+                if (res.header.content_type.length() > 0)
                 {
-                    p1 += strlen(esp_mail_imap_composite_media_type_t::multipart) + 1;
-                    header.multipart = true;
-                    // inline or embedded images
-                    if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::related, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_related;
-                    // multiple text formats e.g. plain, html, enriched
-                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::alternative, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_alternative;
-                    // medias
-                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::parallel, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_parallel;
-                    // rfc822 encapsulated
-                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::digest, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_digest;
-                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::report, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_report;
-                    // others can be attachments
-                    else if (strpos(header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::mixed, p1) != -1)
-                        header.multipart_sub_type = esp_mail_imap_multipart_sub_type_mixed;
-                }
-
-                p1 = strposP(header.content_type.c_str(), esp_mail_imap_composite_media_type_t::message, 0);
-                if (p1 != -1)
-                {
-                    p1 += strlen(esp_mail_imap_composite_media_type_t::message) + 1;
-                    if (strpos(part.content_type.c_str(), esp_mail_imap_message_sub_type_t::rfc822, p1) != -1)
+                    int p1 = strposP(res.header.content_type.c_str(), esp_mail_imap_composite_media_type_t::multipart, 0);
+                    if (p1 != -1)
                     {
-                        header.rfc822_part = true;
-                        header.message_sub_type = esp_mail_imap_message_sub_type_rfc822;
+                        p1 += strlen(esp_mail_imap_composite_media_type_t::multipart) + 1;
+                        res.header.multipart = true;
+                        // inline or embedded images
+                        if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::related, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_related;
+                        // multiple text formats e.g. plain, html, enriched
+                        else if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::alternative, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_alternative;
+                        // medias
+                        else if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::parallel, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_parallel;
+                        // rfc822 encapsulated
+                        else if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::digest, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_digest;
+                        else if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::report, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_report;
+                        // others can be attachments
+                        else if (strpos(res.header.content_type.c_str(), esp_mail_imap_multipart_sub_type_t::mixed, p1) != -1)
+                            res.header.multipart_sub_type = esp_mail_imap_multipart_sub_type_mixed;
                     }
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_message_sub_type_t::Partial, p1) != -1)
-                        header.message_sub_type = esp_mail_imap_message_sub_type_partial;
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_message_sub_type_t::External_Body, p1) != -1)
-                        header.message_sub_type = esp_mail_imap_message_sub_type_external_body;
-                    else if (strpos(part.content_type.c_str(), esp_mail_imap_message_sub_type_t::delivery_status, p1) != -1)
-                        header.message_sub_type = esp_mail_imap_message_sub_type_delivery_status;
+
+                    p1 = strposP(res.header.content_type.c_str(), esp_mail_imap_composite_media_type_t::message, 0);
+                    if (p1 != -1)
+                    {
+                        p1 += strlen(esp_mail_imap_composite_media_type_t::message) + 1;
+                        if (strpos(res.part.content_type.c_str(), esp_mail_imap_message_sub_type_t::rfc822, p1) != -1)
+                        {
+                            res.header.rfc822_part = true;
+                            res.header.message_sub_type = esp_mail_imap_message_sub_type_rfc822;
+                        }
+                        else if (strpos(res.part.content_type.c_str(), esp_mail_imap_message_sub_type_t::Partial, p1) != -1)
+                            res.header.message_sub_type = esp_mail_imap_message_sub_type_partial;
+                        else if (strpos(res.part.content_type.c_str(), esp_mail_imap_message_sub_type_t::External_Body, p1) != -1)
+                            res.header.message_sub_type = esp_mail_imap_message_sub_type_external_body;
+                        else if (strpos(res.part.content_type.c_str(), esp_mail_imap_message_sub_type_t::delivery_status, p1) != -1)
+                            res.header.message_sub_type = esp_mail_imap_message_sub_type_delivery_status;
+                    }
                 }
 
                 MB_String charset;
                 appendLowerCaseString(charset, message_headers[esp_mail_message_header_field_charset].text, false);
                 charset += esp_mail_str_7; /* "=" */
 
-                tmp = subStr(buf, charset.c_str(), NULL, 0, -1, false);
-                if (tmp)
+                res.buf = subStr(buf, charset.c_str(), NULL, 0, -1, false);
+                if (res.buf)
                 {
-                    headerState = esp_mail_imap_state_char_set;
-                    collectHeaderField(imap, tmp, header, headerState);
+                    res.headerState = esp_mail_imap_state_char_set;
+                    collectHeaderField(imap, res.buf, res.header, res.headerState);
                     // release memory
-                    freeMem(&tmp);
+                    freeMem(&res.buf);
                 }
 
-                if (header.multipart)
+                if (res.header.multipart)
                 {
                     if (strcmpP(buf, 0, esp_mail_str_64 /* "boundary=\"" */))
                     {
-                        tmp = subStr(buf, esp_mail_str_64 /* "boundary=\"" */, esp_mail_str_11 /* "\"" */, 0, 0, false);
-                        if (tmp)
+                        res.buf = subStr(buf, esp_mail_str_64 /* "boundary=\"" */, esp_mail_str_11 /* "\"" */, 0, 0, false);
+                        if (res.buf)
                         {
-                            headerState = esp_mail_imap_state_boundary;
-                            collectHeaderField(imap, tmp, header, headerState);
+                            res.headerState = esp_mail_imap_state_boundary;
+                            collectHeaderField(imap, res.buf, res.header, res.headerState);
                             // release memory
-                            freeMem(&tmp);
+                            freeMem(&res.buf);
                         }
                     }
                 }
@@ -3218,31 +3219,31 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             freeMem(&buf);
 
             // Decode the headers fields
-            decodeString(imap, header.header_fields.messageID);
-            decodeString(imap, header.header_fields.from);
-            decodeString(imap, header.header_fields.sender);
-            decodeString(imap, header.header_fields.to);
-            decodeString(imap, header.header_fields.cc);
-            decodeString(imap, header.header_fields.bcc);
-            decodeString(imap, header.header_fields.subject);
-            decodeString(imap, header.header_fields.date);
-            decodeString(imap, header.header_fields.return_path);
-            decodeString(imap, header.header_fields.reply_to);
-            decodeString(imap, header.header_fields.in_reply_to);
-            decodeString(imap, header.header_fields.references);
-            decodeString(imap, header.header_fields.comments);
-            decodeString(imap, header.header_fields.keywords);
-            imap->_headers.push_back(header);
+            decodeString(imap, res.header.header_fields.messageID);
+            decodeString(imap, res.header.header_fields.from);
+            decodeString(imap, res.header.header_fields.sender);
+            decodeString(imap, res.header.header_fields.to);
+            decodeString(imap, res.header.header_fields.cc);
+            decodeString(imap, res.header.header_fields.bcc);
+            decodeString(imap, res.header.header_fields.subject);
+            decodeString(imap, res.header.header_fields.date);
+            decodeString(imap, res.header.header_fields.return_path);
+            decodeString(imap, res.header.header_fields.reply_to);
+            decodeString(imap, res.header.header_fields.in_reply_to);
+            decodeString(imap, res.header.header_fields.references);
+            decodeString(imap, res.header.header_fields.comments);
+            decodeString(imap, res.header.header_fields.keywords);
+            imap->_headers.push_back(res.header);
         }
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_mime)
         {
             // Expect the octet length in the response for the existent part
-            if (part.octetLen > 0)
+            if (res.part.octetLen > 0)
             {
 
-                part.partNumStr = cHeader(imap)->partNumStr;
-                part.partNumFetchStr = cHeader(imap)->partNumStr;
+                res.part.partNumStr = cHeader(imap)->partNumStr;
+                res.part.partNumFetchStr = cHeader(imap)->partNumStr;
                 if (cHeader(imap)->part_headers.size() > 0)
                 {
 
@@ -3255,21 +3256,24 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             // additional rfc822 message header, store it to the rfc822 part header
                             _part->rfc822_part = true;
-                            _part->rfc822_header = part.rfc822_header;
+                            _part->rfc822_header = res.part.rfc822_header;
                             imap->_rfc822_part_count++;
                             _part->rfc822_msg_Idx = imap->_rfc822_part_count;
                         }
                     }
                 }
 
-                cHeader(imap)->part_headers.push_back(part);
+                cHeader(imap)->part_headers.push_back(res.part);
                 cHeader(imap)->message_data_count = cHeader(imap)->part_headers.size();
 
-                if (part.msg_type == esp_mail_msg_type_plain || part.msg_type == esp_mail_msg_type_enriched || part.msg_type == esp_mail_msg_type_html || part.attach_type == esp_mail_att_type_none || part.attach_type == esp_mail_att_type_attachment || part.attach_type == esp_mail_att_type_inline)
+                if (res.part.msg_type != esp_mail_msg_type_none ||
+                    res.part.attach_type != esp_mail_att_type_none)
                 {
-                    if (part.attach_type == esp_mail_att_type_attachment || part.message_sub_type != esp_mail_imap_message_sub_type_rfc822)
+                    if (res.part.attach_type == esp_mail_att_type_attachment ||
+                        res.part.message_sub_type != esp_mail_imap_message_sub_type_rfc822)
                     {
-                        if (part.attach_type != esp_mail_att_type_none && cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
+                        if (res.part.attach_type != esp_mail_att_type_none &&
+                            cHeader(imap)->multipart_sub_type != esp_mail_imap_multipart_sub_type_alternative)
                         {
                             cHeader(imap)->hasAttachment = true;
                             cHeader(imap)->attachment_count++;
@@ -4030,7 +4034,7 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
     {
         errorStatusCB(imap, err, true);
 
-        if (imap->_headers.size() > 0)
+        if (imap->_headers.size() > 0 && cHeader(imap))
         {
             if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline) && (imap->_imap_data->download.attachment || imap->_imap_data->download.inlineImg))
             {
