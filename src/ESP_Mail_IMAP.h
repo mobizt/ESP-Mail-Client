@@ -3095,8 +3095,6 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     {
         // We don't get any response
 
-        Serial.println("-------------------------------------------------------------");
-
         if (res.imapResp == esp_mail_imap_resp_no)
             imap->_imapStatus.errorCode = IMAP_STATUS_IMAP_RESPONSE_FAILED;
         else if (imap->_imap_data->fetch.modsequence > -1 && imap->isModseqSupported() && res.imapResp == esp_mail_imap_resp_ok && res.header.header_data_len == 0)
