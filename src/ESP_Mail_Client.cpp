@@ -795,24 +795,25 @@ char *ESP_Mail_Client::getRandomUID()
   return tmp;
 }
 
-/* Safe string splitter to avoid strsep bugs */
-void ESP_Mail_Client::splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim)
+void ESP_Mail_Client::splitToken(const char *str, MB_VECTOR<MB_String> &tk, const char *delim)
 {
-  uint32_t current, previous = 0;
-  current = str.find(delim, previous);
-  MB_String s;
-  while (current != MB_String::npos)
+  char *p = allocMem<char *>(strlen(str));
+  strcpy(p, str);
+  char *pp = p;
+  char *end = p;
+  MB_String tmp;
+  while (pp != NULL)
   {
-    s = str.substr(previous, current - previous);
-    if (s.length() > 0)
-      tk.push_back(s);
-    previous = current + strlen(delim);
-    current = str.find(delim, previous);
+    strsep(&end, delim);
+    if (strlen(pp) > 0)
+    {
+      tmp = pp;
+      tk.push_back(tmp);
+    }
+    pp = end;
   }
-  s = str.substr(previous, current - previous);
-  if (s.length() > 0)
-    tk.push_back(s);
-  s.clear();
+  // release memory
+  freeMem(&p);
 }
 
 int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset, bool caseSensitive)

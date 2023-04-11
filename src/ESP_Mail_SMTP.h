@@ -2375,7 +2375,7 @@ void ESP_Mail_Client::formatFlowedText(MB_String &content)
     MB_VECTOR<MB_String> tokens;
     char *stk = strP(esp_mail_str_18); /* "\r\n" */
     char *qm = strP(esp_mail_str_20);  /* ">" */
-    splitToken(content, tokens, stk);
+    splitToken(content.c_str(), tokens, stk);
     content.clear();
     for (size_t i = 0; i < tokens.size(); i++)
     {
@@ -2409,7 +2409,7 @@ void ESP_Mail_Client::softBreak(MB_String &content, const char *quoteMarks)
     size_t len = 0;
     char *stk = strP(esp_mail_str_2); /* " " */
     MB_VECTOR<MB_String> tokens;
-    splitToken(content, tokens, stk);
+    splitToken(content.c_str(), tokens, stk);
     content.clear();
     for (size_t i = 0; i < tokens.size(); i++)
     {

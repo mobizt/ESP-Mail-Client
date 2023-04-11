@@ -3643,62 +3643,83 @@ bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf
     return false;
 }
 
+char *ESP_Mail_Client::getList(char *buf, bool &isList)
+{
+    if (buf[0] == '(' && buf[1] != ')')
+    {
+        if (buf[strlen(buf) - 1] == ')')
+            buf[strlen(buf) - 1] = 0;
+        else
+            isList = true;
+
+        return &buf[1];
+    }
+    else if (isList)
+    {
+        if (buf[strlen(buf) - 1] == ')')
+        {
+            buf[strlen(buf) - 1] = 0;
+            isList = false;
+        }
+    }
+
+    return buf;
+}
+
 void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool list)
 {
     struct esp_mail_folder_info_t fd;
-    char *tmp = nullptr;
-    int p1 = list ? strposP(buf, imap_responses[esp_mail_imap_response_list].text, 0) : strposP(buf, imap_responses[esp_mail_imap_response_lsub].text, 0);
-    int p2 = 0;
-    if (p1 != -1)
+    int pos = list ? strposP(buf, imap_responses[esp_mail_imap_response_list].text, 0) : strposP(buf, imap_responses[esp_mail_imap_response_lsub].text, 0);
+    bool isList = false, delimOk = false;
+    if (pos != -1)
     {
-        p1 = strposP(buf, esp_mail_str_38 /* "(" */, 0);
-        if (p1 != -1)
+        char *p = allocMem<char *>(strlen(buf));
+        strcpy(p, buf);
+        char *pp = p;
+        char *end = p;
+        int count = 0;
+        int tkPos = 3;
+
+        while (pp != NULL)
         {
-            p2 = strposP(buf, esp_mail_str_39 /* ")" */, p1 + 1);
-            if (p2 != -1)
+            strsep(&end, " ");
+            count++;
+
+            if (count >= tkPos && strlen(pp) > 0)
             {
-                tmp = allocMem<char *>(p2 - p1);
-                strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
-                if (tmp[p2 - p1 - 2] == '\r')
-                    tmp[p2 - p1 - 2] = 0;
-                fd.attributes = tmp;
-                // release memory
-                freeMem(&tmp);
+                if (count == tkPos && pp[0] == '(' && pp[1] != ')')
+                    fd.attributes = getList(pp, isList);
+                else if (isList)
+                {
+                    fd.attributes += ' ';
+                    fd.attributes += getList(pp, isList);
+                }
+                else
+                {
+                    if (pp[strlen(pp) - 1] == '"')
+                        pp[strlen(pp) - 1] = 0;
+
+                    const char *ptr = pp[0] == '"' ? &pp[1] : &pp[0];
+
+                    if (!delimOk)
+                    {
+                        delimOk = true;
+                        fd.delimiter = ptr;
+                    }
+                    else
+                    {
+                        if (fd.name.length() > 0)
+                            fd.name += ' ';
+                        fd.name += ptr;
+                    }
+                }
             }
+            pp = end;
         }
 
-        p1 = strposP(buf, esp_mail_str_11 /* "\"" */, 0);
-        if (p1 != -1)
-        {
-            p2 = strposP(buf, esp_mail_str_11 /* "\"" */, p1 + 1);
-            if (p2 != -1)
-            {
-                tmp = allocMem<char *>(p2 - p1);
-                strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
-                if (tmp[p2 - p1 - 2] == '\r')
-                    tmp[p2 - p1 - 2] = 0;
-                fd.delimiter = tmp;
-                // release memory
-                freeMem(&tmp);
-            }
-        }
+        // release memory
+        freeMem(&p);
 
-        p1 = strposP(buf, esp_mail_str_2 /* " " */, p2);
-        if (p1 != -1)
-        {
-            p2 = strlen(buf);
-            tmp = allocMem<char *>(p2 - p1);
-            if (buf[p1 + 1] == '"')
-                p1++;
-            strncpy(tmp, buf + p1 + 1, p2 - p1 - 1);
-            if (tmp[p2 - p1 - 2] == '\r')
-                tmp[p2 - p1 - 2] = 0;
-            if (tmp[strlen(tmp) - 1] == '"')
-                tmp[strlen(tmp) - 1] = 0;
-            fd.name = tmp;
-            // release memory
-            freeMem(&tmp);
-        }
         imap->_folders.add(fd);
     }
 }
@@ -3902,6 +3923,44 @@ void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
     }
 }
 
+bool ESP_Mail_Client::getFlags(IMAPSession *imap, char *buf, esp_mail_imap_response_types type)
+{
+    if (strposP(buf, imap_responses[type].text, 0) != -1)
+    {
+        char *p = allocMem<char *>(strlen(buf));
+        strcpy(p, buf);
+        char *pp = p;
+        char *end = p;
+        int count = 0;
+        bool isList = false;
+        int tkPos = (type == esp_mail_imap_response_permanent_flags) ? 4 : 3;
+
+        while (pp != NULL)
+        {
+            strsep(&end, " ");
+            count++;
+            if (count >= tkPos && strlen(pp) > 0)
+            {
+                if (type == esp_mail_imap_response_permanent_flags && pp[strlen(pp) - 1] == ']')
+                    pp[strlen(pp) - 1] = 0;
+
+                if (count == tkPos && pp[0] == '(' && pp[1] != ')')
+                    imap->_mbif.addFlag(getList(pp, isList), type == esp_mail_imap_response_permanent_flags);
+                else if (isList)
+                    imap->_mbif.addFlag(getList(pp, isList), type == esp_mail_imap_response_permanent_flags);
+            }
+            pp = end;
+        }
+
+        // release memory
+        freeMem(&p);
+
+        return true;
+    }
+
+    return false;
+}
+
 void ESP_Mail_Client::parseExamineResponse(IMAPSession *imap, char *buf)
 {
     char *tmp = NULL;
@@ -3924,47 +3983,11 @@ void ESP_Mail_Client::parseExamineResponse(IMAPSession *imap, char *buf)
         return;
     }
 
-    if (imap->_mbif._flags.size() == 0)
-    {
-        if (strposP(buf, imap_responses[esp_mail_imap_response_flags].text, 0) != -1)
-        {
-            tmp = subStr(buf, esp_mail_str_38 /* "(" */, esp_mail_str_39 /* ")" */, 0, 0);
-            if (tmp && strlen(tmp) > 0)
-            {
-                char *stk = strP(esp_mail_str_2 /* " " */);
-                MB_String content = tmp;
-                MB_VECTOR<MB_String> tokens;
-                splitToken(content, tokens, stk);
-                for (size_t i = 0; i < tokens.size(); i++)
-                    imap->_mbif.addFlag(tokens[i].c_str(), false);
-                // release memory
-                freeMem(&tmp);
-                freeMem(&stk);
-            }
-            return;
-        }
-    }
+    if (imap->_mbif._flags.size() == 0 && getFlags(imap, buf, esp_mail_imap_response_flags))
+        return;
 
-    if (imap->_mbif._permanent_flags.size() == 0)
-    {
-        if (strposP(buf, imap_responses[esp_mail_imap_response_permanent_flags].text, 0) != -1)
-        {
-            tmp = subStr(buf, esp_mail_str_38 /* "(" */, esp_mail_str_39 /* ")" */, 0, 0);
-            if (tmp && strlen(tmp) > 0)
-            {
-                char *stk = strP(esp_mail_str_2 /* " " */);
-                MB_String content = tmp;
-                MB_VECTOR<MB_String> tokens;
-                splitToken(content, tokens, stk);
-                for (size_t i = 0; i < tokens.size(); i++)
-                    imap->_mbif.addFlag(tokens[i].c_str(), true);
-                // release memory
-                freeMem(&tmp);
-                freeMem(&stk);
-            }
-            return;
-        }
-    }
+    if (imap->_mbif._permanent_flags.size() == 0 && getFlags(imap, buf, esp_mail_imap_response_permanent_flags))
+        return;
 
     if (imap->_mbif._uidValidity == 0)
     {
@@ -6563,7 +6586,7 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
 
     if (getMode)
     {
-        mParseQuota(_quota_tmp, data);
+        mParseQuota(_quota_tmp.c_str(), data);
     }
 
     _quota_tmp.clear();
@@ -6571,7 +6594,7 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
     return true;
 }
 
-void IMAPSession::mParseQuota(MB_String &quota, IMAP_Quota_Root_Info *data)
+void IMAPSession::mParseQuota(const char*quota, IMAP_Quota_Root_Info *data)
 {
     MB_VECTOR<MB_String> tokens;
     MailClient.splitToken(quota, tokens, " ");
@@ -6622,15 +6645,15 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
         return false;
 
     MB_VECTOR<MB_String> tokens;
-    MailClient.splitToken(_quota_root_tmp, tokens, ",");
+    MailClient.splitToken(_quota_root_tmp.c_str(), tokens, ",");
 
     for (size_t i = 0; i < tokens.size(); i++)
     {
         MB_VECTOR<MB_String> tk;
-        MailClient.splitToken(tokens[i], tk, ":");
+        MailClient.splitToken(tokens[i].c_str(), tk, ":");
         IMAP_Quota_Root_Info data;
         if (tk.size() > 1)
-            mParseQuota(tk[1], &data);
+            mParseQuota(tk[1].c_str(), &data);
         else
             data.quota_root = tk[0];
 
@@ -6647,6 +6670,7 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
 {
 
 #if !defined(SILENT_MODE)
+
     PGM_P p1 = NULL;
     PGM_P p2 = NULL;
     if (type == esp_mail_imap_cmd_get_acl)
@@ -6745,7 +6769,7 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
 void IMAPSession::parseACL(MB_String &acl_str, IMAP_Rights_List *right_list)
 {
     MB_VECTOR<MB_String> tokens;
-    MailClient.splitToken(acl_str, tokens, " ");
+    MailClient.splitToken(acl_str.c_str(), tokens, " ");
 
     for (size_t i = 0; i < tokens.size(); i += 2)
     {
@@ -6868,7 +6892,6 @@ bool IMAPSession::mNamespace(IMAP_Namespaces_List *ns)
                 other = _ns_tmp.substr(personal.length() + 1, i - personal.length() - 1);
                 shared = _ns_tmp.substr(i + 1, _ns_tmp.length() - i - 1);
             }
-
             cnt++;
         }
     }
@@ -6926,7 +6949,7 @@ void IMAPSession::parseNamespaces(MB_String &ns_str, IMAP_Namespaces *ns)
     MB_String tmp = ns_str.substr(2, ns_str.length() - 4);
     tmp.replaceAll(")(", " ");
     MB_VECTOR<MB_String> tokens;
-    MailClient.splitToken(tmp, tokens, " ");
+    MailClient.splitToken(tmp.c_str(), tokens, " ");
 
     for (size_t i = 0; i < tokens.size(); i += 2)
     {

@@ -1093,7 +1093,7 @@ private:
   char *getRandomUID();
 
   // Spit the string into token strings
-  void splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, const char *delim);
+  void splitToken(const char *str, MB_VECTOR<MB_String> &tk, const char *delim);
 
   // Decode base64 encoded string
   unsigned char *decodeBase64(const unsigned char *src, size_t len, size_t *out_len);
@@ -1625,6 +1625,9 @@ private:
   // Handle atachment parsing and download
   bool parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
 
+  // Get List
+  char *getList(char *buf, bool &isList);
+
   // Parse mailbox folder open response
   void parseFoldersResponse(IMAPSession *imap, char *buf, bool list);
 
@@ -1642,6 +1645,9 @@ private:
 
   // Parse command response
   void parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find);
+
+  // Get flags
+  bool getFlags(IMAPSession *imap, char *buf, esp_mail_imap_response_types type);
 
   // Parse examine response
   void parseExamineResponse(IMAPSession *imap, char *buf);
@@ -2308,7 +2314,7 @@ private:
   bool mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *data, bool getMode);
 
   // Parse the IMAP_Quota_Root_info
-  void mParseQuota(MB_String &quota, IMAP_Quota_Root_Info *data);
+  void mParseQuota(const char *quota, IMAP_Quota_Root_Info *data);
 
   // Get the list of quota roots for the named mailbox.
   bool mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *quotaRootsList);
