@@ -1,4 +1,4 @@
-// Created April 2, 2022
+// Created April 14, 2022
 
 #pragma once
 
@@ -1175,7 +1175,7 @@ const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_cap
         "AUTH=XOAUTH2",
         "CRAM-MD5",
         "DIGEST-MD5",
-        "DUMMY_AUTH" /* Log in */
+        "DUMMY_AUTH", /* Log in */
         "STARTTLS",
         "SASL-IR"
 

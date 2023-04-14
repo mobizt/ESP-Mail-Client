@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 2, 2023
+ * Created April 14, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -5224,6 +5224,7 @@ bool IMAPSession::getFolders(FoldersCollection &folders)
 bool IMAPSession::mCloseFolder(bool expunge)
 {
 
+    // no folder opened
     if (_currentFolder.length() == 0)
     {
 #if !defined(SILENT_MODE)
@@ -5246,15 +5247,7 @@ bool IMAPSession::mListen(bool recon)
     if (!MailClient.sessionExisted((void *)this, false))
         return false;
 
-    // no folder opened or IDLE was not supported
-    if (!_read_capability[esp_mail_imap_read_capability_idle])
-    {
-#if !defined(SILENT_MODE)
-        printDebugNotSupported();
-#endif
-    }
-
-    if (_currentFolder.length() == 0 || !_read_capability[esp_mail_imap_read_capability_idle])
+    if (_currentFolder.length() == 0)
     {
         _mbif._floderChangedState = false;
         _mbif._folderChanged = false;
@@ -5287,6 +5280,14 @@ bool IMAPSession::mListen(bool recon)
         // re-open folder
         if (!selectFolder(_currentFolder.c_str()))
             return false;
+    }
+
+    // no IDLE was not supported (should be checked after imapAuth)
+    if (!_read_capability[esp_mail_imap_read_capability_idle])
+    {
+#if !defined(SILENT_MODE)
+        printDebugNotSupported();
+#endif
     }
 
     if (_mbif._idleTimeMs == 0)
@@ -6594,7 +6595,7 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
     return true;
 }
 
-void IMAPSession::mParseQuota(const char*quota, IMAP_Quota_Root_Info *data)
+void IMAPSession::mParseQuota(const char *quota, IMAP_Quota_Root_Info *data)
 {
     MB_VECTOR<MB_String> tokens;
     MailClient.splitToken(quota, tokens, " ");
