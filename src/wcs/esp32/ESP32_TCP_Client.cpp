@@ -364,7 +364,7 @@ bool ESP32_TCP_Client::connectSSL(bool verify)
 void ESP32_TCP_Client::stop()
 {
     _host.clear();
-    return wcs->stop();
+    wcs->stop();
 }
 
 bool ESP32_TCP_Client::connected()

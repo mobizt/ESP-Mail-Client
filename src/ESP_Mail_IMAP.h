@@ -5259,8 +5259,10 @@ bool IMAPSession::mListen(bool recon)
 
     if (!_tcpConnected)
     {
-        if (!_imap_data)
+        if (!_imap_data || (millis() - _last_server_connect_ms < 2000 && _last_server_connect_ms > 0))
             return false;
+
+        _last_server_connect_ms = millis();
 
         bool ssl = false;
 
@@ -5318,6 +5320,14 @@ bool IMAPSession::mListen(bool recon)
 
 #endif
 
+        // Session closed?
+        if (!connected())
+        {
+            MailClient.errorStatusCB(this, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+            MailClient.closeTCPSession((void *)this, false);
+            return false;
+        }
+
         if (MailClient.imapSend(this, prependTag(imap_commands[esp_mail_imap_command_idle].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;
 
@@ -5330,7 +5340,7 @@ bool IMAPSession::mListen(bool recon)
         {
 
             dbMsg = esp_mail_str_88 /* "polling established on " */;
-            dbMsg += MailClient.Time.getDateTimeString();
+            dbMsg += MailClient.Time.getDateTimeString(MailClient.Time.getCurrentTimestamp(), "%B %d, %Y %H:%M:%S");
             MailClient.printDebug((void *)(this),
                                   false,
                                   esp_mail_cb_str_49 /* "Polling established" */,

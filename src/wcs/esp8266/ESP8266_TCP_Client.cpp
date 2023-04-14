@@ -453,7 +453,7 @@ bool ESP8266_TCP_Client::connectSSL(bool verify)
 void ESP8266_TCP_Client::stop()
 {
   _host.clear();
-  return wcs->stop();
+   wcs->stop();
 }
 
 bool ESP8266_TCP_Client::connected()

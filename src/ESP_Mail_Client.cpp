@@ -168,6 +168,8 @@ int ESP_Mail_Client::getFreeHeap()
 bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 {
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
   Session_Config *config = nullptr;
   MB_List<int> *configPtrList = nullptr;
 
@@ -217,6 +219,8 @@ bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 #endif
     }
   }
+
+#endif
 
   return false;
 }
@@ -1134,7 +1138,7 @@ bool ESP_Mail_Client::isResponseCB(void *cb, bool isSMTP)
 
 void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
   MB_String dbMsg;
   bool isCb = false, debug = false;
   ESP_MAIL_TCP_CLIENT *client = nullptr;
@@ -1168,8 +1172,6 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 #endif
   }
 
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
-
   if (debug && !isCb)
   {
     dbMsg = esp_mail_version_str; /* "ESP Mail Client v" */
@@ -1184,15 +1186,16 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
   }
 
 #endif
-
-#endif
 }
 
 bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sessionPtr, bool isSMTP, bool secureMode)
 {
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
   MB_String dbMsg;
   bool isCb = false, debug = false;
+
   ESP_MAIL_TCP_CLIENT *client = nullptr;
 #if !defined(SILENT_MODE)
   PGM_P p = isSMTP ? esp_mail_dbg_str_2 /* "connecting to SMTP server" */ : esp_mail_dbg_str_18 /* "connecting to IMAP server" */;
@@ -1225,8 +1228,6 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 #endif
   }
 
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
-
 #if !defined(SILENT_MODE)
   if (debug && !isCb)
   {
@@ -1255,23 +1256,39 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 
   if (!client->connect(secureMode, session_config->certificate.verify))
   {
+    if (isSMTP)
+    {
 #if defined(ENABLE_SMTP)
-    SMTPSession *smtp = (SMTPSession *)sessionPtr;
-    return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED, false);
+      SMTPSession *smtp = (SMTPSession *)sessionPtr;
+      return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED, false);
 #endif
+    }
+    else
+    {
 #if defined(ENABLE_IMAP)
-    IMAPSession *imap = (IMAPSession *)sessionPtr;
-    return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
+      IMAPSession *imap = (IMAPSession *)sessionPtr;
+      return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 #endif
+    }
   }
 
+  return true;
+
 #endif
 
-  return true;
+  return false;
 }
 
 bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP)
 {
+
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
+#if defined(ENABLE_NTP_TIME)
+  bool ntpEnabled = false;
+#else
+  bool ntpEnabled = false;
+#endif
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
   bool validTime = false;
@@ -1286,11 +1303,9 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   bool isCb = false;
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
   bool debug = false;
-#endif
 #endif
 
   if (isSMTP)
@@ -1314,7 +1329,6 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #endif
   }
 
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   if (!isCb && (session_config->time.ntp_server.length() > 0 || validTime))
   {
 
@@ -1337,32 +1351,27 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
       {
 #if defined(ENABLE_SMTP)
         SMTPSession *smtp = (SMTPSession *)sessionPtr;
-#if defined(ENABLE_NTP_TIME)
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT);
-#else
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
-#endif
+        errorStatusCB(smtp, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
 #endif
       }
       else
       {
 #if defined(ENABLE_IMAP)
         IMAPSession *imap = (IMAPSession *)sessionPtr;
-#if defined(ENABLE_NTP_TIME)
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT, true);
-#else
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, true);
-#endif
+        errorStatusCB(imap, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, true);
 #endif
       }
       return false;
     }
   }
-#endif
 
 #endif
 
   return true;
+
+#endif
+
+  return false;
 }
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
