@@ -1285,20 +1285,20 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
 #if defined(ENABLE_NTP_TIME)
-  bool ntpEnabled = false;
+  bool ntpEnabled = true;
 #else
   bool ntpEnabled = false;
 #endif
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
-  bool validTime = false;
+  bool timeShouldBeValid = false;
 #endif
 
 #if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   if (isSMTP)
-    validTime = true;
+    timeShouldBeValid = true;
   else
-    validTime = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
+    timeShouldBeValid = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
 #endif
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
@@ -1329,7 +1329,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #endif
   }
 
-  if (!isCb && (session_config->time.ntp_server.length() > 0 || validTime))
+  if (!isCb && (session_config->time.ntp_server.length() > 0 || timeShouldBeValid))
   {
 
     if (!Time.clockReady())
