@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 14, 2023
+ * Created April 15, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -40,48 +40,6 @@
 
 #include "ESP_Mail_IMAP.h"
 #include "ESP_Mail_SMTP.h"
-
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
-
-void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
-{
-
-#if defined(ENABLE_CUSTOM_CLIENT)
-  client->networkReconnect();
-#else
-
-#if defined(ESP32) || defined(ESP8266)
-  WiFi.reconnect();
-#else
-  if (wifi.credentials.size() > 0)
-  {
-#if __has_include(<WiFi.h>) || __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
-    if (!networkStatus)
-    {
-      WiFi.disconnect();
-#if defined(HAS_WIFIMULTI)
-      if (multi)
-        delete multi;
-      multi = nullptr;
-
-      multi = new WiFiMulti();
-      for (size_t i = 0; i < wifi.credentials.size(); i++)
-        multi->addAP(wifi.credentials[i].ssid.c_str(), wifi.credentials[i].password.c_str());
-
-      if (wifi.credentials.size() > 0)
-        multi->run();
-#else
-      WiFi.begin(wifi.credentials[0].ssid.c_str(), wifi.credentials[0].password.c_str());
-#endif
-    }
-#endif
-  }
-
-#endif
-
-#endif
-}
-#endif
 
 void ESP_Mail_Client::networkReconnect(bool reconnect)
 {
@@ -163,12 +121,50 @@ int ESP_Mail_Client::getFreeHeap()
 #endif
 }
 
+// All following functions are for IMAP or SMTP only
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+
+void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
+{
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+  client->networkReconnect();
+#else
+
+#if defined(ESP32) || defined(ESP8266)
+  WiFi.reconnect();
+#else
+  if (wifi.credentials.size() > 0)
+  {
+#if __has_include(<WiFi.h>) || __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
+    if (!networkStatus)
+    {
+      WiFi.disconnect();
+#if defined(HAS_WIFIMULTI)
+      if (multi)
+        delete multi;
+      multi = nullptr;
+
+      multi = new WiFiMulti();
+      for (size_t i = 0; i < wifi.credentials.size(); i++)
+        multi->addAP(wifi.credentials[i].ssid.c_str(), wifi.credentials[i].password.c_str());
+
+      if (wifi.credentials.size() > 0)
+        multi->run();
+#else
+      WiFi.begin(wifi.credentials[0].ssid.c_str(), wifi.credentials[0].password.c_str());
+#endif
+    }
+#endif
+  }
+
+#endif
+
+#endif
+}
 
 bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 {
-
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
   Session_Config *config = nullptr;
   MB_List<int> *configPtrList = nullptr;
@@ -219,8 +215,6 @@ bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
 #endif
     }
   }
-
-#endif
 
   return false;
 }
@@ -524,37 +518,33 @@ void ESP_Mail_Client::preparePortFunction(Session_Config *session_config, bool i
     {
       session_config->ports_functions.use_internal_list = false;
       delete[] session_config->ports_functions.list;
+      session_config->ports_functions.list = nullptr;
     }
   }
 
   if (!session_config->ports_functions.list)
   {
-    session_config->ports_functions.use_internal_list = true;
-
     if (isSMTP)
     {
+#if defined(ENABLE_SMTP)
+      session_config->ports_functions.use_internal_list = true;
       session_config->ports_functions.list = new port_function[3];
       session_config->ports_functions.size = 3;
 
-      session_config->ports_functions.list[0].port = 25;
-      session_config->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
-
-      session_config->ports_functions.list[1].port = 465;
-      session_config->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
-
-      session_config->ports_functions.list[2].port = 587;
-      session_config->ports_functions.list[2].protocol = esp_mail_protocol_tls;
+      for (int i = 0; i < 3; i++)
+        session_config->ports_functions.list[i] = smtp_ports[i];
+#endif
     }
     else
     {
+#if defined(ENABLE_IMAP)
+      session_config->ports_functions.use_internal_list = true;
       session_config->ports_functions.list = new port_function[2];
       session_config->ports_functions.size = 2;
 
-      session_config->ports_functions.list[0].port = 143;
-      session_config->ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
-
-      session_config->ports_functions.list[1].port = 993;
-      session_config->ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+      for (int i = 0; i < 2; i++)
+        session_config->ports_functions.list[i] = imap_ports[i];
+#endif
     }
   }
 
@@ -792,6 +782,7 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
 }
 
 #endif
+
 char *ESP_Mail_Client::getRandomUID()
 {
   char *tmp = allocMem<char *>(36);
@@ -1138,7 +1129,7 @@ bool ESP_Mail_Client::isResponseCB(void *cb, bool isSMTP)
 
 void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 {
-#if !defined(SILENT_MODE) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+#if !defined(SILENT_MODE)
   MB_String dbMsg;
   bool isCb = false, debug = false;
   ESP_MAIL_TCP_CLIENT *client = nullptr;
@@ -1190,8 +1181,6 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 
 bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sessionPtr, bool isSMTP, bool secureMode)
 {
-
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
   MB_String dbMsg;
   bool isCb = false, debug = false;
@@ -1259,30 +1248,22 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
     if (isSMTP)
     {
 #if defined(ENABLE_SMTP)
-      SMTPSession *smtp = (SMTPSession *)sessionPtr;
-      return handleSMTPError(smtp, SMTP_STATUS_SERVER_CONNECT_FAILED, false);
+      return handleSMTPError((SMTPSession *)sessionPtr, SMTP_STATUS_SERVER_CONNECT_FAILED, false);
 #endif
     }
     else
     {
 #if defined(ENABLE_IMAP)
-      IMAPSession *imap = (IMAPSession *)sessionPtr;
-      return handleIMAPError(imap, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
+      return handleIMAPError((IMAPSession *)sessionPtr, IMAP_STATUS_SERVER_CONNECT_FAILED, false);
 #endif
     }
   }
 
   return true;
-
-#endif
-
-  return false;
 }
 
 bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP)
 {
-
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
 #if defined(ENABLE_NTP_TIME)
   bool ntpEnabled = true;
@@ -1368,8 +1349,47 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #endif
 
   return true;
+}
+
+bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
+{
+  bool sessionReady = connected(sessionPtr, isSMTP);
+
+  if (isSMTP)
+  {
+#if defined(ENABLE_SMTP)
+    SMTPSession *smtp = (SMTPSession *)sessionPtr;
+
+    // If network connection failure or tcp session closed, close session to clear resources.
+    if (!reconnect(smtp) || !sessionReady)
+    {
+      closeTCPSession((void *)smtp, false);
+      if (!sessionReady)
+        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+      return false;
+    }
+
+    return true;
 
 #endif
+  }
+  else
+  {
+#if defined(ENABLE_IMAP)
+    IMAPSession *imap = (IMAPSession *)sessionPtr;
+
+    // If network connection failure or tcp session closed, close session to clear resources.
+    if (!reconnect(imap) || !sessionReady)
+    {
+      closeTCPSession((void *)imap, false);
+      if (!sessionReady)
+        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+      return false;
+    }
+
+    return true;
+#endif
+  }
 
   return false;
 }
@@ -1442,11 +1462,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   // then errorCode will match all cases of currently implemented enums.
   switch (errorCode)
   {
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
     ret = esp_mail_error_session_str_1; /* "the Session_Config object was not assigned" */
     break;
-#endif
 #if defined(ENABLE_SMTP)
   case SMTP_STATUS_SERVER_CONNECT_FAILED:
     ret = esp_mail_error_network_str_2; /* "unable to connect to server" */
@@ -1552,9 +1570,6 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:
     ret = esp_mail_error_network_str_3; /* "session timed out" */
     break;
-  case MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED:
-    ret = esp_mail_error_network_str_8; /* "connection failed" */
-    break;
   case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
     ret = esp_mail_error_ssl_str_1; /* "fail to set up the SSL/TLS structure" */
     break;
@@ -1562,7 +1577,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     ret = esp_mail_error_mem_str_8; /* "out of memory" */
     break;
   case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
-    ret = esp_mail_error_network_str_9; /* "data sending failed" */
+    ret = esp_mail_error_network_str_8; /* "data sending failed" */
     break;
   case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
     ret = esp_mail_error_network_str_7; /* "connection refused" */

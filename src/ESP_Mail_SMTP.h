@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 14, 2023
+ * Created April 15, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1759,28 +1759,10 @@ void ESP_Mail_Client::errorStatusCB(SMTPSession *smtp, int error)
 
 size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, PGM_P data, bool newline)
 {
-    if (!smtp)
+    if (!smtp || !sessionReady((void *)smtp, true))
         return 0;
 
     int sent = 0;
-
-    if (!reconnect(smtp))
-    {
-        closeTCPSession((void *)smtp, true);
-        return sent;
-    }
-
-    if (!connected((void *)smtp, true))
-    {
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-        return sent;
-    }
-
-    if (!smtp->_tcpConnected)
-    {
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-        return sent;
-    }
 
     MB_String s = data;
 
@@ -1810,26 +1792,8 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, int data, bool newline)
 
 size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, uint8_t *data, size_t size)
 {
-    if (!smtp)
+    if (!smtp || !sessionReady((void *)smtp, true))
         return 0;
-
-    if (!reconnect(smtp))
-    {
-        closeTCPSession((void *)smtp, true);
-        return 0;
-    }
-
-    if (!connected((void *)smtp, true))
-    {
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
-        return 0;
-    }
-
-    if (!smtp->_tcpConnected)
-    {
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED);
-        return 0;
-    }
 
     size_t sent = smtp->client.write(data, size);
 

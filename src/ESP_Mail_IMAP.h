@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 14, 2023
+ * Created April 15, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1469,25 +1469,10 @@ void ESP_Mail_Client::errorStatusCB(IMAPSession *imap, int error, bool clearStat
 
 size_t ESP_Mail_Client::imapSend(IMAPSession *imap, PGM_P data, bool newline)
 {
+    if (!imap || !sessionReady((void *)imap, false))
+        return 0;
+
     int sent = 0;
-
-    if (!reconnect(imap))
-    {
-        closeTCPSession((void *)imap, false);
-        return sent;
-    }
-
-    if (!connected((void *)imap, false))
-    {
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
-        return sent;
-    }
-
-    if (!imap->_tcpConnected)
-    {
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED, true);
-        return sent;
-    }
 
     MB_String s = data;
 
@@ -1515,25 +1500,10 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, int data, bool newline)
 
 size_t ESP_Mail_Client::imapSend(IMAPSession *imap, uint8_t *data, size_t size)
 {
+    if (!imap || !sessionReady((void *)imap, false))
+        return 0;
+
     int sent = 0;
-
-    if (!reconnect(imap))
-    {
-        closeTCPSession((void *)imap, false);
-        return sent;
-    }
-
-    if (!connected((void *)imap, false))
-    {
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
-        return sent;
-    }
-
-    if (!imap->_tcpConnected)
-    {
-        errorStatusCB(imap, MAIL_CLIENT_ERROR_SERVER_CONNECTION_FAILED, true);
-        return sent;
-    }
 
     sent = imap->client.write(data, size);
 
@@ -2642,7 +2612,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
             {
 #if !defined(SILENT_MODE)
                 if (imap->_debug)
-                    esp_mail_debug_print_tag(esp_mail_error_network_str_10 /* "response read timed out" */, esp_mail_debug_tag_type_error, true);
+                    esp_mail_debug_print_tag(esp_mail_error_network_str_9 /* "response read timed out" */, esp_mail_debug_tag_type_error, true);
 #endif
             }
 
@@ -5319,14 +5289,6 @@ bool IMAPSession::mListen(bool recon)
         }
 
 #endif
-
-        // Session closed?
-        if (!connected())
-        {
-            MailClient.errorStatusCB(this, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
-            MailClient.closeTCPSession((void *)this, false);
-            return false;
-        }
 
         if (MailClient.imapSend(this, prependTag(imap_commands[esp_mail_imap_command_idle].text).c_str(), true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
             return false;

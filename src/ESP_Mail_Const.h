@@ -1,4 +1,4 @@
-// Created April 14, 2022
+// Created April 15, 2022
 
 #pragma once
 
@@ -114,35 +114,34 @@ struct esp_mail_mime_prop_t
     char mimeType[30];
 };
 
-const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROGMEM =
-    {
-        /** The arrangement is related to esp_mail_file_extension enum.
-         *  Do not modify or remove.
-         */
-        {".html", "text/html"},
-        {".htm", "text/html"},
-        {".css", "text/css"},
-        {".txt", "text/plain"},
-        {".js", "application/javascript"},
-        {".json", "application/json"},
-        {".png", "image/png"},
-        {".gif", "image/gif"},
-        {".jpg", "image/jpeg"},
-        {".ico", "image/x-icon"},
-        {".svg", "image/svg+xml"},
-        {".ttf", "application/x-font-ttf"},
-        {".otf", "application/x-font-opentype"},
-        {".woff", "application/font-woff"},
-        {".woff2", "application/font-woff2"},
-        {".eot", "application/vnd.ms-fontobject"},
-        {".sfnt", "application/font-sfnt"},
-        {".xml", "text/xml"},
-        {".pdf", "application/pdf"},
-        {".zip", "application/zip"},
-        {".gz", "application/x-gzip"},
-        {".appcache", "text/cache-manifest"},
-        {".dat", "application/dat"},
-        {"", "application/octet-stream"}};
+const struct esp_mail_mime_prop_t mimeinfo[esp_mail_file_extension_maxType] PROGMEM = {
+    /** The arrangement is related to esp_mail_file_extension enum.
+     *  Do not modify or remove.
+     */
+    {".html", "text/html"},
+    {".htm", "text/html"},
+    {".css", "text/css"},
+    {".txt", "text/plain"},
+    {".js", "application/javascript"},
+    {".json", "application/json"},
+    {".png", "image/png"},
+    {".gif", "image/gif"},
+    {".jpg", "image/jpeg"},
+    {".ico", "image/x-icon"},
+    {".svg", "image/svg+xml"},
+    {".ttf", "application/x-font-ttf"},
+    {".otf", "application/x-font-opentype"},
+    {".woff", "application/font-woff"},
+    {".woff2", "application/font-woff2"},
+    {".eot", "application/vnd.ms-fontobject"},
+    {".sfnt", "application/font-sfnt"},
+    {".xml", "text/xml"},
+    {".pdf", "application/pdf"},
+    {".zip", "application/zip"},
+    {".gz", "application/x-gzip"},
+    {".appcache", "text/cache-manifest"},
+    {".dat", "application/dat"},
+    {"", "application/octet-stream"}};
 
 #if defined(ENABLE_SMTP)
 
@@ -561,8 +560,8 @@ struct esp_mail_internal_use_t
 /* The struct contains port number and its protocol */
 struct port_function
 {
-    uint16_t port = 0;
-    esp_mail_protocol protocol = esp_mail_protocol_plain_text;
+    uint16_t port;
+    esp_mail_protocol protocol;
 };
 
 /* The struct that contains the list of port_function and its size */
@@ -789,28 +788,27 @@ struct esp_mail_smtp_command_t
  *  The arrangement is related to esp_mail_smtp_command_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType] PROGMEM =
-    {
-        "AUTH",
-        "LOGIN",
-        "HELO",
-        "EHLO",
-        "QUIT",
-        "MAIL",
-        "RCPT",
-        "DATA",
-        "BDAT",
-        "LAST",
-        "PLAIN",
-        "FROM:",
-        "TO:",
-        "NOTIFY",
-        "SUCCESS",
-        "FAILURE",
-        "DELAY",
-        "BODY",
-        "\r\n.\r\n",
-        "STARTTLS"};
+const struct esp_mail_smtp_command_t smtp_commands[esp_mail_smtp_command_maxType] PROGMEM = {
+    "AUTH",
+    "LOGIN",
+    "HELO",
+    "EHLO",
+    "QUIT",
+    "MAIL",
+    "RCPT",
+    "DATA",
+    "BDAT",
+    "LAST",
+    "PLAIN",
+    "FROM:",
+    "TO:",
+    "NOTIFY",
+    "SUCCESS",
+    "FAILURE",
+    "DELAY",
+    "BODY",
+    "\r\n.\r\n",
+    "STARTTLS"};
 
 struct esp_mail_smtp_commands_tokens
 {
@@ -849,66 +847,65 @@ struct esp_mail_imap_command_t
  *  The arrangement is related to esp_mail_imap_command_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType] PROGMEM =
-    {
-        "STARTTLS",
-        "APPEND",
-        "CAPABILITY",
-        "AUTHENTICATE",
-        "PLAIN",
-        "UID",
-        "FETCH",
-        "FLAGS",
-        "LOGIN",
-        "LIST",
-        "EXAMINE",
-        "SEARCH",
-        "LOGOUT",
-        "BODY",
-        "MIME",
-        "CLOSE",
-        "EXISTS",
-        "PEEK",
-        "TEXT",
-        "FIELDS",
-        "HEADER",
-        "NEW",
-        "ALL",
-        "SELECT",
-        "EXPUNGE",
-        "CREATE",
-        "DELETE",
-        "IDLE",
-        "DONE",
-        "RECENT",
-        "UNSEEN",
-        "RENAME",
-        "LSUB",
-        "SUBSCRIBE",
-        "UNSUBSCRIBE",
-        "SILENT",
-        "MOVE",
-        "GETQUOTA",
-        "SETQUOTA",
-        "ROOT",
-        "GETACL",
-        "SETACL",
-        "DELETEACL",
-        "MYRIGHTS",
-        "NAMESPACE",
-        "ENABLE",
-        "XOAUTH2",
-        "STORE",
-        "+FLAGS",
-        "-FLAGS",
-        "COPY",
-        "ID",
-        "UNSELECT",
-        "CONDSTORE",
-        "NOOP",
-        "UNCHANGEDSINCE",
-        "CHANGEDSINCE",
-        "MODSEC"};
+const struct esp_mail_imap_command_t imap_commands[esp_mail_imap_command_maxType] PROGMEM = {
+    "STARTTLS",
+    "APPEND",
+    "CAPABILITY",
+    "AUTHENTICATE",
+    "PLAIN",
+    "UID",
+    "FETCH",
+    "FLAGS",
+    "LOGIN",
+    "LIST",
+    "EXAMINE",
+    "SEARCH",
+    "LOGOUT",
+    "BODY",
+    "MIME",
+    "CLOSE",
+    "EXISTS",
+    "PEEK",
+    "TEXT",
+    "FIELDS",
+    "HEADER",
+    "NEW",
+    "ALL",
+    "SELECT",
+    "EXPUNGE",
+    "CREATE",
+    "DELETE",
+    "IDLE",
+    "DONE",
+    "RECENT",
+    "UNSEEN",
+    "RENAME",
+    "LSUB",
+    "SUBSCRIBE",
+    "UNSUBSCRIBE",
+    "SILENT",
+    "MOVE",
+    "GETQUOTA",
+    "SETQUOTA",
+    "ROOT",
+    "GETACL",
+    "SETACL",
+    "DELETEACL",
+    "MYRIGHTS",
+    "NAMESPACE",
+    "ENABLE",
+    "XOAUTH2",
+    "STORE",
+    "+FLAGS",
+    "-FLAGS",
+    "COPY",
+    "ID",
+    "UNSELECT",
+    "CONDSTORE",
+    "NOOP",
+    "UNCHANGEDSINCE",
+    "CHANGEDSINCE",
+    "MODSEC"};
 
 struct esp_mail_imap_commands_tokens
 {
@@ -943,38 +940,37 @@ struct esp_mail_imap_response_t
  *  The arrangement is related to esp_mail_imap_response_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxType] PROGMEM =
-    {
-        // Tagged
-        "OK ",
-        "NO ",
-        "BAD ",
-        // Untagged
-        "* LIST ",
-        "* FLAGS ",
-        "* SEARCH ",
-        " FETCH ",
-        " NIL ",
-        " UID ",
-        "* CAPABILITY ",
-        "CAPABILITY ",
-        "* LSUB ",
-        "* QUOTA ",
-        "* QUOTAROOT ",
-        "* ACL ",
-        "* MYRIGHTS ",
-        "* NAMESPACE ",
-        "* ",
-        " EXISTS",
-        " EXPUNGE",
-        " RECENT",
-        " [UIDNEXT ",
-        " [UNSEEN ",
-        "* ID ",
-        " [HIGHESTMODSEQ ",
-        " [NOMODSEQ]",
-        " [PERMANENTFLAGS ",
-        " [UIDVALIDITY "};
+const struct esp_mail_imap_response_t imap_responses[esp_mail_imap_response_maxType] PROGMEM = {
+    // Tagged
+    "OK ",
+    "NO ",
+    "BAD ",
+    // Untagged
+    "* LIST ",
+    "* FLAGS ",
+    "* SEARCH ",
+    " FETCH ",
+    " NIL ",
+    " UID ",
+    "* CAPABILITY ",
+    "CAPABILITY ",
+    "* LSUB ",
+    "* QUOTA ",
+    "* QUOTAROOT ",
+    "* ACL ",
+    "* MYRIGHTS ",
+    "* NAMESPACE ",
+    "* ",
+    " EXISTS",
+    " EXPUNGE",
+    " RECENT",
+    " [UIDNEXT ",
+    " [UNSEEN ",
+    "* ID ",
+    " [HIGHESTMODSEQ ",
+    " [NOMODSEQ]",
+    " [PERMANENTFLAGS ",
+    " [UIDVALIDITY "};
 
 #endif
 
@@ -987,13 +983,12 @@ struct esp_mail_char_decoding_t
  *  The arrangement is related to esp_mail_char_decoding_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxType] PROGMEM =
-    {
-        "utf-8",
-        "iso-8859-1",
-        "iso-8859-11",
-        "tis-620",
-        "windows-874"};
+const struct esp_mail_char_decoding_t char_decodings[esp_mail_char_decoding_maxType] PROGMEM = {
+    "utf-8",
+    "iso-8859-1",
+    "iso-8859-11",
+    "tis-620",
+    "windows-874"};
 
 struct esp_mail_multipart_t
 {
@@ -1004,12 +999,11 @@ struct esp_mail_multipart_t
  *  The arrangement is related to esp_mail_multipart_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_multipart_t multipart_types[esp_mail_multipart_maxType] PROGMEM =
-    {
-        "multipart/mixed",
-        "multipart/related",
-        "multipart/parallel",
-        "multipart/alternative"};
+const struct esp_mail_multipart_t multipart_types[esp_mail_multipart_maxType] PROGMEM = {
+    "multipart/mixed",
+    "multipart/related",
+    "multipart/parallel",
+    "multipart/alternative"};
 
 struct esp_mail_rfc822_header_field_t
 {
@@ -1022,23 +1016,22 @@ struct esp_mail_rfc822_header_field_t
  *  The arrangement is related to esp_mail_rfc822_header_field_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_rfc822_header_field_t rfc822_headers[esp_mail_rfc822_header_field_maxType] PROGMEM =
-    {
-        {"From", false, true},
-        {"Sender", false, true},
-        {"To", false, true},
-        {"Cc", false, true},
-        {"Subject", false, false},
-        {"Date", false, false},
-        {"Message-ID", false, false},
-        {"Return-Path", false, true},
-        {"Reply-To", false, true},
-        {"In-Reply-To", false, true},
-        {"References", false, true},
-        {"Comments", false, false},
-        {"Keywords", false, false},
-        {"Bcc", false, true},
-        {"Flags", false, false}};
+const struct esp_mail_rfc822_header_field_t rfc822_headers[esp_mail_rfc822_header_field_maxType] PROGMEM = {
+    {"From", false, true},
+    {"Sender", false, true},
+    {"To", false, true},
+    {"Cc", false, true},
+    {"Subject", false, false},
+    {"Date", false, false},
+    {"Message-ID", false, false},
+    {"Return-Path", false, true},
+    {"Reply-To", false, true},
+    {"In-Reply-To", false, true},
+    {"References", false, true},
+    {"Comments", false, false},
+    {"Keywords", false, false},
+    {"Bcc", false, true},
+    {"Flags", false, false}};
 
 struct esp_mail_message_header_field_t
 {
@@ -1049,33 +1042,32 @@ struct esp_mail_message_header_field_t
  *  The arrangement is related to esp_mail_message_header_field_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_message_header_field_t message_headers[esp_mail_message_header_field_maxType] PROGMEM =
-    {
-        "Number",
-        "UID",
-        "Accept-Language",
-        "Content-Language",
-        "Filename",
-        "Name",
-        "Size",
-        "MIME",
-        "Type",
-        "Description",
-        "Creation-Date",
-        "X-Priority",
-        "X-MSMail-Priority",
-        "Importance",
-        "Content-Type",
-        "Content-transfer-encoding",
-        "Content-Disposition",
-        "Content-Location",
-        "Content-ID",
-        "Content-Description",
-        "Mime-Version",
-        "Charset",
-        "format",
-        "delsp",
-        "Modification-Date"};
+const struct esp_mail_message_header_field_t message_headers[esp_mail_message_header_field_maxType] PROGMEM = {
+    "Number",
+    "UID",
+    "Accept-Language",
+    "Content-Language",
+    "Filename",
+    "Name",
+    "Size",
+    "MIME",
+    "Type",
+    "Description",
+    "Creation-Date",
+    "X-Priority",
+    "X-MSMail-Priority",
+    "Importance",
+    "Content-Type",
+    "Content-transfer-encoding",
+    "Content-Disposition",
+    "Content-Location",
+    "Content-ID",
+    "Content-Description",
+    "Mime-Version",
+    "Charset",
+    "format",
+    "delsp",
+    "Modification-Date"};
 
 struct esp_mail_auth_capability_t
 {
@@ -1088,17 +1080,14 @@ struct esp_mail_auth_capability_t
  *  The arrangement is related to esp_mail_auth_capability_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
-    {
-        "PLAIN",
-        "XOAUTH2",
-        "CRAM-MD5",
-        "DIGEST-MD5",
-        "LOGIN",
-        "STARTTLS",
-        "DUMMY_AUTH" /* SASL-IR */
-
-};
+const struct esp_mail_auth_capability_t smtp_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM = {
+    "PLAIN",
+    "XOAUTH2",
+    "CRAM-MD5",
+    "DIGEST-MD5",
+    "LOGIN",
+    "STARTTLS",
+    "DUMMY_AUTH" /* SASL-IR */};
 
 struct esp_mail_smtp_auth_tokens
 {
@@ -1130,16 +1119,14 @@ struct esp_mail_smtp_send_capability_t
  *  The arrangement is related esp_mail_smtp_send_capability_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM =
-    {
-        "BINARYMIME",
-        "8BITMIME",
-        "CHUNKING",
-        "SMTPUTF8",
-        "PIPELINING",
-        "DSN",
-        "" /* ESMTP */
-};
+const struct esp_mail_smtp_send_capability_t smtp_send_capabilities[esp_mail_smtp_send_capability_maxType] PROGMEM = {
+    "BINARYMIME",
+    "8BITMIME",
+    "CHUNKING",
+    "SMTPUTF8",
+    "PIPELINING",
+    "DSN",
+    "" /* ESMTP */};
 
 struct esp_mail_smtp_send_tokens
 {
@@ -1169,17 +1156,14 @@ static esp_mail_smtp_send_tokens smtp_send_cap_pre_tokens(true);
  *  The arrangement is related esp_mail_auth_capability_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM =
-    {
-        "AUTH=PLAIN",
-        "AUTH=XOAUTH2",
-        "CRAM-MD5",
-        "DIGEST-MD5",
-        "DUMMY_AUTH", /* Log in */
-        "STARTTLS",
-        "SASL-IR"
-
-};
+const struct esp_mail_auth_capability_t imap_auth_capabilities[esp_mail_auth_capability_maxType] PROGMEM = {
+    "AUTH=PLAIN",
+    "AUTH=XOAUTH2",
+    "CRAM-MD5",
+    "DIGEST-MD5",
+    "DUMMY_AUTH", /* Log in */
+    "STARTTLS",
+    "SASL-IR"};
 
 struct esp_mail_imap_auth_tokens
 {
@@ -1211,28 +1195,26 @@ struct esp_mail_imap_read_capability_t
  *  The arrangement is related esp_mail_imap_read_capability_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_imap_read_capability_maxType] PROGMEM =
-    {
-        "IMAP4",
-        "IMAP4rev1",
-        "IDLE",
-        "LITERAL+",
-        "LITERAL-",
-        "MULTIAPPEND",
-        "UIDPLUS",
-        "ACL",
-        "BINARY",
-        "LOGINDISABLED",
-        "MOVE",
-        "QUOTA",
-        "NAMESPACE",
-        "ENABLE",
-        "ID",
-        "UNSELECT",
-        "CHILDREN",
-        "CONDSTORE"
-        "" /* Auto cap */
-};
+const struct esp_mail_imap_read_capability_t imap_read_capabilities[esp_mail_imap_read_capability_maxType] PROGMEM = {
+    "IMAP4",
+    "IMAP4rev1",
+    "IDLE",
+    "LITERAL+",
+    "LITERAL-",
+    "MULTIAPPEND",
+    "UIDPLUS",
+    "ACL",
+    "BINARY",
+    "LOGINDISABLED",
+    "MOVE",
+    "QUOTA",
+    "NAMESPACE",
+    "ENABLE",
+    "ID",
+    "UNSELECT",
+    "CHILDREN",
+    "CONDSTORE"
+    "" /* Auto cap */};
 
 struct esp_mail_imap_read_tokens
 {
@@ -1264,19 +1246,18 @@ struct esp_mail_imap_identification_key_t
  *  The arrangement is related esp_mail_imap_identification_key_types enum.
  *  Do not modify or remove.
  */
-const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mail_imap_identification_key_maxType] PROGMEM =
-    {
-        "name",
-        "version",
-        "os",
-        "os-version",
-        "vendor",
-        "support-url",
-        "address",
-        "date",
-        "command",
-        "arguments",
-        "environment"};
+const struct esp_mail_imap_identification_key_t imap_identification_keys[esp_mail_imap_identification_key_maxType] PROGMEM = {
+    "name",
+    "version",
+    "os",
+    "os-version",
+    "vendor",
+    "support-url",
+    "address",
+    "date",
+    "command",
+    "arguments",
+    "environment"};
 
 /* The IMAP ID data struct */
 typedef struct esp_mail_imap_identity_t
@@ -1384,8 +1365,13 @@ enum esp_mail_smtp_port
 {
     esp_mail_smtp_port_25 = 25,   // PLAIN/TLS with STARTTLS
     esp_mail_smtp_port_465 = 465, // SSL
-    esp_mail_smtp_port_587 = 587  // TLS with STARTTLS
+    esp_mail_smtp_port_587 = 587, // TLS with STARTTLS
 };
+
+const struct port_function smtp_ports[3] = {
+    {esp_mail_smtp_port_25, esp_mail_protocol_plain_text},
+    {esp_mail_smtp_port_465, esp_mail_protocol_ssl},
+    {esp_mail_smtp_port_587, esp_mail_protocol_tls}};
 
 /* The SMTP message response [SMTP_Message] */
 struct esp_mail_smtp_msg_response_t
@@ -1619,6 +1605,10 @@ enum esp_mail_imap_port
     esp_mail_imap_port_143 = 143, // PLAIN/TLS with STARTTLS
     esp_mail_imap_port_993 = 993, // SSL
 };
+
+const struct port_function imap_ports[2] = {
+    {esp_mail_imap_port_143, esp_mail_protocol_plain_text},
+    {esp_mail_imap_port_993, esp_mail_protocol_ssl}};
 
 enum esp_mail_imap_auth_mode
 {
@@ -3102,12 +3092,11 @@ static const char esp_mail_error_network_str_4[] PROGMEM = "not connected";
 static const char esp_mail_error_network_str_5[] PROGMEM = "connection timeout";
 static const char esp_mail_error_network_str_6[] PROGMEM = "connection closed";
 static const char esp_mail_error_network_str_7[] PROGMEM = "connection refused";
-static const char esp_mail_error_network_str_8[] PROGMEM = "connection failed";
-static const char esp_mail_error_network_str_9[] PROGMEM = "data sending failed";
+static const char esp_mail_error_network_str_8[] PROGMEM = "data sending failed";
 #endif
 
 #if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
-static const char esp_mail_error_network_str_10[] PROGMEM = "response read timed out";
+static const char esp_mail_error_network_str_9[] PROGMEM = "response read timed out";
 #endif
 
 /////////////////////////
@@ -3183,8 +3172,8 @@ static const char esp_mail_error_imap_str_11[] PROGMEM = "no mailbox opened";
 static const char esp_mail_error_imap_str_12[] PROGMEM = "no content";
 static const char esp_mail_error_imap_str_13[] PROGMEM = "this feature was not supported";
 static const char esp_mail_error_imap_str_14[] PROGMEM = "no message changed since (assigned) modsec";
-static const char esp_mail_error_imap_str_15[] PROGMEM ="CONDSTORE was not supported or modsec was not supported for selected mailbox";
-static const char esp_mail_error_imap_str_17[] PROGMEM ="could not parse command";
+static const char esp_mail_error_imap_str_15[] PROGMEM = "CONDSTORE was not supported or modsec was not supported for selected mailbox";
+static const char esp_mail_error_imap_str_17[] PROGMEM = "could not parse command";
 #endif
 #endif
 

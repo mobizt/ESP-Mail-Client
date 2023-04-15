@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.cpp v2.0.11
+ * ESP8266 TCP Client Library v2.0.12
  *
- * Created March 28, 2023
+ * Created April 15, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
