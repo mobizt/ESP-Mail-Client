@@ -1548,8 +1548,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case SMTP_STATUS_SEND_CUSTOM_COMMAND_FAILED:
     ret = esp_mail_error_smtp_str_10; /* "send custom command failed" */
     break;
+   case SMTP_STATUS_XOAUTH2_AUTH_FAILED:
+    ret = esp_mail_error_smtp_str_11; /* "XOAuth2 authenticate failed" */
+    break;
   case SMTP_STATUS_UNDEFINED:
-    ret = esp_mail_error_smtp_str_11; /* "undefined error" */
+    ret = esp_mail_error_smtp_str_12; /* "undefined error" */
     break;
 #endif
 
@@ -1780,7 +1783,7 @@ void ESP_Mail_Client::strReplaceP(MB_String &buf, PGM_P name, PGM_P value)
   freeMem(&v);
 }
 
-bool ESP_Mail_Client::oauthFailed(char *buf, int bufLen, int &chunkIdx, int ofs)
+bool ESP_Mail_Client::isOAuthError(char *buf, int bufLen, int &chunkIdx, int ofs)
 {
   bool ret = false;
   if (chunkIdx == 0)

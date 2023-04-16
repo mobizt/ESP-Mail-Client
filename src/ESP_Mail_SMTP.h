@@ -2927,9 +2927,9 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
                     if (smtp->_smtp_cmd == esp_mail_smtp_command::esp_mail_smtp_cmd_auth_xoauth2 && smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_334)
                     {
-                        if (oauthFailed(response, readLen, chunkIndex, 4))
+                        if (isOAuthError(response, readLen, chunkIndex, 4))
                         {
-                            smtp->_smtpStatus.errorCode = -1;
+                            smtp->_smtpStatus.errorCode = SMTP_STATUS_XOAUTH2_AUTH_FAILED;
                             ret = false;
                         }
                     }

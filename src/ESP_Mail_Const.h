@@ -3147,7 +3147,8 @@ static const char esp_mail_error_smtp_str_7[] PROGMEM = "sender Email address is
 static const char esp_mail_error_smtp_str_8[] PROGMEM = "some of the recipient Email address is not valid";
 static const char esp_mail_error_smtp_str_9[] PROGMEM = "set recipient failed";
 static const char esp_mail_error_smtp_str_10[] PROGMEM = "send custom command failed";
-static const char esp_mail_error_smtp_str_11[] PROGMEM = "undefined error";
+static const char esp_mail_error_smtp_str_11[] PROGMEM = "XOAuth2 authenticate failed";
+static const char esp_mail_error_smtp_str_12[] PROGMEM = "undefined error";
 #endif
 #endif
 

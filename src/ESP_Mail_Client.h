@@ -1055,8 +1055,8 @@ private:
   // PGM string replacement
   void strReplaceP(MB_String &buf, PGM_P key, PGM_P value);
 
-  // Check for OAUTH log in error response
-  bool oauthFailed(char *buf, int bufLen, int &chunkIdx, int ofs);
+  // Check for OAuth log in error response
+  bool isOAuthError(char *buf, int bufLen, int &chunkIdx, int ofs);
 
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);

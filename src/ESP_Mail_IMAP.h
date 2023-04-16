@@ -960,7 +960,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                 saveHeader(imap, true);
             }
 
-            // save files list file
+            // save files list to file
             if (imap->_storageReady && imap->_sdFileList.length() > 0)
             {
                 MB_String filepath = cHeader(imap)->message_uid;
@@ -2919,7 +2919,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
                             {
-                                if (oauthFailed(res.response, res.readLen, res.chunkIdx, 2))
+                                if (isOAuthError(res.response, res.readLen, res.chunkIdx, 2))
                                     res.completedResponse = true;
                             }
 
