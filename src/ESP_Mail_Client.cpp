@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 15, 2023
+ * Created April 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1453,18 +1453,55 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
 
 #if defined(ENABLE_ERROR_STRING)
 
-  // if there is server reply (IMAP), return the reply instead
+  // If there is server meanningful response (msg) is available, return it instead
   if (strlen(msg) > 0)
     return msg;
 
   // The error code enums were defined in ESP_Mail_Error.h and MB_FS.h.
-  // Not all error enums in ESP_Mail_Error.h was used
-  // then errorCode will match all cases of currently implemented enums.
   switch (errorCode)
   {
+
+  case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
+    ret = esp_mail_error_network_str_7; /* "connection refused" */
+    break;
+  case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
+    ret = esp_mail_error_network_str_8; /* "data sending failed" */
+    break;
+  case TCP_CLIENT_ERROR_NOT_INITIALIZED:
+    ret = esp_mail_error_client_str_1; /* "client and/or necessary callback functions are not yet assigned" */
+    break;
+  case TCP_CLIENT_ERROR_NOT_CONNECTED:
+    ret = esp_mail_error_network_str_4; /* "not connected" */
+    break;
+
+  case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
+    ret = esp_mail_error_network_str_6; /* "connection closed" */
+    break;
+  case MAIL_CLIENT_ERROR_READ_TIMEOUT:
+    ret = esp_mail_error_network_str_3; /* "session timed out" */
+    break;
+  case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
+    ret = esp_mail_error_ssl_str_1; /* "fail to set up the SSL/TLS structure" */
+    break;
+  case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
+    ret = esp_mail_error_mem_str_8; /* "out of memory" */
+    break;
+  case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
+    ret = esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
+    break;
+  case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
+    ret = esp_mail_error_network_str_1; /* "NTP server time synching timed out" */
+    break;
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
     ret = esp_mail_error_session_str_1; /* "the Session_Config object was not assigned" */
     break;
+  case MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET:
+    ret = esp_mail_error_time_str_1; /* "library or device time was not set" */
+    break;
+  case MAIL_CLIENT_ERROR_NOT_YET_LOGIN:
+    ret = esp_mail_error_auth_str_3; /* "not yet log in" */
+    break;
+
 #if defined(ENABLE_SMTP)
   case SMTP_STATUS_SERVER_CONNECT_FAILED:
     ret = esp_mail_error_network_str_2; /* "unable to connect to server" */
@@ -1508,8 +1545,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case SMTP_STATUS_NO_SUPPORTED_AUTH:
     ret = esp_mail_error_auth_str_1; /* "the provided SASL authentication mechanism is not support" */
     break;
-  case IMAP_STATUS_SMTP_SESSION_WAS_NOT_ASSIGNED:
-    ret = esp_mail_error_session_str_2; /* "the SMTPSession object was not assigned" */
+  case SMTP_STATUS_SEND_CUSTOM_COMMAND_FAILED:
+    ret = esp_mail_error_smtp_str_10; /* "send custom command failed" */
+    break;
+  case SMTP_STATUS_UNDEFINED:
+    ret = esp_mail_error_smtp_str_11; /* "undefined error" */
     break;
 #endif
 
@@ -1517,14 +1557,23 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case IMAP_STATUS_SERVER_CONNECT_FAILED:
     ret = esp_mail_error_network_str_2; /* "unable to connect to server" */
     break;
+  case IMAP_STATUS_IMAP_RESPONSE_FAILED:
+    ret = esp_mail_error_imap_str_18; /* "server replied NO or BAD response" */
+    break;
+  case IMAP_STATUS_AUTHENTICATE_FAILED:
+    ret = esp_mail_error_imap_str_19; /* "authenticate failed" */
+    break;
+  case IMAP_STATUS_BAD_COMMAND:
+    ret = esp_mail_error_imap_str_17; /* "could not parse command" */
+    break;
+  case IMAP_STATUS_STORE_FAILED:
+    ret = esp_mail_error_imap_str_20; /* "flags or keywords store failed" */
+    break;
+  case IMAP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED:
+    ret = esp_mail_error_imap_str_21; /* "server is not support OAuth2 login" */
+    break;
   case IMAP_STATUS_NO_MESSAGE:
     ret = esp_mail_error_imap_str_5; /* "some of the requested messages no longer exist" */
-    break;
-  case IMAP_STATUS_CHANGEDSINC_MODSEQ_TEST_FAILED:
-    ret = esp_mail_error_imap_str_14; /* "no message changed since (assigned) modsec" */
-    break;
-  case IMAP_STATUS_MODSEQ_WAS_NOT_SUPPORTED:
-    ret = esp_mail_error_imap_str_15; /* "CONDSTORE was not supported or modsec was not supported for selected mailbox" */
     break;
   case IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT:
     ret = esp_mail_error_network_str_5; /* "connection timeout" */
@@ -1538,11 +1587,11 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case IMAP_STATUS_LIST_MAILBOXS_FAILED:
     ret = esp_mail_error_imap_str_1; /* "fail to list the mailboxes" */
     break;
-  case IMAP_STATUS_NO_SUPPORTED_AUTH:
-    ret = esp_mail_error_auth_str_1; /* "the provided SASL authentication mechanism is not support" */
-    break;
   case IMAP_STATUS_CHECK_CAPABILITIES_FAILED:
     ret = esp_mail_error_imap_str_2; /* "fail to check the capabilities" */
+    break;
+  case IMAP_STATUS_NO_SUPPORTED_AUTH:
+    ret = esp_mail_error_auth_str_1; /* "the provided SASL authentication mechanism is not support" */
     break;
   case IMAP_STATUS_NO_MAILBOX_FOLDER_OPENED:
     ret = esp_mail_error_imap_str_5; /* "no mailbox opened" */
@@ -1556,55 +1605,22 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case IMAP_STATUS_FIRMWARE_UPDATE_END_FAILED:
     ret = esp_mail_error_imap_str_8; /* "firmware update finalize failed" */
     break;
-  case IMAP_STATUS_IMAP_SESSION_WAS_NOT_ASSIGNED:
-    ret = esp_mail_error_session_str_3; /* "the IMAPSession object was not assigned" */
+  case IMAP_STATUS_CHANGEDSINC_MODSEQ_TEST_FAILED:
+    ret = esp_mail_error_imap_str_14; /* "no message changed since (assigned) modsec" */
     break;
-  case IMAP_STATUS_BAD_COMMAND:
-    ret = esp_mail_error_imap_str_17; /* "could not parse command" */
+  case IMAP_STATUS_MODSEQ_WAS_NOT_SUPPORTED:
+    ret = esp_mail_error_imap_str_15; /* "CONDSTORE was not supported or modsec was not supported for selected mailbox" */
     break;
-#endif
 
-  case MAIL_CLIENT_ERROR_CONNECTION_CLOSED:
-    ret = esp_mail_error_network_str_6; /* "connection closed" */
-    break;
-  case MAIL_CLIENT_ERROR_READ_TIMEOUT:
-    ret = esp_mail_error_network_str_3; /* "session timed out" */
-    break;
-  case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
-    ret = esp_mail_error_ssl_str_1; /* "fail to set up the SSL/TLS structure" */
-    break;
-  case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
-    ret = esp_mail_error_mem_str_8; /* "out of memory" */
-    break;
-  case TCP_CLIENT_ERROR_SEND_DATA_FAILED:
-    ret = esp_mail_error_network_str_8; /* "data sending failed" */
-    break;
-  case TCP_CLIENT_ERROR_CONNECTION_REFUSED:
-    ret = esp_mail_error_network_str_7; /* "connection refused" */
-    break;
-  case TCP_CLIENT_ERROR_NOT_INITIALIZED:
-    ret = esp_mail_error_client_str_1; /* "client and/or necessary callback functions are not yet assigned" */
-    break;
-  case TCP_CLIENT_ERROR_NOT_CONNECTED:
-    ret = esp_mail_error_network_str_4; /* "not connected" */
-    break;
-  case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
-    ret = esp_mail_error_network_str_1; /* "NTP server time synching timed out" */
-    break;
-  case MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET:
-    ret = esp_mail_error_time_str_1; /* "library or device time was not set" */
-    break;
-  case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
-    ret = esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
-    break;
-  case MAIL_CLIENT_ERROR_NOT_YET_LOGIN:
-    ret = esp_mail_error_auth_str_3; /* "not yet log in" */
-    break;
+#endif
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 
   case MB_FS_ERROR_FILE_IO_ERROR:
     ret = esp_mail_error_mem_str_7; /* "file I/O error" */
+    break;
+  case MB_FS_ERROR_FILE_NOT_FOUND:
+    ret = esp_mail_error_mem_str_6; /* "file not found." */
     break;
   case MB_FS_ERROR_FLASH_STORAGE_IS_NOT_READY:
     ret = esp_mail_error_mem_str_1; /* "flash Storage is not ready." */
@@ -1615,13 +1631,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case MB_FS_ERROR_FILE_STILL_OPENED:
     ret = esp_mail_error_mem_str_5; /* "file is still opened." */
     break;
-  case MB_FS_ERROR_FILE_NOT_FOUND:
-    ret = esp_mail_error_mem_str_6; /* "file not found." */
-    break;
 
 #endif
   default:
-    // Not possible case
     break;
   }
 

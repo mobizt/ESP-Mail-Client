@@ -678,9 +678,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
 
         imap->_imap_cmd = esp_mail_imap_cmd_fetch_body_header;
 
-        int err = IMAP_STATUS_BAD_COMMAND;
-        if (imap->_headerOnly)
-            err = IMAP_STATUS_IMAP_RESPONSE_FAILED;
+        int err = imap->_headerOnly ? IMAP_STATUS_IMAP_RESPONSE_FAILED : IMAP_STATUS_BAD_COMMAND;
 
         if (!handleIMAPResponse(imap, err, closeSession))
         {
@@ -1311,7 +1309,7 @@ non_authenticated:
                 return false;
 
             imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_oauth;
-            if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, true))
+            if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
                 return false;
 
             cmd = getXOAUTH2String(imap->_session_cfg->login.email, imap->_session_cfg->login.accessToken);
@@ -1321,7 +1319,7 @@ non_authenticated:
         }
 
         imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_oauth;
-        if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, false))
+        if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, false))
             return false;
     }
     else if (sasl_auth_plain)
@@ -1360,7 +1358,7 @@ non_authenticated:
                 return false;
 
             imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_plain;
-            if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, true))
+            if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
                 return false;
 
             cmd = encodeBase64Str(tmp, p);
@@ -1372,7 +1370,7 @@ non_authenticated:
         }
 
         imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_plain;
-        if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, true))
+        if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
             return false;
     }
     else if (sasl_login)
@@ -1389,7 +1387,7 @@ non_authenticated:
             return false;
 
         imap->_imap_cmd = esp_mail_imap_cmd_sasl_login;
-        if (!handleIMAPResponse(imap, IMAP_STATUS_LOGIN_FAILED, true))
+        if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
             return false;
     }
 
@@ -1607,7 +1605,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
 
     imap->_imap_cmd = esp_mail_imap_cmd_store;
 
-    if (!handleIMAPResponse(imap, IMAP_STATUS_PARSE_FLAG_FAILED, false))
+    if (!handleIMAPResponse(imap, IMAP_STATUS_STORE_FAILED, false))
         return false;
 
     if (closeSession)
@@ -1627,7 +1625,7 @@ void ESP_Mail_Client::imapErrorCB(IMAPSession *imap, PGM_P info, bool prependCRL
 
 int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_data &res, PGM_P tag, const char *key)
 {
-    int bufLen  = res.chunkBufSize;
+    int bufLen = res.chunkBufSize;
     int ret = -1;
     char c = 0;
     int idx = 0;
@@ -4876,7 +4874,7 @@ bool IMAPSession::id(IMAP_Identification *identification)
     {
         int bufLen = 50;
         char *buf = MailClient.allocMem<char *>(bufLen);
-        snprintf(buf, bufLen, pgm2Str(esp_mail_str_100 /* "(\"name\" \"ESP Mail Client\" \"version\" \"%s\")" */), ESP_MAIL_VERSION);
+        snprintf(buf, bufLen, pgm2Str(esp_mail_str_21 /* "(\"name\" \"ESP Mail Client\" \"version\" \"%s\")" */), ESP_MAIL_VERSION);
         cmd += buf;
         // release memory
         MailClient.freeMem(&buf);

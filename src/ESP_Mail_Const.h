@@ -3126,8 +3126,6 @@ static const char esp_mail_error_auth_str_3[] PROGMEM = "not yet log in";
 
 #if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_session_str_1[] PROGMEM = "the Session_Config object was not assigned";
-static const char esp_mail_error_session_str_2[] PROGMEM = "the SMTPSession object was not assigned";
-static const char esp_mail_error_session_str_3[] PROGMEM = "the IMAPSession object was not assigned";
 #endif
 
 /////////////////////////
@@ -3148,6 +3146,8 @@ static const char esp_mail_error_smtp_str_5[] PROGMEM = "send body failed";
 static const char esp_mail_error_smtp_str_7[] PROGMEM = "sender Email address is not valid";
 static const char esp_mail_error_smtp_str_8[] PROGMEM = "some of the recipient Email address is not valid";
 static const char esp_mail_error_smtp_str_9[] PROGMEM = "set recipient failed";
+static const char esp_mail_error_smtp_str_10[] PROGMEM = "send custom command failed";
+static const char esp_mail_error_smtp_str_11[] PROGMEM = "undefined error";
 #endif
 #endif
 
@@ -3176,6 +3176,10 @@ static const char esp_mail_error_imap_str_13[] PROGMEM = "this feature was not s
 static const char esp_mail_error_imap_str_14[] PROGMEM = "no message changed since (assigned) modsec";
 static const char esp_mail_error_imap_str_15[] PROGMEM = "CONDSTORE was not supported or modsec was not supported for selected mailbox";
 static const char esp_mail_error_imap_str_17[] PROGMEM = "could not parse command";
+static const char esp_mail_error_imap_str_18[] PROGMEM = "server replied NO or BAD response";
+static const char esp_mail_error_imap_str_19[] PROGMEM = "authenticate failed";
+static const char esp_mail_error_imap_str_20[] PROGMEM = "flags or keywords store failed";
+static const char esp_mail_error_imap_str_21[] PROGMEM = "server is not support OAuth2 login";
 #endif
 #endif
 
@@ -3201,7 +3205,7 @@ static const char esp_mail_str_17[] PROGMEM = "cid:";
 static const char esp_mail_str_18[] PROGMEM = "\r\n";
 static const char esp_mail_str_19[] PROGMEM = "<";
 static const char esp_mail_str_20[] PROGMEM = ">";
-// static const char esp_mail_str_21[] PROGMEM = "";
+static const char esp_mail_str_21[] PROGMEM = "(\"name\" \"ESP Mail Client\" \"version\" \"%s\")";
 static const char esp_mail_str_22[] PROGMEM = "message/rfc822";
 static const char esp_mail_str_23[] PROGMEM = "upload";
 static const char esp_mail_str_24[] PROGMEM = "%";
@@ -3279,7 +3283,6 @@ static const char esp_mail_str_96[] PROGMEM = "Date/Time: %s";
 static const char esp_mail_str_97[] PROGMEM = "Recipient: %s";
 static const char esp_mail_str_98[] PROGMEM = "success";
 static const char esp_mail_str_99[] PROGMEM = "failed";
-static const char esp_mail_str_100[] PROGMEM = "(\"name\" \"ESP Mail Client\" \"version\" \"%s\")";
 
 #if defined(ENABLE_SMTP)
 static const char boundary_table[] PROGMEM = "=_abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
