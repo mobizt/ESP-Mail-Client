@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 15, 2023
+ * Created April 16, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -210,6 +210,13 @@ private:
     for (size_t i = 0; i < _permanent_flags.size(); i++)
       _permanent_flags[i].clear();
     _permanent_flags.clear();
+
+    _msgCount = 0;
+    _polling_status.argument.clear();
+    _polling_status.messageNum = 0;
+    _polling_status.type = imap_polling_status_type_undefined;
+    _idleTimeMs = 0;
+    _searchCount = 0;
   }
 
   size_t _msgCount = 0;
@@ -1527,7 +1534,7 @@ private:
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
 
   // Parse search response
-  int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_status &imapResp, char *buf, int bufLen, int &chunkIdx, PGM_P tag, bool &endSearch, int &nump, const char *key);
+  int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_data &res, PGM_P tag, const char *key);
 
   // Parse header state
   bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
@@ -1545,7 +1552,7 @@ private:
   void checkFirmwareFile(IMAPSession *imap, const char *filename, struct esp_mail_message_part_info_t &part, bool defaultSize = false);
 
   // Parse part header response
-  void parsePartHeaderResponse(IMAPSession *imap, const char *buf, int &chunkIdx, struct esp_mail_message_part_info_t &part, int &octetCount, bool caseSensitive = true);
+  void parsePartHeaderResponse(IMAPSession *imap, esp_mail_imap_response_data &res, bool caseSensitive = true);
 
   // Count char in string
   int countChar(const char *buf, char find);
@@ -1623,10 +1630,10 @@ private:
   void prepareFilePath(IMAPSession *imap, MB_String &filePath, bool header);
 
   // Decode text and store it to buffer or file
-  void decodeText(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetLength, int &readDataLen);
+  void decodeText(IMAPSession *imap, esp_mail_imap_response_data &res);
 
   // Handle atachment parsing and download
-  bool parseAttachmentResponse(IMAPSession *imap, char *buf, int bufLen, int &chunkIdx, MB_String &filePath, bool &downloadRequest, int &octetCount, int &octetLength);
+  bool parseAttachmentResponse(IMAPSession *imap, char *buf, esp_mail_imap_response_data &res);
 
   // Get List
   char *getList(char *buf, bool &isList);

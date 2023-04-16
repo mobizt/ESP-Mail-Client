@@ -1,4 +1,4 @@
-// Created April 15, 2022
+// Created April 16, 2022
 
 #pragma once
 
@@ -2532,6 +2532,8 @@ struct esp_mail_imap_multipart_level_t
 
 struct esp_mail_imap_response_data
 {
+public:
+    esp_mail_imap_response_data(int bufLen) { chunkBufSize = bufLen; };
     esp_mail_imap_response_status imapResp = esp_mail_imap_resp_unknown;
     char *response = nullptr;
     int readLen = 0;
