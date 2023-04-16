@@ -6751,34 +6751,50 @@ void IMAPSession::parseRights(MB_String &righs_str, IMAP_Rights_Info *info)
 {
     for (size_t i = 0; i < righs_str.length(); i++)
     {
-        char c = righs_str[i];
-
-        if (c == 'l')
+        switch (righs_str[i])
+        {
+        case 'l':
             info->rights.lookup = true;
-        else if (c == 'r')
+            break;
+        case 'r':
             info->rights.read = true;
-        else if (c == 's')
+            break;
+        case 's':
             info->rights.seen = true;
-        else if (c == 'w')
+            break;
+        case 'w':
             info->rights.write = true;
-        else if (c == 'i')
+            break;
+        case 'i':
             info->rights.insert = true;
-        else if (c == 'p')
+            break;
+        case 'p':
             info->rights.post = true;
-        else if (c == 'k')
+            break;
+        case 'k':
             info->rights.create = true;
-        else if (c == 'c')
+            break;
+        case 'c':
             info->rights.create_c = true;
-        else if (c == 'x')
+            break;
+        case 'x':
             info->rights.delete_mailbox = true;
-        else if (c == 't')
+            break;
+        case 't':
             info->rights.delete_messages = true;
-        else if (c == 'd')
+            break;
+        case 'd':
             info->rights.delete_d = true;
-        else if (c == 'e')
+            break;
+        case 'e':
             info->rights.expunge = true;
-        else if (c == 'a')
+            break;
+        case 'a':
             info->rights.administer = true;
+            break;
+        default:
+            break;
+        }
     }
 }
 
