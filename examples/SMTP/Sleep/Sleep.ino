@@ -100,8 +100,13 @@ void sendEmail()
     config.login.password = AUTHOR_PASSWORD;
     config.login.user_domain = F("mydomain.net");
 
-    /* Set the NTP config time */
-
+    /*
+    Set the NTP config time
+    For times east of the Prime Meridian use 0-12
+    For times west of the Prime Meridian add 12 to the offset.
+    Ex. American/Denver GMT would be -6. 6 + 12 = 18
+    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
+    */
     config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
     config.time.gmt_offset = 0;
     config.time.day_light_offset = 0;
