@@ -1210,7 +1210,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
 
-non_authenticated:
+unauthenticate:
 
     // capabilities may change after TLS negotiation
     if (!imap->checkCapabilities())
@@ -1253,7 +1253,7 @@ non_authenticated:
         imap->_secure = true;
 
         // check the capabilitiy again to prevent the man in the middle attack
-        goto non_authenticated;
+        goto unauthenticate;
     }
 
     imap->clearMessageData();
@@ -1775,12 +1775,12 @@ struct esp_mail_message_header_t *ESP_Mail_Client::cHeader(IMAPSession *imap)
     return nullptr;
 }
 
-bool ESP_Mail_Client::parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state)
+bool ESP_Mail_Client::parseHeaderField(IMAPSession *imap, const char *buf, PGM_P beginToken, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state)
 {
-    if (strcmpP(buf, 0, begin_PGM, caseSensitive))
+    if (strcmpP(buf, 0, beginToken, caseSensitive))
     {
         headerState = state;
-        char *tmp = subStr(buf, begin_PGM, NULL, 0, -1, caseSensitive);
+        char *tmp = subStr(buf, beginToken, NULL, 0, -1, caseSensitive);
         if (tmp)
         {
             collectHeaderField(imap, tmp, header, headerState);
@@ -1795,8 +1795,6 @@ bool ESP_Mail_Client::parseHeaderField(IMAPSession *imap, const char *buf, PGM_P
 
 void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_response_data &res, bool caseSensitive)
 {
-    // res.response, res.readLen, res.chunkIdx, res.header, res.headerState, res.octetCount
-
     char *tmp = nullptr;
     if (res.chunkIdx == 0)
     {
@@ -1920,9 +1918,9 @@ void ESP_Mail_Client::collectHeaderField(IMAPSession *imap, char *buf, struct es
     }
 }
 
-bool ESP_Mail_Client::getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive)
+bool ESP_Mail_Client::getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P beginToken, MB_String &out, bool caseSensitive)
 {
-    if (getHeader(buf, begin_PGM, out, caseSensitive))
+    if (getHeader(buf, beginToken, out, caseSensitive))
     {
         // decode header text
         decodeString(imap, out);

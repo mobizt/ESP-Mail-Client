@@ -845,18 +845,18 @@ int ESP_Mail_Client::strpos(const char *haystack, const char *needle, int offset
   return -1;
 }
 
-char *ESP_Mail_Client::subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, int beginPos, int endPos, bool caseSensitive)
+char *ESP_Mail_Client::subStr(const char *buf, PGM_P beginToken, PGM_P endToken, int beginPos, int endPos, bool caseSensitive)
 {
   char *tmp = nullptr;
-  if (begin_PGM)
+  if (beginToken)
   {
-    int p1 = strposP(buf, begin_PGM, beginPos, caseSensitive);
+    int p1 = strposP(buf, beginToken, beginPos, caseSensitive);
     if (p1 != -1)
     {
-      while (buf[p1 + strlen_P(begin_PGM)] == ' ' || buf[p1 + strlen_P(begin_PGM)] == '\r' || buf[p1 + strlen_P(begin_PGM)] == '\n')
+      while (buf[p1 + strlen_P(beginToken)] == ' ' || buf[p1 + strlen_P(beginToken)] == '\r' || buf[p1 + strlen_P(beginToken)] == '\n')
       {
         p1++;
-        if (strlen(buf) <= p1 + strlen_P(begin_PGM))
+        if (strlen(buf) <= p1 + strlen_P(beginToken))
         {
           p1--;
           break;
@@ -865,20 +865,20 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, i
 
       int p2 = -1;
       if (endPos == 0)
-        p2 = strposP(buf, end_PGM, p1 + strlen_P(begin_PGM), caseSensitive);
+        p2 = strposP(buf, endToken, p1 + strlen_P(beginToken), caseSensitive);
 
       if (p2 == -1)
         p2 = strlen(buf);
 
-      int len = p2 - p1 - strlen_P(begin_PGM);
-      int ofs = end_PGM ? strlen_P(end_PGM) : 1;
+      int len = p2 - p1 - strlen_P(beginToken);
+      int ofs = endToken ? strlen_P(endToken) : 1;
       tmp = allocMem<char *>(len + ofs);
-      memcpy(tmp, &buf[p1 + strlen_P(begin_PGM)], len);
+      memcpy(tmp, &buf[p1 + strlen_P(beginToken)], len);
     }
   }
   else
   {
-    int p1 = strposP(buf, end_PGM, beginPos);
+    int p1 = strposP(buf, endToken, beginPos);
     if (p1 != -1)
     {
       tmp = allocMem<char *>(p1);
@@ -889,11 +889,11 @@ char *ESP_Mail_Client::subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, i
   return tmp;
 }
 
-bool ESP_Mail_Client::getHeader(const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive)
+bool ESP_Mail_Client::getHeader(const char *buf, PGM_P beginToken, MB_String &out, bool caseSensitive)
 {
-  if (strcmpP(buf, 0, begin_PGM, caseSensitive))
+  if (strcmpP(buf, 0, beginToken, caseSensitive))
   {
-    char *tmp = subStr(buf, begin_PGM, NULL, 0, -1, caseSensitive);
+    char *tmp = subStr(buf, beginToken, NULL, 0, -1, caseSensitive);
     if (tmp)
     {
       out = tmp;
@@ -1353,7 +1353,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
 bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
 {
-  bool sessionReady = connected(sessionPtr, isSMTP);
+  bool _sessionReady = connected(sessionPtr, isSMTP);
 
   if (isSMTP)
   {
@@ -1361,10 +1361,10 @@ bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
     SMTPSession *smtp = (SMTPSession *)sessionPtr;
 
     // If network connection failure or tcp session closed, close session to clear resources.
-    if (!reconnect(smtp) || !sessionReady)
+    if (!reconnect(smtp) || !_sessionReady)
     {
       closeTCPSession((void *)smtp, false);
-      if (!sessionReady)
+      if (!_sessionReady)
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
       return false;
     }
@@ -1379,10 +1379,10 @@ bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
     IMAPSession *imap = (IMAPSession *)sessionPtr;
 
     // If network connection failure or tcp session closed, close session to clear resources.
-    if (!reconnect(imap) || !sessionReady)
+    if (!reconnect(imap) || !_sessionReady)
     {
       closeTCPSession((void *)imap, false);
-      if (!sessionReady)
+      if (!_sessionReady)
         errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
       return false;
     }
@@ -1722,29 +1722,29 @@ void ESP_Mail_Client::freeMem(void *ptr)
   mbfs->delP(ptr);
 }
 
-bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool caseSensitive)
+bool ESP_Mail_Client::strcmpP(const char *buf, int ofs, PGM_P beginToken, bool caseSensitive)
 {
   if (ofs < 0)
   {
-    int p = strposP(buf, begin_PGM, 0, caseSensitive);
+    int p = strposP(buf, beginToken, 0, caseSensitive);
     if (p == -1)
       return false;
     ofs = p;
   }
 
-  char *tmp2 = allocMem<char *>(strlen_P(begin_PGM) + 1);
-  memcpy(tmp2, &buf[ofs], strlen_P(begin_PGM));
-  tmp2[strlen_P(begin_PGM)] = 0;
-  MB_String s = begin_PGM;
+  char *tmp2 = allocMem<char *>(strlen_P(beginToken) + 1);
+  memcpy(tmp2, &buf[ofs], strlen_P(beginToken));
+  tmp2[strlen_P(beginToken)] = 0;
+  MB_String s = beginToken;
   bool ret = (strcasecmp(s.c_str(), tmp2) == 0);
   // release memory
   freeMem(&tmp2);
   return ret;
 }
 
-int ESP_Mail_Client::strposP(const char *buf, PGM_P begin_PGM, int ofs, bool caseSensitive)
+int ESP_Mail_Client::strposP(const char *buf, PGM_P beginToken, int ofs, bool caseSensitive)
 {
-  MB_String s = begin_PGM;
+  MB_String s = beginToken;
   return strpos(buf, s.c_str(), ofs, caseSensitive);
 }
 

@@ -1118,7 +1118,7 @@ private:
   MB_String mGetBase64(MB_StringPtr str);
 
   // Sub string
-  char *subStr(const char *buf, PGM_P begin_PGM, PGM_P end_PGM, int beginPos, int endPos = 0, bool caseSensitive = true);
+  char *subStr(const char *buf, PGM_P beginToken, PGM_P endToken, int beginPos, int endPos = 0, bool caseSensitive = true);
 
   // Find string
   int strpos(const char *haystack, const char *needle, int offset, bool caseSensitive = true);
@@ -1131,10 +1131,10 @@ private:
   void freeMem(void *ptr);
 
   // PGM string compare
-  bool strcmpP(const char *buf, int ofs, PGM_P begin_PGM, bool caseSensitive = true);
+  bool strcmpP(const char *buf, int ofs, PGM_P beginToken, bool caseSensitive = true);
 
   // Find PGM string
-  int strposP(const char *buf, PGM_P begin_PGM, int ofs, bool caseSensitive = true);
+  int strposP(const char *buf, PGM_P beginToken, int ofs, bool caseSensitive = true);
 
   // Memory allocation for PGM string
   char *strP(PGM_P pgm);
@@ -1163,7 +1163,7 @@ private:
   void printDebug(void *sessionPtr, bool isSMTP, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success);
 
   // Get header content from response based on the field name
-  bool getHeader(const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
+  bool getHeader(const char *buf, PGM_P beginToken, MB_String &out, bool caseSensitive);
 
   // Append header field to buffer
   void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
@@ -1537,7 +1537,7 @@ private:
   int parseSearchResponse(IMAPSession *imap, esp_mail_imap_response_data &res, PGM_P tag, const char *key);
 
   // Parse header state
-  bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P begin_PGM, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
+  bool parseHeaderField(IMAPSession *imap, const char *buf, PGM_P beginToken, bool caseSensitive, struct esp_mail_message_header_t &header, int &headerState, int state);
 
   // Parse header response
   void parseHeaderResponse(IMAPSession *imap, esp_mail_imap_response_data &res, bool caseSensitive = true);
@@ -1546,7 +1546,7 @@ private:
   void collectHeaderField(IMAPSession *imap, char *buf, struct esp_mail_message_header_t &header, int state);
 
   // Get decoded header
-  bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P begin_PGM, MB_String &out, bool caseSensitive);
+  bool getDecodedHeader(IMAPSession *imap, const char *buf, PGM_P beginToken, MB_String &out, bool caseSensitive);
 
   // Check attachment for firmware file
   void checkFirmwareFile(IMAPSession *imap, const char *filename, struct esp_mail_message_part_info_t &part, bool defaultSize = false);
