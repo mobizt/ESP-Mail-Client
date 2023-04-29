@@ -118,6 +118,14 @@ void setup()
     // If use this method with ESP8266 and ESP32, the device system time will be set automatically.
 
     // time_t ts = 1577836800;
+
+    /*
+    Set the NTP config time
+    For times east of the Prime Meridian use 0-12
+    For times west of the Prime Meridian add 12 to the offset.
+    Ex. American/Denver GMT would be -6. 6 + 12 = 18
+    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
+    */
     // float gmtOffset = 3.0; // GMT offset in hour
 
     // smtp.setSystemTime(ts, gmtOffset);
