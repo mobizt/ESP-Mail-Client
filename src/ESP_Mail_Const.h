@@ -2342,8 +2342,8 @@ struct esp_mail_imap_fetch_config_t
     /* Set the message flag as seen */
     bool set_seen = false;
 
-    /* The uint32_t option for CHANGESINCE conditional test. */
-    uint32_t modsequence = 0;
+    /* The int32_t option for CHANGESINCE conditional test. */
+    int32_t modsequence = 0;
 };
 
 struct esp_mail_imap_firmware_config_t

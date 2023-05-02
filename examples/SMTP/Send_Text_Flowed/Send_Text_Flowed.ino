@@ -111,7 +111,11 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
+
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
+#endif
+
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
@@ -296,7 +300,7 @@ void smtpCallback(SMTP_Status status)
             // your device time was synched with NTP server.
             // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
             // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
-            
+
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
             ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());

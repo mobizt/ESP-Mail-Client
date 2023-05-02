@@ -2959,7 +2959,7 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
         int codeLength = 3;
         int textLength = strlen(buf) - codeLength - 1;
 
-        if (strlen(buf) > codeLength && (buf[codeLength] == ' ' || buf[codeLength] == '-') && textLength > 0)
+        if ((int)strlen(buf) > codeLength && (buf[codeLength] == ' ' || buf[codeLength] == '-') && textLength > 0)
         {
             char *tmp = nullptr;
             tmp = allocMem<char *>(codeLength + 1);
@@ -2980,11 +2980,11 @@ void ESP_Mail_Client::getResponseStatus(const char *buf, esp_mail_smtp_status_co
             if (code == esp_mail_smtp_status_code_334 || code >= esp_mail_smtp_status_code_421)
             {
                 // find the next sp
-                while (i < strlen(buf) && buf[i] != ' ')
+                while (i < (int)strlen(buf) && buf[i] != ' ')
                     i++;
 
                 // if sp found, set index to the next pos, otherwise set index to num length + 1
-                i = (i < strlen(buf) - 1) ? i + 1 : codeLength + 1;
+                i = (i < (int)strlen(buf) - 1) ? i + 1 : codeLength + 1;
 
                 tmp = allocMem<char *>(textLength + 1);
                 memcpy(tmp, &buf[i], strlen(buf) - i - 1);

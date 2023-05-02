@@ -1763,14 +1763,14 @@ void ESP_Mail_Client::numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr)
 
 struct esp_mail_message_part_info_t *ESP_Mail_Client::cPart(IMAPSession *imap)
 {
-    if (cHeader(imap) && imap->_cPartIdx < cHeader(imap)->part_headers.size())
+    if (cHeader(imap) && imap->_cPartIdx < (int)cHeader(imap)->part_headers.size())
         return &cHeader(imap)->part_headers[imap->_cPartIdx];
     return nullptr;
 }
 
 struct esp_mail_message_header_t *ESP_Mail_Client::cHeader(IMAPSession *imap)
 {
-    if (cIdx(imap) < imap->_headers.size())
+    if (cIdx(imap) < (int)imap->_headers.size())
         return &imap->_headers[cIdx(imap)];
     return nullptr;
 }

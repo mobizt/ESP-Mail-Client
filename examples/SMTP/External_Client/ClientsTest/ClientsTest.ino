@@ -282,7 +282,11 @@ void networkConnection()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
+        
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
+#endif
+
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
