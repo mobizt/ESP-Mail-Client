@@ -128,7 +128,7 @@ void connectWiFi()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -217,6 +217,10 @@ void setup()
      * in case of lost internet connection for re-listening the mailbox.
      */
     config.network_connection_handler = connectWiFi;
+
+#if defined(ESP32)
+    imap.keepAlive(5, 5, 1);
+#endif
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
@@ -369,7 +373,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment status in search may be true in case the "multipart/mixed" 
+        // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
