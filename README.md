@@ -372,7 +372,7 @@ In ESP8266 and ESP32, when no attachments require for uploading and downloading,
 #define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
 ```
 
-In case you want to set your device/library time manually, you can exclude the internal NTP time synching by comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+In case you want to set your device/library time manually, you can exclude the internal NTP time reading by comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
 ```cpp
 #define ENABLE_NTP_TIME

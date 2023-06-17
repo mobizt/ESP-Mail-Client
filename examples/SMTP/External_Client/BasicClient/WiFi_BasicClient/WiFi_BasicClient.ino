@@ -125,7 +125,7 @@
  *
  *
  * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external
- * UDP client is required for internal NTP time synching.
+ * UDP client is required for internal NTP time reading.
  *
  * User can assign the UDP client via
  *
@@ -134,7 +134,7 @@
  * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
  * config.time.gmt_offset.
  *
- * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
+ * IN ESP8266 and ESP32, device time will be updated after reading fishished and can get via time(nullptr).
  *
  * In Raspberry Pi Pico and other Arduino devices, the device time is not available. The valid time can be obtained from
  *

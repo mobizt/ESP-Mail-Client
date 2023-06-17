@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 16, 2023
+ * Created June 17, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -912,7 +912,7 @@ public:
 
 #if defined(ENABLE_NTP_TIME)
 
-  /** Assign UDP client and gmt offset for NTP time synching when using external SSL client
+  /** Assign UDP client and gmt offset for NTP time reading when using external SSL client
    * @param client The pointer to UDP client based on the network type.
    * @param gmtOffset The GMT time offset.
    */
@@ -2210,6 +2210,27 @@ public:
    */
   void setSystemTime(time_t ts, float gmtOffset = 0);
 
+
+    /** Setup TCP KeepAlive for internal TCP client.
+   *
+   * @param tcpKeepIdleSeconds lwIP TCP Keepalive idle in seconds.
+   * @param tcpKeepIntervalSeconds lwIP TCP Keepalive interval in seconds.
+   * @param tcpKeepCount lwIP TCP Keepalive count.
+   *
+   * For the TCP (KeepAlive) options, see https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options.
+   *
+   * If value of one of these parameters is zero, the TCP KeepAlive will be disabled.
+   *
+   * You can check the server connecting status, by exexuting <IMAPSession>.connected() which will return true when connection to the server is still alive.
+   */
+  void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount);
+
+  /** Get TCP KeepAlive status.
+   *
+   * @return Boolean status of TCP KeepAlive.
+   */
+  bool isKeepAlive();
+
   friend class ESP_Mail_Client;
   friend class foldderList;
 
@@ -2376,7 +2397,6 @@ private:
   // Print features not supported debug error message
   void printDebugNotSupported();
 
-  bool _tcpConnected = false;
   bool _sessionSSL = false;
   bool _sessionLogin = false;
   bool _loginStatus = false;
@@ -2692,12 +2712,31 @@ public:
    */
   void setSystemTime(time_t ts, float gmtOffset = 0);
 
+  /** Setup TCP KeepAlive for internal TCP client.
+   *
+   * @param tcpKeepIdleSeconds lwIP TCP Keepalive idle in seconds.
+   * @param tcpKeepIntervalSeconds lwIP TCP Keepalive interval in seconds.
+   * @param tcpKeepCount lwIP TCP Keepalive count.
+   *
+   * For the TCP (KeepAlive) options, see https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options.
+   *
+   * If value of one of these parameters is zero, the TCP KeepAlive will be disabled.
+   *
+   * You can check the server connecting status, by exexuting <SMTPSession>.connected() which will return true when connection to the server is still alive.
+   */
+  void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount);
+
+  /** Get TCP KeepAlive status.
+   *
+   * @return Boolean status of TCP KeepAlive.
+   */
+  bool isKeepAlive();
+
   SendingResult sendingResult;
 
   friend class ESP_Mail_Client;
 
 private:
-  bool _tcpConnected = false;
   bool _sessionSSL = false;
   bool _sessionLogin = false;
   struct esp_mail_smtp_response_status_t _smtpStatus;

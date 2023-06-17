@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 16, 2023
+ * Created June 17, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -371,7 +371,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     imap->checkPath();
     imap->_cbData._success = false;
 
-    if (!imap->_tcpConnected)
+    if (!imap->connected())
         imap->_mailboxOpened = false;
 
     imap->_isFirmwareUpdated = false;
@@ -416,7 +416,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     }
 #endif
 
-    if (!imap->_tcpConnected && !imap->_loginStatus)
+    if (!imap->connected() && !imap->_loginStatus)
     {
 #if !defined(SILENT_MODE)
         if (imap->_debug && imap->_readCallback && !imap->_customCmdResCallback)
@@ -429,7 +429,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     }
 
     // new session
-    if (!imap->_tcpConnected)
+    if (!imap->connected())
     {
         // authenticate new
 
@@ -1519,7 +1519,7 @@ bool ESP_Mail_Client::mSetFlag(IMAPSession *imap, MB_StringPtr sequenceSet, MB_S
     if (!reconnect(imap))
         return false;
 
-    if (!imap->_tcpConnected)
+    if (!imap->connected())
     {
         imap->_mailboxOpened = false;
         return false;
@@ -2619,13 +2619,13 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
 
     if (!networkStatus)
     {
-        if (imap->_tcpConnected)
+        if (imap->connected())
             closeTCPSession((void *)imap, false);
 
         if (imap->_mbif._idleTimeMs > 0 || imap->_imap_cmd == esp_mail_imap_cmd_idle || imap->_imap_cmd == esp_mail_imap_cmd_done)
         {
             // defer the polling error report
-            if (millis() - imap->_last_polling_error_ms > 10000 && !imap->_tcpConnected)
+            if (millis() - imap->_last_polling_error_ms > 10000 && !imap->connected())
             {
                 imap->_last_polling_error_ms = millis();
                 errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
@@ -2642,7 +2642,7 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
                 cHeader(imap)->error_msg = imap->errorReason().c_str();
         }
 
-        if (millis() - _lastReconnectMillis > _reconnectTimeout && !imap->_tcpConnected)
+        if (millis() - _lastReconnectMillis > _reconnectTimeout && !imap->connected())
         {
             if (imap->_session_cfg->network_connection_handler)
             {
@@ -2726,7 +2726,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         return true;
     }
 
-    while (imap->_tcpConnected && res.chunkBufSize <= 0)
+    while (imap->connected() && res.chunkBufSize <= 0)
     {
 
         if (!reconnect(imap, res.dataTime))
@@ -4030,7 +4030,7 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
         }
     }
 
-    if (imap->_tcpConnected)
+    if (imap->connected())
         closeTCPSession((void *)imap, false);
 
     imap->_cbData.empty();
@@ -4694,7 +4694,7 @@ bool IMAPSession::closeSession()
     _prev_imap_cmd = esp_mail_imap_cmd_sasl_login;
     _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
 
-    if (!_tcpConnected)
+    if (!connected())
         return false;
 
     if (_mbif._idleTimeMs > 0)
@@ -4931,7 +4931,7 @@ bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *im
             return MailClient.handleIMAPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED, false);
     }
 
-    if (_tcpConnected)
+    if (connected())
         MailClient.closeTCPSession((void *)this, false);
 
     _session_cfg = session_config;
@@ -5006,7 +5006,6 @@ bool IMAPSession::connect(bool &ssl)
         return false;
 
     // server connected
-    _tcpConnected = true;
 
     client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
 
@@ -5088,7 +5087,7 @@ int IMAPSession::errorCode()
 
 bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
 {
-    if (_tcpConnected)
+    if (connected())
     {
         if (!openFolder(folderName, readOnly))
             return false;
@@ -5098,13 +5097,13 @@ bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
         _currentFolder = folderName;
     }
 
-    if (!_tcpConnected)
+    if (!connected())
     {
         _imapStatus.errorCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
         _imapStatus.clear();
     }
 
-    return _tcpConnected;
+    return connected();
 }
 
 void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)
@@ -5163,7 +5162,7 @@ void IMAPSession::setNetworkStatus(bool status)
 
 bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
 {
-    if (!_tcpConnected)
+    if (!connected())
     {
         _imapStatus.errorCode = IMAP_STATUS_OPEN_MAILBOX_FAILED;
         _imapStatus.clear();
@@ -5178,7 +5177,7 @@ bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
 
 bool IMAPSession::getFolders(FoldersCollection &folders)
 {
-    if (!_tcpConnected)
+    if (!connected())
         return false;
     return getMailboxes(folders);
 }
@@ -5219,7 +5218,7 @@ bool IMAPSession::mListen(bool recon)
     if (!MailClient.reconnect(this))
         return false;
 
-    if (!_tcpConnected)
+    if (!connected())
     {
         if (!_imap_data || (millis() - _last_server_connect_ms < 2000 && _last_server_connect_ms > 0))
             return false;
@@ -5330,7 +5329,7 @@ bool IMAPSession::mListen(bool recon)
         if (host_check_interval < 30 * 1000 || host_check_interval > imap_idle_tmo)
             host_check_interval = 60 * 1000;
 
-        if (millis() - _last_host_check_ms > host_check_interval && _tcpConnected)
+        if (millis() - _last_host_check_ms > host_check_interval && connected())
         {
             _last_host_check_ms = millis();
 
@@ -5360,7 +5359,7 @@ bool IMAPSession::mStopListen(bool recon)
     _mbif._polling_status.argument.clear();
     _mbif._recentCount = 0;
 
-    if (!_tcpConnected || _currentFolder.length() == 0 || !_read_capability[esp_mail_imap_read_capability_idle])
+    if (!connected() || _currentFolder.length() == 0 || !_read_capability[esp_mail_imap_read_capability_idle])
         return false;
 
     if (MailClient.imapSend(this, imap_commands[esp_mail_imap_command_done].text, true) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
@@ -5507,6 +5506,22 @@ void IMAPSession::setSystemTime(time_t ts, float gmtOffset)
 {
     MailClient.Time.TZ = gmtOffset;
     MailClient.Time.setTimestamp(ts);
+}
+
+void IMAPSession::keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount)
+{
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    this->client.keepAlive(tcpKeepIdleSeconds, tcpKeepIntervalSeconds, tcpKeepCount);
+#endif
+}
+
+bool IMAPSession::isKeepAlive()
+{
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    return this->client.isKeepAlive();
+#else
+    return false;
+#endif
 }
 
 void IMAPSession::getMessages(uint16_t messageIndex, struct esp_mail_imap_msg_item_t &msg)

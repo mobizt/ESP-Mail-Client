@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.10
+ * ESP32 TCP Client Library v2.0.12
  *
- * Created March 28, 2023
+ * Created June 17, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -323,6 +323,16 @@ public:
   }
 
   void disconnect(){};
+
+#if !defined(ENABLE_CUSTOM_CLIENT)
+
+  void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount)
+  {
+    wcs->keepAlive(tcpKeepIdleSeconds, tcpKeepIntervalSeconds, tcpKeepIntervalSeconds);
+  };
+
+  bool isKeepAlive() { return wcs->isKeepAlive; };
+#endif
 
 #if defined(ENABLE_CUSTOM_CLIENT)
   /**

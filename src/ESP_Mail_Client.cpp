@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 16, 2023
+ * Created June 17, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -631,7 +631,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
     if (!Time.initUDP())
     {
 #if !defined(SILENT_MODE)
-      esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time synching based on your network type" */, esp_mail_debug_tag_type_warning, true);
+      esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time reading based on your network type" */, esp_mail_debug_tag_type_warning, true);
       esp_mail_debug_print_tag(esp_mail_error_client_str_10 /* "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client" */, esp_mail_debug_tag_type_warning, true);
 #endif
     }
@@ -1317,7 +1317,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
       if (debug && !isCb)
-        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time synching" */, esp_mail_debug_tag_type_client, true);
+        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time reading" */, esp_mail_debug_tag_type_client, true);
 #endif
       setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
@@ -1490,7 +1490,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     ret = esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
   case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
-    ret = esp_mail_error_network_str_1; /* "NTP server time synching timed out" */
+    ret = esp_mail_error_network_str_1; /* "NTP server time reading timed out" */
     break;
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
     ret = esp_mail_error_session_str_1; /* "the Session_Config object was not assigned" */
@@ -1654,13 +1654,12 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
   {
 #if defined(ENABLE_SMTP)
 
-    if (((SMTPSession *)sessionPtr)->_tcpConnected)
+    if (((SMTPSession *)sessionPtr)->connected())
     {
       ((SMTPSession *)sessionPtr)->client.stop();
       _lastReconnectMillis = millis();
     }
 
-    ((SMTPSession *)sessionPtr)->_tcpConnected = false;
     memset(((SMTPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((SMTPSession *)sessionPtr)->_send_capability, 0, esp_mail_smtp_send_capability_maxType);
     ((SMTPSession *)sessionPtr)->_authenticated = false;
@@ -1672,13 +1671,12 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
   {
 #if defined(ENABLE_IMAP)
 
-    if (((IMAPSession *)sessionPtr)->_tcpConnected)
+    if (((IMAPSession *)sessionPtr)->connected())
     {
       ((IMAPSession *)sessionPtr)->client.stop();
       _lastReconnectMillis = millis();
     }
 
-    ((IMAPSession *)sessionPtr)->_tcpConnected = false;
     memset(((IMAPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((IMAPSession *)sessionPtr)->_read_capability, 0, esp_mail_imap_read_capability_maxType);
     ((IMAPSession *)sessionPtr)->_authenticated = false;

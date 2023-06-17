@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created April 15, 2023
+ * Created June 17, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -431,7 +431,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     smtp->_chunkedEnable = false;
     smtp->_chunkCount = 0;
 
-    if (!smtp->_tcpConnected && !smtp->_loginStatus)
+    if (!smtp->connected() && !smtp->_loginStatus)
     {
 #if !defined(SILENT_MODE)
         if (smtp->_debug && smtp->_sendCallback && !smtp->_customCmdResCallback)
@@ -444,7 +444,7 @@ bool ESP_Mail_Client::mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool close
     }
 
     // new session
-    if (!smtp->_tcpConnected)
+    if (!smtp->connected())
     {
         bool ssl = false;
 
@@ -1811,13 +1811,13 @@ bool ESP_Mail_Client::handleSMTPError(SMTPSession *smtp, int err, bool ret)
 
     if (smtp)
     {
-        if (smtp->_tcpConnected)
+        if (smtp->connected())
             closeTCPSession((void *)smtp, true);
     }
     else if (imap && !calDataLen)
     {
 #if defined(ENABLE_IMAP)
-        if (imap->_tcpConnected)
+        if (imap->connected())
             closeTCPSession((void *)imap, false);
 #endif
     }
@@ -2762,7 +2762,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
     chunkBufSize = smtp->client.available();
 
-    while (smtp->_tcpConnected && chunkBufSize <= 0)
+    while (smtp->connected() && chunkBufSize <= 0)
     {
         if (!reconnect(smtp, dataTime))
             return false;
@@ -3014,12 +3014,12 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
 
     if (!networkStatus)
     {
-        if (smtp->_tcpConnected)
+        if (smtp->connected())
             closeTCPSession((void *)smtp, true);
 
         errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
 
-        if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->_tcpConnected)
+        if (millis() - _lastReconnectMillis > _reconnectTimeout && !smtp->connected())
         {
             if (smtp->_session_cfg->network_connection_handler)
             {
@@ -3404,7 +3404,7 @@ bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
             return MailClient.handleSMTPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED);
     }
 
-    if (_tcpConnected)
+    if (connected())
         MailClient.closeTCPSession((void *)this, true);
 
     _session_cfg = session_config;
@@ -3460,7 +3460,6 @@ bool SMTPSession::connect(bool &ssl)
         return false;
 
     // server connected
-    _tcpConnected = true;
 #if !defined(SILENT_MODE)
     if (!_customCmdResCallback)
     {
@@ -3607,7 +3606,7 @@ int SMTPSession::errorCode()
 bool SMTPSession::closeSession()
 {
 
-    if (!_tcpConnected)
+    if (!connected())
         return false;
 
     _cbData._sentSuccess = _sentSuccessCount;
@@ -3700,6 +3699,22 @@ void SMTPSession::setSystemTime(time_t ts, float gmtOffset)
 {
     MailClient.Time.TZ = gmtOffset;
     MailClient.Time.setTimestamp(ts);
+}
+
+void SMTPSession::keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount)
+{
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    this->client.keepAlive(tcpKeepIdleSeconds, tcpKeepIntervalSeconds, tcpKeepCount);
+#endif
+}
+
+bool SMTPSession::isKeepAlive()
+{
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    return this->client.isKeepAlive();
+#else
+    return false;
+#endif
 }
 
 void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)

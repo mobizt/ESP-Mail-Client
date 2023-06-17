@@ -538,6 +538,34 @@ bool closeSession();
 ```
 
 
+#### Setup TCP KeepAlive for internal TCP client.
+
+param **`tcpKeepIdleSeconds`** lwIP TCP Keepalive idle in seconds.
+
+param **`tcpKeepIntervalSeconds`** lwIP TCP Keepalive interval in seconds.
+
+param **`tcpKeepCount`** lwIP TCP Keepalive count.
+
+For the TCP (KeepAlive) options, see [this doc](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options).
+
+If value of one of these parameters is zero, the TCP KeepAlive will be disabled.
+
+You can check the server connecting status, by exexuting `<IMAPSession>.connected()` which will return true when connection to the server is still alive. 
+
+```cpp
+void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount);
+```
+
+
+
+#### Get TCP KeepAlive status.
+
+return **`Boolean`** status of TCP Keepalive.
+
+```cpp
+bool isKeepAlive();
+```
+
 
 
 #### Get TCP connection status.
@@ -1402,6 +1430,36 @@ bool isLoggedIn();
 
 ```cpp
 bool closeSession();
+```
+
+
+
+#### Setup TCP KeepAlive for internal TCP client.
+
+param **`tcpKeepIdleSeconds`** lwIP TCP Keepalive idle in seconds.
+
+param **`tcpKeepIntervalSeconds`** lwIP TCP Keepalive interval in seconds.
+
+param **`tcpKeepCount`** lwIP TCP Keepalive count.
+
+For the TCP (KeepAlive) options, see [this doc](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options).
+
+If value of one of these parameters is zero, the TCP KeepAlive will be disabled.
+
+You can check the server connecting status, by exexuting `<SMTPSession>.connected()` which will return true when connection to the server is still alive. 
+
+```cpp
+void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount);
+```
+
+
+
+#### Get TCP KeepAlive status.
+
+return **`Boolean`** status of TCP Keepalive.
+
+```cpp
+bool isKeepAlive();
 ```
 
 

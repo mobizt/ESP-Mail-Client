@@ -2892,7 +2892,7 @@ static const char esp_mail_dbg_str_17[] PROGMEM = "No ESMTP supported, send SMTP
 static const char esp_mail_dbg_str_18[] PROGMEM = "connecting to IMAP server";
 static const char esp_mail_dbg_str_19[] PROGMEM = "Host > ";
 static const char esp_mail_dbg_str_20[] PROGMEM = "Port > ";
-static const char esp_mail_dbg_str_21[] PROGMEM = "wait for NTP server time synching";
+static const char esp_mail_dbg_str_21[] PROGMEM = "Reading time from NTP server";
 static const char esp_mail_dbg_str_22[] PROGMEM = "perform SSL/TLS handshake";
 
 #if defined(ENABLE_IMAP)
@@ -3078,7 +3078,7 @@ static const char esp_mail_error_client_str_5[] PROGMEM = "client connection upg
 static const char esp_mail_error_client_str_6[] PROGMEM = "network connection callback is required";
 static const char esp_mail_error_client_str_7[] PROGMEM = "network connection status callback is required";
 static const char esp_mail_error_client_str_8[] PROGMEM = "client is not yet initialized";
-static const char esp_mail_error_client_str_9[] PROGMEM = "UDP client is required for NTP server time synching based on your network type";
+static const char esp_mail_error_client_str_9[] PROGMEM = "UDP client is required for NTP server time reading based on your network type";
 static const char esp_mail_error_client_str_10[] PROGMEM = "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client";
 static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Request Callback is now optional";
 #endif
@@ -3087,7 +3087,7 @@ static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Reque
 // Network error string
 
 #if defined(ENABLE_ERROR_STRING)
-static const char esp_mail_error_network_str_1[] PROGMEM = "NTP server time synching timed out";
+static const char esp_mail_error_network_str_1[] PROGMEM = "NTP server time reading timed out";
 static const char esp_mail_error_network_str_2[] PROGMEM = "unable to connect to server";
 static const char esp_mail_error_network_str_3[] PROGMEM = "session timed out";
 static const char esp_mail_error_network_str_4[] PROGMEM = "not connected";

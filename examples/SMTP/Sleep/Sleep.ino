@@ -198,7 +198,7 @@ void sendEmail()
 
     // Library will be trying to sync the time with NTP server if time is never sync or set.
     // This is 10 seconds blocking process.
-    // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
+    // If time reading was timed out, the error "NTP server time reading timed out" will show via debug and callback function.
     // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 

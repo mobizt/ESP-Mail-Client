@@ -99,7 +99,7 @@ void setup()
     // This method requires internet connection.
     // This method suites for ESP8266, ESP32, Raspberry Pi Pico (W)
 
-    Serial.print("Waiting for NTP server time synching");
+    Serial.print("Waiting for NTP server time reading");
 
     configTime(3, 0, "pool.ntp.org", "time.nist.gov");
 
@@ -135,10 +135,10 @@ void setup()
     // smtp.setSystemTime(ts, gmtOffset);
 
     // Note:
-    // If time setting faild when using method 1 and method 2, the library internal NTP time synching will
+    // If time setting faild when using method 1 and method 2, the library internal NTP time reading will
     // be started when valid time is required during server connection.
 
-    // To disable library internal NTP time synching, please comment or remove the following macro defined in src/ESP_Mail_FS.h
+    // To disable library internal NTP time reading, please comment or remove the following macro defined in src/ESP_Mail_FS.h
     // #define ENABLE_NTP_TIME
 
     MailClient.networkReconnect(true);

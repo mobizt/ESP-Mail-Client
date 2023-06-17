@@ -16,7 +16,7 @@
 /* 📌 Enable silent mode (no debug printing and callback) */
 // #define SILENT_MODE
 
-/* 📌 Enable the NTP server time synching */
+/* 📌 Enable the NTP server time reading */
 #define ENABLE_NTP_TIME
 
 /* 📌 Enable the error string from error reason */

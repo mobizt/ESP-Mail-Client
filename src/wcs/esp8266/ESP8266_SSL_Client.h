@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.3
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.4
  *
- * Created March 20, 2023
+ * Created June 17, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -331,6 +331,11 @@ namespace BearSSL
         }
 
 #endif
+
+        Client *getClient()
+        {
+            return base_client;
+        };
 
     protected:
         bool _connectSSL(const char *hostName);

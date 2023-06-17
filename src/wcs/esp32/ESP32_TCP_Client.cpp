@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.11
+ * ESP32 TCP Client Library v2.0.12
  *
- * Created April 15, 2023
+ * Created June 17, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -321,6 +321,24 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
     if (!wcs->connect(_host.c_str(), _port))
         return false;
 
+#endif
+
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    if (wcs->isKeepAliveSet())
+    {
+        if (wcs->tcpKeepIdleSeconds == 0 || wcs->tcpKeepIntervalSeconds == 0 || wcs->tcpKeepCount == 0)
+        {
+            wcs->tcpKeepIdleSeconds = 0;
+            wcs->tcpKeepIntervalSeconds = 0;
+            wcs->tcpKeepCount = 0;
+        }
+
+        bool success = wcs->setOption(TCP_KEEPIDLE, &wcs->tcpKeepIdleSeconds) > -1 &&
+                       wcs->setOption(TCP_KEEPINTVL, &wcs->tcpKeepIntervalSeconds) > -1 &&
+                       wcs->setOption(TCP_KEEPCNT, &wcs->tcpKeepCount) > -1;
+        if (!success)
+            wcs->isKeepAlive = false;
+    }
 #endif
 
     bool res = connected();

@@ -1,8 +1,8 @@
 /**
  *
- * ESP8266 TCP Client Library v2.0.12
+ * ESP8266 TCP Client Library v2.0.13
  *
- * Created April 15, 2023
+ * Created June 17, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -413,6 +413,20 @@ bool ESP8266_TCP_Client::connect(bool secured, bool verify)
 
 #endif
 
+// For TCP keepalive should work in ESP8266 core > 3.1.2.
+// https://github.com/esp8266/Arduino/pull/8940
+
+// Not currently supported by WiFiClientSecure in Arduino Pico core
+#if defined(ESP8266) && !defined(ENABLE_CUSTOM_CLIENT)
+  if (wcs->isKeepAliveSet())
+  {
+    if (wcs->tcpKeepIdleSeconds == 0 || wcs->tcpKeepIntervalSeconds == 0 || wcs->tcpKeepCount == 0)
+      reinterpret_cast<WiFiClient *>(wcs->getClient())->disableKeepAlive();
+    else
+      reinterpret_cast<WiFiClient *>(wcs->getClient())->keepAlive(wcs->tcpKeepIdleSeconds, wcs->tcpKeepIntervalSeconds, wcs->tcpKeepCount);
+  }
+#endif
+
   bool res = connected();
 
   if (!res)
@@ -453,7 +467,7 @@ bool ESP8266_TCP_Client::connectSSL(bool verify)
 void ESP8266_TCP_Client::stop()
 {
   _host.clear();
-   wcs->stop();
+  wcs->stop();
 }
 
 bool ESP8266_TCP_Client::connected()

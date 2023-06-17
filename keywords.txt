@@ -46,6 +46,8 @@ loginWithAccessToken    KEYWORD2
 isAuthenticated KEYWORD2
 isLoggedIn  KEYWORD2
 connected   KEYWORD2
+keepAlive   KEYWORD2
+isKeepAlive KEYWORD2
 customConnect   KEYWORD2
 closeSession    KEYWORD2
 debug   KEYWORD2

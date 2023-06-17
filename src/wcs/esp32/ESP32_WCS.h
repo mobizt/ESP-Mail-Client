@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.3
+ * ESP32 WiFi Client Secure v2.0.4
  *
- * Created March 20, 2023
+ * Created June 17, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -58,6 +58,7 @@
 #include "ESP32_SSL_Client.h"
 #include <WiFiClient.h>
 #include "./wcs/base/TCP_Client_Base.h"
+#include "lwip/sockets.h"
 
 typedef void (*DebugMsgCallback)(PGM_P msg, esp_mail_debug_tag_type type, bool newLine);
 
@@ -416,8 +417,14 @@ public:
 
 #endif
 
-private:
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    int setOption(int option, int *value)
+    {
+        return reinterpret_cast<WiFiClient *>(_ssl->client)->setSocketOption(IPPROTO_TCP, option, (const void *)value, sizeof(int));
+    }
+#endif
 
+private:
     MB_String _host;
     uint16_t _port;
     ssl_ctx *_ssl;
