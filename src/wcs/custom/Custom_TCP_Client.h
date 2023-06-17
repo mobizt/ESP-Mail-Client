@@ -1,7 +1,7 @@
 /**
- * The custom TCP Client Class v2.0.5
+ * The custom TCP Client Class v2.0.6
  *
- * Created March 12, 2023
+ * Created June 17, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -564,6 +564,10 @@ public:
     {
         return this->tls_required;
     }
+
+    void keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount){};
+
+    bool isKeepAlive() { return false; };
 
 private:
     MB_String _host;

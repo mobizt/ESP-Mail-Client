@@ -168,10 +168,20 @@ public:
         this->tcpKeepIdleSeconds = tcpKeepIdleSeconds;
         this->tcpKeepIntervalSeconds = tcpKeepIntervalSeconds;
         this->tcpKeepCount = tcpKeepCount;
-        isKeepAlive = tcpKeepIdleSeconds > 0 && tcpKeepIntervalSeconds > 0 && tcpKeepCount > 0;
+        _isKeepAlive = tcpKeepIdleSeconds > 0 && tcpKeepIntervalSeconds > 0 && tcpKeepCount > 0;
     }
 
     bool isKeepAliveSet() { return tcpKeepIdleSeconds > -1 && tcpKeepIntervalSeconds > -1 && tcpKeepCount > -1; };
+#endif
+
+#if !defined(ENABLE_CUSTOM_CLIENT)
+    // lwIP TCP Keepalive idle in seconds.
+    int tcpKeepIdleSeconds = -1;
+    // lwIP TCP Keepalive interval in seconds.
+    int tcpKeepIntervalSeconds = -1;
+    // lwIP TCP Keepalive count.
+    int tcpKeepCount = -1;
+    bool _isKeepAlive = false;
 #endif
 
 private:
@@ -196,15 +206,7 @@ protected:
     bool tls_required = false;
     bool tls_error = false;
     bool debugLevel = 0;
-#if !defined(ENABLE_CUSTOM_CLIENT)
-    // lwIP TCP Keepalive idle in seconds.
-    int tcpKeepIdleSeconds = -1;
-    // lwIP TCP Keepalive interval in seconds.
-    int tcpKeepIntervalSeconds = -1;
-    // lwIP TCP Keepalive count.
-    int tcpKeepCount = -1;
-    bool isKeepAlive = false;
-#endif
+
     esp_mail_cert_type certType = esp_mail_cert_type_undefined;
     esp_mail_external_client_type ext_client_type = esp_mail_external_client_type_basic;
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)

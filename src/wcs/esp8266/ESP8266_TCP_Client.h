@@ -329,7 +329,7 @@ public:
     wcs->keepAlive(tcpKeepIdleSeconds, tcpKeepIntervalSeconds, tcpKeepIntervalSeconds);
   };
 
-  bool isKeepAlive() { return wcs->isKeepAlive; };
+  bool isKeepAlive() { return wcs->_isKeepAlive; };
 #endif
 
 #if defined(ENABLE_CUSTOM_CLIENT)

@@ -337,7 +337,7 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
                        wcs->setOption(TCP_KEEPINTVL, &wcs->tcpKeepIntervalSeconds) > -1 &&
                        wcs->setOption(TCP_KEEPCNT, &wcs->tcpKeepCount) > -1;
         if (!success)
-            wcs->isKeepAlive = false;
+            wcs->_isKeepAlive = false;
     }
 #endif
 
