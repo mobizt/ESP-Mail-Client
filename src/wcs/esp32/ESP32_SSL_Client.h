@@ -36,7 +36,6 @@
 #include "ESP_Mail_FS.h"
 #if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 
-#include "./extras/MB_FS.h"
 #include "./wcs/base/TCP_Client_Base.h"
 
 #include "mbedtls/platform.h"

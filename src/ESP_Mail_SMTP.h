@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30110)
+#if !VALID_VERSION_CHECK(30111)
 #error "Mixed versions compilation."
 #endif
 
@@ -1454,10 +1454,7 @@ void ESP_Mail_Client::altSendStorageErrorCB(SMTPSession *smtp, int err)
             esp_mail_debug_print_tag(esp_mail_error_mem_str_3 /* "file does not exist or can't access" */, esp_mail_debug_tag_type_client, true);
 
         if (smtp->_debug)
-        {
-
             esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_error, true);
-        }
 #endif
     }
     else if (imap && !calDataLen)
@@ -1840,17 +1837,15 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
         if (msg->text.content_type.length() > 0)
         {
             appendHeaderField(header, message_headers[esp_mail_message_header_field_content_type].text, msg->text.content_type.c_str(), false, false);
+
             bool firstProp = true;
+
             if (msg->text.charSet.length() > 0)
-            {
                 appendHeaderProp(header, message_headers[esp_mail_message_header_field_charset].text, msg->text.charSet.c_str(), firstProp, true, true, false);
-                firstProp = false;
-            }
 
             if (msg->text.flowed)
             {
                 appendHeaderProp(header, message_headers[esp_mail_message_header_field_format].text, "flowed", firstProp, true, true, false);
-                firstProp = false;
                 appendHeaderProp(header, message_headers[esp_mail_message_header_field_delsp].text, "no", firstProp, true, true, false);
             }
 
@@ -1875,11 +1870,9 @@ bool ESP_Mail_Client::sendPartText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
         {
             appendHeaderField(header, message_headers[esp_mail_message_header_field_content_type].text, msg->html.content_type.c_str(), false, false);
             bool firstProp = true;
+
             if (msg->html.charSet.length() > 0)
-            {
                 appendHeaderProp(header, message_headers[esp_mail_message_header_field_charset].text, msg->html.charSet.c_str(), firstProp, true, true, false);
-                firstProp = false;
-            }
 
             if (msg->html.embed.enable)
             {
@@ -2572,14 +2565,18 @@ void ESP_Mail_Client::getAttachHeader(MB_String &header, const MB_String &bounda
     if (found != MB_String::npos)
         filename = filename.substr(found + 1);
 
-    appendHeaderProp(header, message_headers[esp_mail_message_header_field_name].text, filename.c_str(), true, false, true, true);
+    bool firstProp = true;
+
+    appendHeaderProp(header, message_headers[esp_mail_message_header_field_name].text, filename.c_str(), firstProp, false, true, true);
 
     if (isInline || (!isInline && !attach->_int.parallel))
     {
         appendHeaderName(header, message_headers[esp_mail_message_header_field_content_disposition].text);
         appendString(header, isInline ? esp_mail_content_disposition_type_t::inline_ : esp_mail_content_disposition_type_t::attachment, false, false);
-        appendHeaderProp(header, message_headers[esp_mail_message_header_field_filename].text, filename.c_str(), true, true, true, false);
-        appendHeaderProp(header, message_headers[esp_mail_message_header_field_size].text, MB_String((int)size).c_str(), false, true, false, true);
+
+        firstProp = true;
+        appendHeaderProp(header, message_headers[esp_mail_message_header_field_filename].text, filename.c_str(), firstProp, true, true, false);
+        appendHeaderProp(header, message_headers[esp_mail_message_header_field_size].text, MB_String((int)size).c_str(), firstProp, true, false, true);
     }
 
     if (isInline)

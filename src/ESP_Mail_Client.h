@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30110)
+#if !VALID_VERSION_CHECK(30111)
 #error "Mixed versions compilation."
 #endif
 
@@ -67,7 +67,9 @@
 #if defined(ESP32)
 
 #include <WiFi.h>
+#if !defined(ENABLE_CUSTOM_CLIENT)
 #include <ETH.h>
+#endif
 #define ESP_MAIL_MIN_MEM 70000
 
 #elif defined(ESP8266)
@@ -1175,7 +1177,7 @@ private:
   void appendLowerCaseString(MB_String &buf, PGM_P value, bool clear = false);
 
   // Append header field property to buffer
-  void appendHeaderProp(MB_String &buf, PGM_P prop, const char *value, bool firstProp, bool lowerCase, bool isString, bool newLine);
+  void appendHeaderProp(MB_String &buf, PGM_P prop, const char *value, bool &firstProp, bool lowerCase, bool isString, bool newLine);
 
   // Append quote string to buffer
   void appendString(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);

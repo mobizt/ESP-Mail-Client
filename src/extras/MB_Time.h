@@ -2,7 +2,7 @@
 #define MB_Time_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30110)
+#if !VALID_VERSION_CHECK(30111)
 #error "Mixed versions compilation."
 #endif
 
@@ -497,6 +497,7 @@ private:
     sys_ts = ctime == 0 ? time(nullptr) : ctime;
 #endif
 
+#if defined(ESP32) || defined(ESP8266)
     if (ctime == 0 && time(nullptr) > ESP_TIME_DEFAULT_TS)
     {
 #if defined(ESP32)
@@ -505,6 +506,7 @@ private:
       localtime_r(&sys_ts, &timeinfo);
 #endif
     }
+#endif
 
 #endif
 

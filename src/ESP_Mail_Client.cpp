@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30110)
+#if !VALID_VERSION_CHECK(30111)
 #error "Mixed versions compilation."
 #endif
 
@@ -935,7 +935,7 @@ void ESP_Mail_Client::appendLowerCaseString(MB_String &buf, PGM_P value, bool cl
   freeMem(&tmp);
 }
 
-void ESP_Mail_Client::appendHeaderProp(MB_String &buf, PGM_P prop, const char *value, bool firstProp, bool lowerCase, bool isString, bool newLine)
+void ESP_Mail_Client::appendHeaderProp(MB_String &buf, PGM_P prop, const char *value, bool &firstProp, bool lowerCase, bool isString, bool newLine)
 {
   if (firstProp)
     buf += esp_mail_str_35; /* ";" */
@@ -953,6 +953,8 @@ void ESP_Mail_Client::appendHeaderProp(MB_String &buf, PGM_P prop, const char *v
   buf += esp_mail_str_35;   /* ";" */
   if (newLine)
     appendNewline(buf);
+
+  firstProp = false;
 }
 
 void ESP_Mail_Client::appendString(MB_String &buf, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type)
@@ -1032,16 +1034,13 @@ void ESP_Mail_Client::appendEmbedMessage(MB_String &buf, esp_mail_message_body_t
   else
     filename = pgm;
 
-  appendHeaderProp(buf, message_headers[esp_mail_message_header_field_filename].text, filename.c_str(), true, true, true, true);
+  bool firstProp = true;
+  appendHeaderProp(buf, message_headers[esp_mail_message_header_field_filename].text, filename.c_str(), firstProp, true, true, true);
 
   if (body.embed.type == esp_mail_smtp_embed_message_type_inline)
   {
     appendHeaderName(buf, message_headers[esp_mail_message_header_field_content_location].text);
-    if (body.embed.filename.length() > 0)
-      appendString(buf, body.embed.filename.c_str(), false, true);
-    else
-      appendString(buf, pgm, false, true);
-
+    body.embed.filename.length() > 0 ? appendString(buf, body.embed.filename.c_str(), false, true) : appendString(buf, pgm, false, true);
     appendHeaderField(buf, message_headers[esp_mail_message_header_field_content_id].text, body._int.cid.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
   }
 }
@@ -1442,8 +1441,9 @@ void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *ses
 
 void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary)
 {
+  bool firstProp = true;
   appendHeaderField(buf, message_headers[esp_mail_message_header_field_content_type].text, multipart_types[type].text, false, false);
-  appendHeaderProp(buf, esp_mail_str_90 /* "boundary" */, boundary, true, false, true, true);
+  appendHeaderProp(buf, esp_mail_str_90 /* "boundary" */, boundary, firstProp, false, true, true);
   appendNewline(buf);
 }
 
@@ -1548,7 +1548,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
   case SMTP_STATUS_SEND_CUSTOM_COMMAND_FAILED:
     ret = esp_mail_error_smtp_str_10; /* "send custom command failed" */
     break;
-   case SMTP_STATUS_XOAUTH2_AUTH_FAILED:
+  case SMTP_STATUS_XOAUTH2_AUTH_FAILED:
     ret = esp_mail_error_smtp_str_11; /* "XOAuth2 authenticate failed" */
     break;
   case SMTP_STATUS_UNDEFINED:
