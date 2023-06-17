@@ -217,7 +217,11 @@ void setup()
      * in case of lost internet connection for re-listening the mailbox.
      */
     config.network_connection_handler = connectWiFi;
-
+    
+    // You can use TCP KeepAlive for more reliable of listen (idle) operation, please read this for detail.
+    // https://github.com/mobizt/ESP-Mail-Client#using-tcp-session-keepalive-in-esp8266-and-esp32
+    // You can use keepAlive in ESP8266 core version newer than v3.1.2.
+    // Or you can use git version (v3.1.2) https://github.com/esp8266/Arduino
 #if defined(ESP32)
     imap.keepAlive(5, 5, 1);
 #endif

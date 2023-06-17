@@ -397,6 +397,7 @@ In case you only want to exclude the error flash string from library, please com
 
 ### Using TCP session KeepAlive in ESP8266 and ESP32
 
+The server connection will be probed at some intervals to maintain connection.
 
 The TCP session KeepAlive can be enabled from executing `<SMTPSession>.keepAlive` or `<IMAPSession>.keepAlive` with providing TCP options as arguments, i.e.,
 
