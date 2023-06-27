@@ -187,9 +187,7 @@ void setup()
     config.ports_functions.list[1].port = 993;
     config.ports_functions.list[1].protocol = esp_mail_protocol_ssl;
 
-    /** Declare the IMAP_Data object used for user defined IMAP operating options
-     * and contains the IMAP operating result
-     */
+    /* Define the IMAP_Data object used for user defined IMAP operating options. */
     IMAP_Data imap_data;
 
     /* Connect to the server */
@@ -245,7 +243,11 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
     ESP_MAIL_PRINTF("UID Validity: %d\n", sFolder.uidValidity());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
-    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
+    if (sFolder.unseenIndex() > 0)
+        ESP_MAIL_PRINTF("First Unseen Message Number: %d\n", sFolder.unseenIndex());
+    else
+        ESP_MAIL_PRINTF("Unseen Messages: No\n");
+        
     if (sFolder.modSeqSupported())
         ESP_MAIL_PRINTF("Highest Modification Sequence: %d\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)

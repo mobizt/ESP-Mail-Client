@@ -852,11 +852,6 @@ void networkStatusRequestCallback()
     smtp.setNetworkStatus(WiFi.status() == WL_CONNECTED);
 }
 
-void networkConnection()
-{
-    // Code for network reset, disconnect and re-connect here.
-}
-
 void setup()
 {
 

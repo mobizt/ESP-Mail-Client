@@ -164,9 +164,7 @@ void setup()
     // This debug required for showing debug info from imap.connect
     imap.debug(1);
 
-    /** Declare the IMAP_Data object used for user defined IMAP operating options
-     * and contains the IMAP operating result
-     */
+    /* Define the IMAP_Data object used for user defined IMAP operating options. */
     IMAP_Data imap_data;
 
     /* Declare the Session_Config for user defined session credentials */

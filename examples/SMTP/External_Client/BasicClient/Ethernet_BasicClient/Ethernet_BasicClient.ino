@@ -280,8 +280,7 @@ void sendEmail()
 
     message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-    String textMsg = "This is simple plain text message";
-    message.text.content = "hiiiiii";
+    message.text.content = "This is simple plain text message";
 
     smtp.setClient(&basic_client, esp_mail_external_client_type_basic);
 
