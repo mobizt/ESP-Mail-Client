@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30111)
+#if !VALID_VERSION_CHECK(30112)
 #error "Mixed versions compilation."
 #endif
 
@@ -2536,6 +2536,15 @@ bool ESP_Mail_Client::sendMSG(SMTPSession *smtp, SMTP_Message *msg, const MB_Str
 
             if (!sendPartText(smtp, msg, esp_mail_msg_type_html, boundary.c_str()))
                 return false;
+
+            s.clear();
+            appendBoundaryString(s, boundary.c_str(), true, false);
+
+            if (!sendBDAT(smtp, msg, s.length(), false))
+                return false;
+
+            if (!altSendData(s, false, smtp, msg, true, false, esp_mail_smtp_cmd_undefined, esp_mail_smtp_status_code_0, SMTP_STATUS_UNDEFINED))
+                return false;
         }
     }
     return true;
@@ -3459,7 +3468,7 @@ bool SMTPSession::connect(bool &ssl)
     if (!MailClient.beginConnection(_session_cfg, (void *)(this), true, secureMode))
         return false;
 
-    // server connected
+        // server connected
 #if !defined(SILENT_MODE)
     if (!_customCmdResCallback)
     {

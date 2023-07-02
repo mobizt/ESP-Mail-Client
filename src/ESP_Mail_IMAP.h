@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30111)
+#if !VALID_VERSION_CHECK(30112)
 #error "Mixed versions compilation."
 #endif
 
@@ -2713,8 +2713,8 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     esp_mail_imap_response_data res(imap->client.available());
     imap->_lastProgress = -1;
 
-    // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and encoded/unencoded message
-    bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text;
+    // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and base64 encoded and binary messages
+    bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64 || cPart(imap)->xencoding == esp_mail_msg_xencoding_binary);
     crLF |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
 
     // custom cmd IDLE?, waiting incoming server response
@@ -4662,7 +4662,7 @@ void ESP_Mail_Client::sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_
 
 #if defined(MBFS_FLASH_FS) || defined(MBFS_SD_FS)
 #if !defined(SILENT_MODE)
-    if (imap->_debug)
+    if (imap->_debug && (storageType == esp_mail_file_storage_type_flash || storageType == esp_mail_file_storage_type_sd))
     {
         MB_String e;
         if (storageType == esp_mail_file_storage_type_flash)

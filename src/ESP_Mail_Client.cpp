@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30111)
+#if !VALID_VERSION_CHECK(30112)
 #error "Mixed versions compilation."
 #endif
 
@@ -1317,7 +1317,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
       if (debug && !isCb)
-        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "wait for NTP server time reading" */, esp_mail_debug_tag_type_client, true);
+        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, true);
 #endif
       setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
