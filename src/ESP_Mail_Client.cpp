@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30113)
+#if !VALID_VERSION_CHECK(30114)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 17, 2023
+ * Created July 7, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1654,11 +1654,8 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
   {
 #if defined(ENABLE_SMTP)
 
-    if (((SMTPSession *)sessionPtr)->connected())
-    {
-      ((SMTPSession *)sessionPtr)->client.stop();
-      _lastReconnectMillis = millis();
-    }
+    ((SMTPSession *)sessionPtr)->client.stop();
+    _lastReconnectMillis = millis();
 
     memset(((SMTPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((SMTPSession *)sessionPtr)->_send_capability, 0, esp_mail_smtp_send_capability_maxType);
@@ -1671,11 +1668,8 @@ void ESP_Mail_Client::closeTCPSession(void *sessionPtr, bool isSMTP)
   {
 #if defined(ENABLE_IMAP)
 
-    if (((IMAPSession *)sessionPtr)->connected())
-    {
-      ((IMAPSession *)sessionPtr)->client.stop();
-      _lastReconnectMillis = millis();
-    }
+    ((IMAPSession *)sessionPtr)->client.stop();
+    _lastReconnectMillis = millis();
 
     memset(((IMAPSession *)sessionPtr)->_auth_capability, 0, esp_mail_auth_capability_maxType);
     memset(((IMAPSession *)sessionPtr)->_read_capability, 0, esp_mail_imap_read_capability_maxType);
