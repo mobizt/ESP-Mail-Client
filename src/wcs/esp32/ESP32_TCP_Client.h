@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.12
+ * ESP32 TCP Client Library v2.0.13
  *
- * Created June 17, 2023
+ * Created July 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -98,6 +98,12 @@ public:
    * @return true for link up or false for link down.
    */
   bool ethLinkUp();
+
+  /**
+   * Checking for valid IP.
+   * @return true for valid.
+   */
+  bool validIP(IPAddress ip);
 
   /**
    * Ethernet DNS workaround.

@@ -1,8 +1,8 @@
 /**
  *
- * ESP8266 TCP Client Library v2.0.13
+ * ESP8266 TCP Client Library v2.0.14
  *
- * Created June 17, 2023
+ * Created July 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -198,6 +198,11 @@ ex:
   return ret;
 }
 
+bool ESP8266_TCP_Client::validIP(IPAddress ip)
+{
+    return strcmp(ip.toString().c_str(), "0.0.0.0") != 0;
+}
+
 void ESP8266_TCP_Client::ethDNSWorkAround()
 {
 
@@ -244,7 +249,7 @@ bool ESP8266_TCP_Client::networkReady()
 
   return networkStatus;
 #else
-  return WiFi.status() == WL_CONNECTED || ethLinkUp();
+  return (WiFi.status() == WL_CONNECTED && validIP(WiFi.localIP())) || ethLinkUp();
 #endif
 }
 

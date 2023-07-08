@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.12
+ * ESP32 TCP Client Library v2.0.13
  *
- * Created June 17, 2023
+ * Created July 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -152,12 +152,17 @@ void ESP32_TCP_Client::setInsecure()
 
 bool ESP32_TCP_Client::ethLinkUp()
 {
-    if (strcmp(ETH.localIP().toString().c_str(), "0.0.0.0") != 0)
+    if (validIP(ETH.localIP()))
     {
         ETH.linkUp();
         return true;
     }
     return false;
+}
+
+bool ESP32_TCP_Client::validIP(IPAddress ip)
+{
+    return strcmp(ip.toString().c_str(), "0.0.0.0") != 0;
 }
 
 void ESP32_TCP_Client::ethDNSWorkAround()
@@ -173,7 +178,7 @@ bool ESP32_TCP_Client::networkReady()
 
     return networkStatus;
 #else
-    return WiFi.status() == WL_CONNECTED || ethLinkUp();
+    return (WiFi.status() == WL_CONNECTED && validIP(WiFi.localIP())) || ethLinkUp();
 #endif
 }
 

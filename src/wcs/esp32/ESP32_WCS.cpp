@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.5
+ * ESP32 WiFi Client Secure v2.0.6
  *
- * Created July 4, 2023
+ * Created July 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -390,7 +390,7 @@ bool ESP32_WCS::connected()
 {
 
     if (!_ssl->client)
-        return 0;
+        return false;
 
     return _ssl->client->connected();
 }

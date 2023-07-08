@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.13
+ * The Network Upgradable ESP8266 Secure TCP Client Class, ESP8266_TCP_Client.h v2.0.14
  *
- * Created June 17, 2023
+ * Created July 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -95,6 +95,12 @@ public:
    * @return true for link up or false for link down.
    */
   bool ethLinkUp();
+
+  /**
+   * Checking for valid IP.
+   * @return true for valid.
+   */
+  bool validIP(IPAddress ip);
 
   /**
    * Ethernet DNS workaround.
