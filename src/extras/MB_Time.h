@@ -2,7 +2,7 @@
 #define MB_Time_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30116)
+#if !VALID_VERSION_CHECK(30200)
 #error "Mixed versions compilation."
 #endif
 

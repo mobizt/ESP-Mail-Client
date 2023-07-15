@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.6
+ * ESP32 WiFi Client Secure v2.0.7
  *
- * Created July 8, 2023
+ * Created July 15, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -120,6 +120,11 @@ bool ESP32_WCS::begin(const char *host, uint16_t port)
 
 void ESP32_WCS::stop()
 {
+    if (_closed)
+        return;
+
+    _closed = true;
+
     _host.clear();
 
     if (!_use_external_sslclient)
@@ -163,6 +168,8 @@ int ESP32_WCS::connect(IPAddress ip, uint16_t port, const char *CA_cert, const c
 int ESP32_WCS::_connect(const char *host, uint16_t port)
 {
     prepareBasicClient();
+
+    _closed = false;
 
     if (!_ssl->client)
         return -1;

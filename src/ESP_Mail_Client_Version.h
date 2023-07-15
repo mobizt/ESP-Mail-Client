@@ -3,8 +3,8 @@
 
 #ifndef ESP_MAIL_VERSION
 
-#define ESP_MAIL_VERSION "3.1.16"
-#define ESP_MAIL_VERSION_NUM 30116
+#define ESP_MAIL_VERSION "3.2.0"
+#define ESP_MAIL_VERSION_NUM 30200
 
 /* The inconsistent file version checking to prevent mixed versions compilation. */
 #define VALID_VERSION_CHECK(ver) (ver == ESP_MAIL_VERSION_NUM)

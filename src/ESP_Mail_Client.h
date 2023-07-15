@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30116)
+#if !VALID_VERSION_CHECK(30200)
 #error "Mixed versions compilation."
 #endif
 
@@ -2403,6 +2403,7 @@ private:
   unsigned long _last_polling_error_ms = 0;
   unsigned long _last_host_check_ms = 0;
   unsigned long _last_server_connect_ms = 0;
+  unsigned long _last_network_error_ms = 0;
   struct esp_mail_imap_response_status_t _imapStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;

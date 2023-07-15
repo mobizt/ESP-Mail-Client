@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30116)
+#if !VALID_VERSION_CHECK(30200)
 #error "Mixed versions compilation."
 #endif
 
@@ -1363,8 +1363,8 @@ bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
     if (!reconnect(smtp) || !_sessionReady)
     {
       closeTCPSession((void *)smtp, false);
-      if (!_sessionReady)
-        errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+      //if (!_sessionReady)
+      //  errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
       return false;
     }
 

@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30116)
+#if !VALID_VERSION_CHECK(30200)
 #error "Mixed versions compilation."
 #endif
 
@@ -658,7 +658,6 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         if (imap->_debug)
             esp_mail_debug_print_tag(esp_mail_dbg_str_37 /* "send IMAP command, FETCH" */, esp_mail_debug_tag_type_client, true);
 #endif
-
         MB_String cmd;
         appendHeadersFetchCommand(imap, cmd, i, true);
 
@@ -2630,14 +2629,17 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
                 errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
             }
         }
-        else
+        else if (millis() - imap->_last_network_error_ms > 1000)
+        {
+            imap->_last_network_error_ms = millis();
             errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+        }
 
         if (imap->_headers.size() > 0)
         {
-            if (downloadRequest)
+            if (cPart(imap) && downloadRequest)
                 cPart(imap)->download_error = imap->errorReason().c_str();
-            else
+            else if (cHeader(imap))
                 cHeader(imap)->error_msg = imap->errorReason().c_str();
         }
 
@@ -2737,7 +2739,11 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             if (imap->_imap_cmd == esp_mail_imap_cmd_logout) // suppress the error due to server closes the connection immediately in ESP32 core v2.0.4
                 return true;
 #endif
-            errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+            if (millis() - imap->_last_network_error_ms > 1000)
+            {
+                imap->_last_network_error_ms = millis();
+                errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+            }
 
             return false;
         }
@@ -2790,7 +2796,12 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         return true;
 #endif
 
-                    errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+                    if (millis() - imap->_last_network_error_ms > 1000)
+                    {
+                        imap->_last_network_error_ms = millis();
+                        errorStatusCB(imap, MAIL_CLIENT_ERROR_CONNECTION_CLOSED, true);
+                    }
+
                     return false;
                 }
                 return false;

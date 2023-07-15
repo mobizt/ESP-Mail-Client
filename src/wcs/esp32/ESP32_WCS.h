@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.6
+ * ESP32 WiFi Client Secure v2.0.7
  *
- * Created July 8, 2023
+ * Created July 15, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -435,6 +435,7 @@ private:
     bool _use_external_sslclient = false;
     bool _withCert = false;
     bool _withKey = false;
+    bool _closed = false;
 
     Client *_client = nullptr;
 
