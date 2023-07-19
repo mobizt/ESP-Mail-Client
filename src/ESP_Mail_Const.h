@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30200)
+#if !VALID_VERSION_CHECK(30201)
 #error "Mixed versions compilation."
 #endif
 
@@ -2540,6 +2540,8 @@ public:
     long dataTime = millis();
     int chunkBufSize = 512;
     int chunkIdx = 0;
+    bool isUntaggedResponse = false;
+    bool untaggedRespCompleted = false;
     bool completedResponse = false;
     bool endSearch = false;
     struct esp_mail_message_header_t header;

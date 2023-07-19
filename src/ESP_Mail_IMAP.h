@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30200)
+#if !VALID_VERSION_CHECK(30201)
 #error "Mixed versions compilation."
 #endif
 
@@ -1800,24 +1800,37 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_respo
         MB_String str;
         joinStringDot(str, 2, imap_commands[esp_mail_imap_command_header].text, imap_commands[esp_mail_imap_command_fields].text);
 
-        if (strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*' && res.response[strlen(res.response) - 1] == '}')
-            res.chunkIdx++;
+        // In some situation, server untagged response is not completed in single line,
+        // we will keep the isUntaggedResponse status to perform octet length checking from all subsesquence responses. 
+        if (!res.isUntaggedResponse && strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*')
+            res.isUntaggedResponse = true;
 
-        tmp = subStr(res.response, imap_responses[esp_mail_imap_response_untagged].text, imap_responses[esp_mail_imap_response_fetch].text, 0);
-        if (tmp)
+        // Octet length checking when isUntaggedResponse was set.
+        if (res.isUntaggedResponse && res.response[strlen(res.response) - 1] == '}')
+            res.untaggedRespCompleted = true;
+
+        if (res.isUntaggedResponse && res.header.message_no == 0)
         {
-            res.header.message_no = atoi(tmp);
-            // release memory
-            freeMem(&tmp);
+            tmp = subStr(res.response, imap_responses[esp_mail_imap_response_untagged].text, imap_responses[esp_mail_imap_response_fetch].text, 0);
+            if (tmp)
+            {
+                res.header.message_no = atoi(tmp);
+                // release memory
+                freeMem(&tmp);
+            }
         }
 
-        tmp = subStr(res.response, esp_mail_str_36 /* "{" */, esp_mail_str_37 /* "}" */, 0, 0, caseSensitive);
-        if (tmp)
+        if (res.isUntaggedResponse && res.untaggedRespCompleted)
         {
-            res.octetCount = 2;
-            res.header.header_data_len = atoi(tmp);
-            // release memory
-            freeMem(&tmp);
+            tmp = subStr(res.response, esp_mail_str_36 /* "{" */, esp_mail_str_37 /* "}" */, 0, 0, caseSensitive);
+            if (tmp)
+            {
+                res.octetCount = 2;
+                res.header.header_data_len = atoi(tmp);
+                // release memory
+                freeMem(&tmp);
+                res.chunkIdx++;
+            }
         }
     }
     else
@@ -5076,6 +5089,8 @@ void IMAPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+            level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;
         client.setDebugLevel(level);

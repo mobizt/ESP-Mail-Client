@@ -188,12 +188,12 @@ void setup()
     {
         imap_data.search.criteria.clear();
 
-         // Mark this message as read
+        // Mark this message as read
         MailClient.addFlag(&imap, msg_uid[i], F("\\Seen"), false /* Close session */, false /* Ignore response */);
 
         // Now Fech message by UID stored in msg_uid
         imap_data.fetch.uid = msg_uid[i];
-        
+
         MailClient.readMail(&imap, false /* keep session open for fetching message in opened mailbox later */);
     }
 
@@ -276,11 +276,15 @@ void printMessageData()
 
     ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
     ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-    ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
-    ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
+    // The attachment status in search may be true in case the "multipart/mixed"
+    // content type header was set with no real attachtment included.
     ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
+    ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
+
+    if (strlen(msg.flags))
+        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
     if (strlen(msg.acceptLang))
         ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
     if (strlen(msg.contentLang))

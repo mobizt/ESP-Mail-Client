@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30200)
+#if !VALID_VERSION_CHECK(30201)
 #error "Mixed versions compilation."
 #endif
 
@@ -3581,6 +3581,8 @@ void SMTPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+            level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;
         client.setDebugLevel(level);

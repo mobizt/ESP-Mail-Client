@@ -379,7 +379,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
         ESP_MAIL_PRINTF("First Unseen Message Number: %d\n", sFolder.unseenIndex());
     else
         ESP_MAIL_PRINTF("Unseen Messages: No\n");
-        
+
     if (sFolder.modSeqSupported())
         ESP_MAIL_PRINTF("Highest Modification Sequence: %d\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
@@ -413,12 +413,15 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         Serial.println("****************************");
         ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
         ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-        ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
 
-        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
-
+        // The attachment status in search may be true in case the "multipart/mixed"
+        // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
+        ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
+
+        if (strlen(msg.flags))
+            ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
         if (strlen(msg.acceptLang))
             ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
         if (strlen(msg.contentLang))
