@@ -1,4 +1,4 @@
-// Created April 16, 2022
+// Created July 20, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30201)
+#if !VALID_VERSION_CHECK(30202)
 #error "Mixed versions compilation."
 #endif
 
@@ -1109,6 +1109,8 @@ private:
 
 // The smtp auth capability with leading space.
 static esp_mail_smtp_auth_tokens smtp_auth_cap_pre_tokens(true);
+// The smtp auth capability with trailing space.
+static esp_mail_smtp_auth_tokens smtp_auth_cap_post_tokens(false);
 
 struct esp_mail_smtp_send_capability_t
 {

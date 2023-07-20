@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30201)
+#if !VALID_VERSION_CHECK(30202)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 14, 2023
+ * Created July 20, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -195,7 +195,7 @@ initial_stage:
                 return handleSMTPError(smtp, SMTP_STATUS_SERVER_OAUTH2_LOGIN_DISABLED, false);
 
             MB_String cmd = smtp_cmd_post_tokens[esp_mail_smtp_command_auth];
-            cmd += smtp_auth_cap_pre_tokens[esp_mail_auth_capability_xoauth2];
+            cmd += smtp_auth_cap_post_tokens[esp_mail_auth_capability_xoauth2];
 
             if (smtpSend(smtp, cmd.c_str(), false) == ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED)
                 return false;
@@ -2753,7 +2753,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     int readLen = 0;
     long dataTime = millis();
     int chunkBufSize = 0;
-    MB_String s, r;
+    MB_String s, r, err;
     int chunkIndex = 0;
     int count = 0;
     bool completedResponse = false;
@@ -2908,7 +2908,10 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                                     size_t olen = 0;
                                     char *decoded = (char *)decodeBase64((const unsigned char *)status.text.c_str(), status.text.length(), &olen);
                                     if (decoded && olen > 0)
+                                    {
                                         s.append(decoded, olen);
+                                        err = decoded;
+                                    }
 
                                     // release memory
                                     freeMem(&decoded);
@@ -2934,6 +2937,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     {
                         if (isOAuthError(response, readLen, chunkIndex, 4))
                         {
+                            smtp->_smtpStatus.text= err;
                             smtp->_smtpStatus.errorCode = SMTP_STATUS_XOAUTH2_AUTH_FAILED;
                             ret = false;
                         }
