@@ -542,7 +542,10 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
     appendHeaderName(buf2, rfc822_headers[esp_mail_rfc822_header_field_from].text);
 
     if (msg->sender.name.length() > 0)
+    {
         appendString(buf2, msg->sender.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
+        appendString(buf2, " ", false, false, esp_mail_string_mark_type_none);
+    }
 
     appendString(buf2, msg->sender.email.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
 
@@ -588,7 +591,10 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
             appendHeaderName(buf2, rfc822_headers[esp_mail_rfc822_header_field_to].text);
 
         if (msg->_rcp[i].name.length() > 0)
+        {
             appendString(buf2, msg->_rcp[i].name.c_str(), i > 0, false, esp_mail_string_mark_type_double_quote);
+            appendString(buf2, " ", false, false, esp_mail_string_mark_type_none);
+        }
 
         appendString(buf2, msg->_rcp[i].email.c_str(), i > 0, i == msg->_rcp.size() - 1, esp_mail_string_mark_type_angle_bracket);
 
