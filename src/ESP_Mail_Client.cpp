@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 7, 2023
+ * Created July 22, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -912,6 +912,24 @@ void ESP_Mail_Client::appendHeaderField(MB_String &buf, const char *name, PGM_P 
   appendString(buf, value, comma, newLine, type);
 }
 
+void ESP_Mail_Client::appendAddressHeaderField(MB_String &buf, esp_mail_address_info_t &source, esp_mail_rfc822_header_field_types type, bool header, bool comma, bool newLine)
+{
+  // Construct header field.
+  if (header)
+    appendHeaderName(buf, rfc822_headers[type].text);
+
+  if (type != esp_mail_rfc822_header_field_cc && type != esp_mail_rfc822_header_field_bcc &&
+      source.name.length() > 0)
+  {
+    appendString(buf, source.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
+    // Add white space after name for SMTP to fix iCloud Mail Service IMAP search compatibility issue #278
+    // This is not restricted by rfc2822.
+    appendSpace(buf);
+  }
+
+  appendString(buf, source.email.c_str(), comma, newLine, esp_mail_string_mark_type_angle_bracket);
+}
+
 void ESP_Mail_Client::appendHeaderName(MB_String &buf, const char *name, bool clear, bool lowercase, bool space)
 {
   if (clear)
@@ -1363,8 +1381,8 @@ bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
     if (!reconnect(smtp) || !_sessionReady)
     {
       closeTCPSession((void *)smtp, false);
-      //if (!_sessionReady)
-      //  errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
+      // if (!_sessionReady)
+      //   errorStatusCB(smtp, MAIL_CLIENT_ERROR_CONNECTION_CLOSED);
       return false;
     }
 

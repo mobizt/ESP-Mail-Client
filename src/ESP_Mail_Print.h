@@ -2,7 +2,7 @@
 #define ESP_MAIL_PRINT_H_
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 

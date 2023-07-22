@@ -1,4 +1,4 @@
-// Created July 20, 2023
+// Created July 22, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 
@@ -1473,23 +1473,6 @@ struct esp_mail_attachment_t
     struct esp_mail_attach_internal_t _int;
 };
 
-/* Used internally in SMTP to keep the recipient data */
-struct esp_mail_smtp_recipient_t
-{
-    /* The recipient's name */
-    MB_String name;
-
-    /* The recipient's Email address */
-    MB_String email;
-};
-
-/* Used internally in SMTP to keep the cc recipient data */
-struct esp_mail_smtp_recipient_address_t
-{
-    /* The recipient's Email address */
-    MB_String email;
-};
-
 /* The struct used as SMTP_Result */
 struct esp_mail_smtp_send_status_t
 {
@@ -1564,10 +1547,10 @@ typedef struct esp_mail_smtp_response_status_t
     MB_String text;
 } SMTP_Response;
 
-/* The sender/recipient info [SMTP_Message]*/
-struct esp_mail_email_info_t
+/* The email address info [SMTP_Message]*/
+struct esp_mail_address_info_t
 {
-    /* The name of Email author*/
+    /* The name of Email author/sender */
     MB_String name;
 
     /* The Email address */

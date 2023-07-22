@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 
@@ -345,7 +345,7 @@ bool ESP_Mail_Client::sendFetchCommand(IMAPSession *imap, int msgIndex, esp_mail
 
     if (allowPartialFetch)
     {
-        //  Apply partial fetch in case download was not able.
+        //  Apply partial fetch in case download was disabled.
         if (!imap->_storageReady && imap->_attDownload && cmdCase == esp_mail_imap_cmd_fetch_body_attachment)
             cmd += esp_mail_str_48; /* "<0.0>" */ // This case should not happen because the memory storage was previousely checked.
         else if ((!imap->_msgDownload && cmdCase == esp_mail_imap_cmd_fetch_body_text) || (imap->_msgDownload && !imap->_storageReady))
@@ -1801,7 +1801,7 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_respo
         joinStringDot(str, 2, imap_commands[esp_mail_imap_command_header].text, imap_commands[esp_mail_imap_command_fields].text);
 
         // In some situation, server untagged response is not completed in single line,
-        // we will keep the isUntaggedResponse status to perform octet length checking from all subsesquence responses. 
+        // we will keep the isUntaggedResponse status to perform octet length checking from all subsesquence responses.
         if (!res.isUntaggedResponse && strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*')
             res.isUntaggedResponse = true;
 
@@ -3823,10 +3823,12 @@ bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
 
 void ESP_Mail_Client::appendFetchString(MB_String &buf, bool uid)
 {
-    buf += imap_cmd_pre_tokens[esp_mail_imap_command_fetch];
-    prependSpace(buf, esp_mail_str_38 /* "(" */);
     if (uid)
+    {
+        buf += imap_cmd_pre_tokens[esp_mail_imap_command_fetch];
+        prependSpace(buf, esp_mail_str_38 /* "(" */);
         buf += imap_cmd_post_tokens[esp_mail_imap_command_uid];
+    }
     else
         joinStringSpace(buf, false, 2, imap_commands[esp_mail_imap_command_flags].text, esp_mail_str_38 /* "(" */);
 }
@@ -3838,7 +3840,6 @@ void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
 
     char *tmp = nullptr;
     int p1 = strposP(buf, find, 0);
-
     if (p1 != -1)
     {
         if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota_root ||

@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created June 20, 2023
+ * Created June 22, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -610,7 +610,7 @@ public:
   template <typename T1 = const char *, typename T2 = const char *>
   void addRecipient(T1 name, T2 email)
   {
-    struct esp_mail_smtp_recipient_t rcp;
+    struct esp_mail_address_info_t rcp;
     rcp.name = toStringPtr(name);
     rcp.email = toStringPtr(email);
     _rcp.push_back(rcp);
@@ -651,7 +651,10 @@ public:
   };
 
   /* The message author config */
-  struct esp_mail_email_info_t sender;
+  struct esp_mail_address_info_t author;
+
+  /* The message sender (agent or teansmitter) config */
+  struct esp_mail_address_info_t sender;
 
   /* The topic of message */
   MB_String subject;
@@ -675,7 +678,7 @@ public:
   struct esp_mail_smtp_enable_option_t enable;
 
   /* The message from config */
-  struct esp_mail_email_info_t from;
+  struct esp_mail_address_info_t from;
 
   /* The message identifier */
   MB_String messageID;
@@ -697,9 +700,9 @@ public:
 
 private:
   friend class ESP_Mail_Client;
-  MB_VECTOR<struct esp_mail_smtp_recipient_t> _rcp;
-  MB_VECTOR<struct esp_mail_smtp_recipient_address_t> _cc;
-  MB_VECTOR<struct esp_mail_smtp_recipient_address_t> _bcc;
+  MB_VECTOR<struct esp_mail_address_info_t> _rcp;
+  MB_VECTOR<struct esp_mail_address_info_t> _cc;
+  MB_VECTOR<struct esp_mail_address_info_t> _bcc;
   MB_VECTOR<MB_String> _hdr;
   MB_VECTOR<SMTP_Attachment> _att;
   MB_VECTOR<SMTP_Attachment> _parallel;
@@ -1169,6 +1172,9 @@ private:
 
   // Append header field to buffer
   void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
+
+  // Append SMTP address header field
+  void appendAddressHeaderField(MB_String &buf, esp_mail_address_info_t &source, esp_mail_rfc822_header_field_types type, bool header, bool comma, bool newLine);
 
   // Append header field name to buffer
   void appendHeaderName(MB_String &buf, const char *name, bool clear = false, bool lowercase = false, bool space = true);
@@ -2210,8 +2216,7 @@ public:
    */
   void setSystemTime(time_t ts, float gmtOffset = 0);
 
-
-    /** Setup TCP KeepAlive for internal TCP client.
+  /** Setup TCP KeepAlive for internal TCP client.
    *
    * @param tcpKeepIdleSeconds lwIP TCP Keepalive idle in seconds.
    * @param tcpKeepIntervalSeconds lwIP TCP Keepalive interval in seconds.

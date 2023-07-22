@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30202)
+#if !VALID_VERSION_CHECK(30203)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 20, 2023
+ * Created July 22, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -538,16 +538,16 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         }
     }
 
-    // Construct 'From' header field.
-    appendHeaderName(buf2, rfc822_headers[esp_mail_rfc822_header_field_from].text);
-
-    if (msg->sender.name.length() > 0)
+    // If author and transmitter (sender or agent) are not identical, send both 'From' and 'Sender' headers
+    if (msg->sender.email.length() > 0 && msg->author.email.length() > 0 &&
+        strcmp(msg->sender.email.c_str(), msg->author.email.c_str()) != 0)
     {
-        appendString(buf2, msg->sender.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
-        appendSpace(buf2);
+        appendAddressHeaderField(buf2, msg->author, esp_mail_rfc822_header_field_from, true, false, true);
+        appendAddressHeaderField(buf2, msg->sender, esp_mail_rfc822_header_field_sender, true, false, true);
     }
-
-    appendString(buf2, msg->sender.email.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
+    // If author and transmitter (agent) are identical, send only 'From' header
+    else if (msg->sender.email.length() > 0)
+        appendAddressHeaderField(buf2, msg->sender, esp_mail_rfc822_header_field_from, true, false, true);
 
     if (!imap && smtp)
     {
@@ -555,7 +555,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
         buf = smtp_cmd_post_tokens[esp_mail_smtp_command_mail];
         buf += smtp_commands[esp_mail_smtp_command_from].text;
 
-        appendString(buf, msg->sender.email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
+        appendString(buf, msg->author.email.length() ? msg->author.email.c_str() : msg->sender.email.c_str(), false, false, esp_mail_string_mark_type_angle_bracket);
 
         if (msg->text._int.xencoding == esp_mail_msg_xencoding_binary || msg->html._int.xencoding == esp_mail_msg_xencoding_binary)
         {
@@ -587,20 +587,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
     for (uint8_t i = 0; i < msg->_rcp.size(); i++)
     {
-        if (i == 0)
-            appendHeaderName(buf2, rfc822_headers[esp_mail_rfc822_header_field_to].text);
-
-        if (msg->_rcp[i].name.length() > 0)
-        {
-            appendString(buf2, msg->_rcp[i].name.c_str(), i > 0, false, esp_mail_string_mark_type_double_quote);
-            appendSpace(buf2);
-        }
-
-        appendString(buf2, msg->_rcp[i].email.c_str(), i > 0, i == msg->_rcp.size() - 1, esp_mail_string_mark_type_angle_bracket);
-
+        appendAddressHeaderField(buf2, msg->_rcp[i], esp_mail_rfc822_header_field_to, i == 0, i > 0, i == msg->_rcp.size() - 1);
         if (!imap && smtp)
         {
-
             // only address
             buf = smtp_cmd_post_tokens[esp_mail_smtp_command_rcpt];
             buf += smtp_commands[esp_mail_smtp_command_to].text;
@@ -648,11 +637,7 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
     // Construct 'Cc' header field.
     for (uint8_t i = 0; i < msg->_cc.size(); i++)
     {
-        if (i == 0)
-            appendHeaderName(buf2, rfc822_headers[esp_mail_rfc822_header_field_cc].text);
-
-        appendString(buf2, msg->_cc[i].email.c_str(), i > 0, i == msg->_cc.size() - 1, esp_mail_string_mark_type_angle_bracket);
-
+        appendAddressHeaderField(buf2, msg->_cc[i], esp_mail_rfc822_header_field_cc, i == 0, i > 0, i == msg->_cc.size() - 1);
         if (!imap)
         {
             // only address
@@ -994,26 +979,12 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
     }
 
     // Construct 'From' header field.
-
     if (msg->from.email.length() > 0)
-    {
-        appendHeaderName(buf, rfc822_headers[esp_mail_rfc822_header_field_from].text);
-
-        if (msg->from.name.length() > 0)
-            appendString(buf, msg->from.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
-
-        appendString(buf, msg->from.email.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
-    }
+        appendAddressHeaderField(buf, msg->from, esp_mail_rfc822_header_field_from, true, false, true);
 
     // Construct 'Sender' header field.
     if (msg->sender.email.length() > 0)
-    {
-        appendHeaderName(buf, rfc822_headers[esp_mail_rfc822_header_field_sender].text);
-        if (msg->sender.name.length() > 0)
-            appendString(buf, msg->sender.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
-
-        appendString(buf, msg->sender.email.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
-    }
+        appendAddressHeaderField(buf, msg->sender, esp_mail_rfc822_header_field_sender, true, false, true);
 
     if (msg->response.reply_to.length() > 0)
         appendHeaderField(buf, rfc822_headers[esp_mail_rfc822_header_field_reply_to].text, msg->response.reply_to.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
@@ -1022,31 +993,14 @@ void ESP_Mail_Client::getRFC822MsgEnvelope(SMTPSession *smtp, SMTP_Message *msg,
         appendHeaderField(buf, rfc822_headers[esp_mail_rfc822_header_field_return_path].text, msg->response.return_path.c_str(), false, true, esp_mail_string_mark_type_angle_bracket);
 
     // Construct 'To' header field.
-
     for (uint8_t i = 0; i < msg->_rcp.size(); i++)
-    {
-        if (i == 0)
-            appendHeaderName(buf, rfc822_headers[esp_mail_rfc822_header_field_to].text);
-
-        if (msg->_rcp[i].name.length() > 0)
-            appendString(buf, msg->_rcp[i].name.c_str(), i > 0, false, esp_mail_string_mark_type_double_quote);
-
-        appendString(buf, msg->_rcp[i].email.c_str(), i > 0, i == msg->_rcp.size() - 1, esp_mail_string_mark_type_angle_bracket);
-    }
+        appendAddressHeaderField(buf, msg->_rcp[i], esp_mail_rfc822_header_field_to, i == 0, i > 0, i == msg->_rcp.size() - 1);
 
     for (uint8_t i = 0; i < msg->_cc.size(); i++)
-    {
-        if (i == 0)
-            appendHeaderName(buf, rfc822_headers[esp_mail_rfc822_header_field_cc].text);
-        appendString(buf, msg->_cc[i].email.c_str(), i > 0, i == msg->_cc.size() - 1, esp_mail_string_mark_type_angle_bracket);
-    }
+        appendAddressHeaderField(buf, msg->_cc[i], esp_mail_rfc822_header_field_cc, i == 0, i > 0, i == msg->_cc.size() - 1);
 
     for (uint8_t i = 0; i < msg->_bcc.size(); i++)
-    {
-        if (i == 0)
-            appendHeaderName(buf, rfc822_headers[esp_mail_rfc822_header_field_bcc].text);
-        appendString(buf, msg->_bcc[i].email.c_str(), i > 0, i == msg->_bcc.size() - 1, esp_mail_string_mark_type_angle_bracket);
-    }
+        appendAddressHeaderField(buf, msg->_bcc[i], esp_mail_rfc822_header_field_bcc, i == 0, i > 0, i == msg->_bcc.size() - 1);
 
     if (msg->subject.length() > 0)
         appendHeaderField(buf, rfc822_headers[esp_mail_rfc822_header_field_subject].text, msg->subject.c_str(), false, true);
@@ -2943,7 +2897,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                     {
                         if (isOAuthError(response, readLen, chunkIndex, 4))
                         {
-                            smtp->_smtpStatus.text= err;
+                            smtp->_smtpStatus.text = err;
                             smtp->_smtpStatus.errorCode = SMTP_STATUS_XOAUTH2_AUTH_FAILED;
                             ret = false;
                         }
