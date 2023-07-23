@@ -1,4 +1,4 @@
-// Created July 22, 2023
+// Created July 23, 2023
 
 #pragma once
 
@@ -1238,6 +1238,9 @@ private:
 
 // The imap auth capability with leading space.
 static esp_mail_imap_read_tokens imap_read_cap_pre_tokens(true);
+
+// The imap auth capability with trailing space.
+static esp_mail_imap_read_tokens imap_read_cap_post_tokens(false);
 
 struct esp_mail_imap_identification_key_t
 {

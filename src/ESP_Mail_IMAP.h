@@ -3602,17 +3602,22 @@ bool ESP_Mail_Client::parseCapabilityResponse(IMAPSession *imap, const char *buf
 {
     if (chunkIdx == 0)
     {
-        if (strposP(buf, imap_responses[esp_mail_imap_response_capability_untagged].text, 0) > -1 || strposP(buf, imap_responses[esp_mail_imap_response_capability].text, 0) > -1)
+        MB_String res;
+        // We add white space to make post token checking to work in all capabilities.
+        // This will allow us to check "IDLE " and "ID " correctly.
+        appendSpace(res, false, buf);
+
+        if (strposP(res.c_str(), imap_responses[esp_mail_imap_response_capability_untagged].text, 0) > -1 || strposP(res.c_str(), imap_responses[esp_mail_imap_response_capability].text, 0) > -1)
         {
             for (int i = esp_mail_auth_capability_plain; i < esp_mail_auth_capability_maxType; i++)
             {
-                if (strposP(buf, imap_auth_cap_pre_tokens[i].c_str(), 0) > -1)
+                if (strposP(res.c_str(), imap_auth_cap_pre_tokens[i].c_str(), 0) > -1)
                     imap->_auth_capability[i] = true;
             }
 
             for (int i = esp_mail_imap_read_capability_imap4; i < esp_mail_imap_read_capability_maxType; i++)
             {
-                if (strposP(buf, imap_read_cap_pre_tokens[i].c_str(), 0) > -1)
+                if (strposP(res.c_str(), imap_read_cap_post_tokens[i].c_str(), 0) > -1)
                 {
                     imap->_read_capability[i] = true;
                     if (i == esp_mail_imap_read_capability_logindisable)
