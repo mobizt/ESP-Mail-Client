@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30203)
+#if !VALID_VERSION_CHECK(30204)
 #error "Mixed versions compilation."
 #endif
 
@@ -2166,8 +2166,8 @@ struct esp_mail_message_header_t
 
     MB_String content_type;
     MB_String content_transfer_encoding;
-    uint32_t message_uid;
-    uint32_t message_no;
+    uint32_t message_uid = 0;
+    uint32_t message_no = 0;
     MB_String boundary;
     MB_String accept_language;
     MB_String content_language;
