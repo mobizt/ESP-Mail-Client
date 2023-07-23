@@ -174,8 +174,8 @@
 
 // Use LittleFS instead of SPIFFS
 #include "LittleFS.h"
-#undef DEFAULT_FLASH_FS // remove Flash FS defined macro
-#define DEFAULT_FLASH_FS LittleFS
+#undef ESP_MAIL_DEFAULT_FLASH_FS // remove Flash FS defined macro
+#define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 
 // Use SD_MMC instead of SD
 #if defined(ESP32)
