@@ -232,7 +232,7 @@ void setup()
      */
     imap_data.storage.type = esp_mail_file_storage_type_flash;
 
-    /** Set to download heades, text and html messaeges,
+    /** Set to download headers, text and html messaeges,
      * attachments and inline images respectively.
      */
     imap_data.download.header = true;
