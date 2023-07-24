@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 23, 2023
+ * Created July 24, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -459,7 +459,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         else
             imap->_headerOnly = true;
     }
-
+   
     imap->_rfc822_part_count = 0;
     imap->_mbif._availableItems = 0;
     imap->_imap_msg_num.clear();
@@ -628,6 +628,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
             }
         }
     }
+
+    if (imap->_imap_data->fetch.headerOnly)
+        imap->_headerOnly = true;
 
     for (size_t i = 0; i < imap->_imap_msg_num.size(); i++)
     {
@@ -2608,13 +2611,14 @@ bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool 
                 if (downloadRequest)
                 {
                     errorStatusCB(imap, IMAP_STATUS_ERROR_DOWNLAD_TIMEOUT, true);
-                    if (cHeader(imap)->part_headers.size() > 0)
+                    if (cPart(imap) && cHeader(imap)->part_headers.size() > 0)
                         cPart(imap)->download_error = imap->errorReason().c_str();
                 }
                 else
                 {
                     errorStatusCB(imap, MAIL_CLIENT_ERROR_READ_TIMEOUT, true);
-                    cHeader(imap)->error_msg = imap->errorReason().c_str();
+                    if (cHeader(imap))
+                        cHeader(imap)->error_msg = imap->errorReason().c_str();
                 }
             }
             else
@@ -4045,10 +4049,10 @@ bool ESP_Mail_Client::handleIMAPError(IMAPSession *imap, int err, bool ret)
         {
             if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline) && (imap->_imap_data->download.attachment || imap->_imap_data->download.inlineImg))
             {
-                if (cHeader(imap)->part_headers.size() > 0)
+                if (cPart(imap) && cHeader(imap)->part_headers.size() > 0)
                     cPart(imap)->download_error = imap->errorReason().c_str();
             }
-            else
+            else if (cHeader(imap))
                 cHeader(imap)->error_msg = imap->errorReason().c_str();
 
             cHeader(imap)->error = true;

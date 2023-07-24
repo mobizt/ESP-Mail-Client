@@ -311,6 +311,9 @@ void setup()
     // Note that modsequence value supports in this library is 32-bit integer
     imap_data.fetch.modsequence = 123;
 
+    // To fetch only header part
+    // imap_data.fetch.headerOnly = true;
+
     // or fetch via the message sequence number
     // imap_data.fetch.number = imap.selectedFolder().msgCount();
 

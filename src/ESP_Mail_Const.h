@@ -1,4 +1,4 @@
-// Created July 23, 2023
+// Created July 24, 2023
 
 #pragma once
 
@@ -2332,6 +2332,9 @@ struct esp_mail_imap_fetch_config_t
 
     /* The int32_t option for CHANGESINCE conditional test. */
     int32_t modsequence = 0;
+
+    /* The config to fetch only the header */
+    bool headerOnly = false;
 };
 
 struct esp_mail_imap_firmware_config_t
