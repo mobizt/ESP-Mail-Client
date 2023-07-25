@@ -3072,7 +3072,7 @@ static const char esp_mail_error_mem_str_8[] PROGMEM = "out of memory";
 static const char esp_mail_error_mem_str_9[] PROGMEM = "buffer overflow";
 
 #if defined(MB_ARDUINO_PICO)
-static const char esp_mail_error_mem_str_9[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
+static const char esp_mail_error_mem_str_10[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
 #endif
 
 #endif
