@@ -1803,12 +1803,11 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_respo
         MB_String str;
         joinStringDot(str, 2, imap_commands[esp_mail_imap_command_header].text, imap_commands[esp_mail_imap_command_fields].text);
 
-        // In some situation, server untagged response is not completed in single line,
-        // we will keep the isUntaggedResponse status to perform octet length checking from all subsesquence responses.
+       
         if (!res.isUntaggedResponse && strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*')
             res.isUntaggedResponse = true;
 
-        // Octet length checking when isUntaggedResponse was set.
+
         if (res.isUntaggedResponse && res.response[strlen(res.response) - 1] == '}')
             res.untaggedRespCompleted = true;
 
