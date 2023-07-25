@@ -1,7 +1,7 @@
 /*
- * TCP Client Base class, version 2.0.6
+ * TCP Client Base class, version 2.0.7
  *
- * Created June 17, 2023
+ * Created June 25, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -42,8 +42,6 @@
 #include <IPAddress.h>
 #include <Client.h>
 #include "./extras/MB_Time.h"
-
-#define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
 
 typedef enum
 {

@@ -139,6 +139,7 @@ sendCustomData  KEYWORD2
 toBase64    KEYWORD2
 getFlags    KEYWORD2
 getUID  KEYWORD2
+setTCPTimeout   KEYWORD2
 setClient   KEYWORD2
 connectionRequestCallback   KEYWORD2
 connectionUpgradeRequestCallback    KEYWORD2

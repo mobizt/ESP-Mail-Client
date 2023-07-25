@@ -3,14 +3,14 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 24, 2023
+ * Created July 25, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -390,7 +390,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
     if (!imap->_storageChecked)
     {
         imap->_storageChecked = true;
-        imap->_storageReady = imap->_msgDownload || imap->_attDownload ? mbfs->checkStorageReady(mbfs_type imap->_imap_data->storage.type) : true;
+        imap->_storageReady = imap->_imap_data->download.header || (!imap->_imap_data->fetch.headerOnly && (imap->_msgDownload || imap->_attDownload)) ? mbfs->checkStorageReady(mbfs_type imap->_imap_data->storage.type) : true;
     }
 
     bool readyToDownload = (imap->_msgDownload || imap->_attDownload) && imap->_storageReady;
@@ -459,7 +459,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         else
             imap->_headerOnly = true;
     }
-   
+
     imap->_rfc822_part_count = 0;
     imap->_mbif._availableItems = 0;
     imap->_imap_msg_num.clear();
@@ -2732,9 +2732,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     imap->_lastProgress = -1;
 
     // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and base64 encoded and binary messages
-    bool crLF = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64 || cPart(imap)->xencoding == esp_mail_msg_xencoding_binary);
-    crLF |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
-
+    bool withLineBreak = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64 || cPart(imap)->xencoding == esp_mail_msg_xencoding_binary);
+    withLineBreak |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
+    bool ovf = false;
     // custom cmd IDLE?, waiting incoming server response
     if (res.chunkBufSize == 0 && imap->_prev_imap_custom_cmd == imap->_imap_custom_cmd && imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
     {
@@ -2808,6 +2808,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 if (!connected((void *)imap, false))
                 {
 
+                    if (cPart(imap) && cPart(imap)->file_open_write)
+                        mbfs->close(mbfs_type imap->_imap_data->storage.type);
+
 #if defined(ESP32)
                     if (imap->_imap_cmd == esp_mail_imap_cmd_logout) // suppress the error due to server closes the connection immediately in ESP32 core v2.0.4
                         return true;
@@ -2854,7 +2857,24 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 {
                     // response read as chunk ended with CRLF or complete buffer size
                     int o = res.octetCount;
-                    res.readLen = readLine(&(imap->client), res.response, res.chunkBufSize, crLF, res.octetCount);
+                    res.readLen = 0;
+                    MB_String ovfBuf;
+                    if (!readResponse((void *)(imap), false, res.response, res.chunkBufSize, res.readLen, withLineBreak, res.octetCount, ovfBuf))
+                    {
+                        errorStatusCB(imap, MAIL_CLIENT_ERROR_READ_TIMEOUT, true);
+                        return false;
+                    }
+
+                    // If buffer overflown, copy from overflow buffer
+                    if (ovfBuf.length() > 0)
+                    {
+                        // release memory
+                        freeMem(&res.response);
+                        res.response = allocMem<char *>(ovfBuf.length() + 1);
+                        strcpy(res.response, ovfBuf.c_str());
+                        ovfBuf.clear();
+                    }
+
                     if (res.readLen == 0 && o != res.octetCount && res.octetCount <= res.octetLength && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64 && cPart(imap)->xencoding != esp_mail_msg_xencoding_binary && cPart(imap)->xencoding != esp_mail_msg_xencoding_qp)
                     {
                         strcpy_P(res.response, esp_mail_str_42 /* "\r\n" */);
@@ -2890,9 +2910,26 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                                 esp_mail_debug_print((const char *)res.response, true);
                         }
 
+                        MB_String ovfBuf;
+
                         while (imap->client.available())
                         {
-                            res.readLen = readLine(&(imap->client), res.response, res.chunkBufSize, true, res.octetCount);
+
+                            if (!readResponse((void *)(imap), false, res.response, res.chunkBufSize, res.readLen, true, res.octetCount, ovfBuf))
+                            {
+                                errorStatusCB(imap, MAIL_CLIENT_ERROR_READ_TIMEOUT, true);
+                                return false;
+                            }
+                            // If buffer overflown, copy from overflow buffer
+                            if (ovfBuf.length() > 0)
+                            {
+                                // release memory
+                                freeMem(&res.response);
+                                res.response = allocMem<char *>(ovfBuf.length() + 1);
+                                strcpy(res.response, ovfBuf.c_str());
+                                ovfBuf.clear();
+                            }
+
                             if (res.readLen)
                             {
                                 if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_basic && !imap->_customCmdResCallback)
@@ -2928,12 +2965,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                             imap->_customCmdResCallback(imap->_imapStatus);
 
                             if (res.completedResponse)
-                            {
-                                // release memory
-                                freeMem(&res.response);
-                                freeMem(&res.lastBuf);
                                 return true;
-                            }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_append)
                         {
@@ -3063,8 +3095,6 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 memset(res.response, 0, res.chunkBufSize);
             }
         }
-        // release memory
-        freeMem(&res.response);
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_search)
         {
@@ -3073,13 +3103,9 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                 searchReport(imap, 100);
             }
         }
-
-        if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment)
-            // release memory
-            freeMem(&res.lastBuf);
     }
 
-    if ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && res.header.header_data_len == 0) || res.imapResp == esp_mail_imap_resp_no)
+    if (res.imapResp != esp_mail_imap_resp_ok && ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && res.header.header_data_len == 0)) || res.imapResp == esp_mail_imap_resp_no)
     {
         // We don't get any response
 
@@ -3279,11 +3305,11 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text || imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_inline)
         {
-            if (cPart(imap)->file_open_write)
+            if (cPart(imap) && cPart(imap)->file_open_write)
                 mbfs->close(mbfs_type imap->_imap_data->storage.type);
         }
 
-        if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text)
+        if (cPart(imap) && imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text)
             cPart(imap)->text[cPart(imap)->textLen] = 0;
     }
     else
@@ -3738,7 +3764,20 @@ bool ESP_Mail_Client::parseIdleResponse(IMAPSession *imap)
 
         int octetCount = 0;
 
-        int readLen = MailClient.readLine(&(imap->client), buf, chunkBufSize, false, octetCount);
+        int readLen = 0;
+
+        MB_String ovfBuf;
+        readResponse((void *)(imap), false, buf, chunkBufSize, readLen, false, octetCount, ovfBuf);
+
+        // If buffer overflown, copy from overflow buffer
+        if (ovfBuf.length() > 0)
+        {
+            // release memory
+            freeMem(&buf);
+            buf = allocMem<char *>(ovfBuf.length() + 1);
+            strcpy(buf, ovfBuf.c_str());
+            ovfBuf.clear();
+        }
 
         if (readLen > 0)
         {
@@ -5039,7 +5078,7 @@ bool IMAPSession::connect(bool &ssl)
 
     // server connected
 
-    client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
+    client.setTimeout(tcpTimeout);
 
     // wait for greeting
     unsigned long dataMs = millis();
@@ -5138,6 +5177,11 @@ bool IMAPSession::mSelectFolder(MB_StringPtr folderName, bool readOnly)
     }
 
     return connected();
+}
+
+void IMAPSession::setTCPTimeout(unsigned long timeoutSec)
+{
+    tcpTimeout = timeoutSec;
 }
 
 void IMAPSession::setClient(Client *client, esp_mail_external_client_type type)

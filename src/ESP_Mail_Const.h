@@ -1,4 +1,4 @@
-// Created July 24, 2023
+// Created July 25, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
@@ -46,6 +46,8 @@
 #define ESP_MAIL_OTA_UPDATE_ENABLED
 #endif
 
+#define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
+
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
 #define MAX_EMAIL_SEARCH_LIMIT 1000
@@ -56,7 +58,7 @@
 #define ESP_MAIL_PROGRESS_REPORT_STEP 5
 #define ESP_MAIL_CLIENT_TRANSFER_DATA_FAILED 0
 #define ESP_MAIL_CLIENT_STREAM_CHUNK_SIZE 256
-#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 1024 // should be 1 k or more
+#define ESP_MAIL_CLIENT_RESPONSE_BUFFER_SIZE 1024 // should be 1 k or more to prevent buffer overflow
 #define ESP_MAIL_CLIENT_VALID_TS 1577836800
 
 #endif
@@ -2524,7 +2526,6 @@ struct esp_mail_imap_multipart_level_t
 struct esp_mail_imap_response_data
 {
 public:
-    esp_mail_imap_response_data(int bufLen) { chunkBufSize = bufLen; };
     esp_mail_imap_response_status imapResp = esp_mail_imap_resp_unknown;
     char *response = nullptr;
     int readLen = 0;
@@ -2546,6 +2547,22 @@ public:
     int searchCount = 0;
     char *lastBuf = nullptr;
     char *buf = nullptr;
+
+    esp_mail_imap_response_data(int bufLen) { chunkBufSize = bufLen; };
+    ~esp_mail_imap_response_data(){clear();}
+    void clear()
+    {
+        if (response)
+            free(response);
+        if (lastBuf)
+            free(lastBuf);
+        if (buf)
+            free(buf);
+
+        response = nullptr;
+        lastBuf = nullptr;
+        buf = nullptr;
+    }
 };
 
 #endif
@@ -3052,6 +3069,7 @@ static const char esp_mail_error_mem_str_7[] PROGMEM = "file I/O error";
 #endif
 
 static const char esp_mail_error_mem_str_8[] PROGMEM = "out of memory";
+static const char esp_mail_error_mem_str_9[] PROGMEM = "buffer overflow";
 
 #if defined(MB_ARDUINO_PICO)
 static const char esp_mail_error_mem_str_9[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
@@ -3082,7 +3100,7 @@ static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Reque
 #if defined(ENABLE_ERROR_STRING)
 static const char esp_mail_error_network_str_1[] PROGMEM = "NTP server time reading timed out";
 static const char esp_mail_error_network_str_2[] PROGMEM = "unable to connect to server";
-static const char esp_mail_error_network_str_3[] PROGMEM = "session timed out";
+static const char esp_mail_error_network_str_3[] PROGMEM = "response read timed out";
 static const char esp_mail_error_network_str_4[] PROGMEM = "not connected";
 static const char esp_mail_error_network_str_5[] PROGMEM = "connection timeout";
 static const char esp_mail_error_network_str_6[] PROGMEM = "connection closed";

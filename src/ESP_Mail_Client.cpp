@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 22, 2023
+ * Created July 25, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1090,15 +1090,26 @@ MB_String ESP_Mail_Client::mGetBase64(MB_StringPtr str)
   return encodeBase64Str((uint8_t *)(data.c_str()), data.length());
 }
 
-int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count)
+int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout)
 {
   int ret = -1;
   char c = 0;
   char _c = 0;
   int idx = 0;
+  ovf = idx >= bufLen;
+  bool lineBreak = false;
+  isTimeout = false;
 
-  while (client->connected() && client->available() && idx < bufLen)
+  unsigned long ms = millis();
+
+  // Instead of relying on data available, we looks for line break until timed out or disconnected or overflown occurred.
+  while (idx < bufLen && client->connected() && (!lineBreak || client->available() /* data may not available sometimes */))
   {
+    if (millis() - ms >= timeoutSec * 1000)
+    {
+      isTimeout = true;
+      break;
+    }
 
     idle();
 
@@ -1110,7 +1121,8 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
       count++;
       if (_c == '\r' && c == '\n')
       {
-        if (!crlf)
+        lineBreak = true;
+        if (!withLineBreak)
         {
           buf[idx - 2] = 0;
           idx -= 2;
@@ -1120,10 +1132,79 @@ int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen
       _c = c;
 
       if (idx >= bufLen - 1)
+      {
+        ovf = true;
         return idx;
+      }
     }
   }
   return idx;
+}
+
+bool ESP_Mail_Client::readResponse(void *sessionPtr, bool isSMTP, char *buf, int bufLen, int &readLen, bool withLineBreak, int &count, MB_String &ovfBuf)
+{
+  bool ovf = false, isTimeout = false;
+  unsigned long timeoutSec = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
+  ESP_MAIL_TCP_CLIENT *client = nullptr;
+  if (isSMTP)
+  {
+#if defined(ENABLE_SMTP)
+    client = &(((SMTPSession *)sessionPtr)->client);
+#endif
+  }
+  else
+  {
+#if defined(ENABLE_IMAP)
+    client = &(((IMAPSession *)sessionPtr)->client);
+#endif
+  }
+
+  if (!client)
+    return false;
+
+  do
+  {
+    timeoutSec = client->tcpTimeout();
+    int len = readLine(client, buf, bufLen, withLineBreak, count, ovf, timeoutSec, isTimeout);
+    readLen += len;
+    if (len > 0 && (ovf || ovfBuf.length() > 0))
+      ovfBuf += buf;
+
+  } while (ovf);
+
+  if (isTimeout)
+    return false;
+
+  if (ovfBuf.length() > 0)
+  {
+
+#if !defined(SILENT_MODE)
+
+    if (isSMTP)
+    {
+#if defined(ENABLE_SMTP)
+      SMTPSession *smtp = (SMTPSession *)sessionPtr;
+      smtp->_smtpStatus.errorCode = MAIL_CLIENT_ERROR_BUFFER_OVERFLOW;
+      smtp->_smtpStatus.text.clear();
+      if (smtp->_debug)
+        esp_mail_debug_print_tag(smtp->errorReason().c_str(), esp_mail_debug_tag_type_warning, true);
+#endif
+    }
+    else
+    {
+#if defined(ENABLE_IMAP)
+      IMAPSession *imap = (IMAPSession *)sessionPtr;
+      imap->_imapStatus.errorCode = MAIL_CLIENT_ERROR_BUFFER_OVERFLOW;
+      imap->_imapStatus.text.clear();
+      if (imap->_debug)
+        esp_mail_debug_print_tag(imap->errorReason().c_str(), esp_mail_debug_tag_type_warning, true);
+#endif
+    }
+
+#endif
+  }
+
+  return true;
 }
 
 bool ESP_Mail_Client::isResponseCB(void *cb, bool isSMTP)
@@ -1496,7 +1577,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     ret = esp_mail_error_network_str_6; /* "connection closed" */
     break;
   case MAIL_CLIENT_ERROR_READ_TIMEOUT:
-    ret = esp_mail_error_network_str_3; /* "session timed out" */
+    ret = esp_mail_error_network_str_3; /* "response read timed out" */
     break;
   case MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP:
     ret = esp_mail_error_ssl_str_1; /* "fail to set up the SSL/TLS structure" */
@@ -1518,6 +1599,9 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     break;
   case MAIL_CLIENT_ERROR_NOT_YET_LOGIN:
     ret = esp_mail_error_auth_str_3; /* "not yet log in" */
+    break;
+  case MAIL_CLIENT_ERROR_BUFFER_OVERFLOW:
+    ret = esp_mail_error_mem_str_9; /* "buffer overflow" */
     break;
 
 #if defined(ENABLE_SMTP)

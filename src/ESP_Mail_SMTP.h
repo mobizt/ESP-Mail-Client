@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 22, 2023
+ * Created July 25, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2716,6 +2716,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     MB_String s, r, err;
     int chunkIndex = 0;
     int count = 0;
+    bool ovf = false;
     bool completedResponse = false;
     smtp->_smtpStatus.errorCode = 0;
     smtp->_smtpStatus.statusCode = 0;
@@ -2776,7 +2777,23 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
 
             read_line:
 
-                readLen = readLine(&(smtp->client), response, chunkBufSize, false, count);
+                MB_String ovfBuf;
+                if (!readResponse((void *)(smtp), true, response, chunkBufSize, readLen, false, count, ovfBuf))
+                {
+                    closeTCPSession((void *)smtp, true);
+                    errorStatusCB(smtp, MAIL_CLIENT_ERROR_READ_TIMEOUT);
+                    return false;
+                }
+
+                // If buffer overflown, copy from overflow buffer
+                if (ovfBuf.length() > 0)
+                {
+                    // release memory
+                    freeMem(&response);
+                    response = allocMem<char *>(ovfBuf.length() + 1);
+                    strcpy(response, ovfBuf.c_str());
+                    ovfBuf.clear();
+                }
 
                 if (readLen)
                 {
@@ -3449,7 +3466,7 @@ bool SMTPSession::connect(bool &ssl)
     }
 #endif
 
-    client.setTimeout(TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC);
+    client.setTimeout(tcpTimeout);
 
     // expected success status code 220 for ready to service
     // expected failure status code 421
@@ -3692,6 +3709,11 @@ bool SMTPSession::isKeepAlive()
 #else
     return false;
 #endif
+}
+
+void SMTPSession::setTCPTimeout(unsigned long timeoutSec)
+{
+    tcpTimeout = timeoutSec;
 }
 
 void SMTPSession::setClient(Client *client, esp_mail_external_client_type type)

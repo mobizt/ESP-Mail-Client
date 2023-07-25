@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 24, 2023
+ * Created July 25, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1055,7 +1055,10 @@ private:
   void resumeNetwork(ESP_MAIL_TCP_CLIENT *client);
 
   // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
-  int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool crlf, int &count);
+  int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout);
+
+  // readLine with overflow handling.
+  bool readResponse(void *sessionPtr, bool isSMTP, char *buf, int bufLen, int &readLen, bool withLineBreak, int &count, MB_String &ovfBuf);
 
   // PGM string replacement
   void strReplaceP(MB_String &buf, PGM_P key, PGM_P value);
@@ -1687,6 +1690,12 @@ public:
   IMAPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
   IMAPSession();
   ~IMAPSession();
+
+  /** Set the tcp timeout.
+   *
+   * @param timeoutSec The tcp timeout in seconds.
+   */
+  void setTCPTimeout(unsigned long timeoutSec);
 
   /** Assign custom Client from Arduino Clients.
    *
@@ -2409,6 +2418,7 @@ private:
   unsigned long _last_host_check_ms = 0;
   unsigned long _last_server_connect_ms = 0;
   unsigned long _last_network_error_ms = 0;
+  unsigned long tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
   struct esp_mail_imap_response_status_t _imapStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
@@ -2523,6 +2533,12 @@ public:
   SMTPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
   SMTPSession();
   ~SMTPSession();
+
+   /** Set the tcp timeout.
+   *
+   * @param timeoutSec The tcp timeout in seconds.
+   */
+  void setTCPTimeout(unsigned long timeoutSec);
 
   /** Assign custom Client from Arduino Clients.
    *
@@ -2752,6 +2768,7 @@ private:
   bool _chunkedEnable = false;
   int _chunkCount = 0;
   uint32_t ts = 0;
+  unsigned long tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
 
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
 

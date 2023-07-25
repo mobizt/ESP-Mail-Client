@@ -366,6 +366,18 @@ This class used for controlling IMAP transports and retrieving the data from the
 
 
 
+
+#### Set the tcp timeout.
+
+param **`timeoutSec`** The tcp timeout in seconds.
+
+```cpp
+void setTCPTimeout(unsigned long timeoutSec);
+```
+
+
+
+
 #### Assign custom Client from Arduino Clients.
 
 param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
@@ -1290,6 +1302,17 @@ The following functions are available from the SMTP Session class.
 
 This class is similar to the IMAP session class, used for controlling SMTP transports 
 and retrieving the data from the SMTP server.
+
+
+
+
+#### Set the tcp timeout.
+
+param **`timeoutSec`** The tcp timeout in seconds.
+
+```cpp
+void setTCPTimeout(unsigned long timeoutSec);
+```
 
 
 

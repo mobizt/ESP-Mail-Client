@@ -1,5 +1,5 @@
 /**
- * Created April 16, 2023
+ * Created July 25, 2023
  */
 #pragma once
 
@@ -7,7 +7,7 @@
 #define ESP_MAIL_ERROR_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30204)
+#if !VALID_VERSION_CHECK(30205)
 #error "Mixed versions compilation."
 #endif
 
@@ -80,6 +80,7 @@
 #define MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED -406
 #define MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET -407
 #define MAIL_CLIENT_ERROR_NOT_YET_LOGIN -408
+#define MAIL_CLIENT_ERROR_BUFFER_OVERFLOW -409
 
 #endif
 
