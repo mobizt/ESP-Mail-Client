@@ -664,6 +664,9 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         MB_String cmd;
         appendHeadersFetchCommand(imap, cmd, i, true);
 
+        // We fetch only known RFC822 headers because
+        // using Fetch RFC822.HEADER reurns all included unused headers 
+        // which required more memory and network bandwidth.
         MB_String cmd2;
         appendRFC822HeadersFetchCommand(cmd2);
 
