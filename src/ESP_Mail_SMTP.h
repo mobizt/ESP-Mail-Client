@@ -2716,7 +2716,6 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     MB_String s, r, err;
     int chunkIndex = 0;
     int count = 0;
-    bool ovf = false;
     bool completedResponse = false;
     smtp->_smtpStatus.errorCode = 0;
     smtp->_smtpStatus.statusCode = 0;

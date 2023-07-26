@@ -1803,10 +1803,8 @@ void ESP_Mail_Client::parseHeaderResponse(IMAPSession *imap, esp_mail_imap_respo
         MB_String str;
         joinStringDot(str, 2, imap_commands[esp_mail_imap_command_header].text, imap_commands[esp_mail_imap_command_fields].text);
 
-       
         if (!res.isUntaggedResponse && strposP(res.response, str.c_str(), 0, caseSensitive) != -1 && res.response[0] == '*')
             res.isUntaggedResponse = true;
-
 
         if (res.isUntaggedResponse && res.response[strlen(res.response) - 1] == '}')
             res.untaggedRespCompleted = true;
@@ -2733,7 +2731,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
     // Flag used for CRLF inclusion in response reading in case 8bit/binary attachment and base64 encoded and binary messages
     bool withLineBreak = imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_text && (cPart(imap)->xencoding == esp_mail_msg_xencoding_base64 || cPart(imap)->xencoding == esp_mail_msg_xencoding_binary);
     withLineBreak |= imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_attachment && cPart(imap)->xencoding != esp_mail_msg_xencoding_base64;
-    bool ovf = false;
+
     // custom cmd IDLE?, waiting incoming server response
     if (res.chunkBufSize == 0 && imap->_prev_imap_custom_cmd == imap->_imap_custom_cmd && imap->_imap_custom_cmd == esp_mail_imap_cmd_idle)
     {
@@ -3104,7 +3102,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
         }
     }
 
-    if (res.imapResp != esp_mail_imap_resp_ok && ((imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && res.header.header_data_len == 0)) || res.imapResp == esp_mail_imap_resp_no)
+    if ((res.imapResp != esp_mail_imap_resp_ok && imap->_imap_cmd == esp_mail_imap_cmd_fetch_body_header && res.header.header_data_len == 0) || res.imapResp == esp_mail_imap_resp_no)
     {
         // We don't get any response
 
