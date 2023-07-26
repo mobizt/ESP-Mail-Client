@@ -125,7 +125,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -252,6 +252,9 @@ void setup()
     // imap_data.identification.name = "User";
     // imap_data.identification.version = "1.0";
 
+    /* Set the TCP response read timeout in seconds */
+    // imap.setTCPTimeout(10);
+
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;
@@ -330,6 +333,9 @@ void setup()
 
     // imap_data.fetch.set_seen = true;
 
+    /* Fetch or read only message header */
+    // imap_data.fetch.headerOnly = true;
+
     /* Read or search the Email and close the session */
 
     // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
@@ -391,7 +397,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
         ESP_MAIL_PRINTF("First Unseen Message Number: %d\n", sFolder.unseenIndex());
     else
         ESP_MAIL_PRINTF("Unseen Messages: No\n");
-        
+
     if (sFolder.modSeqSupported())
         ESP_MAIL_PRINTF("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
@@ -439,7 +445,7 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         Serial.println("****************************");
         ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
         ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-        
+
         // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");

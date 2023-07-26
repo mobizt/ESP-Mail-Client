@@ -235,6 +235,9 @@ void setup()
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
+  /* Set the TCP response read timeout in seconds */
+  // smtp.setTCPTimeout(10);
+
   /* Connect to the server */
   if (!smtp.connect(&config))
   {

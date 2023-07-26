@@ -280,6 +280,9 @@ void setup()
     // imap_data.identification.name = "User";
     // imap_data.identification.version = "1.0";
 
+    /* Set the TCP response read timeout in seconds */
+    // imap.setTCPTimeout(10);
+
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;
@@ -371,6 +374,9 @@ void loop()
 
         /* Set seen flag */
         // imap_data.fetch.set_seen = true;
+
+        /* Fetch or read only message header */
+        // imap_data.fetch.headerOnly = true;
 
         /** Read or search the Email and keep the TCP session to open
          * The second parameter is for close the session.

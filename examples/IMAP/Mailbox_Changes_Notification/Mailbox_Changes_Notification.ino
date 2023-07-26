@@ -224,6 +224,9 @@ void setup()
     imap.keepAlive(5, 5, 1);
 #endif
 
+    /* Set the TCP response read timeout in seconds */
+    // smtp.setTCPTimeout(10);
+
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;

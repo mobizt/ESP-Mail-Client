@@ -282,6 +282,9 @@ void setup()
     // imap_data.identification.name = "User";
     // imap_data.identification.version = "1.0";
 
+    /* Set the TCP response read timeout in seconds */
+    // imap.setTCPTimeout(10);
+
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
         return;

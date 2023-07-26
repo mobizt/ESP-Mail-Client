@@ -115,7 +115,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -185,6 +185,9 @@ void loop()
 
         if (!smtp.isLoggedIn())
         {
+            /* Set the TCP response read timeout in seconds */
+            // smtp.setTCPTimeout(10);
+
             if (!smtp.connect(&config))
             {
                 ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());

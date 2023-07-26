@@ -140,6 +140,8 @@ void setup()
 
     imap_data.limit.attachment_size = 1024 * 1024 * 5;
 
+    imap.setTCPTimeout(10);
+
     if (!imap.connect(&config, &imap_data))
     {
         ESP_MAIL_PRINTF("Connection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());

@@ -306,6 +306,9 @@ void setup()
   // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
   // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
+  /* Set the TCP response read timeout in seconds */
+  // smtp.setTCPTimeout(10);
+
   /* Connect to the server */
   if (!smtp.connect(&config))
   {
