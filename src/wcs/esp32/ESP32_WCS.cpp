@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.7
+ * ESP32 WiFi Client Secure v2.0.8
  *
- * Created July 15, 2023
+ * Created July 27, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -321,7 +321,15 @@ void ESP32_WCS::prepareBasicClient()
 #if !defined(ENABLE_CUSTOM_CLIENT)
     if (!_ssl->client && !_use_internal_basic_client)
     {
-        _client = new WiFiClient();
+#if defined(ESP_MAIL_ESP32_USE_WIFICLIENT_TEST) || defined(ESP_MAIL_ESP32_USE_WIFICLIENT_SOCKET_TEST)
+        WiFiClient *wc = new WiFiClient();
+        _client = wc;
+#if defined(ESP_MAIL_ESP32_USE_WIFICLIENT_SOCKET_TEST)
+        _ssl->wc = wc;
+#endif
+#else
+        _client = new basicClient(_ssl);
+#endif
         _ssl->client = _client;
         _use_internal_basic_client = true;
         _use_external_sslclient = false;

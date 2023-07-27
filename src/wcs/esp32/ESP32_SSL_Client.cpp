@@ -1,7 +1,7 @@
 /*
- * ESP32 SSL Client v2.0.5
+ * ESP32 SSL Client v2.1.0
  *
- * Created March 20, 2023
+ * Created July 27, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -72,10 +72,14 @@ static int _esp32_ssl_handle_error(int err, const char *file, int line)
 
 void ESP32_SSL_Client::ssl_init(ssl_ctx *ssl)
 {
+    // reset embedded pointers to zero
+    memset(ssl, 0, sizeof(ssl_ctx));
     mbedtls_ssl_init(&ssl->ssl_ctx);
     mbedtls_ssl_config_init(&ssl->ssl_conf);
     mbedtls_ctr_drbg_init(&ssl->drbg_ctx);
 }
+
+#if defined(ESP_MAIL_ESP32_USE_WIFICLIENT_TEST)
 
 namespace esp_mail_esp32_basic_client_io
 {
@@ -168,6 +172,8 @@ namespace esp_mail_esp32_basic_client_io
     }
 };
 
+#endif
+
 int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *rootCABuff, const char *cli_cert, const char *cli_key, const char *pskIdent, const char *psKey, bool insecure)
 {
 
@@ -179,7 +185,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
     if (ssl->_debugCallback)
     {
         esp_mail_debug_print("", true);
-        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_27, esp_mail_debug_tag_type_client);
+        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_27 /* "SSL/TLS negotiation" */, esp_mail_debug_tag_type_client);
     }
 #endif
 
@@ -187,7 +193,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
     {
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_8, esp_mail_debug_tag_type_error);
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_8 /* "root certificate, PSK identity or keys are required for secured connection" */, esp_mail_debug_tag_type_error);
 #endif
         return -1;
     }
@@ -197,7 +203,6 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 #if !defined(SILENT_MODE)
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_9, esp_mail_debug_tag_type_client);
-
     log_v("Seeding the random number generator");
 #endif
 
@@ -216,7 +221,6 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 #if !defined(SILENT_MODE)
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_10, esp_mail_debug_tag_type_client);
-
     log_v("Setting up the SSL/TLS structure...");
 #endif
 
@@ -234,22 +238,18 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 
     if (insecure)
     {
-#if !defined(SILENT_MODE)
-        if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_1, esp_mail_debug_tag_type_warning);
-#endif
-
         mbedtls_ssl_conf_authmode(&ssl->ssl_conf, MBEDTLS_SSL_VERIFY_NONE);
 #if !defined(SILENT_MODE)
-        log_i("WARNING: Skipping SSL Verification. INSECURE!");
+        if (ssl->_debugCallback)
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_1 /* "Skipping SSL Verification. INSECURE!" */, esp_mail_debug_tag_type_warning);
+        log_d("WARNING: Skipping SSL Verification. INSECURE!");
 #endif
     }
     else if (rootCABuff != NULL)
     {
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_11, esp_mail_debug_tag_type_client);
-
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_11 /* "Loading CA cert" */, esp_mail_debug_tag_type_client);
         log_v("Loading CA cert");
 #endif
 
@@ -273,7 +273,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
     {
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_12, esp_mail_debug_tag_type_client);
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_12 /* "Setting up PSK" */, esp_mail_debug_tag_type_client);
         log_v("Setting up PSK");
 #endif
         // convert PSK from hex to binary
@@ -281,7 +281,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
         {
 #if !defined(SILENT_MODE)
             if (ssl->_debugCallback)
-                ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_13, esp_mail_debug_tag_type_error);
+                ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_13 /* "pre-shared key not valid hex or too long" */, esp_mail_debug_tag_type_error);
             log_e("pre-shared key not valid hex or too long");
 #endif
             return -1;
@@ -315,9 +315,8 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 // set mbedtls config
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_14, esp_mail_debug_tag_type_client);
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_14 /* "set mbedtls config" */, esp_mail_debug_tag_type_client);
 #endif
-
         ret = mbedtls_ssl_conf_psk(&ssl->ssl_conf, psk, psk_len,
                                    (const unsigned char *)pskIdent, strlen(pskIdent));
         if (ret != 0)
@@ -325,7 +324,6 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 #if !defined(SILENT_MODE)
             if (ssl->_debugCallback)
                 ssl_client_send_mbedtls_error_cb(ssl, ret, esp_mail_debug_tag_type_error);
-
             log_e("mbedtls_ssl_conf_psk returned %d", ret);
 #endif
             return esp32_ssl_handle_error(ret);
@@ -338,17 +336,14 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 
     if (!insecure && cli_cert != NULL && cli_key != NULL)
     {
-
         mbedtls_x509_crt_init(&ssl->client_cert);
         mbedtls_pk_init(&ssl->client_key);
 
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_15, esp_mail_debug_tag_type_client);
-
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_15 /* "Loading CRT cert" */, esp_mail_debug_tag_type_client);
         log_v("Loading CRT cert");
 #endif
-
         ret = mbedtls_x509_crt_parse(&ssl->client_cert, (const unsigned char *)cli_cert, strlen(cli_cert) + 1);
         if (ret < 0)
         {
@@ -363,8 +358,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 
 #if !defined(SILENT_MODE)
         if (ssl->_debugCallback)
-            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_16, esp_mail_debug_tag_type_client);
-
+            ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_16 /* "Loading private key" */, esp_mail_debug_tag_type_client);
         log_v("Loading private key");
 #endif
         ret = mbedtls_pk_parse_key(&ssl->client_key, (const unsigned char *)cli_key, strlen(cli_key) + 1, NULL, 0);
@@ -375,6 +369,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
             if (ssl->_debugCallback)
                 ssl_client_send_mbedtls_error_cb(ssl, ret, esp_mail_debug_tag_type_error);
 #endif
+            mbedtls_x509_crt_free(&ssl->client_cert); // cert+key are free'd in pair
             return esp32_ssl_handle_error(ret);
         }
 
@@ -382,8 +377,7 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
     }
 #if !defined(SILENT_MODE)
     if (ssl->_debugCallback)
-        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_17, esp_mail_debug_tag_type_client);
-
+        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_17 /* "Setting hostname for TLS session..." */, esp_mail_debug_tag_type_client);
     log_v("Setting hostname for TLS session...");
 #endif
 
@@ -408,12 +402,21 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
         return esp32_ssl_handle_error(ret);
     }
 
+#if defined(ESP_MAIL_ESP32_USE_WIFICLIENT_SOCKET_TEST)
+    // Slowest
+    ssl->socket = ssl->wc->fd();
+    mbedtls_ssl_set_bio(&ssl->ssl_ctx, &ssl->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
+#elif defined(ESP_MAIL_ESP32_USE_WIFICLIENT_TEST)
+    // Slow
     mbedtls_ssl_set_bio(&ssl->ssl_ctx, ssl->client, esp_mail_esp32_basic_client_io::net_send, NULL, esp_mail_esp32_basic_client_io::net_recv_timeout);
+#else
+    // Fastest
+    mbedtls_ssl_set_bio(&ssl->ssl_ctx, &ssl->socket, mbedtls_net_send, mbedtls_net_recv, NULL);
+#endif
 
 #if !defined(SILENT_MODE)
     if (ssl->_debugCallback)
-        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_18, esp_mail_debug_tag_type_client);
-
+        ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_18 /* "Performing the SSL/TLS handshake..."*/, esp_mail_debug_tag_type_client);
     log_v("Performing the SSL/TLS handshake...");
 #endif
     unsigned long handshake_start_time = millis();
@@ -452,7 +455,6 @@ int ESP32_SSL_Client::connect_ssl(ssl_ctx *ssl, const char *host, const char *ro
 #if !defined(SILENT_MODE)
     if (ssl->_debugCallback)
         ssl_client_debug_pgm_send_cb(ssl, esp_ssl_client_str_19, esp_mail_debug_tag_type_client);
-
     log_v("Verifying peer X.509 certificate...");
 #endif
 
@@ -731,25 +733,6 @@ bool ESP32_SSL_Client::verify_ssl_dn(ssl_ctx *ssl, const char *domain_name)
     }
 
     return false;
-}
-
-void ESP32_SSL_Client::ssl_client_send_mbedtls_error_cb(ssl_ctx *ssl, int errNo, esp_mail_debug_tag_type type)
-{
-#if !defined(SILENT_MODE)
-    char *error_buf = new char[100];
-    mbedtls_strerror(errNo, error_buf, 100);
-    DebugMsgCallback cb = *ssl->_debugCallback;
-    cb(error_buf, type, true);
-    delete[] error_buf;
-#endif
-}
-
-void ESP32_SSL_Client::ssl_client_debug_pgm_send_cb(ssl_ctx *ssl, PGM_P info, esp_mail_debug_tag_type type)
-{
-#if !defined(SILENT_MODE)
-    DebugMsgCallback cb = *ssl->_debugCallback;
-    cb(info, type, true);
-#endif
 }
 
 #endif // ESP32
