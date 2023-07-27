@@ -1,5 +1,5 @@
 /*
- * ESP32 WiFi Client Secure v2.0.8
+ * ESP32 WiFi Client Secure v2.0.9
  *
  * Created July 27, 2023
  *
@@ -368,10 +368,7 @@ size_t ESP32_WCS::write(const uint8_t *buf, size_t size)
 
     int res = (!_secured || _use_external_sslclient) ? _ssl->client->write(buf, size) : send_ssl_data(_ssl, buf, size);
     if (res < 0)
-    {
-        stop();
         res = 0;
-    }
     return res;
 }
 
@@ -381,10 +378,6 @@ int ESP32_WCS::read(uint8_t *buf, size_t size)
         return 0;
 
     int res = (!_secured || _use_external_sslclient) ? _ssl->client->read(buf, size) : get_ssl_receive(_ssl, buf, size);
-
-    if (res < 0)
-        stop();
-
     return res;
 }
 
@@ -394,10 +387,6 @@ int ESP32_WCS::available()
         return 0;
 
     int res = (!_secured || _use_external_sslclient) ? _ssl->client->available() : data_to_read(_ssl);
-
-    if (res < 0)
-        stop();
-
     return res;
 }
 

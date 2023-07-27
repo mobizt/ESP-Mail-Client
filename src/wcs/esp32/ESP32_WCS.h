@@ -1,5 +1,5 @@
 /*
- * ESP32 WiFi Client Secure v2.0.8
+ * ESP32 WiFi Client Secure v2.0.9
  *
  * Created July 27, 2023
  *
