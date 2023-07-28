@@ -1,4 +1,4 @@
-// Created July 25, 2023
+// Created July 28, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30301)
+#if !VALID_VERSION_CHECK(30302)
 #error "Mixed versions compilation."
 #endif
 
@@ -1287,6 +1287,18 @@ typedef struct esp_mail_imap_identity_t
 
 #endif
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+/* The email address info [SMTP_Message]*/
+struct esp_mail_address_info_t
+{
+    /* The name of Email author/sender */
+    MB_String name;
+
+    /* The Email address */
+    MB_String email;
+};
+#endif
+
 #if defined(ENABLE_SMTP)
 
 /* The SMTP message notification types enum */
@@ -1551,16 +1563,6 @@ typedef struct esp_mail_smtp_response_status_t
     int id = -1;
     MB_String text;
 } SMTP_Response;
-
-/* The email address info [SMTP_Message]*/
-struct esp_mail_address_info_t
-{
-    /* The name of Email author/sender */
-    MB_String name;
-
-    /* The Email address */
-    MB_String email;
-};
 
 #endif
 

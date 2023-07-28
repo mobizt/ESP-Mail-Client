@@ -394,6 +394,43 @@ In case you only want to exclude the error flash string from library, please com
 #define ENABLE_ERROR_STRING
 ```
 
+Since this library is not a single header library, the macro defined before the library inclusion in user sketch file will not be used or seen by all library codes in all source files due to different File Scope.
+
+Then your modified version of [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) need to be back up before update the library because it will be overwritten when update the library.
+
+Alternatively, by leaving config in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) as its default setting and creat your own config file
+ Custom_ESP_Mail_FS.h in the same folder of [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) and undefine the macro that already defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+
+When the library updated, the config file [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) will be overwritten or replaced unless your Custom_ESP_Mail_FS.h will not be replaced and stays there. 
+
+
+The following is the example of Custom_ESP_Mail_FS.h
+
+```cpp
+#ifndef ESP_MAIL_CUSTOM_FS_H_
+#define ESP_MAIL_CUSTOM_FS_H_
+
+// Not use SD
+#undef ESP_MAIL_DEFAULT_SD_FS 
+
+// Not use Flash
+#undef ESP_MAIL_DEFAULT_FLASH_FS
+
+// Not use NTP time (required device time should set by user)
+#undef ENABLE_NTP_TIME
+
+// Not show error string (show only error code)
+#undef ENABLE_ERROR_STRING
+
+// Not use SMTP
+#undef ENABLE_SMTP 
+
+// Not print all debug and callback
+#define SILENT_MODE
+
+#endif
+```
+
 
 ### Using TCP session KeepAlive in ESP8266 and ESP32
 
