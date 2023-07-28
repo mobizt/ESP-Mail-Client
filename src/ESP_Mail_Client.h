@@ -1030,9 +1030,7 @@ private:
   bool networkAutoReconnect = true;
   volatile bool networkStatus = false;
   esp_mail_wifi_credentials_t wifi;
-#if defined(ESP32)
-  bool timeEnvSet = false;
-#endif
+  bool timezoneEnvSet = false;
 
 #if defined(HAS_WIFIMULTI)
   WiFiMulti *multi = nullptr;
@@ -1101,7 +1099,7 @@ private:
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
   void closeTCPSession(void *sessionPtr, bool isSMTP);
   
-  // Get and set timezone environmen (ESP32)
+  // Get and set timezone
   void getSetTimezoneEnv(const char* TZ_file, const char* TZ_Var);
 
   // Get TCP connected status

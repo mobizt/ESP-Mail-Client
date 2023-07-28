@@ -505,7 +505,7 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
 
     setenv("TZ", TZ_Var, 1);
     tzset();
-    timeEnvSet = true;
+    timezoneEnvSet = true;
   }
 #endif
 }
@@ -1429,7 +1429,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
     }
 
 #if defined(ESP32)
-    if (Time.clockReady() && !timeEnvSet)
+    if (Time.clockReady() && !timezoneEnvSet)
       getSetTimezoneEnv(session_config->time.timezone_file.c_str(), session_config->time.timezone_env_string.c_str());
 #endif
 
