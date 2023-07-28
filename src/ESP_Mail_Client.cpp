@@ -505,6 +505,7 @@ void ESP_Mail_Client::setTimezone(const char *TZ_Var, const char *TZ_file)
 
     setenv("TZ", TZ_Var, 1);
     tzset();
+    timeEnvSet = true;
   }
 #endif
 }
@@ -648,6 +649,19 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
     }
   }
 
+  getSetTimezoneEnv(TZ_file, TZ_Var);
+
+#else
+  return;
+#endif
+
+#endif
+
+  _clockReady = Time.clockReady();
+}
+
+void ESP_Mail_Client::getSetTimezoneEnv(const char *TZ_file, const char *TZ_Var)
+{
   // set and get TZ environment variable
 
   MB_String timezone;
@@ -660,14 +674,6 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
   // if timezone string assign
   setTimezone(timezone.c_str(), TZ_file);
-
-#else
-  return;
-#endif
-
-#endif
-
-  _clockReady = Time.clockReady();
 }
 
 bool ESP_Mail_Client::validEmail(const char *s)
@@ -1421,6 +1427,11 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
       setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
     }
+    
+#if defined(ESP32)
+    if (Time.clockReady() && !timeEnvSet)
+      getSetTimezoneEnv(session_config->time.timezone_file.c_str(), session_config->time.timezone_env_string.c_str());
+#endif
 
     if (Time.clockReady())
       return true;
