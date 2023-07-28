@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30303)
+#if !VALID_VERSION_CHECK(30304)
 #error "Mixed versions compilation."
 #endif
 
@@ -1287,10 +1287,9 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 {
 
   MB_String dbMsg;
-  bool isCb = false, debug = false;
-
   ESP_MAIL_TCP_CLIENT *client = nullptr;
 #if !defined(SILENT_MODE)
+  bool isCb = false, debug = false;
   PGM_P p = isSMTP ? esp_mail_dbg_str_2 /* "connecting to SMTP server" */ : esp_mail_dbg_str_18 /* "connecting to IMAP server" */;
 #endif
 
@@ -1298,10 +1297,11 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
   {
 #if defined(ENABLE_SMTP)
     SMTPSession *smtp = (SMTPSession *)sessionPtr;
+    client = &smtp->client;
+#if !defined(SILENT_MODE)
     isCb = isResponseCB((void *)smtp->_customCmdResCallback, isSMTP);
     debug = smtp->_debug;
-    client = &smtp->client;
-
+#endif
     if (!reconnect(smtp))
       return false;
 
@@ -1311,10 +1311,11 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
   {
 #if defined(ENABLE_IMAP)
     IMAPSession *imap = (IMAPSession *)sessionPtr;
+    client = &imap->client;
+#if !defined(SILENT_MODE)
     isCb = isResponseCB((void *)imap->_customCmdResCallback, isSMTP);
     debug = imap->_debug;
-    client = &imap->client;
-
+#endif
     if (!reconnect(imap))
       return false;
 
@@ -1561,7 +1562,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
 {
   MB_String ret;
 
-#if defined(ENABLE_ERROR_STRING)
+#if defined(ENABLE_ERROR_STRING) && !defined(SILENT_MODE)
 
   // If there is server meanningful response (msg) is available, return it instead
   if (strlen(msg) > 0)
@@ -1600,7 +1601,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     ret = esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
   case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
-    ret = esp_mail_error_network_str_1; /* "NTP server time reading timed out" */
+    ret = esp_mail_error_network_str_2; /* "NTP server time reading timed out" */
     break;
   case MAIL_CLIENT_ERROR_SESSION_CONFIG_WAS_NOT_ASSIGNED:
     ret = esp_mail_error_session_str_1; /* "the Session_Config object was not assigned" */
@@ -1617,7 +1618,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
 
 #if defined(ENABLE_SMTP)
   case SMTP_STATUS_SERVER_CONNECT_FAILED:
-    ret = esp_mail_error_network_str_2; /* "unable to connect to server" */
+    ret = esp_mail_error_network_str_1; /* "unable to connect to server" */
     break;
   case SMTP_STATUS_SMTP_GREETING_GET_RESPONSE_FAILED:
     ret = esp_mail_error_smtp_str_1; /* "SMTP server greeting failed" */
@@ -1671,7 +1672,7 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
 
 #if defined(ENABLE_IMAP)
   case IMAP_STATUS_SERVER_CONNECT_FAILED:
-    ret = esp_mail_error_network_str_2; /* "unable to connect to server" */
+    ret = esp_mail_error_network_str_1; /* "unable to connect to server" */
     break;
   case IMAP_STATUS_IMAP_RESPONSE_FAILED:
     ret = esp_mail_error_imap_str_18; /* "server replied NO or BAD response" */

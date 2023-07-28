@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.4
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.5
  *
- * Created June 17, 2023
+ * Created July 28, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -1503,7 +1503,7 @@ namespace BearSSL
         {
 #if !defined(SILENT_MODE)
             if (debugLevel > 0)
-                esp_mail_debug_print_tag(esp_mail_error_network_str_2 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
+                esp_mail_debug_print_tag(esp_mail_error_network_str_1 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
 #endif
             return false;
         }

@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30303)
+#if !VALID_VERSION_CHECK(30304)
 #error "Mixed versions compilation."
 #endif
 
@@ -2551,7 +2551,7 @@ public:
     char *buf = nullptr;
 
     esp_mail_imap_response_data(int bufLen) { chunkBufSize = bufLen; };
-    ~esp_mail_imap_response_data(){clear();}
+    ~esp_mail_imap_response_data() { clear(); }
     void clear()
     {
         if (response)
@@ -3082,7 +3082,7 @@ static const char esp_mail_error_mem_str_10[] PROGMEM = "please make sure that t
 /////////////////////////
 // Client error string
 
-#if defined(ENABLE_ERROR_STRING)
+#if !defined(SILENT_MODE)
 static const char esp_mail_error_client_str_1[] PROGMEM = "client and/or necessary callback functions are not yet assigned";
 static const char esp_mail_error_client_str_2[] PROGMEM = "custom Client is not yet enabled";
 static const char esp_mail_error_client_str_3[] PROGMEM = "simple Client is required";
@@ -3099,15 +3099,17 @@ static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Reque
 /////////////////////////
 // Network error string
 
+#if !defined(SILENT_MODE)
+static const char esp_mail_error_network_str_1[] PROGMEM = "unable to connect to server";
 #if defined(ENABLE_ERROR_STRING)
-static const char esp_mail_error_network_str_1[] PROGMEM = "NTP server time reading timed out";
-static const char esp_mail_error_network_str_2[] PROGMEM = "unable to connect to server";
+static const char esp_mail_error_network_str_2[] PROGMEM = "NTP server time reading timed out";
 static const char esp_mail_error_network_str_3[] PROGMEM = "response read timed out";
 static const char esp_mail_error_network_str_4[] PROGMEM = "not connected";
 static const char esp_mail_error_network_str_5[] PROGMEM = "connection timeout";
 static const char esp_mail_error_network_str_6[] PROGMEM = "connection closed";
 static const char esp_mail_error_network_str_7[] PROGMEM = "connection refused";
 static const char esp_mail_error_network_str_8[] PROGMEM = "data sending failed";
+#endif
 #endif
 
 #if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
