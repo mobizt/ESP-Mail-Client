@@ -1,7 +1,7 @@
 /*
- * ESP32 WiFi Client Secure v2.0.9
+ * ESP32 WiFi Client Secure v2.0.10
  *
- * Created July 27, 2023
+ * Created July 28, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
