@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30304)
+#if !VALID_VERSION_CHECK(30305)
 #error "Mixed versions compilation."
 #endif
 
@@ -3073,10 +3073,12 @@ static const char esp_mail_error_mem_str_7[] PROGMEM = "file I/O error";
 static const char esp_mail_error_mem_str_8[] PROGMEM = "out of memory";
 static const char esp_mail_error_mem_str_9[] PROGMEM = "buffer overflow";
 
-#if defined(MB_ARDUINO_PICO)
-static const char esp_mail_error_mem_str_10[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
 #endif
 
+#if defined(MB_ARDUINO_PICO)
+#if defined(ENABLE_ERROR_STRING) || !defined(SILENT_MODE)
+static const char esp_mail_error_mem_str_10[] PROGMEM = "please make sure that the size of flash filesystem is not 0 in Pico.";
+#endif
 #endif
 
 /////////////////////////

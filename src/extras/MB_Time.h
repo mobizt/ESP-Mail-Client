@@ -2,7 +2,7 @@
 #define MB_Time_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30304)
+#if !VALID_VERSION_CHECK(30305)
 #error "Mixed versions compilation."
 #endif
 
@@ -67,6 +67,10 @@
 #if defined(ENABLE_NTP_TIME)
 #include <WiFiNTP.h>
 #endif
+#endif
+
+#if defined(ESP8266)
+#include "user_interface.h"
 #endif
 
 #if defined(ENABLE_NTP_TIME)
