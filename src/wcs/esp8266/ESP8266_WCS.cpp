@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.2
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.cpp v2.0.3
  *
- * Created March 12, 2023
+ * Created August 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -28,6 +28,9 @@
 
 #ifndef ESP8266_WCS_CPP
 #define ESP8266_WCS_CPP
+
+#pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wvla"
 
 #include <Arduino.h>
 #include "ESP_Mail_FS.h"
@@ -97,7 +100,7 @@ int ESP8266_WCS::connect(const char *name, uint16_t port)
   if (!_secured)
     return 1;
 
-  bool res = ESP_Mail_WCS_CLASS::_connectSSL(_host.c_str());
+  bool res = ESP_Mail_WCS_CLASS::connectSSL(_host.c_str());
 
   if (!res)
     ESP_Mail_WCS_CLASS::stop();
@@ -109,7 +112,7 @@ bool ESP8266_WCS::connectSSL(bool verify)
 {
   setVerify(verify);
 
-  bool res = ESP_Mail_WCS_CLASS::_connectSSL(_host.c_str());
+  bool res = ESP_Mail_WCS_CLASS::connectSSL(_host.c_str());
 
   if (res)
     _secured = true;

@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.5
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.h v2.0.6
  *
- * Created July 28, 2023
+ * Created August 3, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -103,19 +103,15 @@ namespace BearSSL
         ESP8266_SSL_Client();
         ESP8266_SSL_Client(const ESP8266_SSL_Client &rhs) = delete;
 
-        ESP8266_SSL_Client &operator=(const ESP8266_SSL_Client &) = delete;
-
         virtual ~ESP8266_SSL_Client();
 
         void setClient(Client *client);
-        void setTimeout(unsigned long timeout);
-
         int connect(IPAddress ip, uint16_t port);
         int connect(const String &host, uint16_t port);
-        int connect(const char *name, uint16_t port);
-
+        int connect(const char *host, uint16_t port);
         bool connected();
         size_t write(const uint8_t *buf, size_t size);
+        size_t write(uint8_t b);
         size_t write_P(PGM_P buf, size_t size);
         size_t write(Stream &stream);
         int read(uint8_t *buf, size_t size);
@@ -125,172 +121,57 @@ namespace BearSSL
         int read();
         int peek();
         size_t peekBytes(uint8_t *buffer, size_t length);
-        void flush();
+        void setInsecure();
+        int connectSSL(IPAddress ip, uint16_t port);
+        int connectSSL(const char *host, uint16_t port);
         void stop();
-
+        void setTimeout(unsigned int timeoutMs);
+        void setHandshakeTimeout(unsigned int timeoutMs);
+        void flush();
+        void setBufferSizes(int recv, int xmit);
+        operator bool() { return connected() > 0; }
         int availableForWrite();
-
-        // Allow sessions to be saved/restored automatically to a memory area
-        void setSession(_BearSSL_Session *session)
-        {
-            _session = session;
-        }
-
-        // Don't validate the chain, just accept whatever is given.  VERY INSECURE!
-        void setInsecure()
-        {
-            _clearAuthenticationSettings();
-            _use_insecure = true;
-        }
-        // Assume a given public key, don't validate or use cert info at all
-        void setKnownKey(const PublicKey *pk, unsigned usages = BR_KEYTYPE_KEYX | BR_KEYTYPE_SIGN)
-        {
-            _clearAuthenticationSettings();
-            _knownkey = pk;
-            _knownkey_usages = usages;
-        }
-        // Only check SHA1 fingerprint of certificate
-        bool setFingerprint(const uint8_t fingerprint[20])
-        {
-            _clearAuthenticationSettings();
-            _use_fingerprint = true;
-            memcpy_P(_fingerprint, fingerprint, 20);
-            return true;
-        }
+        void setSession(_BearSSL_Session *session);
+        void setKnownKey(const PublicKey *pk, unsigned usages = BR_KEYTYPE_KEYX | BR_KEYTYPE_SIGN);
+        bool setFingerprint(const uint8_t fingerprint[20]);
         bool setFingerprint(const char *fpStr);
-
-        // Accept any certificate that's self-signed
-        void allowSelfSignedCerts()
-        {
-            _clearAuthenticationSettings();
-            _use_self_signed = true;
-        }
-        // Install certificates of trusted CAs or specific site
-        void setTrustAnchors(const X509List *ta)
-        {
-            _clearAuthenticationSettings();
-            _ta = ta;
-        }
-        // In cases when NTP is not used, app must set a time manually to check cert validity
-        void setX509Time(time_t now)
-        {
-            _now = now;
-        }
-        // Install a client certificate for this connection, in case the server requires it (i.e. MQTT)
+        void allowSelfSignedCerts();
+        void setTrustAnchors(const X509List *ta);
+        void setX509Time(time_t now);
         void setClientRSACert(const X509List *cert, const PrivateKey *sk);
         void setClientECCert(const X509List *cert, const PrivateKey *sk,
                              unsigned allowed_usages, unsigned cert_issuer_key_type);
-
-        // Sets the requested buffer size for transmit and receive
-        void setBufferSizes(int recv, int xmit);
-
-        // Returns whether MFLN negotiation for the above buffer sizes succeeded (after connection)
-        int getMFLNStatus()
-        {
-            return connected() && br_ssl_engine_get_mfln_negotiated(_eng);
-        }
-
-        // Return an error code and possibly a text string in a passed-in buffer with last SSL failure
+        int getMFLNStatus();
         int getLastSSLError(char *dest = nullptr, size_t len = 0);
-
-        // Attach a preconfigured certificate store
-        void setCertStore(CertStoreBase *certStore)
-        {
-            _certStore = certStore;
-        }
-
-        // Select specific ciphers (i.e. optimize for speed over security)
-        // These may be in PROGMEM or RAM, either will run properly
+        void setCertStore(CertStoreBase *certStore);
         bool setCiphers(const uint16_t *cipherAry, int cipherCount);
         bool setCiphers(const std::vector<uint16_t> &list);
         bool setCiphersLessSecure(); // Only use the limited set of RSA ciphers without EC
-
-        // Limit the TLS versions BearSSL will connect with.  Default is
-        // BR_TLS10...BR_TLS12
         bool setSSLVersion(uint32_t min = BR_TLS10, uint32_t max = BR_TLS12);
-
-#if defined(ESP8266)
-        // peek buffer API is present
-        bool hasPeekBufferAPI() const
-        {
-            return true;
-        }
-
-        // return number of byte accessible by peekBuffer()
-        size_t peekAvailable()
-        {
-            return ESP8266_SSL_Client::available();
-        }
+        size_t peekAvailable();
+        const char *peekBuffer();
+        void peekConsume(size_t consume);
+        void setCACert(const char *rootCA);
+        void setCertificate(const char *client_ca);
+        void setPrivateKey(const char *private_key);
+        bool loadCACert(Stream &stream, size_t size);
+        bool loadCertificate(Stream &stream, size_t size);
+        bool loadPrivateKey(Stream &stream, size_t size);
+        int connect(IPAddress ip, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+        int connect(const char *host, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key);
+        ESP8266_SSL_Client &operator=(const ESP8266_SSL_Client &other);
+        bool operator==(const bool value) { return bool() == value; }
+        bool operator!=(const bool value) { return bool() != value; }
+        bool operator==(const ESP8266_SSL_Client &);
+        bool operator!=(const ESP8266_SSL_Client &rhs) { return !this->operator==(rhs); };
+        unsigned int getTimeout() const;
+        void setSecure(const char *rootCABuff, const char *cli_cert, const char *cli_key);
+        bool hasPeekBufferAPI() const{return true;} // return number of byte accessible by peekBuffer()
+        
 
         // return a pointer to available data buffer (size = peekAvailable())
         // semantic forbids any kind of read() before calling peekConsume()
-        const char *peekBuffer();
 
-        // consume bytes after use (see peekBuffer)
-        void peekConsume(size_t consume);
-#endif
-
-        // ESP32 compatibility
-        void setCACert(const char *rootCA)
-        {
-            if (_esp32_ta)
-            {
-                delete _esp32_ta;
-            }
-            _esp32_ta = new X509List(rootCA);
-        }
-        void setCertificate(const char *client_ca)
-        {
-            if (_esp32_chain)
-            {
-                delete _esp32_chain;
-            }
-            _esp32_chain = new X509List(client_ca);
-        }
-        void setPrivateKey(const char *private_key)
-        {
-            if (_esp32_sk)
-            {
-                delete _esp32_sk;
-            }
-            _esp32_sk = new PrivateKey(private_key);
-        }
-        bool loadCACert(Stream &stream, size_t size)
-        {
-            bool ret = false;
-            auto buff = new char[size];
-            if (size == stream.readBytes(buff, size))
-            {
-                setCACert(buff);
-                ret = true;
-            }
-            delete[] buff;
-            return ret;
-        }
-        bool loadCertificate(Stream &stream, size_t size)
-        {
-            bool ret = false;
-            auto buff = new char[size];
-            if (size == stream.readBytes(buff, size))
-            {
-                setCertificate(buff);
-                ret = true;
-            }
-            delete[] buff;
-            return ret;
-        }
-        bool loadPrivateKey(Stream &stream, size_t size)
-        {
-            bool ret = false;
-            auto buff = new char[size];
-            if (size == stream.readBytes(buff, size))
-            {
-                setPrivateKey(buff);
-                ret = true;
-            }
-            delete[] buff;
-            return ret;
-        }
         int connect(IPAddress ip, uint16_t port, int32_t timeout)
         {
             auto save = _timeout;
@@ -308,18 +189,6 @@ namespace BearSSL
             return ret;
         }
 
-        int connect(IPAddress ip, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key)
-        {
-            setSecure(rootCABuff, cli_cert, cli_key);
-            return connect(ip, port);
-        }
-
-        int connect(const char *host, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key)
-        {
-            setSecure(rootCABuff, cli_cert, cli_key);
-            return connect(host, port);
-        }
-
 #if defined(ENABLE_CUSTOM_CLIENT)
         /**
          * Set the connection request callback.
@@ -334,27 +203,49 @@ namespace BearSSL
 
         Client *getClient()
         {
-            return base_client;
+            return _basic_client;
         };
 
     protected:
-        bool _connectSSL(const char *hostName);
+        enum esp_mail_client_error_types
+        {
+            esp_ssl_ok,
+            esp_ssl_connection_fail,
+            esp_ssl_write_error,
+            esp_ssl_read_error,
+            esp_ssl_out_of_memory,
+            esp_ssl_internal_error
+        };
+
+        void setWriteError(int err)
+        {
+            wErr = err;
+        }
+        int getWriteError()
+        {
+            return wErr;
+        }
+        unsigned long getTimeout()
+        {
+            return _timeout;
+        }
+
         void setDebugLevel(int debug) { debugLevel = debug; }
+
+        int connectSSL(const char *host);
 
     private:
 #if defined(ENABLE_CUSTOM_CLIENT)
         _ConnectionRequestCallback connection_cb = NULL;
 #endif
-
-        void _clear();
-        void _clearAuthenticationSettings();
+        int mIsClientInitialized();
+        int mConnectBasicClient(const char *host, IPAddress ip, uint16_t port);
+        void mClear();
+        void mClearAuthenticationSettings();
+        unsigned mUpdateEngine();
+        void mBSSLX509InsecureInit(struct br_x509_insecure_context *ctx, int _use_fingerprint, const uint8_t _fingerprint[20], int _allow_self_signed);
         // Only one of the following two should ever be != nullptr!
         std::shared_ptr<br_ssl_client_context> _sc;
-        std::shared_ptr<br_ssl_server_context> _sc_svr;
-        inline bool ctx_present()
-        {
-            return (_sc != nullptr) || (_sc_svr != nullptr);
-        }
         br_ssl_engine_context *_eng; // &_sc->eng, to allow for client or server contexts
         std::shared_ptr<br_x509_minimal_context> _x509_minimal;
         std::shared_ptr<struct br_x509_insecure_context> _x509_insecure;
@@ -391,12 +282,10 @@ namespace BearSSL
         unsigned char *_recvapp_buf;
         size_t _recvapp_len;
 
-        bool _clientConnected(); // Is the underlying socket alive?
-        std::shared_ptr<unsigned char> _alloc_iobuf(size_t sz);
-        void _freeSSL();
-        int _run_until(unsigned target, bool blocking = true);
-        size_t _write(const uint8_t *buf, size_t size, bool pmem);
-        bool _wait_for_handshake(); // Sets and return the _handshake_done after connecting
+        std::shared_ptr<unsigned char> mIOBufMemAloc(size_t sz);
+        void mFreeSSL();
+        int mRunUntil(const unsigned target, unsigned long timeout = 0);
+        bool mSoftConnected();
 
         // Optional client certificate
         const X509List *_chain;
@@ -404,47 +293,11 @@ namespace BearSSL
         unsigned _allowed_usages;
         unsigned _cert_issuer_key_type;
 
-        // RSA keyed server
-        bool _connectSSLServerRSA(const X509List *chain, const PrivateKey *sk,
-                                  _BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
-        // EC keyed server
-        bool _connectSSLServerEC(const X509List *chain, unsigned cert_issuer_key_type, const PrivateKey *sk,
-                                 _BearSSL_ServerSessions *cache, const X509List *client_CA_ta);
-
         // X.509 validators differ from server to client
-        bool _installClientX509Validator();                             // Set up X509 validator for a client conn.
-        bool _installServerX509Validator(const X509List *client_CA_ta); // Setup X509 client cert validation, if supplied
+        bool mInstallClientX509Validator(); // Set up X509 validator for a client conn.
 
-        uint8_t *_streamLoad(Stream &stream, size_t size);
+        uint8_t *mStreamLoad(Stream &stream, size_t size);
         void idle();
-
-        void setSecure(const char *rootCABuff, const char *cli_cert, const char *cli_key)
-        {
-            if (_esp32_ta)
-            {
-                delete _esp32_ta;
-                _esp32_ta = nullptr;
-            }
-            if (_esp32_chain)
-            {
-                delete _esp32_chain;
-                _esp32_chain = nullptr;
-            }
-            if (_esp32_sk)
-            {
-                delete _esp32_sk;
-                _esp32_sk = nullptr;
-            }
-            if (rootCABuff)
-            {
-                setCertificate(rootCABuff);
-            }
-            if (cli_cert && cli_key)
-            {
-                setCertificate(cli_cert);
-                setPrivateKey(cli_key);
-            }
-        }
 
         // ESP32 compatibility
         X509List *_esp32_ta = nullptr;
@@ -452,9 +305,22 @@ namespace BearSSL
         PrivateKey *_esp32_sk = nullptr;
 
         String host;
-        Client *base_client = nullptr;
-        bool secured = false;
+        bool _is_connected;
+
+        //  store the index of where we are writing in the buffer
+        //  so we can send our records all at once to prevent
+        //  weird timing issues
+        size_t _write_idx;
+
+        // store the last BearSSL state so we can print changes to the console
+        unsigned _bssl_last_state;
+
+        bool _secure = false;
+
+        Client *_basic_client = nullptr;
         unsigned long _timeout = 15000;
+        unsigned long _handshake_timeout = 60000;
+        int wErr = 0;
     };
 
 };

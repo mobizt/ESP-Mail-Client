@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v2.0.2
+ * The Network Upgradable ESP8266 Secure WiFi Client Class, ESP8266_WCS.h v2.0.3
  *
- * Created March 12, 2023
+ * Created August 3, 2023
  * 
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)

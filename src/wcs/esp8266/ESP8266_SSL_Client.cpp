@@ -1,9 +1,9 @@
 
 /**
  *
- * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.5
+ * The Network Upgradable BearSSL Client Class, ESP8266_SSL_Client.cpp v2.0.6
  *
- * Created July 28, 2023
+ * Created August 3, 2023
  *
  * This works based on Earle F. Philhower ServerSecure class
  *
@@ -61,12 +61,6 @@
 #include "ESP8266_SSL_Client.h"
 #include "ESP_Mail_Print.h"
 
-#if defined(DEBUG_ESP_SSL) && defined(DEBUG_ESP_PORT)
-#define DEBUG_BSSL(fmt, ...) DEBUG_ESP_PORT.printf_P((PGM_P)PSTR("BSSL:" fmt), ##__VA_ARGS__)
-#else
-#define DEBUG_BSSL(...)
-#endif
-
 #include <list>
 #include <errno.h>
 #include <algorithm>
@@ -81,10 +75,6 @@
 
 #if defined(ESP_MAIL_USE_SDK_SSL_ENGINE) && !defined(USING_AXTLS)
 
-// #include "c_types.h"
-// #include <mmu_iram.h>
-// #include <umm_malloc/umm_malloc.h>
-// #include <umm_malloc/umm_heap_select.h>
 #if 1
 #if !CORE_MOCK
 
@@ -103,57 +93,10 @@
 
 namespace BearSSL
 {
-
-    void ESP8266_SSL_Client::_clear()
-    {
-        // TLS handshake may take more than the 5 second default timeout
-        _timeout = 15000;
-
-        _sc = nullptr;
-        _sc_svr = nullptr;
-        _eng = nullptr;
-        _x509_minimal = nullptr;
-        _x509_insecure = nullptr;
-        _x509_knownkey = nullptr;
-        _iobuf_in = nullptr;
-        _iobuf_out = nullptr;
-        _now = 0; // You can override or ensure time() is correct w/configTime
-        _ta = nullptr;
-        setBufferSizes(16384, 512); // Minimum safe
-        _handshake_done = false;
-        _recvapp_buf = nullptr;
-        _recvapp_len = 0;
-        _oom_err = false;
-        _session = nullptr;
-        _cipher_list = nullptr;
-        _cipher_cnt = 0;
-        _tls_min = BR_TLS10;
-        _tls_max = BR_TLS12;
-        if (_esp32_ta)
-        {
-            delete _esp32_ta;
-            _esp32_ta = nullptr;
-        }
-    }
-
-    void ESP8266_SSL_Client::_clearAuthenticationSettings()
-    {
-        _use_insecure = false;
-        _use_fingerprint = false;
-        _use_self_signed = false;
-        _knownkey = nullptr;
-        _ta = nullptr;
-        if (_esp32_ta)
-        {
-            delete _esp32_ta;
-            _esp32_ta = nullptr;
-        }
-    }
-
     ESP8266_SSL_Client::ESP8266_SSL_Client()
     {
-        _clear();
-        _clearAuthenticationSettings();
+        mClear();
+        mClearAuthenticationSettings();
         _certStore = nullptr; // Don't want to remove cert store on a clear, should be long lived
         _sk = nullptr;
         stack_thunk_add_ref();
@@ -161,50 +104,360 @@ namespace BearSSL
 
     ESP8266_SSL_Client::~ESP8266_SSL_Client()
     {
-        if (base_client)
+        if (_basic_client)
         {
-            if (base_client->connected())
-                base_client->stop();
-            base_client = nullptr;
+            if (_basic_client->connected())
+                _basic_client->stop();
+            _basic_client = nullptr;
         }
         _cipher_list = nullptr; // std::shared will free if last reference
-        _freeSSL();
+        mFreeSSL();
         stack_thunk_del_ref();
     }
 
-    void ESP8266_SSL_Client::setClientRSACert(const X509List *chain, const PrivateKey *sk)
+    void ESP8266_SSL_Client::setClient(Client *client)
     {
-        if (_esp32_chain)
-        {
-            delete _esp32_chain;
-            _esp32_chain = nullptr;
-        }
-        if (_esp32_sk)
-        {
-            delete _esp32_sk;
-            _esp32_sk = nullptr;
-        }
-        _chain = chain;
-        _sk = sk;
+        _basic_client = client;
     }
 
-    void ESP8266_SSL_Client::setClientECCert(const X509List *chain,
-                                             const PrivateKey *sk, unsigned allowed_usages, unsigned cert_issuer_key_type)
+    int ESP8266_SSL_Client::connect(IPAddress ip, uint16_t port)
     {
-        if (_esp32_chain)
+        if (!mConnectBasicClient(nullptr, ip, port))
+            return 0;
+        return 1;
+    }
+
+    int ESP8266_SSL_Client::connect(const char *host, uint16_t port)
+    {
+        if (!mConnectBasicClient(host, IPAddress(), port))
+            return 0;
+        return 1;
+    }
+
+    int ESP8266_SSL_Client::connect(const String &host, uint16_t port)
+    {
+        return connect(host.c_str(), port);
+    }
+
+    bool ESP8266_SSL_Client::connected()
+    {
+        if (!_basic_client)
+            return false;
+
+        if (!_secure)
+            return _basic_client->connected();
+
+        // check all of the error cases
+        const auto c_con = _basic_client->connected();
+        const auto br_con = br_ssl_engine_current_state(_eng) != BR_SSL_CLOSED && _is_connected;
+        const auto wr_ok = getWriteError() == 0;
+        // if we're in an error state, close the connection and set a write error
+        if (br_con && !c_con)
         {
-            delete _esp32_chain;
-            _esp32_chain = nullptr;
+            // If we've got a write error, the client probably failed for some reason
+            if (getWriteError())
+            {
+                // Socket was unexpectedly interrupted.
+                setWriteError(esp_ssl_write_error);
+            }
+            // Else tell the user the endpoint closed the socket on us (ouch)
+            else
+            {
+                // Socket was dropped unexpectedly (this can be an alternative to closing the connection).
+            }
+            // we are not connected
+            _is_connected = false;
+            _secure = false;
+            // set the write error so the engine doesn't try to close the connection
+            stop();
         }
-        if (_esp32_sk)
+        else if (!wr_ok)
         {
-            delete _esp32_sk;
-            _esp32_sk = nullptr;
+            // Not connected because write error is set.
         }
-        _chain = chain;
-        _sk = sk;
-        _allowed_usages = allowed_usages;
-        _cert_issuer_key_type = cert_issuer_key_type;
+
+        return c_con && br_con;
+    }
+
+    int ESP8266_SSL_Client::available()
+    {
+        if (!_basic_client)
+            return 0;
+
+        if (!_secure)
+            return _basic_client->available();
+
+        // connection check
+        if (!mSoftConnected())
+            return 0;
+
+        // run the SSL engine until we are waiting for either user input or a server response
+        unsigned state = mUpdateEngine();
+        if (state == 0)
+        {
+            // SSL engine failed to update.
+        }
+        else if (state & BR_SSL_RECVAPP)
+        {
+            // return how many received bytes we have
+            _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+            return (int)(_recvapp_len);
+        }
+        else if (state == BR_SSL_CLOSED)
+        {
+            // SSL Engine closed after update.
+        }
+        // flush the buffer if it's stuck in the SENDAPP state
+        else if (state & BR_SSL_SENDAPP)
+            br_ssl_engine_flush(_eng, 0);
+        // other state, or client is closed
+        return 0;
+    }
+
+    int ESP8266_SSL_Client::read()
+    {
+        uint8_t read_val;
+        return read(&read_val, 1) > 0 ? read_val : -1;
+    }
+
+    int ESP8266_SSL_Client::read(uint8_t *buf, size_t size)
+    {
+        if (!_basic_client)
+            return 0;
+
+        if (!_secure)
+            return _basic_client->read(buf, size);
+
+        // check that the engine is ready to read
+        if (available() <= 0 || !size)
+            return -1;
+        // read the buffer, send the ack, and return the bytes read
+        _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+        const size_t read_amount = size > _recvapp_len ? _recvapp_len : size;
+        if (buf)
+            memcpy(buf, _recvapp_buf, read_amount);
+        // tell engine we read that many bytes
+        br_ssl_engine_recvapp_ack(_eng, read_amount);
+        // tell the user we read that many bytes
+        return read_amount;
+    }
+
+    size_t ESP8266_SSL_Client::write(const uint8_t *buf, size_t size)
+    {
+        if (!_basic_client)
+            return 0;
+
+        if (!_secure)
+            return _basic_client->write(buf, size);
+
+        // check if the socket is still open and such
+        if (!mSoftConnected() || !buf || !size)
+            return 0;
+        // wait until bearssl is ready to send
+        if (mRunUntil(BR_SSL_SENDAPP) < 0)
+        {
+            // Failed while waiting for the engine to enter BR_SSL_SENDAPP.
+            return 0;
+        }
+        // add to the bearssl io buffer, simply appending whatever we want to write
+        size_t alen;
+        unsigned char *br_buf = br_ssl_engine_sendapp_buf(_eng, &alen);
+        size_t cur_idx = 0;
+        if (alen == 0)
+        {
+            // BearSSL returned zero length buffer for sending, did an internal error occur?
+            return 0;
+        }
+        // while there are still elements to write
+        while (cur_idx < size)
+        {
+            // if we're about to fill the buffer, we need to send the data and then wait
+            // for another oppurtinity to send
+            // so we only send the smallest of the buffer size or our data size - how much we've already sent
+            const size_t cpamount = size - cur_idx >= alen - _write_idx ? alen - _write_idx : size - cur_idx;
+            memcpy(br_buf + _write_idx, buf + cur_idx, cpamount);
+            // increment write idx
+            _write_idx += cpamount;
+            // increment the buffer pointer
+            cur_idx += cpamount;
+            // if we filled the buffer, reset _write_idx, and mark the data for sending
+            if (_write_idx == alen)
+            {
+                // indicate to bearssl that we are done writing
+                br_ssl_engine_sendapp_ack(_eng, _write_idx);
+                // reset the write index
+                _write_idx = 0;
+                // write to the socket immediatly
+                if (mRunUntil(BR_SSL_SENDAPP) < 0)
+                {
+                    // Failed while waiting for the engine to enter BR_SSL_SENDAPP.
+                    return 0;
+                }
+                // reset the buffer pointer
+                br_buf = br_ssl_engine_sendapp_buf(_eng, &alen);
+            }
+        }
+        // works oky
+        return size;
+    }
+
+    size_t ESP8266_SSL_Client::write(uint8_t b)
+    {
+        return write(&b, 1);
+    }
+
+    size_t ESP8266_SSL_Client::write_P(PGM_P buf, size_t size)
+    {
+        char dest[size];
+        memcpy_P((void *)dest, buf, size);
+        return write((const uint8_t *)dest, size);
+    }
+
+    size_t ESP8266_SSL_Client::write(Stream &stream)
+    {
+        if (!connected())
+        {
+            // Connect not completed yet.
+            return 0;
+        }
+        size_t dl = stream.available();
+        uint8_t buf[dl];
+        stream.readBytes(buf, dl);
+        return write(buf, dl);
+    }
+
+    int ESP8266_SSL_Client::peek()
+    {
+        if (!_sc || !available())
+        {
+            // Not connected, none left available.
+            return -1;
+        }
+
+        if (!_secure)
+            return _basic_client->peek();
+
+        _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+        if (_recvapp_buf && _recvapp_len)
+            return _recvapp_buf[0];
+
+        // No data left.
+        return -1;
+    }
+
+    size_t ESP8266_SSL_Client::peekBytes(uint8_t *buffer, size_t length)
+    {
+        if (!_basic_client || !_secure)
+            return 0;
+
+        size_t to_copy = 0;
+        if (!_sc)
+        {
+            DEBUG_BSSL("peekBytes: Not connected\n");
+            return 0;
+        }
+
+        unsigned long _startMillis = millis();
+        while ((available() < (int)length) && ((millis() - _startMillis) < 5000))
+        {
+            yield();
+        }
+
+        to_copy = _recvapp_len < length ? _recvapp_len : length;
+        memcpy(buffer, _recvapp_buf, to_copy);
+        return to_copy;
+    }
+
+    void ESP8266_SSL_Client::setInsecure()
+    {
+        mClearAuthenticationSettings();
+        _use_insecure = true;
+    }
+
+    int ESP8266_SSL_Client::connectSSL(IPAddress ip, uint16_t port)
+    {
+
+        if (!mIsClientInitialized())
+            return 0;
+
+        if (!_basic_client->connected() && !mConnectBasicClient(nullptr, ip, port))
+            return 0;
+
+        return connectSSL(nullptr);
+    }
+
+    int ESP8266_SSL_Client::connectSSL(const char *host, uint16_t port)
+    {
+
+        if (!mIsClientInitialized())
+            return 0;
+
+        if (!_basic_client->connected() && !mConnectBasicClient(host, IPAddress(), port))
+            return 0;
+
+        return connectSSL(host);
+    }
+
+    void ESP8266_SSL_Client::stop()
+    {
+        if (_secure)
+        {
+            // Only if we've already connected, store session params and clear the connection options
+            if (_session)
+                br_ssl_engine_get_session_parameters(_eng, _session->getSession());
+
+            // tell the SSL connection to gracefully close
+            // Disabled to prevent close_notify from hanging BSSL_SSL_Client
+            // br_ssl_engine_close(_eng);
+            // if the engine isn't closed, and the socket is still open
+            auto state = br_ssl_engine_current_state(_eng);
+            if (state != BR_SSL_CLOSED && state != 0 && connected())
+            {
+                // Discard any incoming application data.
+                _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+                if (_recvapp_buf != nullptr)
+                    br_ssl_engine_recvapp_ack(_eng, _recvapp_len);
+                // run SSL to finish any existing transactions
+                flush();
+            }
+
+            mFreeSSL();
+        }
+        if (_basic_client)
+        {
+            // close the socket
+            _basic_client->flush();
+            _basic_client->stop();
+        }
+
+        _secure = false;
+        _is_connected = false;
+    }
+
+    void ESP8266_SSL_Client::setTimeout(unsigned int timeoutMs)
+    {
+        _timeout = timeoutMs;
+        if (_basic_client)
+            _basic_client->setTimeout(_timeout);
+    }
+
+    void ESP8266_SSL_Client::setHandshakeTimeout(unsigned int timeoutMs) { _handshake_timeout = timeoutMs; }
+
+    void ESP8266_SSL_Client::flush()
+    {
+        if (!_secure && _basic_client)
+        {
+            _basic_client->flush();
+            return;
+        }
+
+        if (_write_idx > 0)
+        {
+            if (mRunUntil(BR_SSL_RECVAPP) < 0)
+            {
+                // error: could not flush buffer
+            }
+        }
     }
 
     void ESP8266_SSL_Client::setBufferSizes(int recv, int xmit)
@@ -224,161 +477,18 @@ namespace BearSSL
         _iobuf_out_size = xmit;
     }
 
-    void ESP8266_SSL_Client::stop()
-    {
-        if (base_client)
-            base_client->stop();
-
-        if (!secured)
-            return;
-
-        // Only if we've already connected, store session params and clear the connection options
-        if (_handshake_done)
-        {
-            if (_session)
-            {
-                br_ssl_engine_get_session_parameters(_eng, _session->getSession());
-            }
-        }
-        _freeSSL();
-    }
-
-    void ESP8266_SSL_Client::flush()
-    {
-        if (!base_client)
-            return;
-
-        if (secured)
-            (void)_run_until(BR_SSL_SENDAPP);
-
-        base_client->flush();
-    }
-
-    int ESP8266_SSL_Client::connect(IPAddress ip, uint16_t port)
-    {
-        if (!base_client)
-        {
-#if !defined(SILENT_MODE)
-            if (debugLevel > 0)
-                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
-#endif
-            return 0;
-        }
-
-#if defined(ENABLE_CUSTOM_CLIENT)
-
-        if (connection_cb)
-            connection_cb(ip.toString().c_str(), port);
-        else
-            base_client->connect(ip, port);
-
-        if (!connected())
-            return 0;
-
-#else
-
-        if (!base_client->connect(ip, port))
-        {
-            DEBUG_BSSL("connect: base client connection failed\n");
-            return 0;
-        }
-
-#endif
-
-        host = "";
-        return 1;
-    }
-
-    int ESP8266_SSL_Client::connect(const char *name, uint16_t port)
-    {
-        if (!base_client)
-        {
-#if !defined(SILENT_MODE)
-            if (debugLevel > 0)
-                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
-#endif
-            return 0;
-        }
-
-#if defined(ENABLE_CUSTOM_CLIENT)
-
-        if (connection_cb)
-            connection_cb(name, port);
-        else
-            base_client->connect(name, port);
-
-        if (!connected())
-            return 0;
-
-#else
-
-        if (!base_client->connect(name, port))
-        {
-            DEBUG_BSSL("connect: base client connection failed\n");
-            return 0;
-        }
-
-#endif
-        host = name;
-        return 1;
-    }
-
-    int ESP8266_SSL_Client::connect(const String &host, uint16_t port)
-    {
-        return connect(host.c_str(), port);
-    }
-
-    void ESP8266_SSL_Client::_freeSSL()
-    {
-        // These are smart pointers and will free if refcnt==0
-        _sc = nullptr;
-        _sc_svr = nullptr;
-        _x509_minimal = nullptr;
-        _x509_insecure = nullptr;
-        _x509_knownkey = nullptr;
-        _iobuf_in = nullptr;
-        _iobuf_out = nullptr;
-        // Reset non-allocated ptrs (pointing to bits potentially free'd above)
-        _recvapp_buf = nullptr;
-        _recvapp_len = 0;
-        // This connection is toast
-        _handshake_done = false;
-        _timeout = 15000;
-        secured = false;
-    }
-
-    bool ESP8266_SSL_Client::_clientConnected()
-    {
-        return (base_client && base_client->connected());
-    }
-
-    bool ESP8266_SSL_Client::connected()
-    {
-        if (!base_client)
-            return 0;
-
-        if (!secured)
-            return base_client->connected();
-
-        if (available() || (_clientConnected() && _handshake_done && (br_ssl_engine_current_state(_eng) != BR_SSL_CLOSED)))
-        {
-            return 1;
-        }
-        return 0;
-    }
-
     int ESP8266_SSL_Client::availableForWrite()
     {
-        if (!base_client || !secured)
+        if (!_basic_client || !_secure)
             return 0;
 
-        // code taken from ::_write()
+        // code taken from ::write()
         if (!connected() || !_handshake_done)
         {
             return 0;
         }
         // Get BearSSL to a state where we can send
-        if (_run_until(BR_SSL_SENDAPP) < 0)
+        if (mRunUntil(BR_SSL_SENDAPP) < 0)
         {
             return 0;
         }
@@ -395,510 +505,23 @@ namespace BearSSL
         return 0;
     }
 
-    size_t ESP8266_SSL_Client::_write(const uint8_t *buf, size_t size, bool pmem)
+    void ESP8266_SSL_Client::setSession(_BearSSL_Session *session) { _session = session; };
+
+    void ESP8266_SSL_Client::setKnownKey(const PublicKey *pk, unsigned usages)
     {
-        if (!base_client)
-            return 0;
-
-        if (!secured)
-        {
-            if (pmem)
-            {
-                char dest[size];
-                memcpy_P((void *)dest, (PGM_VOID_P)buf, size);
-                return base_client->write((uint8_t *)dest, size);
-            }
-
-            return base_client->write(buf, size);
-        }
-
-        size_t sent_bytes = 0;
-
-        if (!connected() || !size || !_handshake_done)
-        {
-            return 0;
-        }
-
-        do
-        {
-// Ensure we yield if we need multiple fragments to avoid WDT
-#if defined(ESP8266)
-            if (sent_bytes)
-            {
-                optimistic_yield(1000);
-            }
-#endif
-            // Get BearSSL to a state where we can send
-            if (_run_until(BR_SSL_SENDAPP) < 0)
-            {
-                break;
-            }
-
-            if (br_ssl_engine_current_state(_eng) & BR_SSL_SENDAPP)
-            {
-                size_t sendapp_len;
-                unsigned char *sendapp_buf = br_ssl_engine_sendapp_buf(_eng, &sendapp_len);
-                int to_send = size > sendapp_len ? sendapp_len : size;
-                if (pmem)
-                {
-                    memcpy_P(sendapp_buf, buf, to_send);
-                }
-                else
-                {
-                    memcpy(sendapp_buf, buf, to_send);
-                }
-                br_ssl_engine_sendapp_ack(_eng, to_send);
-                br_ssl_engine_flush(_eng, 0);
-                flush();
-                buf += to_send;
-                sent_bytes += to_send;
-                size -= to_send;
-            }
-            else
-            {
-                break;
-            }
-        } while (size);
-
-        return sent_bytes;
+        mClearAuthenticationSettings();
+        _knownkey = pk;
+        _knownkey_usages = usages;
     }
 
-    size_t ESP8266_SSL_Client::write(const uint8_t *buf, size_t size)
+    bool ESP8266_SSL_Client::setFingerprint(const uint8_t fingerprint[20])
     {
-        return _write(buf, size, false);
+        mClearAuthenticationSettings();
+        _use_fingerprint = true;
+        memcpy_P(_fingerprint, fingerprint, 20);
+        return true;
     }
 
-    size_t ESP8266_SSL_Client::write_P(PGM_P buf, size_t size)
-    {
-        return _write((const uint8_t *)buf, size, true);
-    }
-
-    size_t ESP8266_SSL_Client::write(Stream &stream)
-    {
-        if (!connected() || !_handshake_done)
-        {
-            DEBUG_BSSL("write: Connect/handshake not completed yet\n");
-            return 0;
-        }
-
-        size_t dl = stream.available();
-        uint8_t buf[dl];
-        stream.readBytes(buf, dl);
-        return _write(buf, dl, false);
-    }
-
-    int ESP8266_SSL_Client::read(uint8_t *buf, size_t size)
-    {
-        if (!base_client)
-            return 0;
-
-        if (!secured)
-            return base_client->read(buf, size);
-
-        if (!ctx_present() || !_handshake_done)
-        {
-            return -1;
-        }
-
-        int avail = available();
-        bool conn = connected();
-        if (!avail && conn)
-        {
-            return 0; // We're still connected, but nothing to read
-        }
-        if (!avail && !conn)
-        {
-            DEBUG_BSSL("read: Not connected, none left available\n");
-            return -1;
-        }
-
-        if (avail)
-        {
-            // Take data from the recvapp buffer
-            int to_copy = _recvapp_len < size ? _recvapp_len : size;
-            memcpy(buf, _recvapp_buf, to_copy);
-            br_ssl_engine_recvapp_ack(_eng, to_copy);
-            _recvapp_buf = nullptr;
-            _recvapp_len = 0;
-            return to_copy;
-        }
-
-        if (!conn)
-        {
-            DEBUG_BSSL("read: Not connected\n");
-            return -1;
-        }
-        return 0; // If we're connected, no error but no read.
-    }
-
-#if defined(ESP8266)
-    // return a pointer to available data buffer (size = peekAvailable())
-    // semantic forbids any kind of read() before calling peekConsume()
-    const char *ESP8266_SSL_Client::peekBuffer()
-    {
-        return (const char *)_recvapp_buf;
-    }
-
-    // consume bytes after use (see peekBuffer)
-    void ESP8266_SSL_Client::peekConsume(size_t consume)
-    {
-        // according to ESP8266_SSL_Client::read:
-        br_ssl_engine_recvapp_ack(_eng, consume);
-        _recvapp_buf = nullptr;
-        _recvapp_len = 0;
-    }
-#endif
-
-    int ESP8266_SSL_Client::read()
-    {
-        if (!base_client)
-            return -1;
-
-        if (!secured)
-            return base_client->read();
-
-        uint8_t c;
-        if (1 == read(&c, 1))
-        {
-            return c;
-        }
-        DEBUG_BSSL("read: failed\n");
-        return -1;
-    }
-
-    int ESP8266_SSL_Client::available()
-    {
-        if (!base_client)
-            return 0;
-
-        if (!secured)
-            return base_client->available();
-
-        if (_recvapp_buf)
-        {
-            return _recvapp_len; // Anything from last call?
-        }
-        _recvapp_buf = nullptr;
-        _recvapp_len = 0;
-        if (!ctx_present() || _run_until(BR_SSL_RECVAPP, false) < 0)
-        {
-            return 0;
-        }
-
-        int st = br_ssl_engine_current_state(_eng);
-        if (st == BR_SSL_CLOSED)
-        {
-            return 0; // Nothing leftover, SSL is closed
-        }
-        if (st & BR_SSL_RECVAPP)
-        {
-            _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
-            return _recvapp_len;
-        }
-
-        return 0;
-    }
-
-    int ESP8266_SSL_Client::peek()
-    {
-        if (!ctx_present() || !available())
-        {
-            DEBUG_BSSL("peek: Not connected, none left available\n");
-            return -1;
-        }
-
-        if (!secured)
-            return base_client->peek();
-
-        if (_recvapp_buf && _recvapp_len)
-        {
-            return _recvapp_buf[0];
-        }
-        DEBUG_BSSL("peek: No data left\n");
-        return -1;
-    }
-
-    size_t ESP8266_SSL_Client::peekBytes(uint8_t *buffer, size_t length)
-    {
-        if (!base_client || !secured)
-            return 0;
-
-        size_t to_copy = 0;
-        if (!ctx_present())
-        {
-            DEBUG_BSSL("peekBytes: Not connected\n");
-            return 0;
-        }
-
-        unsigned long _startMillis = millis();
-        while ((available() < (int)length) && ((millis() - _startMillis) < 5000))
-        {
-            yield();
-        }
-
-        to_copy = _recvapp_len < length ? _recvapp_len : length;
-        memcpy(buffer, _recvapp_buf, to_copy);
-        return to_copy;
-    }
-
-    /* --- Copied almost verbatim from BEARSSL SSL_IO.C ---
-       Run the engine, until the specified target state is achieved, or
-       an error occurs. The target state is SENDAPP, RECVAPP, or the
-       combination of both (the combination matches either). When a match is
-       achieved, this function returns 0. On error, it returns -1.
-    */
-
-    int ESP8266_SSL_Client::_run_until(unsigned int target, bool blocking)
-    {
-        if (!ctx_present())
-        {
-            DEBUG_BSSL("_run_until: Not connected\n");
-            return -1;
-        }
-
-#if defined(ESP8266)
-        esp8266::polledTimeout::oneShotMs loopTimeout(_timeout);
-#else
-        uint32_t start = millis();
-#endif
-
-        for (int no_work = 0; blocking || no_work < 2;)
-        {
-            idle();
-
-#if defined(ESP8266)
-            optimistic_yield(100);
-            if (loopTimeout)
-            {
-                DEBUG_BSSL("_run_until: Timeout\n");
-                return -1;
-            }
-#else
-            if (millis() - start > _timeout)
-            {
-                DEBUG_BSSL("_run_until: Timeout\n");
-                return -1;
-            }
-#endif
-
-            int state;
-            state = br_ssl_engine_current_state(_eng);
-            if (state & BR_SSL_CLOSED)
-            {
-                DEBUG_BSSL("_run_until: BSSL closed\n");
-                return -1;
-            }
-
-            if (!base_client->connected() && !base_client->available())
-            {
-                // Don't print any debug here because of iteration;
-                return (state & target) ? 0 : -1;
-            }
-
-            /*
-               If there is some record data to send, do it. This takes
-               precedence over everything else.
-            */
-            if (state & BR_SSL_SENDREC)
-            {
-                unsigned char *buf;
-                size_t len;
-                int wlen;
-                size_t availForWrite;
-
-                buf = br_ssl_engine_sendrec_buf(_eng, &len);
-
-#if defined(ESP8266)
-#if defined(ESP8266_CORE_SDK_V3_X_X)
-                availForWrite = base_client->availableForWrite();
-
-                if (!blocking && len > availForWrite)
-                {
-                    /*
-                       writes on WiFiClient will block if len > availableForWrite()
-                       this is needed to prevent available() calls from blocking
-                       on dropped connections
-                    */
-                    len = availForWrite;
-                }
-#endif
-#else
-                availForWrite = base_client->availableForWrite();
-
-                if (!blocking && len > availForWrite)
-                {
-                    /*
-                        writes on WiFiClient will block if len > availableForWrite()
-                        this is needed to prevent available() calls from blocking
-                        on dropped connections
-                    */
-                    len = availForWrite;
-                }
-#endif
-                wlen = base_client->write(buf, len);
-
-                if (wlen <= 0)
-                {
-                    /*
-                       If we received a close_notify and we
-                       still send something, then we have our
-                       own response close_notify to send, and
-                       the peer is allowed by RFC 5246 not to
-                       wait for it.
-                    */
-                    return -1;
-                }
-
-                if (wlen > 0)
-                {
-                    br_ssl_engine_sendrec_ack(_eng, wlen);
-                }
-
-                no_work = 0;
-                continue;
-            }
-
-            /*
-               If we reached our target, then we are finished.
-            */
-            if (state & target)
-            {
-                return 0;
-            }
-
-            /*
-               If some application data must be read, and we did not
-               exit, then this means that we are trying to write data,
-               and that's not possible until the application data is
-               read. This may happen if using a shared in/out buffer,
-               and the underlying protocol is not strictly half-duplex.
-               This is unrecoverable here, so we report an error.
-            */
-            if (state & BR_SSL_RECVAPP)
-            {
-                DEBUG_BSSL("_run_until: Fatal protocol state\n");
-                return -1;
-            }
-
-            /*
-               If we reached that point, then either we are trying
-               to read data and there is some, or the engine is stuck
-               until a new record is obtained.
-            */
-            if (state & BR_SSL_RECVREC)
-            {
-                if (base_client->available())
-                {
-                    unsigned char *buf;
-                    size_t len;
-                    int rlen;
-
-                    buf = br_ssl_engine_recvrec_buf(_eng, &len);
-
-                    int read = 0;
-                    int toRead = len;
-                    while (toRead > 0 && base_client->available())
-                    {
-                        rlen = base_client->read(buf + read, toRead);
-                        read += rlen;
-                        toRead = len - read;
-                        idle();
-#if defined(ESP8266)
-                        if (loopTimeout)
-                        {
-                            DEBUG_BSSL("_run_until: Timeout\n");
-                            return -1;
-                        }
-#else
-                        if (millis() - start > _timeout)
-                        {
-                            DEBUG_BSSL("_run_until: Timeout\n");
-                            return -1;
-                        }
-#endif
-                    }
-
-                    rlen = read;
-
-                    if (rlen < 0)
-                    {
-                        return -1;
-                    }
-
-                    if (rlen > 0)
-                    {
-                        br_ssl_engine_recvrec_ack(_eng, rlen);
-                    }
-
-                    no_work = 0;
-                    continue;
-                }
-            }
-
-            /*
-               We can reach that point if the target RECVAPP, and
-               the state contains SENDAPP only. This may happen with
-               a shared in/out buffer. In that case, we must flush
-               the buffered data to "make room" for a new incoming
-               record.
-            */
-            br_ssl_engine_flush(_eng, 0);
-
-            no_work++; // We didn't actually advance here
-        }
-        // We only get here if we ran through the loop without getting anything done
-        return -1;
-    }
-
-    bool ESP8266_SSL_Client::_wait_for_handshake()
-    {
-        _handshake_done = false;
-        // Change waiting time out to ensure the handshake done
-        unsigned long to = _timeout;
-        _timeout = 15000;
-        while (!_handshake_done && _clientConnected())
-        {
-            idle();
-            int ret = _run_until(BR_SSL_SENDAPP);
-            if (ret < 0)
-            {
-                DEBUG_BSSL("_wait_for_handshake: failed\n");
-                break;
-            }
-            if (br_ssl_engine_current_state(_eng) & BR_SSL_SENDAPP)
-            {
-                _handshake_done = true;
-            }
-#if defined(ESP8266)
-            optimistic_yield(1000);
-#endif
-        }
-        // Restore waiting time out
-        _timeout = to;
-        return _handshake_done;
-    }
-
-    static uint8_t htoi(unsigned char c)
-    {
-        if (c >= '0' && c <= '9')
-        {
-            return c - '0';
-        }
-        else if (c >= 'A' && c <= 'F')
-        {
-            return 10 + c - 'A';
-        }
-        else if (c >= 'a' && c <= 'f')
-        {
-            return 10 + c - 'a';
-        }
-        else
-        {
-            return 255;
-        }
-    }
-
-    // Set a fingerprint by parsing an ASCII string
     bool ESP8266_SSL_Client::setFingerprint(const char *fpStr)
     {
         int idx = 0;
@@ -941,824 +564,62 @@ namespace BearSSL
         return setFingerprint(fp);
     }
 
-    extern "C"
+    void ESP8266_SSL_Client::allowSelfSignedCerts()
     {
-
-        // BearSSL doesn't define a true insecure decoder, so we make one ourselves
-        // from the simple parser.  It generates the issuer and subject hashes and
-        // the SHA1 fingerprint, only one (or none!) of which will be used to
-        // "verify" the certificate.
-
-        // Private x509 decoder state
-        struct br_x509_insecure_context
-        {
-            const br_x509_class *vtable;
-            bool done_cert;
-            const uint8_t *match_fingerprint;
-            br_sha1_context sha1_cert;
-            bool allow_self_signed;
-            br_sha256_context sha256_subject;
-            br_sha256_context sha256_issuer;
-            br_x509_decoder_context ctx;
-        };
-
-        // Callback for the x509_minimal subject DN
-        static void insecure_subject_dn_append(void *ctx, const void *buf, size_t len)
-        {
-            br_x509_insecure_context *xc = (br_x509_insecure_context *)ctx;
-            br_sha256_update(&xc->sha256_subject, buf, len);
-        }
-
-        // Callback for the x509_minimal issuer DN
-        static void insecure_issuer_dn_append(void *ctx, const void *buf, size_t len)
-        {
-            br_x509_insecure_context *xc = (br_x509_insecure_context *)ctx;
-            br_sha256_update(&xc->sha256_issuer, buf, len);
-        }
-
-        // Callback on the first byte of any certificate
-        static void insecure_start_chain(const br_x509_class **ctx, const char *server_name)
-        {
-            br_x509_insecure_context *xc = (br_x509_insecure_context *)ctx;
-            br_x509_decoder_init(&xc->ctx, insecure_subject_dn_append, xc, insecure_issuer_dn_append, xc);
-            xc->done_cert = false;
-            br_sha1_init(&xc->sha1_cert);
-            br_sha256_init(&xc->sha256_subject);
-            br_sha256_init(&xc->sha256_issuer);
-            (void)server_name;
-        }
-
-        // Callback for each certificate present in the chain (but only operates
-        // on the first one by design).
-        static void insecure_start_cert(const br_x509_class **ctx, uint32_t length)
-        {
-            (void)ctx;
-            (void)length;
-        }
-
-        // Callback for each byte stream in the chain.  Only process first cert.
-        static void insecure_append(const br_x509_class **ctx, const unsigned char *buf, size_t len)
-        {
-            br_x509_insecure_context *xc = (br_x509_insecure_context *)ctx;
-            // Don't process anything but the first certificate in the chain
-            if (!xc->done_cert)
-            {
-                br_sha1_update(&xc->sha1_cert, buf, len);
-                br_x509_decoder_push(&xc->ctx, (const void *)buf, len);
-#if defined(DEBUG_ESP_SSL) && defined(DEBUG_ESP_PORT)
-                DEBUG_BSSL("CERT: ");
-                for (size_t i = 0; i < len; i++)
-                {
-                    DEBUG_ESP_PORT.printf_P(PSTR("%02x "), buf[i] & 0xff);
-                }
-                DEBUG_ESP_PORT.printf_P(PSTR("\n"));
-#endif
-            }
-        }
-
-        // Callback on individual cert end.
-        static void insecure_end_cert(const br_x509_class **ctx)
-        {
-            br_x509_insecure_context *xc = (br_x509_insecure_context *)ctx;
-            xc->done_cert = true;
-        }
-
-        // Callback when complete chain has been parsed.
-        // Return 0 on validation success, !0 on validation error
-        static unsigned insecure_end_chain(const br_x509_class **ctx)
-        {
-            const br_x509_insecure_context *xc = (const br_x509_insecure_context *)ctx;
-            if (!xc->done_cert)
-            {
-                DEBUG_BSSL("insecure_end_chain: No cert seen\n");
-                return 1; // error
-            }
-
-            // Handle SHA1 fingerprint matching
-            char res[20];
-            br_sha1_out(&xc->sha1_cert, res);
-            if (xc->match_fingerprint && memcmp(res, xc->match_fingerprint, sizeof(res)))
-            {
-#ifdef DEBUG_ESP_SSL
-                DEBUG_BSSL("insecure_end_chain: Received cert FP doesn't match\n");
-                char buff[3 * sizeof(res) + 1]; // 3 chars per byte XX_, and null
-                buff[0] = 0;
-                for (size_t i = 0; i < sizeof(res); i++)
-                {
-                    char hex[4]; // XX_\0
-                    snprintf(hex, sizeof(hex), "%02x ", xc->match_fingerprint[i] & 0xff);
-                    // strlcat(buff, hex, sizeof(buff));
-                }
-                DEBUG_BSSL("insecure_end_chain: expected %s\n", buff);
-                buff[0] = 0;
-                for (size_t i = 0; i < sizeof(res); i++)
-                {
-                    char hex[4]; // XX_\0
-                    snprintf(hex, sizeof(hex), "%02x ", res[i] & 0xff);
-                    // strlcat(buff, hex, sizeof(buff));
-                }
-                DEBUG_BSSL("insecure_end_chain: received %s\n", buff);
-#endif
-                return BR_ERR_X509_NOT_TRUSTED;
-            }
-
-            // Handle self-signer certificate acceptance
-            char res_issuer[32];
-            char res_subject[32];
-            br_sha256_out(&xc->sha256_issuer, res_issuer);
-            br_sha256_out(&xc->sha256_subject, res_subject);
-            if (xc->allow_self_signed && memcmp(res_subject, res_issuer, sizeof(res_issuer)))
-            {
-                DEBUG_BSSL("insecure_end_chain: Didn't get self-signed cert\n");
-                return BR_ERR_X509_NOT_TRUSTED;
-            }
-
-            // Default (no validation at all) or no errors in prior checks = success.
-            return 0;
-        }
-
-        // Return the public key from the validator (set by x509_minimal)
-        static const br_x509_pkey *insecure_get_pkey(const br_x509_class *const *ctx, unsigned *usages)
-        {
-            const br_x509_insecure_context *xc = (const br_x509_insecure_context *)ctx;
-            if (usages != nullptr)
-            {
-                *usages = BR_KEYTYPE_KEYX | BR_KEYTYPE_SIGN; // I said we were insecure!
-            }
-            return &xc->ctx.pkey;
-        }
-
-        //  Set up the x509 insecure data structures for BearSSL core to use.
-        void _mb_bssl_br_x509_insecure_init(br_x509_insecure_context *ctx, int _use_fingerprint, const uint8_t _fingerprint[20], int _allow_self_signed)
-        {
-            static const br_x509_class br_x509_insecure_vtable PROGMEM = {
-                sizeof(br_x509_insecure_context),
-                insecure_start_chain,
-                insecure_start_cert,
-                insecure_append,
-                insecure_end_cert,
-                insecure_end_chain,
-                insecure_get_pkey};
-
-            memset(ctx, 0, sizeof *ctx);
-            ctx->vtable = &br_x509_insecure_vtable;
-            ctx->done_cert = false;
-            ctx->match_fingerprint = _use_fingerprint ? _fingerprint : nullptr;
-            ctx->allow_self_signed = _allow_self_signed ? 1 : 0;
-        }
-
-        void ESP8266_SSL_Client::setTimeout(unsigned long timeout)
-        {
-            this->_timeout = timeout;
-            if (base_client)
-                base_client->setTimeout(timeout);
-        }
-
-        void ESP8266_SSL_Client::setClient(Client *client)
-        {
-            base_client = client;
-        }
-
-        // Some constants uses to init the server/client contexts
-        // Note that suites_P needs to be copied to RAM before use w/BearSSL!
-        // List copied verbatim from BearSSL/ssl_client_full.c
-        /*
-            The "full" profile supports all implemented cipher suites.
-
-            Rationale for suite order, from most important to least
-            important rule:
-
-            -- Don't use 3DES if AES or ChaCha20 is available.
-            -- Try to have Forward Secrecy (ECDHE suite) if possible.
-            -- When not using Forward Secrecy, ECDH key exchange is
-              better than RSA key exchange (slightly more expensive on the
-              client, but much cheaper on the server, and it implies smaller
-              messages).
-            -- ChaCha20+Poly1305 is better than AES/GCM (faster, smaller code).
-            -- GCM is better than CCM and CBC. CCM is better than CBC.
-            -- CCM is preferable over CCM_8 (with CCM_8, forgeries may succeed
-              with probability 2^(-64)).
-            -- AES-128 is preferred over AES-256 (AES-128 is already
-              strong enough, and AES-256 is 40% more expensive).
-        */
-        static const uint16_t suites_P[] PROGMEM = {
-#ifndef BEARSSL_SSL_BASIC
-            BR_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_RSA_WITH_AES_128_CCM,
-            BR_TLS_RSA_WITH_AES_256_CCM,
-            BR_TLS_RSA_WITH_AES_128_CCM_8,
-            BR_TLS_RSA_WITH_AES_256_CCM_8,
-#endif
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA,
-#ifndef BEARSSL_SSL_BASIC
-            BR_TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_RSA_WITH_3DES_EDE_CBC_SHA
-#endif
-        };
-#ifndef BEARSSL_SSL_BASIC
-        // Server w/EC has one set, not possible with basic SSL config
-        static const uint16_t suites_server_ec_P[] PROGMEM = {
-            BR_TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CCM,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CCM,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CCM_8,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CCM_8,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDH_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDH_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_ECDH_ECDSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_ECDH_RSA_WITH_3DES_EDE_CBC_SHA};
-#endif
-
-        static const uint16_t suites_server_rsa_P[] PROGMEM = {
-#ifndef BEARSSL_SSL_BASIC
-            BR_TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
-            BR_TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_RSA_WITH_AES_128_GCM_SHA256,
-            BR_TLS_RSA_WITH_AES_256_GCM_SHA384,
-            BR_TLS_RSA_WITH_AES_128_CCM,
-            BR_TLS_RSA_WITH_AES_256_CCM,
-            BR_TLS_RSA_WITH_AES_128_CCM_8,
-            BR_TLS_RSA_WITH_AES_256_CCM_8,
-#endif
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA,
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA,
-#ifndef BEARSSL_SSL_BASIC
-            BR_TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA,
-            BR_TLS_RSA_WITH_3DES_EDE_CBC_SHA
-#endif
-        };
-
-        // For apps which want to use less secure but faster ciphers, only
-        static const uint16_t faster_suites_P[] PROGMEM = {
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA256,
-            BR_TLS_RSA_WITH_AES_256_CBC_SHA,
-            BR_TLS_RSA_WITH_AES_128_CBC_SHA};
-
-        // Install hashes into the SSL engine
-        static void br_ssl_client_install_hashes(br_ssl_engine_context *eng)
-        {
-            br_ssl_engine_set_hash(eng, br_md5_ID, &br_md5_vtable);
-            br_ssl_engine_set_hash(eng, br_sha1_ID, &br_sha1_vtable);
-            br_ssl_engine_set_hash(eng, br_sha224_ID, &br_sha224_vtable);
-            br_ssl_engine_set_hash(eng, br_sha256_ID, &br_sha256_vtable);
-            br_ssl_engine_set_hash(eng, br_sha384_ID, &br_sha384_vtable);
-            br_ssl_engine_set_hash(eng, br_sha512_ID, &br_sha512_vtable);
-        }
-
-        static void br_x509_minimal_install_hashes(br_x509_minimal_context *x509)
-        {
-            br_x509_minimal_set_hash(x509, br_md5_ID, &br_md5_vtable);
-            br_x509_minimal_set_hash(x509, br_sha1_ID, &br_sha1_vtable);
-            br_x509_minimal_set_hash(x509, br_sha224_ID, &br_sha224_vtable);
-            br_x509_minimal_set_hash(x509, br_sha256_ID, &br_sha256_vtable);
-            br_x509_minimal_set_hash(x509, br_sha384_ID, &br_sha384_vtable);
-            br_x509_minimal_set_hash(x509, br_sha512_ID, &br_sha512_vtable);
-        }
-
-        // Default initializion for our SSL clients
-        static void br_ssl_client_base_init(br_ssl_client_context *cc, const uint16_t *cipher_list, int cipher_cnt)
-        {
-            uint16_t suites[cipher_cnt];
-            memcpy_P(suites, cipher_list, cipher_cnt * sizeof(cipher_list[0]));
-            br_ssl_client_zero(cc);
-            br_ssl_engine_add_flags(&cc->eng, BR_OPT_NO_RENEGOTIATION); // forbid SSL renegotiation, as we free the Private Key after handshake
-            br_ssl_engine_set_versions(&cc->eng, BR_TLS10, BR_TLS12);
-            br_ssl_engine_set_suites(&cc->eng, suites, (sizeof suites) / (sizeof suites[0]));
-            br_ssl_client_set_default_rsapub(cc);
-            br_ssl_engine_set_default_rsavrfy(&cc->eng);
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_engine_set_default_ecdsa(&cc->eng);
-#endif
-            br_ssl_client_install_hashes(&cc->eng);
-            br_ssl_engine_set_prf10(&cc->eng, &br_tls10_prf);
-            br_ssl_engine_set_prf_sha256(&cc->eng, &br_tls12_sha256_prf);
-            br_ssl_engine_set_prf_sha384(&cc->eng, &br_tls12_sha384_prf);
-            br_ssl_engine_set_default_aes_cbc(&cc->eng);
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_engine_set_default_aes_gcm(&cc->eng);
-            br_ssl_engine_set_default_aes_ccm(&cc->eng);
-            br_ssl_engine_set_default_des_cbc(&cc->eng);
-            br_ssl_engine_set_default_chapol(&cc->eng);
-#endif
-        }
-
-        // Default initializion for our SSL clients
-        static void br_ssl_server_base_init(br_ssl_server_context *cc, const uint16_t *cipher_list, int cipher_cnt)
-        {
-            uint16_t suites[cipher_cnt];
-            memcpy_P(suites, cipher_list, cipher_cnt * sizeof(cipher_list[0]));
-            br_ssl_server_zero(cc);
-            br_ssl_engine_add_flags(&cc->eng, BR_OPT_NO_RENEGOTIATION); // forbid SSL renegotiation, as we free the Private Key after handshake
-            br_ssl_engine_set_versions(&cc->eng, BR_TLS10, BR_TLS12);
-            br_ssl_engine_set_suites(&cc->eng, suites, (sizeof suites) / (sizeof suites[0]));
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_engine_set_default_ec(&cc->eng);
-#endif
-
-            br_ssl_client_install_hashes(&cc->eng);
-            br_ssl_engine_set_prf10(&cc->eng, &br_tls10_prf);
-            br_ssl_engine_set_prf_sha256(&cc->eng, &br_tls12_sha256_prf);
-            br_ssl_engine_set_prf_sha384(&cc->eng, &br_tls12_sha384_prf);
-            br_ssl_engine_set_default_aes_cbc(&cc->eng);
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_engine_set_default_aes_ccm(&cc->eng);
-            br_ssl_engine_set_default_aes_gcm(&cc->eng);
-            br_ssl_engine_set_default_des_cbc(&cc->eng);
-            br_ssl_engine_set_default_chapol(&cc->eng);
-#endif
-        }
+        mClearAuthenticationSettings();
+        _use_self_signed = true;
     }
 
-    // Set custom list of ciphers
-    bool ESP8266_SSL_Client::setCiphers(const uint16_t *cipherAry, int cipherCount)
+    // Install certificates of trusted CAs or specific site
+    void ESP8266_SSL_Client::setTrustAnchors(const X509List *ta)
     {
-        _cipher_list = nullptr;
-        _cipher_list = std::shared_ptr<uint16_t>(new (std::nothrow) uint16_t[cipherCount], std::default_delete<uint16_t[]>());
-        if (!_cipher_list.get())
-        {
-            DEBUG_BSSL("setCiphers: list empty\n");
-            return false;
-        }
-        memcpy_P(_cipher_list.get(), cipherAry, cipherCount * sizeof(uint16_t));
-        _cipher_cnt = cipherCount;
-        return true;
+        mClearAuthenticationSettings();
+        _ta = ta;
     }
 
-    bool ESP8266_SSL_Client::setCiphersLessSecure()
+    void ESP8266_SSL_Client::setX509Time(time_t now)
     {
-        return setCiphers(faster_suites_P, sizeof(faster_suites_P) / sizeof(faster_suites_P[0]));
+        _now = now;
     }
 
-    bool ESP8266_SSL_Client::setCiphers(const std::vector<uint16_t> &list)
+    void ESP8266_SSL_Client::setClientRSACert(const X509List *chain, const PrivateKey *sk)
     {
-        return setCiphers(&list[0], list.size());
+        if (_esp32_chain)
+        {
+            delete _esp32_chain;
+            _esp32_chain = nullptr;
+        }
+        if (_esp32_sk)
+        {
+            delete _esp32_sk;
+            _esp32_sk = nullptr;
+        }
+        _chain = chain;
+        _sk = sk;
     }
 
-    bool ESP8266_SSL_Client::setSSLVersion(uint32_t min, uint32_t max)
+    void ESP8266_SSL_Client::setClientECCert(const X509List *chain,
+                                             const PrivateKey *sk, unsigned allowed_usages, unsigned cert_issuer_key_type)
     {
-        if (((min != BR_TLS10) && (min != BR_TLS11) && (min != BR_TLS12)) ||
-            ((max != BR_TLS10) && (max != BR_TLS11) && (max != BR_TLS12)) ||
-            (max < min))
+        if (_esp32_chain)
         {
-            return false; // Invalid options
+            delete _esp32_chain;
+            _esp32_chain = nullptr;
         }
-        _tls_min = min;
-        _tls_max = max;
-        return true;
+        if (_esp32_sk)
+        {
+            delete _esp32_sk;
+            _esp32_sk = nullptr;
+        }
+        _chain = chain;
+        _sk = sk;
+        _allowed_usages = allowed_usages;
+        _cert_issuer_key_type = cert_issuer_key_type;
     }
 
-    // Installs the appropriate X509 cert validation method for a client connection
-    bool ESP8266_SSL_Client::_installClientX509Validator()
+    int ESP8266_SSL_Client::getMFLNStatus()
     {
-        if (_use_insecure || _use_fingerprint || _use_self_signed)
-        {
-            // Use common insecure x509 authenticator
-            _x509_insecure = std::make_shared<struct br_x509_insecure_context>();
-            if (!_x509_insecure)
-            {
-                DEBUG_BSSL("_installClientX509Validator: OOM for _x509_insecure\n");
-                return false;
-            }
-            _mb_bssl_br_x509_insecure_init(_x509_insecure.get(), _use_fingerprint, _fingerprint, _use_self_signed);
-            br_ssl_engine_set_x509(_eng, &_x509_insecure->vtable);
-        }
-        else if (_knownkey)
-        {
-            // Simple, pre-known public key authenticator, ignores cert completely.
-            _x509_knownkey = std::make_shared<br_x509_knownkey_context>();
-            if (!_x509_knownkey)
-            {
-                DEBUG_BSSL("_installClientX509Validator: OOM for _x509_knownkey\n");
-                return false;
-            }
-            if (_knownkey->isRSA())
-            {
-                br_x509_knownkey_init_rsa(_x509_knownkey.get(), _knownkey->getRSA(), _knownkey_usages);
-            }
-            else if (_knownkey->isEC())
-            {
-#ifndef BEARSSL_SSL_BASIC
-                br_x509_knownkey_init_ec(_x509_knownkey.get(), _knownkey->getEC(), _knownkey_usages);
-#else
-                (void)_knownkey;
-                (void)_knownkey_usages;
-                DEBUG_BSSL("_installClientX509Validator: Attempting to use EC keys in minimal cipher mode (no EC)\n");
-                return false;
-#endif
-            }
-            br_ssl_engine_set_x509(_eng, &_x509_knownkey->vtable);
-        }
-        else
-        {
-            // X509 minimal validator.  Checks dates, cert chain for trusted CA, etc.
-            _x509_minimal = std::make_shared<br_x509_minimal_context>();
-            if (!_x509_minimal)
-            {
-                DEBUG_BSSL("_installClientX509Validator: OOM for _x509_minimal\n");
-                return false;
-            }
-            if (_esp32_ta)
-            {
-                br_x509_minimal_init(_x509_minimal.get(), &br_sha256_vtable, _esp32_ta->getTrustAnchors(), _esp32_ta->getCount());
-            }
-            else
-            {
-                br_x509_minimal_init(_x509_minimal.get(), &br_sha256_vtable, _ta ? _ta->getTrustAnchors() : nullptr, _ta ? _ta->getCount() : 0);
-            }
-            br_x509_minimal_set_rsa(_x509_minimal.get(), br_ssl_engine_get_rsavrfy(_eng));
-#ifndef BEARSSL_SSL_BASIC
-            br_x509_minimal_set_ecdsa(_x509_minimal.get(), br_ssl_engine_get_ec(_eng), br_ssl_engine_get_ecdsa(_eng));
-#endif
-            br_x509_minimal_install_hashes(_x509_minimal.get());
-            if (_now)
-            {
-                // Magic constants convert to x509 times
-                br_x509_minimal_set_time(_x509_minimal.get(), ((uint32_t)_now) / 86400 + 719528, ((uint32_t)_now) % 86400);
-            }
-            if (_certStore)
-            {
-                _certStore->installCertStore(_x509_minimal.get());
-            }
-            br_ssl_engine_set_x509(_eng, &_x509_minimal->vtable);
-        }
-        return true;
-    }
-
-    std::shared_ptr<unsigned char> ESP8266_SSL_Client::_alloc_iobuf(size_t sz)
-    {
-#if defined(ESP8266)
-
-        // Allocate buffer with preference to IRAM
-#if defined(ESP8266_CORE_SDK_V3_X_X)
-        HeapSelectIram primary;
-        auto sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-        if (!sptr)
-        {
-            HeapSelectDram alternate;
-            sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-        }
-        return sptr;
-#else
-        return std::shared_ptr<unsigned char>(new unsigned char[sz], std::default_delete<unsigned char[]>());
-#endif
-
-#else
-        // Allocate buffer with preference to IRAM
-        //  HeapSelectIram primary;
-        auto sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-        if (!sptr)
-        {
-            //    HeapSelectDram alternate;
-            sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-        }
-        return sptr;
-
-#endif
-    }
-
-    // Called by connect() to do the actual SSL setup and handshake.
-    // Returns if the SSL handshake succeeded.
-    bool ESP8266_SSL_Client::_connectSSL(const char *hostName)
-    {
-#if !defined(SILENT_MODE)
-        if (debugLevel > 0)
-        {
-            esp_mail_debug_print("", true);
-            esp_mail_debug_print_tag(esp_ssl_client_str_1, esp_mail_debug_tag_type_client, true);
-        }
-#endif
-
-        if (!base_client)
-        {
-#if !defined(SILENT_MODE)
-            if (debugLevel > 0)
-                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
-#endif
-            return false;
-        }
-
-        if (!_clientConnected())
-        {
-#if !defined(SILENT_MODE)
-            if (debugLevel > 0)
-                esp_mail_debug_print_tag(esp_mail_error_network_str_1 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
-#endif
-            return false;
-        }
-
-        DEBUG_BSSL("m_connectSSL: start connection\n");
-        _freeSSL();
-        _oom_err = false;
-
-#if defined(DEBUG_ESP_SSL)
-        // BearSSL will reject all connections unless an authentication option is set, warn in DEBUG builds
-        if (!_use_insecure && !_use_fingerprint && !_use_self_signed && !_knownkey && !_certStore && !_ta)
-        {
-            DEBUG_BSSL("Connection *will* fail, no authentication method is setup\n");
-        }
-#endif
-        _sc = std::make_shared<br_ssl_client_context>();
-        _eng = &_sc->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
-        _iobuf_in = _alloc_iobuf(_iobuf_in_size);
-        _iobuf_out = _alloc_iobuf(_iobuf_out_size);
-        //  DBG_MMU_PRINTF("\n_iobuf_in:       %p\n", _iobuf_in.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_out:      %p\n", _iobuf_out.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_in_size:  %u\n", _iobuf_in_size);
-        //  DBG_MMU_PRINTF(  "_iobuf_out_size: %u\n", _iobuf_out_size);
-
-        if (!_sc || !_iobuf_in || !_iobuf_out)
-        {
-            _freeSSL(); // Frees _sc, _iobuf*
-            _oom_err = true;
-            DEBUG_BSSL("_connectSSL: OOM error\n");
-            return false;
-        }
-
-        // If no cipher list yet set, use defaults
-        if (_cipher_list.get() == nullptr)
-        {
-            br_ssl_client_base_init(_sc.get(), suites_P, sizeof(suites_P) / sizeof(suites_P[0]));
-        }
-        else
-        {
-            br_ssl_client_base_init(_sc.get(), _cipher_list.get(), _cipher_cnt);
-        }
-        // Only failure possible in the installation is OOM
-        if (!_installClientX509Validator())
-        {
-            _freeSSL();
-            _oom_err = true;
-            DEBUG_BSSL("_connectSSL: Can't install x509 validator\n");
-            return false;
-        }
-        br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
-        br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
-
-        // Apply any client certificates, if supplied.
-        if (_sk && _sk->isRSA())
-        {
-            br_ssl_client_set_single_rsa(_sc.get(), _chain ? _chain->getX509Certs() : nullptr, _chain ? _chain->getCount() : 0,
-                                         _sk->getRSA(), br_rsa_pkcs1_sign_get_default());
-        }
-        else if (_sk && _sk->isEC())
-        {
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_client_set_single_ec(_sc.get(), _chain ? _chain->getX509Certs() : nullptr, _chain ? _chain->getCount() : 0,
-                                        _sk->getEC(), _allowed_usages,
-                                        _cert_issuer_key_type, br_ec_get_default(), br_ecdsa_sign_asn1_get_default());
-#else
-            _freeSSL();
-            DEBUG_BSSL("connectSSL: Attempting to use EC cert in minimal cipher mode (no EC)\n");
-            return false;
-#endif
-        }
-        else if (_esp32_sk && _esp32_chain)
-        {
-            br_ssl_client_set_single_rsa(_sc.get(), _esp32_chain->getX509Certs(), _esp32_chain->getCount(),
-                                         _esp32_sk->getRSA(), br_rsa_pkcs1_sign_get_default());
-        }
-
-        // Restore session from the storage spot, if present
-        if (_session)
-        {
-            br_ssl_engine_set_session_parameters(_eng, _session->getSession());
-        }
-
-        if (!br_ssl_client_reset(_sc.get(), this->host.c_str(), _session ? 1 : 0))
-        {
-            _freeSSL();
-            DEBUG_BSSL("connectSSL: Can't reset client\n");
-            return false;
-        }
-
-        auto ret = _wait_for_handshake();
-#ifdef DEBUG_ESP_SSL
-        if (!ret)
-        {
-            char err[256];
-            getLastSSLError(err, sizeof(err));
-            DEBUG_BSSL("Couldn't connect. Error = '%s'\n", err);
-        }
-        else
-        {
-            DEBUG_BSSL("Connected!\n");
-        }
-#endif
-
-        // Session is already validated here, there is no need to keep following
-        _x509_minimal = nullptr;
-        _x509_insecure = nullptr;
-        _x509_knownkey = nullptr;
-
-        secured = ret;
-
-        return ret;
-    }
-
-    // Slightly different X509 setup for servers who want to validate client
-    // certificates, so factor it out as it's used in RSA and EC servers.
-    bool ESP8266_SSL_Client::_installServerX509Validator(const X509List *client_CA_ta)
-    {
-        if (client_CA_ta)
-        {
-            _ta = client_CA_ta;
-            // X509 minimal validator.  Checks dates, cert chain for trusted CA, etc.
-            _x509_minimal = std::make_shared<br_x509_minimal_context>();
-            if (!_x509_minimal)
-            {
-                _freeSSL();
-                _oom_err = true;
-                DEBUG_BSSL("_installServerX509Validator: OOM for _x509_minimal\n");
-                return false;
-            }
-            br_x509_minimal_init(_x509_minimal.get(), &br_sha256_vtable, _ta->getTrustAnchors(), _ta->getCount());
-            br_ssl_engine_set_default_rsavrfy(_eng);
-#ifndef BEARSSL_SSL_BASIC
-            br_ssl_engine_set_default_ecdsa(_eng);
-#endif
-            br_x509_minimal_set_rsa(_x509_minimal.get(), br_ssl_engine_get_rsavrfy(_eng));
-#ifndef BEARSSL_SSL_BASIC
-            br_x509_minimal_set_ecdsa(_x509_minimal.get(), br_ssl_engine_get_ec(_eng), br_ssl_engine_get_ecdsa(_eng));
-#endif
-            br_x509_minimal_install_hashes(_x509_minimal.get());
-            if (_now)
-            {
-                // Magic constants convert to x509 times
-                br_x509_minimal_set_time(_x509_minimal.get(), ((uint32_t)_now) / 86400 + 719528, ((uint32_t)_now) % 86400);
-            }
-            br_ssl_engine_set_x509(_eng, &_x509_minimal->vtable);
-            br_ssl_server_set_trust_anchor_names_alt(_sc_svr.get(), _ta->getTrustAnchors(), _ta->getCount());
-        }
-        return true;
-    }
-    // Called by WiFiServerBearSSL when an RSA cert/key is specified.
-    bool ESP8266_SSL_Client::_connectSSLServerRSA(const X509List *chain,
-                                                  const PrivateKey *sk, _BearSSL_ServerSessions *cache,
-                                                  const X509List *client_CA_ta)
-    {
-        _freeSSL();
-        _oom_err = false;
-        _sc_svr = std::make_shared<br_ssl_server_context>();
-        _eng = &_sc_svr->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
-        _iobuf_in = _alloc_iobuf(_iobuf_in_size);
-        _iobuf_out = _alloc_iobuf(_iobuf_out_size);
-        //  DBG_MMU_PRINTF("\n_iobuf_in:       %p\n", _iobuf_in.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_out:      %p\n", _iobuf_out.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_in_size:  %u\n", _iobuf_in_size);
-        //  DBG_MMU_PRINTF(  "_iobuf_out_size: %u\n", _iobuf_out_size);
-
-        if (!_sc_svr || !_iobuf_in || !_iobuf_out)
-        {
-            _freeSSL();
-            _oom_err = true;
-            DEBUG_BSSL("_connectSSLServerRSA: OOM error\n");
-            return false;
-        }
-
-        br_ssl_server_base_init(_sc_svr.get(), suites_server_rsa_P, sizeof(suites_server_rsa_P) / sizeof(suites_server_rsa_P[0]));
-        br_ssl_server_set_single_rsa(_sc_svr.get(), chain ? chain->getX509Certs() : nullptr, chain ? chain->getCount() : 0,
-                                     sk ? sk->getRSA() : nullptr, BR_KEYTYPE_KEYX | BR_KEYTYPE_SIGN,
-                                     br_rsa_private_get_default(), br_rsa_pkcs1_sign_get_default());
-        br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
-        br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
-        if (cache != nullptr)
-        {
-            br_ssl_server_set_cache(_sc_svr.get(), cache->getCache());
-        }
-        if (client_CA_ta && !_installServerX509Validator(client_CA_ta))
-        {
-            DEBUG_BSSL("_connectSSLServerRSA: Can't install serverX509check\n");
-            return false;
-        }
-        if (!br_ssl_server_reset(_sc_svr.get()))
-        {
-            _freeSSL();
-            DEBUG_BSSL("_connectSSLServerRSA: Can't reset server ctx\n");
-            return false;
-        }
-
-        return _wait_for_handshake();
-    }
-
-    // Called by WiFiServerBearSSL when an elliptic curve cert/key is specified.
-    bool ESP8266_SSL_Client::_connectSSLServerEC(const X509List *chain,
-                                                 unsigned cert_issuer_key_type, const PrivateKey *sk,
-                                                 _BearSSL_ServerSessions *cache, const X509List *client_CA_ta)
-    {
-#ifndef BEARSSL_SSL_BASIC
-        _freeSSL();
-        _oom_err = false;
-        _sc_svr = std::make_shared<br_ssl_server_context>();
-        _eng = &_sc_svr->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
-        _iobuf_in = _alloc_iobuf(_iobuf_in_size);
-        _iobuf_out = _alloc_iobuf(_iobuf_out_size);
-        //  DBG_MMU_PRINTF("\n_iobuf_in:       %p\n", _iobuf_in.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_out:      %p\n", _iobuf_out.get());
-        //  DBG_MMU_PRINTF(  "_iobuf_in_size:  %u\n", _iobuf_in_size);
-        //  DBG_MMU_PRINTF(  "_iobuf_out_size: %u\n", _iobuf_out_size);
-
-        if (!_sc_svr || !_iobuf_in || !_iobuf_out)
-        {
-            _freeSSL();
-            _oom_err = true;
-            DEBUG_BSSL("_connectSSLServerEC: OOM error\n");
-            return false;
-        }
-
-        br_ssl_server_base_init(_sc_svr.get(), suites_server_ec_P, sizeof(suites_server_ec_P) / sizeof(suites_server_ec_P[0]));
-        br_ssl_server_set_single_ec(_sc_svr.get(), chain ? chain->getX509Certs() : nullptr, chain ? chain->getCount() : 0,
-                                    sk ? sk->getEC() : nullptr, BR_KEYTYPE_KEYX | BR_KEYTYPE_SIGN,
-                                    cert_issuer_key_type, br_ssl_engine_get_ec(_eng), br_ecdsa_i15_sign_asn1);
-        br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
-        br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
-        if (cache != nullptr)
-        {
-            br_ssl_server_set_cache(_sc_svr.get(), cache->getCache());
-        }
-        if (client_CA_ta && !_installServerX509Validator(client_CA_ta))
-        {
-            DEBUG_BSSL("_connectSSLServerEC: Can't install serverX509check\n");
-            return false;
-        }
-        if (!br_ssl_server_reset(_sc_svr.get()))
-        {
-            _freeSSL();
-            DEBUG_BSSL("_connectSSLServerEC: Can't reset server ctx\n");
-            return false;
-        }
-
-        return _wait_for_handshake();
-#else
-        (void)chain;
-        (void)cert_issuer_key_type;
-        (void)sk;
-        (void)cache;
-        (void)client_CA_ta;
-        DEBUG_BSSL("_connectSSLServerEC: Attempting to use EC cert in minimal cipher mode (no EC)\n");
-        return false;
-#endif
+        return connected() && br_ssl_engine_get_mfln_negotiated(_eng);
     }
 
     // Returns an error ID and possibly a string (if dest != null) of the last
@@ -1769,7 +630,7 @@ namespace BearSSL
         const char *t = PSTR("OK");
         const char *recv_fatal = "";
         const char *send_fatal = "";
-        if (_sc || _sc_svr)
+        if (_sc)
         {
             err = br_ssl_engine_last_error(_eng);
         }
@@ -1981,7 +842,820 @@ namespace BearSSL
         return err;
     }
 
-    uint8_t *ESP8266_SSL_Client::_streamLoad(Stream &stream, size_t size)
+    void ESP8266_SSL_Client::setCertStore(CertStoreBase *certStore)
+    {
+        _certStore = certStore;
+    }
+
+    bool ESP8266_SSL_Client::setCiphers(const uint16_t *cipherAry, int cipherCount)
+    {
+        _cipher_list = nullptr;
+        _cipher_list = std::shared_ptr<uint16_t>(new (std::nothrow) uint16_t[cipherCount], std::default_delete<uint16_t[]>());
+        if (!_cipher_list.get())
+        {
+            DEBUG_BSSL("setCiphers: list empty\n");
+            return false;
+        }
+        memcpy_P(_cipher_list.get(), cipherAry, cipherCount * sizeof(uint16_t));
+        _cipher_cnt = cipherCount;
+        return true;
+    }
+
+    bool ESP8266_SSL_Client::setCiphers(const std::vector<uint16_t> &list)
+    {
+        return setCiphers(&list[0], list.size());
+    }
+
+    bool ESP8266_SSL_Client::setCiphersLessSecure()
+    {
+        return setCiphers(faster_suites_P, sizeof(faster_suites_P) / sizeof(faster_suites_P[0]));
+    }
+
+    bool ESP8266_SSL_Client::setSSLVersion(uint32_t min, uint32_t max)
+    {
+        if (((min != BR_TLS10) && (min != BR_TLS11) && (min != BR_TLS12)) ||
+            ((max != BR_TLS10) && (max != BR_TLS11) && (max != BR_TLS12)) ||
+            (max < min))
+        {
+            return false; // Invalid options
+        }
+        _tls_min = min;
+        _tls_max = max;
+        return true;
+    }
+
+    size_t ESP8266_SSL_Client::peekAvailable()
+    {
+        return available();
+    }
+
+    // return a pointer to available data buffer (size = peekAvailable())
+    // semantic forbids any kind of read() before calling peekConsume()
+    const char *ESP8266_SSL_Client::peekBuffer()
+    {
+        return (const char *)_recvapp_buf;
+    }
+
+    // consume bytes after use (see peekBuffer)
+    void ESP8266_SSL_Client::peekConsume(size_t consume)
+    {
+        // according to ESP8266_SSL_Client::read:
+        br_ssl_engine_recvapp_ack(_eng, consume);
+        _recvapp_buf = nullptr;
+        _recvapp_len = 0;
+    }
+
+    // ESP32 compatibility
+    void ESP8266_SSL_Client::setCACert(const char *rootCA)
+    {
+        if (_esp32_ta)
+        {
+            delete _esp32_ta;
+        }
+        _esp32_ta = new X509List(rootCA);
+    }
+    void ESP8266_SSL_Client::setCertificate(const char *client_ca)
+    {
+        if (_esp32_chain)
+        {
+            delete _esp32_chain;
+        }
+        _esp32_chain = new X509List(client_ca);
+    }
+    void ESP8266_SSL_Client::setPrivateKey(const char *private_key)
+    {
+        if (_esp32_sk)
+        {
+            delete _esp32_sk;
+        }
+        _esp32_sk = new PrivateKey(private_key);
+    }
+    bool ESP8266_SSL_Client::loadCACert(Stream &stream, size_t size)
+    {
+        bool ret = false;
+        auto buff = new char[size];
+        if (size == stream.readBytes(buff, size))
+        {
+            setCACert(buff);
+            ret = true;
+        }
+        delete[] buff;
+        return ret;
+    }
+    bool ESP8266_SSL_Client::loadCertificate(Stream &stream, size_t size)
+    {
+        bool ret = false;
+        auto buff = new char[size];
+        if (size == stream.readBytes(buff, size))
+        {
+            setCertificate(buff);
+            ret = true;
+        }
+        delete[] buff;
+        return ret;
+    }
+    bool ESP8266_SSL_Client::loadPrivateKey(Stream &stream, size_t size)
+    {
+        bool ret = false;
+        auto buff = new char[size];
+        if (size == stream.readBytes(buff, size))
+        {
+            setPrivateKey(buff);
+            ret = true;
+        }
+        delete[] buff;
+        return ret;
+    }
+
+    int ESP8266_SSL_Client::connect(IPAddress ip, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+    {
+        setSecure(rootCABuff, cli_cert, cli_key);
+        return connect(ip, port);
+    }
+
+    int ESP8266_SSL_Client::connect(const char *host, uint16_t port, const char *rootCABuff, const char *cli_cert, const char *cli_key)
+    {
+        setSecure(rootCABuff, cli_cert, cli_key);
+        return connect(host, port);
+    }
+
+    ESP8266_SSL_Client &ESP8266_SSL_Client::operator=(const ESP8266_SSL_Client &other)
+    {
+        stop();
+        setClient(other._basic_client);
+        _use_insecure = other._use_insecure;
+        _timeout = other._timeout;
+        _handshake_timeout = other._handshake_timeout;
+        return *this;
+    }
+
+    bool ESP8266_SSL_Client::operator==(const ESP8266_SSL_Client &rhs)
+    {
+        return _basic_client == rhs._basic_client;
+    }
+
+    unsigned int ESP8266_SSL_Client::getTimeout() const { return _timeout; }
+
+    void ESP8266_SSL_Client::setSecure(const char *rootCABuff, const char *cli_cert, const char *cli_key)
+    {
+        if (_esp32_ta)
+        {
+            delete _esp32_ta;
+            _esp32_ta = nullptr;
+        }
+        if (_esp32_chain)
+        {
+            delete _esp32_chain;
+            _esp32_chain = nullptr;
+        }
+        if (_esp32_sk)
+        {
+            delete _esp32_sk;
+            _esp32_sk = nullptr;
+        }
+        if (rootCABuff)
+        {
+            setCertificate(rootCABuff);
+        }
+        if (cli_cert && cli_key)
+        {
+            setCertificate(cli_cert);
+            setPrivateKey(cli_key);
+        }
+    }
+
+    int ESP8266_SSL_Client::mIsClientInitialized()
+    {
+        if (!_basic_client)
+        {
+#if !defined(SILENT_MODE)
+            if (debugLevel > 0)
+                esp_mail_debug_print_tag(esp_mail_error_client_str_8 /* "client is not yet initialized" */, esp_mail_debug_tag_type_error, true);
+#endif
+            return 0;
+        }
+        return 1;
+    }
+
+    int ESP8266_SSL_Client::mConnectBasicClient(const char *host, IPAddress ip, uint16_t port)
+    {
+        if (!mIsClientInitialized())
+            return 0;
+
+#if defined(ENABLE_CUSTOM_CLIENT)
+        if (host)
+            connection_cb ? connection_cb(host, port) : (void)_basic_client->connect(host, port);
+        else
+            connection_cb ? connection_cb(ip.toString().c_str(), port) : (void)_basic_client->connect(ip, port);
+#else
+        host ? _basic_client->connect(host, port) : _basic_client->connect(ip, port);
+#endif
+
+        if (!connected())
+        {
+            DEBUG_BSSL("connect: base client connection failed\n");
+            setWriteError(esp_ssl_connection_fail);
+            mFreeSSL();
+            return 0;
+        }
+
+        _secure = false;
+        _write_idx = 0;
+        return 1;
+    }
+
+    bool ESP8266_SSL_Client::mSoftConnected()
+    {
+        // check if the socket is still open and such
+        if (getWriteError())
+        {
+            // Cannot operate if the write error is not reset.
+            return false;
+        }
+        // check if the ssl engine is still open
+        if (!_is_connected || br_ssl_engine_current_state(_eng) == BR_SSL_CLOSED)
+        {
+            // Cannot operate on a closed SSL connection.
+            return false;
+        }
+        return true;
+    }
+
+    int ESP8266_SSL_Client::connectSSL(const char *host)
+    {
+        DEBUG_BSSL("m_connectSSL: start connection\n");
+        mFreeSSL();
+        _oom_err = false;
+
+#if !defined(SILENT_MODE)
+        if (debugLevel > 0)
+        {
+            esp_mail_debug_print("", true);
+            esp_mail_debug_print_tag(esp_ssl_client_str_1, esp_mail_debug_tag_type_client, true);
+        }
+#endif
+
+        if (!mIsClientInitialized())
+            return 0;
+
+        if (!_basic_client->connected())
+        {
+#if !defined(SILENT_MODE)
+            if (debugLevel > 0)
+                esp_mail_debug_print_tag(esp_mail_error_network_str_1 /* "unable to connect to server" */, esp_mail_debug_tag_type_error, true);
+#endif
+            return 0;
+        }
+
+#if defined(DEBUG_ESP_SSL)
+        // BearSSL will reject all connections unless an authentication option is set, warn in DEBUG builds
+        if (!_use_insecure && !_use_fingerprint && !_use_self_signed && !_knownkey && !_certStore && !_ta)
+        {
+            DEBUG_BSSL("Connection *will* fail, no authentication method is setup\n");
+        }
+#endif
+        _sc = std::make_shared<br_ssl_client_context>();
+        _eng = &_sc->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
+
+        _iobuf_in = mIOBufMemAloc(_iobuf_in_size);
+        _iobuf_out = mIOBufMemAloc(_iobuf_out_size);
+
+        if (!_sc || !_iobuf_in || !_iobuf_out)
+        {
+            mFreeSSL(); // Frees _sc, _iobuf*
+            _oom_err = true;
+            DEBUG_BSSL("_connectSSL: OOM error\n");
+            return 0;
+        }
+
+        // If no cipher list yet set, use defaults
+        if (_cipher_list.get() == nullptr)
+            br_ssl_client_base_init(_sc.get(), suites_P, sizeof(suites_P) / sizeof(suites_P[0]));
+        else
+            br_ssl_client_base_init(_sc.get(), _cipher_list.get(), _cipher_cnt);
+
+        // Only failure possible in the installation is OOM
+        if (!mInstallClientX509Validator())
+        {
+            mFreeSSL();
+            _oom_err = true;
+            DEBUG_BSSL("_connectSSL: Can't install x509 validator\n");
+            return 0;
+        }
+        br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
+        br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
+
+        // Apply any client certificates, if supplied.
+        if (_sk && _sk->isRSA())
+        {
+            br_ssl_client_set_single_rsa(_sc.get(), _chain ? _chain->getX509Certs() : nullptr, _chain ? _chain->getCount() : 0,
+                                         _sk->getRSA(), br_rsa_pkcs1_sign_get_default());
+        }
+        else if (_sk && _sk->isEC())
+        {
+#ifndef BEARSSL_SSL_BASIC
+            br_ssl_client_set_single_ec(_sc.get(), _chain ? _chain->getX509Certs() : nullptr, _chain ? _chain->getCount() : 0,
+                                        _sk->getEC(), _allowed_usages,
+                                        _cert_issuer_key_type, br_ec_get_default(), br_ecdsa_sign_asn1_get_default());
+#else
+            mFreeSSL();
+            DEBUG_BSSL("connectSSL: Attempting to use EC cert in minimal cipher mode (no EC)\n");
+            return 0;
+#endif
+        }
+        else if (_esp32_sk && _esp32_chain)
+        {
+            br_ssl_client_set_single_rsa(_sc.get(), _esp32_chain->getX509Certs(), _esp32_chain->getCount(),
+                                         _esp32_sk->getRSA(), br_rsa_pkcs1_sign_get_default());
+        }
+
+        // clear the write error
+        setWriteError(esp_ssl_ok);
+
+        // we want 128 bits to be safe, as recommended by the bearssl docs
+        uint8_t rng_seeds[16];
+
+        // prng
+        for (uint8_t i = 0; i < sizeof rng_seeds; i++)
+            rng_seeds[i] = static_cast<uint8_t>(random(256));
+
+        br_ssl_engine_inject_entropy(_eng, rng_seeds, sizeof rng_seeds);
+
+        // Restore session from the storage spot, if present
+        if (_session)
+        {
+            br_ssl_engine_set_session_parameters(_eng, _session->getSession());
+        }
+
+        if (!br_ssl_client_reset(_sc.get(), host, _session ? 1 : 0))
+        {
+            DEBUG_BSSL("connectSSL: Can't reset client\n");
+            setWriteError(esp_ssl_connection_fail);
+            mFreeSSL();
+            return 0;
+        }
+
+        if (mRunUntil(BR_SSL_SENDAPP, _handshake_timeout) < 0)
+        {
+            char err[256];
+            getLastSSLError(err, sizeof(err));
+            DEBUG_BSSL("Couldn't connect. Error = '%s'\n", err);
+            mFreeSSL();
+            return 0;
+        }
+
+#ifdef DEBUG_ESP_SSL
+        DEBUG_BSSL("Connected!\n");
+#endif
+
+        _handshake_done = true;
+        _is_connected = true;
+        _secure = true;
+
+        // Save session
+        if (_session)
+            br_ssl_engine_get_session_parameters(_eng, _session->getSession());
+
+        // Session is already validated here, there is no need to keep following
+        _x509_minimal = nullptr;
+        _x509_insecure = nullptr;
+        _x509_knownkey = nullptr;
+
+        return 1;
+    }
+
+    int ESP8266_SSL_Client::mRunUntil(const unsigned target, unsigned long timeout)
+    {
+        unsigned lastState = 0;
+        size_t lastLen = 0;
+        const unsigned long start = millis();
+        for (;;)
+        {
+            unsigned state = mUpdateEngine();
+            // error check
+            if (state == BR_SSL_CLOSED || getWriteError() != esp_ssl_ok)
+            {
+                if (state == BR_SSL_CLOSED)
+                {
+                    // Terminating because the ssl engine closed.
+                }
+                else
+                {
+                    // Terminating with write error.
+                }
+
+                return -1;
+            }
+            // timeout check
+            if (millis() - start > ((timeout > 0) ? timeout : getTimeout()))
+            {
+                // SSL internals timed out!
+                setWriteError(esp_ssl_write_error);
+                stop();
+                return -1;
+            }
+            // debug
+            if (state != lastState || lastState == 0)
+            {
+                lastState = state;
+                // SSL state changed.
+            }
+            if (state & BR_SSL_RECVREC)
+            {
+                size_t len;
+                br_ssl_engine_recvrec_buf(_eng, &len);
+                if (lastLen != len)
+                {
+                    lastLen = len;
+                }
+            }
+            /*
+             * If we reached our target, then we are finished.
+             */
+            if (state & target || (target == 0 && state == 0))
+                return 0;
+
+            /*
+             * If some application data must be read, and we did not
+             * exit, then this means that we are trying to write data,
+             * and that's not possible until the application data is
+             * read. This may happen if using a shared in/out buffer,
+             * and the underlying protocol is not strictly half-duplex.
+             * Normally this would be unrecoverable, however we can attempt
+             * to remedy the problem by telling the engine to discard
+             * the data.
+             */
+            if (state & BR_SSL_RECVAPP)
+            {
+                _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+                if (_recvapp_buf != nullptr)
+                {
+                    // if application data is ready in buffer, don't ignore, just return.
+
+                    // _write_idx = 0;
+                    // esp_ssl_debug_print(PSTR("Discarded unread data to favor a write operation."), _debug_level, esp_ssl_debug_warn, __func__);
+                    // br_ssl_engine_recvapp_ack(_eng, len);
+                    // continue;
+                    return 0;
+                }
+                else
+                {
+                    // SSL engine state is RECVAPP, however the buffer was null! (This is a problem with BearSSL internals).
+                    setWriteError(esp_ssl_write_error);
+                    stop();
+                    return -1;
+                }
+            }
+
+            if (target & BR_SSL_SENDAPP)
+            {
+                // reset the write index
+                _write_idx = 0;
+                continue;
+            }
+
+            /*
+             * We can reach that point if the target RECVAPP, and
+             * the state contains SENDAPP only. This may happen with
+             * a shared in/out buffer. In that case, we must flush
+             * the buffered data to "make room" for a new incoming
+             * record.
+             */
+            if (state & BR_SSL_SENDAPP && target & BR_SSL_RECVAPP)
+                br_ssl_engine_flush(_eng, 0);
+        }
+    }
+
+    unsigned ESP8266_SSL_Client::mUpdateEngine()
+    {
+        for (;;)
+        {
+            // get the state
+            unsigned state = br_ssl_engine_current_state(_eng);
+            // debug
+            if (_bssl_last_state == 0 || state != _bssl_last_state)
+            {
+                _bssl_last_state = state;
+            }
+            if (state & BR_SSL_CLOSED)
+                return state;
+            /*
+             * If there is some record data to send, do it. This takes
+             * precedence over everything else.
+             */
+            if (state & BR_SSL_SENDREC)
+            {
+                unsigned char *buf;
+                size_t len;
+                int wlen;
+
+                buf = br_ssl_engine_sendrec_buf(_eng, &len);
+                wlen = _basic_client->write(buf, len);
+                _basic_client->flush();
+                if (wlen <= 0)
+                {
+                    // if the arduino client encountered an error
+                    if (_basic_client->getWriteError() || !_basic_client->connected())
+                    {
+                        // Error writing to basic client.
+                        setWriteError(esp_ssl_write_error);
+                    }
+                    // else presumably the socket just closed itself, so just stop the engine
+                    stop();
+                    return 0;
+                }
+                if (wlen > 0)
+                {
+                    br_ssl_engine_sendrec_ack(_eng, wlen);
+                }
+                continue;
+            }
+
+            /*
+             * If the client has specified there is client data to send, and
+             * the engine is ready to handle it, send it along.
+             */
+            if (_write_idx > 0)
+            {
+                // if we've reached the point where BR_SSL_SENDAPP is off but
+                // data has been written to the io buffer, something is wrong
+                if (!(state & BR_SSL_SENDAPP))
+                {
+                    // Error _write_idx > 0 but the ssl engine is not ready for data.
+                    setWriteError(esp_ssl_write_error);
+                    stop();
+                    return 0;
+                }
+                // else time to send the application data
+                else if (state & BR_SSL_SENDAPP)
+                {
+                    size_t alen;
+                    unsigned char *buf = br_ssl_engine_sendapp_buf(_eng, &alen);
+                    // engine check
+                    if (alen == 0 || buf == nullptr)
+                    {
+                        // Engine set write flag but returned null buffer.
+                        setWriteError(esp_ssl_write_error);
+                        stop();
+                        return 0;
+                    }
+                    // sanity check
+                    if (alen < _write_idx)
+                    {
+                        // Alen is less than _write_idx.
+                        setWriteError(esp_ssl_internal_error);
+                        stop();
+                        return 0;
+                    }
+                    // all good? lets send the data
+                    // presumably the BSSL_SSL_Client::write function has already added
+                    // data to *buf, so now we tell bearssl it's time for the
+                    // encryption step.
+                    // this will encrypt the data and presumably spit it out
+                    // for BR_SSL_SENDREC to send over ethernet.
+                    br_ssl_engine_sendapp_ack(_eng, _write_idx);
+                    // reset the iobuffer index
+                    _write_idx = 0;
+                    // loop again!
+                    continue;
+                }
+            }
+
+            /*
+             * If there is some record data to recieve, check if we've
+             * recieved it so far. If we have, then we can update the state.
+             * else we can return that we're still waiting for the server.
+             */
+            if (state & BR_SSL_RECVREC)
+            {
+                size_t len;
+                unsigned char *buf = br_ssl_engine_recvrec_buf(_eng, &len);
+                // do we have the record you're looking for?
+                const auto avail = _basic_client->available();
+                if (avail > 0)
+                {
+                    // I suppose so!
+                    int rlen = _basic_client->read(buf, avail < (int)len ? avail : (int)len);
+                    if (rlen <= 0)
+                    {
+                        // Error reading bytes from basic client.
+                        setWriteError(esp_ssl_write_error);
+                        stop();
+                        return 0;
+                    }
+                    if (rlen > 0)
+                    {
+                        br_ssl_engine_recvrec_ack(_eng, rlen);
+                    }
+                    continue;
+                }
+                // guess not, tell the state we're waiting still
+                else
+                {
+
+#if defined __has_include
+#if __has_include(<Ethernet.h>)
+                    // Add a delay since spamming _basic_client->availible breaks the poor wiz chip
+                    delay(10);
+#endif
+#endif
+                    return state;
+                }
+            }
+            // if it's not any of the above states, then it must be waiting to send or recieve app data
+            // in which case we return
+            return state;
+        }
+    }
+
+    void ESP8266_SSL_Client::mBSSLX509InsecureInit(br_x509_insecure_context *ctx, int _use_fingerprint, const uint8_t _fingerprint[20], int _allow_self_signed)
+    {
+        static const br_x509_class br_x509_insecure_vtable PROGMEM = {
+            sizeof(br_x509_insecure_context),
+            insecure_start_chain,
+            insecure_start_cert,
+            insecure_append,
+            insecure_end_cert,
+            insecure_end_chain,
+            insecure_get_pkey};
+
+        memset(ctx, 0, sizeof *ctx);
+        ctx->vtable = &br_x509_insecure_vtable;
+        ctx->done_cert = false;
+        ctx->match_fingerprint = _use_fingerprint ? _fingerprint : nullptr;
+        ctx->allow_self_signed = _allow_self_signed ? 1 : 0;
+    }
+
+    void ESP8266_SSL_Client::mClearAuthenticationSettings()
+    {
+        _use_insecure = false;
+        _use_fingerprint = false;
+        _use_self_signed = false;
+        _knownkey = nullptr;
+        _ta = nullptr;
+        if (_esp32_ta)
+        {
+            delete _esp32_ta;
+            _esp32_ta = nullptr;
+        }
+    }
+
+    void ESP8266_SSL_Client::mClear()
+    {
+        _timeout = 15000;
+        _sc = nullptr;
+        _eng = nullptr;
+        _x509_minimal = nullptr;
+        _x509_insecure = nullptr;
+        _x509_knownkey = nullptr;
+        _iobuf_in = nullptr;
+        _iobuf_out = nullptr;
+        _now = 0; // You can override or ensure time() is correct w/configTime
+        _ta = nullptr;
+        setBufferSizes(16384, 512); // Minimum safe
+        _secure = false;
+        _recvapp_buf = nullptr;
+        _recvapp_len = 0;
+        _oom_err = false;
+        _session = nullptr;
+        _cipher_list = nullptr;
+        _cipher_cnt = 0;
+        _tls_min = BR_TLS10;
+        _tls_max = BR_TLS12;
+        if (_esp32_ta)
+        {
+            delete _esp32_ta;
+            _esp32_ta = nullptr;
+        }
+    }
+
+    // Installs the appropriate X509 cert validation method for a client connection
+    bool ESP8266_SSL_Client::mInstallClientX509Validator()
+    {
+        if (_use_insecure || _use_fingerprint || _use_self_signed)
+        {
+            // Use common insecure x509 authenticator
+            _x509_insecure = std::make_shared<struct br_x509_insecure_context>();
+            if (!_x509_insecure)
+            {
+                DEBUG_BSSL("OOM for _x509_insecure\n");
+                return false;
+            }
+            mBSSLX509InsecureInit(_x509_insecure.get(), _use_fingerprint, _fingerprint, _use_self_signed);
+            br_ssl_engine_set_x509(_eng, &_x509_insecure->vtable);
+        }
+        else if (_knownkey)
+        {
+            // Simple, pre-known public key authenticator, ignores cert completely.
+            _x509_knownkey = std::make_shared<br_x509_knownkey_context>();
+            if (!_x509_knownkey)
+            {
+                DEBUG_BSSL("OOM for _x509_knownkey\n");
+                return false;
+            }
+            if (_knownkey->isRSA())
+            {
+                br_x509_knownkey_init_rsa(_x509_knownkey.get(), _knownkey->getRSA(), _knownkey_usages);
+            }
+            else if (_knownkey->isEC())
+            {
+#ifndef BEARSSL_SSL_BASIC
+                br_x509_knownkey_init_ec(_x509_knownkey.get(), _knownkey->getEC(), _knownkey_usages);
+#else
+                (void)_knownkey;
+                (void)_knownkey_usages;
+                DEBUG_BSSL("Attempting to use EC keys in minimal cipher mode (no EC)\n");
+                return false;
+#endif
+            }
+            br_ssl_engine_set_x509(_eng, &_x509_knownkey->vtable);
+        }
+        else
+        {
+            // X509 minimal validator.  Checks dates, cert chain for trusted CA, etc.
+            _x509_minimal = std::make_shared<br_x509_minimal_context>();
+            if (!_x509_minimal)
+            {
+                DEBUG_BSSL("OOM for _x509_minimal\n");
+                return false;
+            }
+            if (_esp32_ta)
+            {
+                br_x509_minimal_init(_x509_minimal.get(), &br_sha256_vtable, _esp32_ta->getTrustAnchors(), _esp32_ta->getCount());
+            }
+            else
+            {
+                br_x509_minimal_init(_x509_minimal.get(), &br_sha256_vtable, _ta ? _ta->getTrustAnchors() : nullptr, _ta ? _ta->getCount() : 0);
+            }
+            br_x509_minimal_set_rsa(_x509_minimal.get(), br_ssl_engine_get_rsavrfy(_eng));
+#ifndef BEARSSL_SSL_BASIC
+            br_x509_minimal_set_ecdsa(_x509_minimal.get(), br_ssl_engine_get_ec(_eng), br_ssl_engine_get_ecdsa(_eng));
+#endif
+            br_x509_minimal_install_hashes(_x509_minimal.get());
+
+#if (defined(ESP32) || defined(ESP8266) || defined(ARDUINO_ARCH_RP2040)) && !defined(ARDUINO_NANO_RP2040_CONNECT)
+            if (_now < ESP_MAIL_CLIENT_VALID_TS)
+                _now = time(nullptr);
+#endif
+            if (_now)
+            {
+                // Magic constants convert to x509 times
+                br_x509_minimal_set_time(_x509_minimal.get(), ((uint32_t)_now) / 86400 + 719528, ((uint32_t)_now) % 86400);
+            }
+
+            if (_certStore)
+            {
+                _certStore->installCertStore(_x509_minimal.get());
+            }
+
+            br_ssl_engine_set_x509(_eng, &_x509_minimal->vtable);
+        }
+        return true;
+    }
+
+    std::shared_ptr<unsigned char> ESP8266_SSL_Client::mIOBufMemAloc(size_t sz)
+    {
+#if defined(ESP8266)
+
+        // Allocate buffer with preference to IRAM
+#if defined(ESP8266_CORE_SDK_V3_X_X)
+        HeapSelectIram primary;
+        auto sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
+        if (!sptr)
+        {
+            HeapSelectDram alternate;
+            sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
+        }
+        return sptr;
+#else
+        return std::shared_ptr<unsigned char>(new unsigned char[sz], std::default_delete<unsigned char[]>());
+#endif
+
+#else
+        return std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
+#endif
+    }
+
+    void ESP8266_SSL_Client::mFreeSSL()
+    {
+        // These are smart pointers and will free if refcnt==0
+        _sc = nullptr;
+        _x509_minimal = nullptr;
+        _x509_insecure = nullptr;
+        _x509_knownkey = nullptr;
+        _iobuf_in = nullptr;
+        _iobuf_out = nullptr;
+        // Reset non-allocated ptrs (pointing to bits potentially free'd above)
+        _recvapp_buf = nullptr;
+        _recvapp_len = 0;
+        // This connection is toast
+        _handshake_done = false;
+        _timeout = 15000;
+        _secure = false;
+        _is_connected = false;
+    }
+
+    uint8_t *ESP8266_SSL_Client::mStreamLoad(Stream &stream, size_t size)
     {
         uint8_t *dest = (uint8_t *)malloc(size + 1);
         if (!dest)

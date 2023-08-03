@@ -397,6 +397,18 @@ public:
     return tbuf;
   }
 
+  void syncSysTeme()
+  {
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
+    if (sys_ts < time(nullptr) && time(nullptr) > ESP_TIME_DEFAULT_TS)
+    {
+      sys_ts = time(nullptr);
+      configUpdated = true;
+      _clockReady = true;
+    }
+#endif
+  }
+
   /** get the clock ready state
    *  Do not remove or modify this file as it required for AVR, ARM,
    * SAMD devices and external client to work.
@@ -405,13 +417,19 @@ public:
   {
     uint32_t ts = 0;
 
+    syncSysTeme();
+
+    if (sys_ts < ESP_TIME_DEFAULT_TS)
+    {
+
 #if defined(ENABLE_NTP_TIME)
-    ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
-    if (ts > 0)
-      ts_offset = ts - millis() / 1000;
+      ts = udp ? ntp.getTime(wait_ms /* wait 10000 ms */) : 0;
+      if (ts > 0)
+        ts_offset = ts - millis() / 1000;
 #endif
 
-    getTime(ts);
+      getTime(ts);
+    }
 
     _clockReady = sys_ts > ESP_TIME_DEFAULT_TS;
 

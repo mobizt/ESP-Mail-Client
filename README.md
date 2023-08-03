@@ -759,10 +759,25 @@ To use custom (external) Client for such WiFi capable devices, the following mac
 ```
 
 
-See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete Client example.
+In ESP8266 and Raspberry Pi Pico devices with the SDK is already contains the SSL engine library (BearSSL), when macro `ESP_MAIL_USE_SDK_SSL_ENGINE` was defined in  [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h), the BearSSL engine will used to do SSL handshake when the SSL/TLS is required.
+
+In this case, the basic client of network devices (EthernetClient and GSMClient) can be used as external client instead of SSL client.
+
+Since [v3.3.0](https://github.com/mobizt/ESP-Mail-Client/releases/tag/v3.3.0), for ESP32, the internal SSL engine (`mbedTLS`) will not apply to the external client when SSL/TLS is required. 
+
+This happens since [v3.3.0](https://github.com/mobizt/ESP-Mail-Client/releases/tag/v3.3.0) that the internal lwIP TCP client for ESP32 works with `mbedTLS` via the socket directly instead of Client (that is easily applied with external client) in earlier version. 
+
+The lwIP TCP client implemented for ESP32 in [v3.3.0](https://github.com/mobizt/ESP-Mail-Client/releases/tag/v3.3.0) gains more performance and speed over the WiFiClient used since [v2.5.0](https://github.com/mobizt/ESP-Mail-Client/releases/tag/v2.5.0) 
+
+From this reason, the build flag `ESP_MAIL_USE_SDK_SSL_ENGINE`in ESP32 will not applied, the external client should be able to do SSL handshake when SSL/TLS is required.
+
+Then the examples that used ESP32 with external client will require the SSL Client or conection upgradable SSL Client when used in SSL/TLS applications.
 
 
 The following example showed how to use TTGO T-A7670 with `GSMClient` and [ESP_SSLClient](https://github.com/mobizt/ESP_SSLClient) to connect to SMTP server via port 587 which required connection upgrade to TLS with STARTTLS.
+
+
+See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete external Client example.
 
 
 ```cpp
@@ -971,6 +986,8 @@ void serup()
 
     smtp.networkConnectionRequestCallback(networkConnection);
 
+     smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
+
 }
 
 
@@ -1153,6 +1170,13 @@ void networkStatusRequestCallback()
 {
 
     smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
+}
+
+void connectionUpgradeRequestCallback()
+{
+    // Upgrade the connection from plain to TLS
+    ssl_client.connectSSL();
+
 }
 
 void serup()

@@ -629,10 +629,11 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
   if (!_clockReady)
   {
 #if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+    bool udpRequired = true;
     if (!Time.initUDP())
     {
 #if !defined(SILENT_MODE)
-      bool udpRequired = true;
+
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
       udpRequired = time(nullptr) < ESP_MAIL_CLIENT_VALID_TS;
 #endif

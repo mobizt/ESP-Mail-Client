@@ -137,7 +137,7 @@
  * This macro allows library to use external basic Client and external SSL Client interface.
  * The associated callback functions should be assigned based on port functions.
  */
- #define ENABLE_CUSTOM_CLIENT
+// #define ENABLE_CUSTOM_CLIENT
 
 /* 📌 To use ESP8266 ENC28J60 Ethernet module */
 // #define ENABLE_ESP8266_ENC28J60_ETH
@@ -153,7 +153,7 @@
  * This macro allows library to use ESP8266 and Raspberry Pi Pico devices with
  * basic Clients (EthernetClient, WiFiClient and GSMClient)
  * directly without external SSL client required for SSL and STARTTLS ports.
- * 
+ *
  * Since version 3.3.0, the internal SSL engine (mbedTLS) use in ESP32 will not do
  * SSL handshake when external basic client was assigned, then external SSL client
  * is required in case of SSL and STARTTLS ports.
