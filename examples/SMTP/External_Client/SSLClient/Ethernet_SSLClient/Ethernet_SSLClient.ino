@@ -1,7 +1,7 @@
 
 
 /**
- * This example shows how to send Email using EthernetClient and SSLClient.
+ * This example shows how to send Email using EthernetClient.
  *
  * This example used ESP32 and WIZnet W5500 Ethernet module.
  *
@@ -57,16 +57,14 @@
  *
  * The SSL clients that can connect in both non-secure and secure modes are
  *
- * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports ESP8266, ESP32
- * and Raspberry Pi Pico.
+ * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports all Arduino devices.
  *
- * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library supports all microcontrollers
- * that have enough flash memory and ram except for ESP8266 that has stack overfow issue.
+ * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library supports all Arduino devices except for ESP8266 that has stack overfow issue.
  *
  * With above two SSL client libraries, the SSL/TLS hanshake can be done via
  *
  * #if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
- * ssl_client.connectSSL(SMTP_HOST, SMTP_PORT);
+ * ssl_client.connectSSL(); // Require host/ip and port as parameter in SSLClient library
  * #endif
  *
  * The mcro "SSLCLIENT_CONNECTION_UPGRADABLE" was defined in the those two SSL client libraries.
@@ -120,14 +118,16 @@
  * With this type of client, the callback function connectionUpgradeRequestCallback is required to perform SSL/TLS handshake.
  *
  *
- * When using ESP8266, ESP32 and Raspberry Pi Pico devices with network modules with network interface module, the external SSL client library is not required
+ * When using ESP8266 and Raspberry Pi Pico devices with network interface module, the external SSL client library is not required
  * because internal SSL engine is used.
  *
  * User can use the basic client of network module directly and choose esp_mail_external_client_type_basic for the second argument of the method.
  *
+ * For ESP32, since the library version 3.3.0, the internal SSL engine (mbedTLS) will not handle SSL handshake for external client any more, 
+ * then user needs to use external SSL client (ESP_SSLClient or SSLClient) to do handshake and it required connectionUpgradeRequestCallback setup.  
  *
  * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external
- * UDP client is required for internal NTP time synching.
+ * UDP client is required for internal NTP time reading.
  *
  * User can assign the UDP client via
  *
@@ -136,7 +136,7 @@
  * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
  * config.time.gmt_offset.
  *
- * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
+ * IN ESP8266 and ESP32, device time will be updated after reading fishished and can get via time(nullptr).
  *
  * In Raspberry Pi Pico and other Arduino devices, the device time is not available. The valid time can be obtained from
  *
@@ -187,15 +187,12 @@
 #include <ESP_Mail_Client.h>
 
 #include <Ethernet.h>
+
 #include <EthernetUdp.h>
 
-// Forked version of SSLClient
-// https://github.com/mobizt/SSLClient
-#include <SSLClient.h>
+// https://github.com/mobizt/ESP_SSLClient
+#include <ESP_SSLClient.h>
 
-// Trus anchors for the server i.e. gmail.com for this case
-// https://github.com/mobizt/SSLClient/blob/master/TrustAnchors.md
-#include "trust_anchors.h"
 
 #define SMTP_HOST "smtp.gmail.com"
 #define SMTP_PORT 587
@@ -214,14 +211,13 @@ unsigned long timestamp = 0;
 
 unsigned long sentMillis = 0;
 
-const int analog_pin = 34;
-
 uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
 
 EthernetClient basic_client;
+
 EthernetUDP udp_client;
 
-SSLClient ssl_client(basic_client, TAs, (size_t)TAs_NUM, analog_pin);
+ESP_SSLClient ssl_client;
 
 SMTPSession smtp;
 
@@ -275,10 +271,7 @@ void networkStatusRequestCallback()
 void connectionUpgradeRequestCallback()
 {
     Serial.println("> U: Upgrad the connection...");
-
-#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
-    ssl_client.connectSSL(SMTP_HOST, SMTP_PORT);
-#endif
+    ssl_client.connectSSL();
 }
 
 void sendEmail()
@@ -334,6 +327,20 @@ void setup()
     Serial.println();
 
     networkConnection();
+
+    // Ignore server ssl certificate verification
+    ssl_client.setInsecure();
+
+    // Set the receive and transmit buffers size in bytes for memory allocation (512 to 16384).
+    // Rx and tx Recommendations
+    // For SMTP application, rx = 1024, tx = 512
+    // For IMAP application, rx = 16384, tx = 512
+    ssl_client.setBufferSizes(1024 /* rx */, 512 /* tx */);
+
+    ssl_client.setDebugLevel(1);
+
+    // Assign the basic client  
+    ssl_client.setClient(&basic_client, SMTP_PORT == 587);
 
     /* For internal NTP client
     For times east of the Prime Meridian use 0-12

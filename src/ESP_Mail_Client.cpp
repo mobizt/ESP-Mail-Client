@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_CPP
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30306)
+#if !VALID_VERSION_CHECK(30307)
 #error "Mixed versions compilation."
 #endif
 
@@ -632,8 +632,15 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
     if (!Time.initUDP())
     {
 #if !defined(SILENT_MODE)
-      esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time reading based on your network type" */, esp_mail_debug_tag_type_warning, true);
-      esp_mail_debug_print_tag(esp_mail_error_client_str_10 /* "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client" */, esp_mail_debug_tag_type_warning, true);
+      bool udpRequired = true;
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
+      udpRequired = time(nullptr) < ESP_MAIL_CLIENT_VALID_TS;
+#endif
+      if (udpRequired)
+      {
+        esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time reading based on your network type" */, esp_mail_debug_tag_type_warning, true);
+        esp_mail_debug_print_tag(esp_mail_error_client_str_10 /* "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client" */, esp_mail_debug_tag_type_warning, true);
+      }
 #endif
     }
 #endif

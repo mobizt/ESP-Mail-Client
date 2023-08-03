@@ -1,7 +1,7 @@
 /*
- * ESP32 TCP Client Library v2.0.13
+ * ESP32 TCP Client Library v2.0.14
  *
- * Created July 8, 2023
+ * Created August 3, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -224,10 +224,10 @@ bool ESP32_TCP_Client::isInitialized()
 
     bool upgradeRequired = false;
 
-#if !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+    // Changed since ESP_MAIL_USE_SDK_SSL_ENGINE flag is not applied in v3.3.0
+    // because the internal lwIP TCP client was used with mbedTLS instead of Client in earlier version.
     if (wcs->getProtocol(_port) == (int)esp_mail_protocol_tls && !connection_upgrade_cb)
         upgradeRequired = true;
-#endif
 
     if (!network_connection_cb || !network_status_cb || upgradeRequired)
     {
@@ -319,14 +319,10 @@ bool ESP32_TCP_Client::connect(bool secured, bool verify)
 
 #endif
 
-// internal client or external client with internal ssl engine
-#if !defined(ENABLE_CUSTOM_CLIENT) || defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
-
-    // internal or external client with innternal ssl client
+    // Changed since ESP_MAIL_USE_SDK_SSL_ENGINE flag is not applied in v3.3.0
+    // because the internal lwIP TCP client was used with mbedTLS instead of Client in earlier version.
     if (!wcs->connect(_host.c_str(), _port))
         return false;
-
-#endif
 
 #if !defined(ENABLE_CUSTOM_CLIENT)
     if (wcs->isKeepAliveSet())
@@ -361,7 +357,9 @@ bool ESP32_TCP_Client::connectSSL(bool verify)
 
     bool res = false;
 
-#if defined(ENABLE_CUSTOM_CLIENT) && !defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+// Changed since ESP_MAIL_USE_SDK_SSL_ENGINE flag is not applied in v3.3.0
+// because the internal lwIP TCP client was used with mbedTLS instead of Client in earlier version.
+#if defined(ENABLE_CUSTOM_CLIENT)
 
     wcs->tls_required = true;
 

@@ -1,6 +1,8 @@
 
 /**
- * This example is for SMTP server connection testing using multiples netwok types and clients.
+ * This example shows how to send Email using EthernetClient.
+ *
+ * This example used ESP32 and WIZnet W5500 Ethernet module.
  *
  * ///////////////////////////////////////////////////////////////
  * Important Information when using the custom or external Client
@@ -54,16 +56,14 @@
  *
  * The SSL clients that can connect in both non-secure and secure modes are
  *
- * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports ESP8266, ESP32
- * and Raspberry Pi Pico.
+ * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports all Arduino devices.
  *
- * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library supports all microcontrollers
- * that have enough flash memory and ram except for ESP8266 that has stack overfow issue.
+ * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library supports all Arduino devices except for ESP8266 that has stack overfow issue.
  *
  * With above two SSL client libraries, the SSL/TLS hanshake can be done via
  *
  * #if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
- * ssl_client.connectSSL(SMTP_HOST, SMTP_PORT);
+ * ssl_client.connectSSL(); // Require host/ip and port as parameter in SSLClient library
  * #endif
  *
  * The mcro "SSLCLIENT_CONNECTION_UPGRADABLE" was defined in the those two SSL client libraries.
@@ -103,7 +103,7 @@
  *
  * This kind of client can be used for IMAP and SMTP transports via non-secure ports e.g., 25 (SMTP) and 143 (IMAP).
  *
- * If the first argument is ssl client that starting connection in secure mode e.g., WiFiClientSecure and 
+ * If the first argument is ssl client that starting connection in secure mode e.g., WiFiClientSecure and
  * WiFiSSLClient, the second argument should be esp_mail_external_client_type_ssl.
  *
  * This kind of client can be used for IMAP and SMTP transports via secure ports e.g., 465 (SMTP) and 993 (IMAP).
@@ -113,18 +113,20 @@
  *
  * This kind of client can be used for IMAP and SMTP transports via Plain/TLS via STARTTLS ports
  * e.g., 25 (SMTP), 25 (587), and 143 (IMAP).
- * 
+ *
  * With this type of client, the callback function connectionUpgradeRequestCallback is required to perform SSL/TLS handshake.
  *
  *
- * When using ESP8266, ESP32 and Raspberry Pi Pico devices with network modules with network interface module, the external SSL client library is not required
+ * When using ESP8266 and Raspberry Pi Pico devices with network interface module, the external SSL client library is not required
  * because internal SSL engine is used.
- * 
+ *
  * User can use the basic client of network module directly and choose esp_mail_external_client_type_basic for the second argument of the method.
  *
+ * For ESP32, since the library version 3.3.0, the internal SSL engine (mbedTLS) will not handle SSL handshake for external client any more, 
+ * then user needs to use external SSL client (ESP_SSLClient or SSLClient) to do handshake and it required connectionUpgradeRequestCallback setup.  
  *
- * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external 
- * UDP client is required for internal NTP time synching.
+ * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external
+ * UDP client is required for internal NTP time reading.
  *
  * User can assign the UDP client via
  *
@@ -133,8 +135,8 @@
  * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
  * config.time.gmt_offset.
  *
- * IN ESP8266 and ESP32, device time will be updated after synching fishished and can get via time(nullptr).
- * 
+ * IN ESP8266 and ESP32, device time will be updated after reading fishished and can get via time(nullptr).
+ *
  * In Raspberry Pi Pico and other Arduino devices, the device time is not available. The valid time can be obtained from
  *
  * uint32_t timestamp = MailClient.Time.getCurrentTimestamp();
@@ -144,9 +146,9 @@
  * MailClient.Time.setTimestamp(timestamp);
  *
  * In Raspberry Pi Pico, the device time can not set manually by user except for using SDK's NTP class that works with WiFi only.
- * When use this device with external client, the device time will not be changed and user should call 
+ * When use this device with external client, the device time will not be changed and user should call
  * MailClient.Time.getCurrentTimestamp() to get the valid time instead.
- * 
+ *
  *
  * ///////////////////////////////////////////////////////////////
  *
@@ -193,7 +195,7 @@
 // SSLClient library used for test
 // 0 - OPEnSLab's fork SSLClient // https://github.com/mobizt/SSLClient
 // 1 - Mobizt's MB_SSLClient // https://github.com/mobizt/ESP_SSLClient
-// 2 - Built-in SSL Engine
+// 2 - Built-in SSL Engine (not supported in ESP32 since library v3.3.0)
 #define SSLCLIENT_LIB 0
 // #################################################################
 
@@ -391,6 +393,11 @@ void setup()
     goto exit;
 #endif
 
+#if defined(ESP32) && SSLCLIENT_LIB == 2
+    Serial.println("> E: The insternal SSL engine will not applied to external client since v3.3.0.");
+    goto exit;
+#endif
+
     networkConnection();
 
     if (WiFi.status() != WL_CONNECTED && Ethernet.linkStatus() != LinkON)
@@ -400,7 +407,7 @@ void setup()
     }
 
 #if SSLCLIENT_LIB == 1
-    WORK_CLIENT.setClient(&basic_client);
+    WORK_CLIENT.setClient(&basic_client, SMTP_PORT == 465);
     WORK_CLIENT.setInsecure();
 #endif
 

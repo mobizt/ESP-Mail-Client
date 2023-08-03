@@ -762,21 +762,71 @@ To use custom (external) Client for such WiFi capable devices, the following mac
 See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete Client example.
 
 
-The following example showed how to use `GSMClient` and [SSLClient](https://github.com/mobizt/SSLClient) to connect to SMTP server via port 587 which required connection upgrade.
+The following example showed how to use TTGO T-A7670 with `GSMClient` and [ESP_SSLClient](https://github.com/mobizt/ESP_SSLClient) to connect to SMTP server via port 587 which required connection upgrade to TLS with STARTTLS.
 
 
 ```cpp
 
-GSMClient client; // basic non-secure client
+// For TTGO T-A7670
+#define TINY_GSM_MODEM_SIM7600 // SIMA7670 Compatible with SIM7600 AT instructions
 
-/** The parameters passed to the SSLClient constructor
- * TAs is Trust anchors used in the verification of the SSL server certificate. 
- * Check out https://github.com/mobizt/SSLClient/blob/master/TrustAnchors.md for more info.
- * TAs_NUM is the number of objects in the trust_anchors array.
- * rand_pin is an analog pin to pull random bytes from, used in seeding the RNG.
- */
-// https://github.com/mobizt/SSLClient
-SSLClient ssl_client(client, TAs, (size_t)TAs_NUM, rand_pin); 
+// Set serial for debug console (to the Serial Monitor, default speed 115200)
+#define SerialMon Serial
+
+// Set serial for AT commands (to the module)
+// Use Hardware Serial on Mega, Leonardo, Micro
+#define SerialAT Serial1
+
+// See all AT commands, if wanted
+// #define DUMP_AT_COMMANDS
+
+// Define the serial console for debug prints, if needed
+#define TINY_GSM_DEBUG SerialMon
+
+#define TINY_GSM_USE_GPRS true
+#define TINY_GSM_USE_WIFI false
+
+// set GSM PIN, if any
+#define GSM_PIN ""
+
+// Your GPRS credentials, if any
+const char apn[] = "YourAPN";
+const char gprsUser[] = "";
+const char gprsPass[] = "";
+
+#define UART_BAUD 115200
+#define PIN_DTR 25
+#define PIN_TX 26
+#define PIN_RX 27
+#define PWR_PIN 4
+#define BAT_ADC 35
+#define BAT_EN 12
+#define PIN_RI 33
+#define PIN_DTR 25
+#define RESET 5
+
+#define SD_MISO 2
+#define SD_MOSI 15
+#define SD_SCLK 14
+#define SD_CS 13
+
+#include <TinyGsmClient.h>
+
+#include <ESP_SSLClient.h>
+
+#include <ESP_Mail_Client.h>
+
+// Set serial for debug console
+#define SerialMon Serial
+
+// Set serial for AT commands (to the module)
+#define SerialAT Serial1
+
+TinyGsm modem(SerialAT);
+
+TinyGsmClient basic_client(modem); // basic non-secure client
+
+ESP_SSLClient ssl_client;
 
 SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic); 
 // port 587 required non-secure connection during greeting and 
@@ -784,34 +834,128 @@ SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic);
 
 void connectionUpgradeRequestCallback()
 {
-    //To make sure that upgradable SSLClient https://github.com/mobizt/SSLClient was installed instead of
-    // the original version
-#if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
-    // Upgrade the connection
-    // The host and port parameters will be ignored for this case and can be any
-    ssl_client.connectSSL("smtp.gmail.com" /* host */, 587 /* port */);
-    
-#endif
+    // Upgrade the connection from plain to TLS
+    ssl_client.connectSSL();
+
 }
 
 // Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
     // Set the network status
-    bool networkConnected;
-
-    // networkConnected = modem.isNetworkConnected();
-
-    smtp.setNetworkStatus(networkConnected);
+    smtp.setNetworkStatus(modem.isNetworkConnected());
 }
 
 void networkConnection()
 {
-    // Code for network reset, disconnect and re-connect here.
+    if(modem.isGprsConnected())
+    {
+      modem.gprsDisconnect();
+      SerialMon.println(F("GPRS disconnected"));
+    }
+
+    // Restart takes quite some time
+    // To skip it, call init() instead of restart()
+    DBG("Initializing modem...");
+    if (!modem.init())
+    {
+        DBG("Failed to restart modem, delaying 10s and retrying");
+        return;
+    }
+
+    /*
+    2 Automatic
+    13 GSM Only
+    14 WCDMA Only
+    38 LTE Only
+    */
+    modem.setNetworkMode(38);
+    if (modem.waitResponse(10000L) != 1)
+    {
+        DBG(" setNetworkMode faill");
+        return;
+    }
+
+    SerialMon.print("Waiting for network...");
+    if (!modem.waitForNetwork())
+    {
+        SerialMon.println(" fail");
+        delay(10000);
+        return;
+    }
+    SerialMon.println(" success");
+
+    if (modem.isNetworkConnected())
+    {
+        SerialMon.println("Network connected");
+    }
+
+#if TINY_GSM_USE_GPRS
+    // GPRS connection parameters are usually set after network registration
+    SerialMon.print(F("Connecting to "));
+    SerialMon.print(apn);
+    if (!modem.gprsConnect(apn, gprsUser, gprsPass))
+    {
+        SerialMon.println(" fail");
+        delay(10000);
+        return;
+    }
+    SerialMon.println(" success");
+
+    if (modem.isGprsConnected())
+    {
+        SerialMon.println("GPRS connected");
+    }
+#endif
+
 }
 
 void serup()
 {
+
+    SerialMon.begin(115200);
+
+    SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
+
+    String name = modem.getModemName();
+    DBG("Modem Name:", name);
+
+    String modemInfo = modem.getModemInfo();
+    DBG("Modem Info:", modemInfo);
+
+#if TINY_GSM_USE_GPRS
+    // Unlock your SIM card with a PIN if needed
+    if (GSM_PIN && modem.getSimStatus() != 3)
+    {
+        modem.simUnlock(GSM_PIN);
+    }
+#endif
+
+    networkConnection();
+
+    // Ignore server ssl certificate verification
+    ssl_client.setInsecure();
+
+    // Set the receive and transmit buffers size in bytes for memory allocation (512 to 16384).
+    // Rx and tx Recommendations
+    // For SMTP application, rx = 1024, tx = 512
+    // For IMAP application, rx = 16384, tx = 512
+    // In case of IMAP, if rx is set bekow 16k, the connection will fail then
+    // the device that used for IMAP application should have memory at least 20k. 
+    ssl_client.setBufferSizes(1024 /* rx */, 512 /* tx */);
+
+    ssl_client.setDebugLevel(1);
+
+    // Assign the basic client
+    // The second parameter is the enable SSL connection option.
+    // We will not auto connect in SSL mode (with SSL handshake) since first connect by set this option to 'false'. 
+    // We will do the SSL handshake later when STARTTLS request was accepted by server
+    // which connectionUpgradeRequestCallback was call when TLS is required.
+    // And we will call ssl_client.connectSSL(); in that callback to do SSL handshake.
+    // If port 465 used instead of 587, the second parameter should be 'true' 
+    // and the connection upgrade callback is not neccessary.  
+    ssl_client.setClient(&basic_client, false /* Don't do TLS handshake at the first connection */);
+
 
     config.server.host_name = "smtp.gmail.com"; //for gmail.com
     config.server.port = 587; // requires connection upgrade via STARTTLS
@@ -819,10 +963,6 @@ void serup()
     config.login.password = "your Email password"; //set to empty for no SMTP Authentication
     config.login.user_domain = "client domain or ip e.g. mydomain.com";
 
-    /**
-     * Other setup codes
-     * 
-     */
     
     // Set the callback function for connection upgrade
     smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
@@ -843,6 +983,8 @@ The below example will use Arduino MKR 1000 and WiFi101 library.
 ```cpp
 
 #include <WiFi101.h>
+
+#include <ESP_Mail_Client.h>
 
 // Declare the global used Client object
 WiFiSSLClient ssl_client; // secured client
@@ -925,7 +1067,6 @@ void setup()
 
   smtp.networkConnectionRequestCallback(networkConnection);
 
-
   // Connect to the server with the defined session and options
   smtp.connect(&config);
 
@@ -941,36 +1082,107 @@ void setup()
 ```
 
 
-The below example will use ESP32 and GSMClient library.
+The below example will use ESP32 and W5500 and Ethernet client library to connect to SMTP server via port 587 (TLS via STARTTLS)
 
 
 ```cpp
 
-GSMClient client; // basic non-secure client
+#include <Ethernet.h>
 
-SMTPSession smtp(&client, esp_mail_external_client_type_basic); 
-// We can assign basic Client directly in ESP8266 and ESP32 as library will handle 
-// the connection upgrade (if needed in case of SMTP port 587) using Core SDK SSL engine.
+#include <ESP_SSLClient.h>
 
+#include <ESP_Mail_Client.h>
 
-// Define the callback function to handle server status acknowledgement
-void networkStatusRequestCallback()
+#define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
+#define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
+#define WIZNET_MISO_PIN 19  // Connect W5500 MISO pin to GPIO 19 of ESP32
+#define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
+#define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
+
+ESP_SSLClient ssl_client;
+
+EthernetClient basic_client;
+
+uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
+
+SMTPSession smtp(&ssl_client, esp_mail_external_client_type_basic); 
+
+Session_Config config;
+
+void ResetEthernet()
 {
-    // Set the network status
-    bool networkConnected;
-
-    // networkConnected = modem.isNetworkConnected();
-
-    smtp.setNetworkStatus(networkConnected);
+    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
+    pinMode(WIZNET_RESET_PIN, OUTPUT);
+    digitalWrite(WIZNET_RESET_PIN, HIGH);
+    delay(200);
+    digitalWrite(WIZNET_RESET_PIN, LOW);
+    delay(50);
+    digitalWrite(WIZNET_RESET_PIN, HIGH);
+    delay(200);
 }
 
 void networkConnection()
 {
-    // Code for network reset, disconnect and re-connect here.
+
+    Ethernet.init(WIZNET_CS_PIN);
+
+    ResetEthernet();
+
+    Serial.println("Starting Ethernet connection...");
+    Ethernet.begin(Eth_MAC);
+
+    unsigned long to = millis();
+
+    while (Ethernet.linkStatus() == LinkOFF || millis() - to < 2000)
+    {
+        delay(100);
+    }
+
+    if (Ethernet.linkStatus() == LinkON)
+    {
+        Serial.print("Connected with IP ");
+        Serial.println(Ethernet.localIP());
+    }
+    else
+    {
+        Serial.println("Can't connect");
+    }
+}
+
+void networkStatusRequestCallback()
+{
+
+    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
 }
 
 void serup()
 {
+    Serial.begin(115200);
+
+    networkConnection();
+
+    // Ignore server ssl certificate verification
+    ssl_client.setInsecure();
+
+    // Set the receive and transmit buffers size in bytes for memory allocation (512 to 16384).
+    // Rx and tx Recommendations
+    // For SMTP application, rx = 1024, tx = 512
+    // For IMAP application, rx = 16384, tx = 512
+    // In case of IMAP, if rx is set bekow 16k, the connection will fail then
+    // the device that used for IMAP application should have memory at least 20k. 
+    ssl_client.setBufferSizes(1024 /* rx */, 512 /* tx */);
+
+    ssl_client.setDebugLevel(1);
+
+    // Assign the basic client
+    // The second parameter is the enable SSL connection option.
+    // We will not auto connect in SSL mode (with SSL handshake) since first connect by set this option to 'false'. 
+    // We will do the SSL handshake later when STARTTLS request was accepted by server
+    // which connectionUpgradeRequestCallback was call when TLS is required.
+    // And we will call ssl_client.connectSSL(); in that callback to do SSL handshake.
+    // If port 465 used instead of 587, the second parameter should be 'true' 
+    // and the connection upgrade callback is not neccessary.  
+    ssl_client.setClient(&basic_client, false /* Don't do TLS handshake at the first connection */);
 
     config.server.host_name = "smtp.gmail.com"; //for gmail.com
     config.server.port = 587; // requires connection upgrade via STARTTLS
@@ -978,15 +1190,35 @@ void serup()
     config.login.password = "your Email password"; //set to empty for no SMTP Authentication
     config.login.user_domain = "client domain or ip e.g. mydomain.com";
 
-    /**
-     * Other setup codes
-     * 
-     */
+    // Declare the SMTP_Message class variable to handle to message being transport
+    SMTP_Message message;
 
-    // Set the callback function for server connection.
+    // Set the message headers
+    message.sender.name = "My Mail";
+    message.sender.email = "sender or your Email address";
+    message.subject = "Test sending Email";
+    message.addRecipient("name1", "email1");
+    message.addRecipient("name2", "email2");
+
+    message.addCc("email3");
+    message.addBcc("email4");
+
+    // Set the message content
+    message.text.content = "This is simple plain text message";
+
+     // Set the callback function for connection upgrade
+    smtp.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
+
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
 
     smtp.networkConnectionRequestCallback(networkConnection);
+
+    // Connect to the server with the defined session and options
+    smtp.connect(&config);
+
+    // Start sending Email and close the session
+    if (!MailClient.sendMail(&smtp, &message))
+      Serial.println("Error sending Email, " + smtp.errorReason());
   
 }
 

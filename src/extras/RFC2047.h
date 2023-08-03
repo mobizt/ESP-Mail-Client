@@ -4,7 +4,7 @@
 #define RFC2047_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30306)
+#if !VALID_VERSION_CHECK(30307)
 #error "Mixed versions compilation."
 #endif
 
