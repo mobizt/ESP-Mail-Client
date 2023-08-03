@@ -986,7 +986,34 @@ void serup()
 
     smtp.networkConnectionRequestCallback(networkConnection);
 
-     smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
+    // Declare the SMTP_Message class variable to handle to message being transport
+    SMTP_Message message;
+
+    // Set the message headers
+    message.sender.name = "My Mail";
+    message.sender.email = "sender or your Email address";
+    message.subject = "Test sending Email";
+    message.addRecipient("name1", "email1");
+    message.addRecipient("name2", "email2");
+
+    message.addCc("email3");
+    message.addBcc("email4");
+
+    // Set the message content
+    message.text.content = "This is simple plain text message";
+  
+    // Set the callback functions to hadle the required tasks.
+    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+
+    smtp.networkConnectionRequestCallback(networkConnection);
+
+    // Connect to the server with the defined session and options
+    smtp.connect(&config);
+
+
+    // Start sending Email and close the session
+    if (!MailClient.sendMail(&smtp, &message))
+      Serial.println("Error sending Email, " + smtp.errorReason());
 
 }
 
