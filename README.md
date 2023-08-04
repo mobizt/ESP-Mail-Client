@@ -87,7 +87,7 @@ The Arduino device to use this libray should has at least 80k flash space and 20
 
 [8. License](#license)
 
---------------------------------
+
 
 ## Features
 
@@ -110,7 +110,7 @@ The Arduino device to use this libray should has at least 80k flash space and 20
 * Customizable configurations (see the examples for the usages)
 
 
---------------------------------
+
 
 ## Supported Devices
 
@@ -142,7 +142,7 @@ This following devices are supported.
  * Raspberry Pi Pico 
 
 
---------------------------------
+
 
 ## Prerequisites
 
@@ -267,7 +267,7 @@ If the custom build WiFiNINA firmware was installed, the debug message will show
 > C: ESP Mail Client v2.x.x, Fw v1.4.8+21120
 ```
 
---------------------------------
+
 
 ## Library Instalation
 
@@ -302,7 +302,7 @@ Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
 
 Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
 
---------------------------------
+
 
 ## Memory Options
 
@@ -426,7 +426,7 @@ As in ESP8266, once the external Heap memory was enabled in IDE, to allow the li
 #define ESP_MAIL_USE_PSRAM
 ```
 
---------------------------------
+
 
 ## Exclude unused classes to save program space 
 
@@ -508,7 +508,7 @@ The following is the example of Custom_ESP_Mail_FS.h
 #endif
 ```
 
---------------------------------
+
 
 ## Usage
 
@@ -1356,7 +1356,7 @@ void serup()
 
 
 ```
---------------------------------
+
 
 ## License
 
