@@ -137,7 +137,7 @@
  * This macro allows library to use external basic Client and external SSL Client interface.
  * The associated callback functions should be assigned based on port functions.
  */
- // #define ENABLE_CUSTOM_CLIENT
+  #define ENABLE_CUSTOM_CLIENT
 
 /* 📌 To use ESP8266 ENC28J60 Ethernet module */
 // #define ENABLE_ESP8266_ENC28J60_ETH

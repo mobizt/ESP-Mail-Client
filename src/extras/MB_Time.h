@@ -69,6 +69,12 @@
 #endif
 #endif
 
+#if defined __has_include
+#if __has_include(<WiFiNINA.h>)|| __has_include(<WiFi101.h>)
+#define MB_TIME_ARDUINO_WIFI_LIB_SUPPORTED
+#endif
+#endif
+
 #if defined(ESP8266)
 #include "user_interface.h"
 #endif
@@ -163,7 +169,7 @@ public:
     if (TZ != gmtOffset || DST_MN != daylightOffset)
       configUpdated = true;
 
-#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
+#if defined(ARDUINO_ARCH_SAMD) || defined(ARDUINO_SAMD_MKR1000) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
 #elif defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
     sys_ts = time(nullptr);
@@ -399,6 +405,8 @@ public:
 
   void syncSysTeme()
   {
+    getTime();
+
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
     if (sys_ts < time(nullptr) && time(nullptr) > ESP_TIME_DEFAULT_TS)
     {
@@ -496,9 +504,15 @@ private:
   void getTime(uint32_t ctime = 0)
   {
 
-#if (defined(ARDUINO_ARCH_SAMD) && !defined(ARDUINO_SAMD_MKR1000)) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
+#if defined(MB_TIME_ARDUINO_WIFI_LIB_SUPPORTED)
 
     unsigned long ts = WiFi.getTime();
+    unsigned long ms = millis();
+    while (millis() - ms < 3000 && ts < ESP_TIME_DEFAULT_TS)
+    {
+      delay(10);
+    }
+
     if (ts > 0)
       sys_ts = ts;
 
@@ -513,6 +527,7 @@ private:
       sys_ts = time(nullptr);
     localtime_r(&sys_ts, &timeinfo);
 #endif
+
 #else
 
 #if defined(MB_ARDUINO_ESP)
@@ -520,6 +535,7 @@ private:
 #endif
 
 #if defined(ESP32) || defined(ESP8266)
+
     if (ctime == 0 && time(nullptr) > ESP_TIME_DEFAULT_TS)
     {
 #if defined(ESP32)
@@ -528,6 +544,7 @@ private:
       localtime_r(&sys_ts, &timeinfo);
 #endif
     }
+
 #endif
 
 #endif

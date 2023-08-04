@@ -14,8 +14,82 @@ The library also supported other Arduino devices via client libraries e.g. WiFiC
 
 The Arduino device to use this libray should has at least 80k flash space and 20k memory.
 
+## Contents
 
-# Features
+
+[1. Features](#features)
+
+[2. Supported Devices](#supported-devices)
+- [Supported Devices with flash size > 80k, using custom Clients.](#supported-devices-with-flash-size--80k-using-custom-clients)
+
+[3. Prerequisites](#prerequisites)
+- [Gmail SMTP and IMAP required App Passwords to sign in](#gmail-smtp-and-imap-required-app-passwords-to-sign-in)
+
+- [PlatformIO IDE Compile Options](#platformio-ide-compile-options)
+
+- [Third party SD library must be removed](#third-party-sd-library-must-be-removed)
+
+- [SdFat conflicts in ESP8266 and must be removed](#sdfat-conflicts-in-esp8266-and-must-be-removed)
+
+- [ESP32 and ESP8266 SDKs](#esp32-and-esp8266-sdks)
+
+- [RP2040 Arduino SDK](#rp2040-arduino-sdk)
+
+- [SAMD21 custom build firmware](#samd21-custom-build-firmware)
+
+- [Install Custom Build WiFiNINA Firmware](#install-custom-build-wifinina-firmware)
+
+[4. Library Instalation](#library-instalation)
+
+- [Using Library Manager](#using-library-manager)
+
+- [Manual installation](#manual-installation)
+
+[5. Memory Options](#memory-options)
+
+- [Memory Options for ESP8266](#memory-options-for-esp8266)
+
+  - [Arduino IDE](#arduino-ide)
+
+  - [PlatformIO IDE](#platformio-ide)
+
+  - [ESP8266 and SRAM/PSRAM Chip connection](#esp8266-and-srampsram-chip-connection)
+
+- [Memory Options for ESP32](#memory-options-for-esp32)
+
+  - [Arduino IDE](#arduino-ide-1)
+
+  - [PlatformIO IDE](#platformio-ide-1)
+
+
+[6. Exclude unused classes to save program space](#exclude-unused-classes-to-save-program-space)
+
+
+[7. Usage](#usage)
+
+- [Send Email](#send-email)
+
+- [Read Email](#read-email)
+
+- [Get Incoming Message Notification and Reading](#get-incoming-message-notification-and-reading)
+
+- [Sending Custom IMAP commands](#sending-custom-imap-commands)
+
+- [Using TCP session KeepAlive in ESP8266 and ESP32](#using-tcp-session-keepalive-in-esp8266-and-esp32)
+
+- [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces)
+
+  - [TTGO T-A7670 LTE with TinyGSM](#ttgo-t-a7670-lte-with-tinygsm)
+
+  - [MKR 1000 and WiFi101](#mkr-1000-and-wifi101)
+
+  - [ESP32 and W5500](#esp32-and-w5500)
+
+[8. License](#license)
+
+--------------------------------
+
+## Features
 
 * Support Espressif's ESP32 and ESP8266, Raspberry Pi's RP2040 Pico, Atmel's SAMD21 devices with u-blox NINA-W102 WiFi/Bluetooth module.
 * Support TCP session reusage.
@@ -36,7 +110,7 @@ The Arduino device to use this libray should has at least 80k flash space and 20
 * Customizable configurations (see the examples for the usages)
 
 
-
+--------------------------------
 
 ## Supported Devices
 
@@ -67,7 +141,13 @@ This following devices are supported.
  * Arduino Nano RP2040 Connect
  * Raspberry Pi Pico 
 
- ### Gmail SMTP and IMAP required App Passwords to sign in
+
+--------------------------------
+
+## Prerequisites
+
+
+### Gmail SMTP and IMAP required App Passwords to sign in
 
 From May 30, 2022, Google no longer supports the use of third-party apps or devices which ask you to sign in to your  GoogleAccount using only your username and password.
 
@@ -84,9 +164,6 @@ config.login.email = "<your email>";
 config.login.password = "<your app password>";
 ```
  
-
-
-## Prerequisites
 
 ### PlatformIO IDE Compile Options
 
@@ -141,11 +218,15 @@ board_build.filesystem_size = 1m
 See this Arduino-Pico SDK [documentation](https://arduino-pico.readthedocs.io/en/latest/) for more information.
 
 
+
 ### SAMD21 custom build firmware
 
 For Atmel's SAMD21 based boards, [custom build WiFiNINA firmware](https://github.com/mobizt/nina-fw) should be installed instead of official Arduino WiFiNINA firmware.
 
 This requirement is optional and has more advantages over the standard Arduino WiFiNINA firmware.
+
+
+You can use external client which is more convenient instead of install WiFiNINA firmware, please see [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces) section.
 
 
 
@@ -186,7 +267,7 @@ If the custom build WiFiNINA firmware was installed, the debug message will show
 > C: ESP Mail Client v2.x.x, Fw v1.4.8+21120
 ```
 
-
+--------------------------------
 
 ## Library Instalation
 
@@ -221,12 +302,12 @@ Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
 
 Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
 
+--------------------------------
+
+## Memory Options
 
 
-
-
-
-## Memory Options for ESP8266
+### Memory Options for ESP8266
 
 This section is optional for memory settings in IDE.
 
@@ -234,7 +315,7 @@ When you update the ESP8266 Arduino Core SDK to v3.0.0, the memory can be config
 
 You can choose the Heap memory between internal and external memory chip from IDE e.g. Arduino IDE and PlatformIO on VSCode or Atom IDE.
 
-### Arduino IDE
+#### Arduino IDE
 
 
 For ESP8266 devices that don't have external SRAM/PSRAM chip installed, choose the MMU **option 3**, 16KB cache + 48KB IRAM and 2nd Heap (shared).
@@ -248,7 +329,7 @@ For ESP8266 devices that have external 23LC1024 SRAM chip installed, choose the 
 For ESP8266 devices that have external ESP-PSRAM64 chip installed, choose the MMU **option 6**, 1M External 64 MBit PSRAM.
 
 
-### PlatformIO IDE
+#### PlatformIO IDE
 
 The MMU options can be selected from build_flags in your project's platformio.ini file
 
@@ -290,7 +371,7 @@ monitor_speed = 115200
 ```
 
 
-### ESP8266 and SRAM/PSRAM Chip connection
+#### ESP8266 and SRAM/PSRAM Chip connection
 
 Most ESP8266 modules don't have the built-in SRAM/PSRAM on board. External memory chip connection can be done via SPI port as below.
 
@@ -317,20 +398,20 @@ This macro was defined by default when you installed or update the library.
 
 
 
-## Memory Options for ESP32
+### Memory Options for ESP32
 
 This section is optional for memory settings in IDE.
 
 In ESP32 module that has PSRAM installed, you can enable it and set the library to use this external memory instead.
 
-### Arduino IDE
+#### Arduino IDE
 
 To enable PSRAM in ESP32 module.
 
 ![Enable PSRAM in ESP32](/media/images/ESP32-PSRAM.png)
 
 
-### PlatformIO IDE
+#### PlatformIO IDE
 
 
 In PlatformIO on VSCode or Atom IDE, add the following build_flags in your project's platformio.ini file.
@@ -345,13 +426,9 @@ As in ESP8266, once the external Heap memory was enabled in IDE, to allow the li
 #define ESP_MAIL_USE_PSRAM
 ```
 
+--------------------------------
 
-
-
-
-
-
-## Exclude unused classes to save memory 
+## Exclude unused classes to save program space 
 
 Now you can compile the library only for seclected classes.
 
@@ -431,45 +508,7 @@ The following is the example of Custom_ESP_Mail_FS.h
 #endif
 ```
 
-
-### Using TCP session KeepAlive in ESP8266 and ESP32
-
-The server connection will be probed at some intervals to maintain connection.
-
-The TCP session KeepAlive can be enabled from executing `<SMTPSession>.keepAlive` or `<IMAPSession>.keepAlive` with providing TCP options as arguments, i.e.,
-
-`tcpKeepIdleSeconds`, `tcpKeepIntervalSeconds` and `tcpKeepCount`.
-
-Ex.
-
-```cpp
-smtp.keepAlive(5 /* tcp KeepAlive idle 5 seconds */, 5 /* tcp KeeAalive interval 5 seconds */, 1 /* tcp KeepAlive count 1 */);
-
-imap.keepAlive(5 /* tcp KeepAlive idle 5 seconds */, 5 /* tcp KeeAalive interval 5 seconds */, 1 /* tcp KeepAlive count 1 */);
-
-// If one of three arguments is zero, the KeepAlive will be disabled.
-```
-
-To check the KeepAlive status, use `<SMTPSession>.isKeepAlive` or `<IMAPSession>.isKeepAlive`.
-
-
-For the TCP (KeepAlive) options, see [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options).
-
-You can check the server connecting status, by executing `<SMTPSession>.connected()` or `<IMAPSession>.connected()` which will return true when connection to the server is still alive. 
-
-
-The TCP KeepAlive was currently available in ESP32 unless in ESP8266, [this ESP8266 PR #8940](https://github.com/esp8266/Arduino/pull/8940) should be merged in the [ESP8266 Arduino Core SDK](https://github.com/esp8266/Arduino/releases), i.e., it will be supported in the ESP8266 core version newer than v3.1.2.
-
-
-In ESP8266 core v3.1.2 and older, the error can be occurred when executing `<SMTPSession>.keepAlive` or `<IMAPSession>.isKeepAlive` because of object slicing.
-
-
-The Arduino Pico is currently not support TCP KeepAlive until it's implemented in WiFiClientSecure library as in ESP8266.
-
- 
-For External Client, this TCP KeepAlive option is not appliable and should be managed by external Client library.
-
-
+--------------------------------
 
 ## Usage
 
@@ -737,6 +776,46 @@ Please read the RFC 3501 and RFC 9051 documents for the details of IMAP protocol
 See [Custom_Command examples](/examples/IMAP/Custom_Command) for how to use.
 
 
+### Using TCP session KeepAlive in ESP8266 and ESP32
+
+The server connection will be probed at some intervals to maintain connection.
+
+The TCP session KeepAlive can be enabled from executing `<SMTPSession>.keepAlive` or `<IMAPSession>.keepAlive` with providing TCP options as arguments, i.e.,
+
+`tcpKeepIdleSeconds`, `tcpKeepIntervalSeconds` and `tcpKeepCount`.
+
+Ex.
+
+```cpp
+smtp.keepAlive(5 /* tcp KeepAlive idle 5 seconds */, 5 /* tcp KeeAalive interval 5 seconds */, 1 /* tcp KeepAlive count 1 */);
+
+imap.keepAlive(5 /* tcp KeepAlive idle 5 seconds */, 5 /* tcp KeeAalive interval 5 seconds */, 1 /* tcp KeepAlive count 1 */);
+
+// If one of three arguments is zero, the KeepAlive will be disabled.
+```
+
+To check the KeepAlive status, use `<SMTPSession>.isKeepAlive` or `<IMAPSession>.isKeepAlive`.
+
+
+For the TCP (KeepAlive) options, see [here](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/lwip.html#tcp-options).
+
+You can check the server connecting status, by executing `<SMTPSession>.connected()` or `<IMAPSession>.connected()` which will return true when connection to the server is still alive. 
+
+
+The TCP KeepAlive was currently available in ESP32 unless in ESP8266, [this ESP8266 PR #8940](https://github.com/esp8266/Arduino/pull/8940) should be merged in the [ESP8266 Arduino Core SDK](https://github.com/esp8266/Arduino/releases), i.e., it will be supported in the ESP8266 core version newer than v3.1.2.
+
+
+In ESP8266 core v3.1.2 and older, the error can be occurred when executing `<SMTPSession>.keepAlive` or `<IMAPSession>.isKeepAlive` because of object slicing.
+
+
+The Arduino Pico is currently not support TCP KeepAlive until it's implemented in WiFiClientSecure library as in ESP8266.
+
+ 
+For External Client, this TCP KeepAlive option is not appliable and should be managed by external Client library.
+
+
+
+
 ### Use external Arduino Clients interfaces
 
 The Arduino Clients for network interfaces (WiFiClient, EthernetClient and GSMClient) which support non-secure network connection can be used as external client.
@@ -773,11 +852,12 @@ From this reason, the build flag `ESP_MAIL_USE_SDK_SSL_ENGINE`in ESP32 will not 
 
 Then the examples that used ESP32 with external client will require the SSL Client or conection upgradable SSL Client when used in SSL/TLS applications.
 
+See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete external Client example.
+
+
+#### TTGO T-A7670 LTE with TinyGSM
 
 The following example showed how to use TTGO T-A7670 with `GSMClient` and [ESP_SSLClient](https://github.com/mobizt/ESP_SSLClient) to connect to SMTP server via port 587 which required connection upgrade to TLS with STARTTLS.
-
-
-See [External (Custom) Client Examples](/examples/SMTP/External_Client) for complete external Client example.
 
 
 ```cpp
@@ -1020,6 +1100,7 @@ void serup()
 
 ```
 
+#### MKR 1000 and WiFi101
 
 The below example will use Arduino MKR 1000 and WiFi101 library.
 
@@ -1124,7 +1205,7 @@ void setup()
 
 
 ```
-
+#### ESP32 and W5500
 
 The below example will use ESP32 and W5500 and Ethernet client library to connect to SMTP server via port 587 (TLS via STARTTLS)
 
@@ -1275,6 +1356,7 @@ void serup()
 
 
 ```
+--------------------------------
 
 ## License
 
