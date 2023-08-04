@@ -300,7 +300,11 @@ public:
 
   void setExtClientType(esp_mail_external_client_type type)
   {
+// Changed since ESP_MAIL_USE_SDK_SSL_ENGINE flag is not applied in v3.3.0
+// because the internal lwIP TCP client was used with mbedTLS instead of Client in earlier version.
+#if defined(ENABLE_CUSTOM_CLIENT)
     wcs->setExtClientType(type);
+#endif
   }
 
   void set_tlsErrr(bool err)

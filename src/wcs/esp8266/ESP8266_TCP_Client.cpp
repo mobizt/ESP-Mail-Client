@@ -72,11 +72,8 @@ void ESP8266_TCP_Client::setCACert(const char *caCert)
 #if defined(WCS_USE_BEARSSL)
     if (x509)
       delete x509;
-#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
     x509 = new X509List(caCert);
-#else
-    x509 = new X509List(caCert);
-#endif
     wcs->setTrustAnchors(x509);
 #else
     wcs->setCACert_P(caCert, strlen_P(caCert));
@@ -124,11 +121,8 @@ bool ESP8266_TCP_Client::setCertFile(const char *certFile, mb_fs_mem_storage_typ
 #if defined(WCS_USE_BEARSSL)
       if (x509)
         delete x509;
-#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+
       x509 = new X509List(der, len);
-#else
-      x509 = new X509List(der, len);
-#endif
       wcs->setTrustAnchors(x509);
 #endif
 
@@ -200,7 +194,7 @@ ex:
 
 bool ESP8266_TCP_Client::validIP(IPAddress ip)
 {
-    return strcmp(ip.toString().c_str(), "0.0.0.0") != 0;
+  return strcmp(ip.toString().c_str(), "0.0.0.0") != 0;
 }
 
 void ESP8266_TCP_Client::ethDNSWorkAround()

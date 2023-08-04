@@ -97,7 +97,9 @@ ESP32_WCS::~ESP32_WCS()
 
 void ESP32_WCS::setClient(Client *client)
 {
-#if defined(ESP_MAIL_USE_SDK_SSL_ENGINE)
+// Changed since ESP_MAIL_USE_SDK_SSL_ENGINE flag is not applied in v3.3.0
+// because the internal lwIP TCP client was used with mbedTLS instead of Client in earlier version.
+#if defined(ENABLE_CUSTOM_CLIENT)
     _ssl->client = client;
 #endif
 }
