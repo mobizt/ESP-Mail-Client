@@ -289,7 +289,7 @@ public:
      * Get the TCP timeout in seconds.
      * @return The TCP timeout in seconds.
      */
-    int getTimeout(uint32_t seconds);
+    int getTimeout();
 
     /**
      * Set the SSL handshake timeout in seconds.
