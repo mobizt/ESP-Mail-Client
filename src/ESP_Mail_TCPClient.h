@@ -314,7 +314,7 @@ public:
             // We can reconnect WiFi when device connected via built-in WiFi that supports reconnect
             if (WiFI_CONNECTED)
             {
-#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
                 WiFi.reconnect();
                 return;
 #endif
