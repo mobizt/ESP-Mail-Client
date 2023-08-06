@@ -377,35 +377,32 @@ void setTCPTimeout(unsigned long timeoutSec);
 
 
 
-
 #### Assign custom Client from Arduino Clients.
 
 param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
 
-param **`type`** The type of external Client e.g. `esp_mail_external_client_type_basic` and `esp_mail_external_client_type_ssl`
 ```cpp
-void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+void setClient(Client *client);
 ```
 
 
+#### Assign TinyGsm Clients.
 
-#### Assign the callback function to handle the server connection for custom Client.
+param **`client`** The pointer to TinyGsmClient.
 
-param **`connectionCB`** The function that handles the server connection.
+param **`modem`** The pointer to TinyGsm modem object. Modem should be initialized and/or set mode before transfering data.
+
+param **`pin`** The SIM pin.
+
+param **`apn`** The GPRS APN (Access Point Name).
+
+param **`user`** The GPRS user.
+
+param **`password`** The GPRS password.
 
 ```cpp
-void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
 ```
-
-
-#### Assign the callback function to handle the server upgrade connection for custom Client.
-
-param **`upgradeCB`** The function that handles existing connection upgrade.
-
-```cpp
-void connectionUpgradeRequetsCallback(ConnectionUpgradeRequestCallback upgradeCB);
-```
-
 
 
 #### Assign the callback function to handle the network connection for custom Client.
@@ -414,15 +411,6 @@ param **`networkConnectionCB`** The function that handles the network connection
 
 ```cpp
 void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
-```
-
-
-#### Assign the callback function to handle the network disconnection for custom Client.
-
-param **`networkDisconnectionCB`** The function that handles the network disconnection.
-
-```cpp
-void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 ```
 
 
@@ -1316,34 +1304,33 @@ void setTCPTimeout(unsigned long timeoutSec);
 
 
 
-
 #### Assign custom Client from Arduino Clients.
 
 param **`client`** The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
 
-param **`type`** The type of external Client e.g. `esp_mail_external_client_type_basic` and `esp_mail_external_client_type_ssl`
 ```cpp
-void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+void setClient(Client *client);
 ```
 
 
+#### Assign TinyGsm Clients.
 
-#### Assign the callback function to handle the server connection for custom Client.
+param **`client`** The pointer to TinyGsmClient.
 
-param **`connectionCB`** The function that handles the server connection.
+param **`modem`** The pointer to TinyGsm modem object. Modem should be initialized and/or set mode before transfering data.
+
+param **`pin`** The SIM pin.
+
+param **`apn`** The GPRS APN (Access Point Name).
+
+param **`user`** The GPRS user.
+
+param **`password`** The GPRS password.
 
 ```cpp
-void connectionRequestCallback(ConnectionRequestCallback connectionCB);
+void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
 ```
 
-
-#### Assign the callback function to handle the server upgrade connection for custom Client.
-
-param **`upgradeCB`** The function that handles existing connection upgrade.
-
-```cpp
-void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
-```
 
 
 #### Assign the callback function to handle the network connection for custom Client.
@@ -1353,16 +1340,6 @@ param **`networkConnectionCB`** The function that handles the network connection
 ```cpp
 void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
 ```
-
-
-#### Assign the callback function to handle the network disconnection for custom Client.
-
-param **`networkDisconnectionCB`** The function that handles the network disconnection.
-
-```cpp
-void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
-```
-
 
 
 #### Assign the callback function to handle the network connection status acknowledgement.

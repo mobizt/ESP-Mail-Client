@@ -1,4 +1,4 @@
-// Created July 28, 2023
+// Created August 6, 2023
 
 #pragma once
 
@@ -6,10 +6,11 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30307)
+#if !VALID_VERSION_CHECK(30400)
 #error "Mixed versions compilation."
 #endif
 
+#include <Arduino.h>
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Error.h"
 #include "extras/MB_FS.h"
@@ -22,12 +23,7 @@
 #include <algorithm>
 #endif
 
-#if defined(MB_ARDUINO_PICO)
-#if __has_include(<WiFiMulti.h>)
-#define HAS_WIFIMULTI
-#endif
-#endif
-
+#include "extras/Networks_Provider.h"
 #include "extras/MB_List.h"
 #include "extras/SDK_Version_Common.h"
 
@@ -62,6 +58,32 @@
 #define ESP_MAIL_CLIENT_VALID_TS 1577836800
 
 #endif
+
+typedef enum
+{
+    esp_mail_cert_type_undefined = -1,
+    esp_mail_cert_type_none = 0,
+    esp_mail_cert_type_data,
+    esp_mail_cert_type_file,
+    esp_mail_cert_type_bundle
+
+} esp_mail_cert_type;
+
+typedef enum
+{
+    esp_mail_client_type_undefined,
+    esp_mail_client_type_internal_basic_client,
+    esp_mail_client_type_external_basic_client,
+    esp_mail_client_type_external_gsm_client
+
+} esp_mail_client_type;
+
+typedef enum
+{
+    esp_mail_external_client_type_none,
+    esp_mail_external_client_type_basic,
+    esp_mail_external_client_type_ssl
+} esp_mail_external_client_type;
 
 /* The filesystem types enum */
 enum esp_mail_file_storage_type
@@ -2850,10 +2872,15 @@ struct esp_mail_wifi_credential_t
 struct esp_mail_wifi_credentials_t
 {
     friend class ESP_Mail_Client;
+    friend class ESP_Mail_TCPClient;
 
 public:
     esp_mail_wifi_credentials_t(){};
-    ~esp_mail_wifi_credentials_t() { clearAP(); };
+    ~esp_mail_wifi_credentials_t()
+    {
+        clearAP();
+        clearMulti();
+    };
     void addAP(const String &ssid, const String &password)
     {
         esp_mail_wifi_credential_t cred;
@@ -2868,6 +2895,51 @@ public:
 
 private:
     MB_List<esp_mail_wifi_credential_t> credentials;
+#if defined(ESP_MAIL_HAS_WIFIMULTI)
+    WiFiMulti *multi = nullptr;
+#endif
+
+    void reconnect()
+    {
+        if (credentials.size())
+        {
+            disconnect();
+            connect();
+        }
+    }
+
+    void connect()
+    {
+#if defined(ESP_MAIL_HAS_WIFIMULTI)
+
+        clearMulti();
+        multi = new WiFiMulti();
+        for (size_t i = 0; i < credentials.size(); i++)
+            multi->addAP(credentials[i].ssid.c_str(), credentials[i].password.c_str());
+
+        if (credentials.size() > 0)
+            multi->run();
+
+#elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+        WiFi.begin(credentials[0].ssid.c_str(), credentials[0].password.c_str());
+#endif
+    }
+
+    void disconnect()
+    {
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+        WiFi.disconnect();
+#endif
+    }
+
+    void clearMulti()
+    {
+#if defined(ESP_MAIL_HAS_WIFIMULTI)
+        if (multi)
+            delete multi;
+        multi = nullptr;
+#endif
+    }
 };
 
 static const char esp_mail_imap_tag_str[] PROGMEM = "xmail";
@@ -3086,16 +3158,10 @@ static const char esp_mail_error_mem_str_10[] PROGMEM = "please make sure that t
 
 #if !defined(SILENT_MODE)
 static const char esp_mail_error_client_str_1[] PROGMEM = "client and/or necessary callback functions are not yet assigned";
-static const char esp_mail_error_client_str_2[] PROGMEM = "custom Client is not yet enabled";
-static const char esp_mail_error_client_str_3[] PROGMEM = "simple Client is required";
-static const char esp_mail_error_client_str_4[] PROGMEM = "the client type must be provided, see example";
-static const char esp_mail_error_client_str_5[] PROGMEM = "client connection upgrade callback (for TLS handshake) is required";
-static const char esp_mail_error_client_str_6[] PROGMEM = "network connection callback is required";
-static const char esp_mail_error_client_str_7[] PROGMEM = "network connection status callback is required";
-static const char esp_mail_error_client_str_8[] PROGMEM = "client is not yet initialized";
-static const char esp_mail_error_client_str_9[] PROGMEM = "UDP client is required for NTP server time reading based on your network type";
-static const char esp_mail_error_client_str_10[] PROGMEM = "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client";
-static const char esp_mail_error_client_str_11[] PROGMEM = "the Connection Request Callback is now optional";
+static const char esp_mail_error_client_str_2[] PROGMEM = "network connection callback is required";
+static const char esp_mail_error_client_str_3[] PROGMEM = "network connection status callback is required";
+static const char esp_mail_error_client_str_4[] PROGMEM = "NTP server time reading cannot begin when valid time is required because of no WiFi capability/activity detected.";
+static const char esp_mail_error_client_str_5[] PROGMEM = "Please set the library reference time manually using smtp.setSystemTime or imap.setSystemTime.";
 #endif
 
 /////////////////////////
@@ -3357,7 +3423,7 @@ esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 }
 
 static void __attribute__((used))
-esp_mail_debug_print_tag(PGM_P msg, esp_mail_debug_tag_type type, bool newLine = true)
+esp_mail_debug_print_tag(PGM_P msg, esp_mail_debug_tag_type type, bool newLine = true, bool showTag = true)
 {
 #if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
     esp_yield();
@@ -3366,7 +3432,10 @@ esp_mail_debug_print_tag(PGM_P msg, esp_mail_debug_tag_type type, bool newLine =
 #endif
 
     MB_String s;
-    appendDebugTag(s, type, false, msg);
+    if (showTag)
+        appendDebugTag(s, type, false, msg);
+    else
+        s = msg;
 
     if (newLine)
         ESP_MAIL_DEFAULT_DEBUG_PORT.println(s.c_str());

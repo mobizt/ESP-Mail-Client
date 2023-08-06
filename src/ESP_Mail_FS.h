@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONFIG_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30307)
+#if !VALID_VERSION_CHECK(30400)
 #error "Mixed versions compilation."
 #endif
 
@@ -132,13 +132,6 @@
 #define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
 #endif
 
-/** 📌 External Client Enable compilation option
- *
- * This macro allows library to use external basic Client and external SSL Client interface.
- * The associated callback functions should be assigned based on port functions.
- */
-  #define ENABLE_CUSTOM_CLIENT
-
 /* 📌 To use ESP8266 ENC28J60 Ethernet module */
 // #define ENABLE_ESP8266_ENC28J60_ETH
 
@@ -148,17 +141,12 @@
 /* 📌 To use ESP8266 W5100 Ethernet module */
 // #define ENABLE_ESP8266_W5100_ETH
 
-/** 📌 ESP8266/ESP32/RP2040 SSL engine for basic Client compilation option
- *
- * This macro allows library to use ESP8266 and Raspberry Pi Pico devices with
- * basic Clients (EthernetClient, WiFiClient and GSMClient)
- * directly without external SSL client required for SSL and STARTTLS ports.
- *
- * Since version 3.3.0, the internal SSL engine (mbedTLS) use in ESP32 will not do
- * SSL handshake when external basic client was assigned, then external SSL client
- * is required in case of SSL and STARTTLS ports.
- */
-#define ESP_MAIL_USE_SDK_SSL_ENGINE
+
+/* 📌 If on-board WiFi is not used in this library */
+// #define ESP_MAIL_NOT_USE_ONBOARD_WIFI
+
+/* 📌 If native Ethernet (Ethernet interfaces that supported by SDK) is not used in this library */
+// #define ESP_MAIL_NOT_USE_NATIVE_ETHERNET
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
 // You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of
@@ -172,9 +160,6 @@
 
 #ifndef Custom_ESP_Mail_FS_H
 #define Custom_ESP_Mail_FS_H
-
-// Use custom client instead of internal client
-#define ENABLE_CUSTOM_CLIENT // define to use custom client
 
 // Use LittleFS instead of SPIFFS
 #include "LittleFS.h"

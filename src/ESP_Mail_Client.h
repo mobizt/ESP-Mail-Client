@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30307)
+#if !VALID_VERSION_CHECK(30400)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 29, 2023
+ * Created August 6, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -102,7 +102,7 @@ extern char *__brkval;
 
 #endif
 
-#include "wcs/ESP_TCP_Clients.h"
+#include "ESP_Mail_TCPClient.h"
 
 using namespace mb_string;
 
@@ -751,11 +751,6 @@ public:
     mbfs = nullptr;
 
     wifi.clearAP();
-#if defined(HAS_WIFIMULTI)
-    if (multi)
-      delete multi;
-    multi = nullptr;
-#endif
   };
 
 #if defined(ENABLE_SMTP)
@@ -913,15 +908,9 @@ public:
    */
   void networkReconnect(bool reconnect);
 
-#if defined(ENABLE_NTP_TIME)
+  /* Obsoleted */
+  void setUDPClient(void *client, float gmtOffset){}
 
-  /** Assign UDP client and gmt offset for NTP time reading when using external SSL client
-   * @param client The pointer to UDP client based on the network type.
-   * @param gmtOffset The GMT time offset.
-   */
-  void setUDPClient(UDP *client, float gmtOffset);
-
-#endif
 
   /** Clear all WiFi access points assigned.
    *
@@ -1032,10 +1021,6 @@ private:
   esp_mail_wifi_credentials_t wifi;
   bool timezoneEnvSet = false;
 
-#if defined(HAS_WIFIMULTI)
-  WiFiMulti *multi = nullptr;
-#endif
-
 #if defined(ENABLE_IMAP)
 #define IMAP_SESSION IMAPSession
 #else
@@ -1053,10 +1038,10 @@ private:
   uint16_t _reconnectTimeout = ESP_MAIL_NETWORK_RECONNECT_TIMEOUT;
 
   // Resume network connection
-  void resumeNetwork(ESP_MAIL_TCP_CLIENT *client);
+  void resumeNetwork(ESP_Mail_TCPClient *client);
 
   // Get the CRLF ending string w/wo CRLF included. Return the size of string read and the current octet read.
-  int readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout);
+  int readLine(ESP_Mail_TCPClient *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout);
 
   // readLine with overflow handling.
   bool readResponse(void *sessionPtr, bool isSMTP, char *buf, int bufLen, int &readLen, bool withLineBreak, int &count, MB_String &ovfBuf);
@@ -1085,12 +1070,10 @@ private:
   // Check for session. Close session If not ready.
   bool sessionReady(void *sessionPtr, bool isSMTP);
 
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   // Set cert data
   void setCert(Session_Config *session_cfg, const char *ca);
   // Set secure data
-  void setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config);
-#endif
+  void setSecure(ESP_Mail_TCPClient &client, Session_Config *session_config);
 
   void appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary);
 
@@ -1098,9 +1081,9 @@ private:
 
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
   void closeTCPSession(void *sessionPtr, bool isSMTP);
-  
+
   // Get and set timezone
-  void getSetTimezoneEnv(const char* TZ_file, const char* TZ_Var);
+  void getSetTimezoneEnv(const char *TZ_file, const char *TZ_Var);
 
   // Get TCP connected status
   bool connected(void *sessionPtr, bool isSMTP);
@@ -1439,10 +1422,6 @@ private:
   // Handle SMTP server authentication
   bool smtpAuth(SMTPSession *smtp, bool &ssl);
 
-  // Check if response from basic client is actually TLS alert header
-  // This is the response returns after basic Client sent plain text packet over SSL/TLS
-  void checkTLSAlert(SMTPSession *smtp, const char *response);
-
   // Handle SMTP response
   bool handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_command cmd, esp_mail_smtp_status_code statusCode, int errCode);
 
@@ -1595,10 +1574,6 @@ private:
   void numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr);
 #endif
 
-  // Check if response from basic client is actually TLS alert
-  // This response may return after basic Client sent plain text packet over SSL/TLS
-  void checkTLSAlert(IMAPSession *imap, const char *response);
-
   // Handle IMAP response
   bool handleIMAPResponse(IMAPSession *imap, int errCode, bool closeSession);
 
@@ -1691,7 +1666,7 @@ private:
 class IMAPSession
 {
 public:
-  IMAPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+  IMAPSession(Client *client);
   IMAPSession();
   ~IMAPSession();
 
@@ -1703,34 +1678,26 @@ public:
 
   /** Assign custom Client from Arduino Clients.
    *
-   * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
-   * @param type The type of external Client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
+   * @param client The pointer to Arduino Client derived class e.g. WiFiClient, EthernetClient or GSMClient.
    */
-  void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+  void setClient(Client *client);
 
-  /** Assign the callback function to handle the server connection for custom Client.
+  /** Assign TinyGsm Clients.
    *
-   * @param connectionCB The function that handles the server connection.
+   * @param client The pointer to TinyGsmClient.
+   * @param modem The pointer to TinyGsm modem object. Modem should be initialized and/or set mode before transfering data.
+   * @param pin The SIM pin.
+   * @param apn The GPRS APN (Access Point Name).
+   * @param user The GPRS user.
+   * @param password The GPRS password.
    */
-  void connectionRequestCallback(ConnectionRequestCallback connectionCB);
-
-  /** Assign the callback function to handle the server upgrade connection for custom Client.
-   *
-   * @param upgradeCB The function that handles existing connection upgrade.
-   */
-  void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+  void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
 
   /** Assign the callback function to handle the network connection for custom Client.
    *
    * @param networkConnectionCB The function that handles the network connection.
    */
   void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
-
-  /** Assign the callback function to handle the network disconnection for custom Client.
-   *
-   * @param networkDisconnectionCB The function that handles the network disconnection.
-   */
-  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 
   /** Assign the callback function to handle the network connection status acknowledgement.
    *
@@ -2484,7 +2451,7 @@ private:
   int _uid_tmp = 0;
   int _lastProgress = -1;
 
-  ESP_MAIL_TCP_CLIENT client;
+  ESP_Mail_TCPClient client;
 
   IMAP_Status _cbData;
 };
@@ -2534,7 +2501,7 @@ public:
 class SMTPSession
 {
 public:
-  SMTPSession(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+  SMTPSession(Client *client);
   SMTPSession();
   ~SMTPSession();
 
@@ -2546,34 +2513,26 @@ public:
 
   /** Assign custom Client from Arduino Clients.
    *
-   * @param client The pointer to Arduino Client derived class e.g. WiFiClient, WiFiClientSecure, EthernetClient or GSMClient.
-   * @param type The type of external Client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
+   * @param client The pointer to Arduino Client derived class e.g. WiFiClient, EthernetClient or GSMClient.
    */
-  void setClient(Client *client, esp_mail_external_client_type type = esp_mail_external_client_type_none);
+  void setClient(Client *client);
 
-  /** Assign the callback function to handle the server connection for custom Client.
+  /** Assign TinyGsm Clients.
    *
-   * @param connectionCB The function that handles the server connection.
+   * @param client The pointer to TinyGsmClient.
+   * @param modem The pointer to TinyGsm modem object. Modem should be initialized and/or set mode before transfering data.
+   * @param pin The SIM pin.
+   * @param apn The GPRS APN (Access Point Name).
+   * @param user The GPRS user.
+   * @param password The GPRS password.
    */
-  void connectionRequestCallback(ConnectionRequestCallback connectionCB);
-
-  /** Assign the callback function to handle the server upgrade connection for custom Client.
-   *
-   * @param upgradeCB The function that handles existing connection upgrade.
-   */
-  void connectionUpgradeRequestCallback(ConnectionUpgradeRequestCallback upgradeCB);
+  void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
 
   /** Assign the callback function to handle the network connection for custom Client.
    *
    * @param networkConnectionCB The function that handles the network connection.
    */
   void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB);
-
-  /** Assign the callback function to handle the network disconnection for custom Client.
-   *
-   * @param networkDisconnectionCB The function that handles the network disconnection.
-   */
-  void networkDisconnectionRequestCallback(NetworkDisconnectionRequestCallback networkDisconnectionCB);
 
   /** Assign the callback function to handle the network connection status acknowledgement.
    *
@@ -2801,7 +2760,7 @@ private:
   struct esp_mail_smtp_msg_type_t _msgType;
   int _lastProgress = -1;
 
-  ESP_MAIL_TCP_CLIENT client;
+  ESP_Mail_TCPClient client;
 
   // Start TCP connection
   bool connect(bool &ssl);

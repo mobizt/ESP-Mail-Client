@@ -141,6 +141,7 @@ getFlags    KEYWORD2
 getUID  KEYWORD2
 setTCPTimeout   KEYWORD2
 setClient   KEYWORD2
+setGSMClient    KEYWORD2
 connectionRequestCallback   KEYWORD2
 connectionUpgradeRequestCallback    KEYWORD2
 networkConnectionRequestCallback    KEYWORD2

@@ -1,15 +1,17 @@
 #ifndef ESP_MAIL_CLIENT_CPP
 #define ESP_MAIL_CLIENT_CPP
 
+#pragma GCC diagnostic ignored "-Wunused-but-set-variable"
+
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30307)
+#if !VALID_VERSION_CHECK(30400)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created July 29, 2023
+ * Created August 6, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -48,13 +50,6 @@ void ESP_Mail_Client::networkReconnect(bool reconnect)
 #endif
   networkAutoReconnect = reconnect;
 }
-
-#if defined(ENABLE_NTP_TIME)
-void ESP_Mail_Client::setUDPClient(UDP *client, float gmtOffset)
-{
-  Time.setUDPClient(client, gmtOffset);
-}
-#endif
 
 void ESP_Mail_Client::addAP(const String &ssid, const String &password)
 {
@@ -124,43 +119,9 @@ int ESP_Mail_Client::getFreeHeap()
 // All following functions are for IMAP or SMTP only
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
-void ESP_Mail_Client::resumeNetwork(ESP_MAIL_TCP_CLIENT *client)
+void ESP_Mail_Client::resumeNetwork(ESP_Mail_TCPClient *client)
 {
-
-#if defined(ENABLE_CUSTOM_CLIENT)
   client->networkReconnect();
-#else
-
-#if defined(ESP32) || defined(ESP8266)
-  WiFi.reconnect();
-#else
-  if (wifi.credentials.size() > 0)
-  {
-#if __has_include(<WiFi.h>) || __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
-    if (!networkStatus)
-    {
-      WiFi.disconnect();
-#if defined(HAS_WIFIMULTI)
-      if (multi)
-        delete multi;
-      multi = nullptr;
-
-      multi = new WiFiMulti();
-      for (size_t i = 0; i < wifi.credentials.size(); i++)
-        multi->addAP(wifi.credentials[i].ssid.c_str(), wifi.credentials[i].password.c_str());
-
-      if (wifi.credentials.size() > 0)
-        multi->run();
-#else
-      WiFi.begin(wifi.credentials[0].ssid.c_str(), wifi.credentials[0].password.c_str());
-#endif
-    }
-#endif
-  }
-
-#endif
-
-#endif
 }
 
 bool ESP_Mail_Client::sessionExisted(void *sessionPtr, bool isSMTP)
@@ -620,50 +581,43 @@ void ESP_Mail_Client::idle()
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait)
 {
 
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
-
   _clockReady = Time.clockReady();
-
-#if defined(ENABLE_NTP_TIME)
 
   if (!_clockReady)
   {
-#if defined(ESP_MAIL_ENABLE_CUSTOM_CLIENT) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
-    bool udpRequired = true;
-    if (!Time.initUDP())
+
+#if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
+
+#if defined(ENABLE_NTP_TIME)
+
+    if (WiFI_CONNECTED)
+    {
+      Time.setClock(gmt_offset, day_light_offset, ntp_server);
+      if (wait)
+      {
+        unsigned long waitMs = millis();
+        while (!Time.clockReady() && millis() - waitMs < 10000)
+        {
+          idle();
+        }
+      }
+    }
+    else
     {
 #if !defined(SILENT_MODE)
-
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
-      udpRequired = time(nullptr) < ESP_MAIL_CLIENT_VALID_TS;
-#endif
-      if (udpRequired)
-      {
-        esp_mail_debug_print_tag(esp_mail_error_client_str_9 /* "UDP client is required for NTP server time reading based on your network type" */, esp_mail_debug_tag_type_warning, true);
-        esp_mail_debug_print_tag(esp_mail_error_client_str_10 /* "e.g. WiFiUDP or EthernetUDP. Please call MailClient.setUDPClient(&udpClient, gmtOffset); to assign the UDP client" */, esp_mail_debug_tag_type_warning, true);
-      }
+      esp_mail_debug_print_tag(esp_mail_error_client_str_4 /* "NTP server time reading cannot begin when valid time is required because of no WiFi capability/activity detected." */, esp_mail_debug_tag_type_warning, true);
+      esp_mail_debug_print_tag(esp_mail_error_client_str_5 /* "Please set the library reference time manually using smtp.setSystemTime or imap.setSystemTime." */, esp_mail_debug_tag_type_warning, true);
 #endif
     }
-#endif
-    Time.setClock(gmt_offset, day_light_offset, ntp_server);
 
-    if (wait)
-    {
-      unsigned long waitMs = millis();
-      while (!Time.clockReady() && millis() - waitMs < 10000)
-      {
-        idle();
-      }
-    }
-  }
-
-  getSetTimezoneEnv(TZ_file, TZ_Var);
+    getSetTimezoneEnv(TZ_file, TZ_Var);
 
 #else
-  return;
+    esp_mail_debug_print_tag(esp_mail_error_client_str_5 /* "Please set the library reference time manually using smtp.setSystemTime or imap.setSystemTime." */, esp_mail_debug_tag_type_warning, true);
 #endif
 
 #endif
+  }
 
   _clockReady = Time.clockReady();
 }
@@ -1104,7 +1058,7 @@ MB_String ESP_Mail_Client::mGetBase64(MB_StringPtr str)
   return encodeBase64Str((uint8_t *)(data.c_str()), data.length());
 }
 
-int ESP_Mail_Client::readLine(ESP_MAIL_TCP_CLIENT *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout)
+int ESP_Mail_Client::readLine(ESP_Mail_TCPClient *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout)
 {
   int ret = -1;
   char c = 0;
@@ -1159,7 +1113,7 @@ bool ESP_Mail_Client::readResponse(void *sessionPtr, bool isSMTP, char *buf, int
 {
   bool ovf = false, isTimeout = false;
   unsigned long timeoutSec = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
-  ESP_MAIL_TCP_CLIENT *client = nullptr;
+  ESP_Mail_TCPClient *client = nullptr;
   if (isSMTP)
   {
 #if defined(ENABLE_SMTP)
@@ -1244,7 +1198,7 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
 #if !defined(SILENT_MODE)
   MB_String dbMsg;
   bool isCb = false, debug = false;
-  ESP_MAIL_TCP_CLIENT *client = nullptr;
+  ESP_Mail_TCPClient *client = nullptr;
   PGM_P p = isSMTP ? esp_mail_cb_str_1 /* "Connecting to SMTP server..." */ : esp_mail_cb_str_15 /* "Connecting to IMAP server..." */;
 
   // Server connection attempt: no status code
@@ -1279,7 +1233,6 @@ void ESP_Mail_Client::printLibInfo(void *sessionPtr, bool isSMTP)
   {
     dbMsg = esp_mail_version_str; /* "ESP Mail Client v" */
     dbMsg += ESP_MAIL_VERSION;
-    dbMsg += client->fwVersion();
     esp_mail_debug_print_tag(dbMsg.c_str(), esp_mail_debug_tag_type_client, true);
 
 #if defined(BOARD_HAS_PSRAM) && defined(MB_STRING_USE_PSRAM)
@@ -1295,7 +1248,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 {
 
   MB_String dbMsg;
-  ESP_MAIL_TCP_CLIENT *client = nullptr;
+  ESP_Mail_TCPClient *client = nullptr;
 #if !defined(SILENT_MODE)
   bool isCb = false, debug = false;
   PGM_P p = isSMTP ? esp_mail_dbg_str_2 /* "connecting to SMTP server" */ : esp_mail_dbg_str_18 /* "connecting to IMAP server" */;
@@ -1306,6 +1259,8 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 #if defined(ENABLE_SMTP)
     SMTPSession *smtp = (SMTPSession *)sessionPtr;
     client = &smtp->client;
+    client->setWiFi(&wifi);
+    client->setSession(session_config);
 #if !defined(SILENT_MODE)
     isCb = isResponseCB((void *)smtp->_customCmdResCallback, isSMTP);
     debug = smtp->_debug;
@@ -1320,6 +1275,8 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 #if defined(ENABLE_IMAP)
     IMAPSession *imap = (IMAPSession *)sessionPtr;
     client = &imap->client;
+    client->setWiFi(&wifi);
+    client->setSession(session_config);
 #if !defined(SILENT_MODE)
     isCb = isResponseCB((void *)imap->_customCmdResCallback, isSMTP);
     debug = imap->_debug;
@@ -1346,13 +1303,6 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 #endif
 
   client->begin(session_config->server.host_name.c_str(), session_config->server.port);
-
-#if defined(ESP32) && defined(ESP32_TCP_CLIENT)
-#if !defined(SILENT_MODE)
-  if (debug && !isCb)
-    client->setDebugCallback(esp_mail_debug_print_tag);
-#endif
-#endif
 
   client->ethDNSWorkAround();
 
@@ -1388,12 +1338,10 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   bool timeShouldBeValid = false;
 #endif
 
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
   if (isSMTP)
     timeShouldBeValid = true;
   else
     timeShouldBeValid = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
-#endif
 
 #if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
@@ -1425,7 +1373,6 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
   if (!isCb && (session_config->time.ntp_server.length() > 0 || timeShouldBeValid))
   {
-
     if (!Time.clockReady())
     {
 #if defined(ENABLE_NTP_TIME)
@@ -1512,8 +1459,6 @@ bool ESP_Mail_Client::sessionReady(void *sessionPtr, bool isSMTP)
   return false;
 }
 
-#if defined(ESP32_TCP_CLIENT) || defined(ESP8266_TCP_CLIENT)
-
 void ESP_Mail_Client::setCert(Session_Config *session_config, const char *ca)
 {
   int ptr = reinterpret_cast<int>(ca);
@@ -1524,7 +1469,7 @@ void ESP_Mail_Client::setCert(Session_Config *session_config, const char *ca)
   }
 }
 
-void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *session_config)
+void ESP_Mail_Client::setSecure(ESP_Mail_TCPClient &client, Session_Config *session_config)
 {
 
   client.setMBFS(mbfs);
@@ -1555,8 +1500,6 @@ void ESP_Mail_Client::setSecure(ESP_MAIL_TCP_CLIENT &client, Session_Config *ses
     session_config->cert_updated = false;
   }
 }
-
-#endif
 
 void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary)
 {
@@ -1604,9 +1547,6 @@ String ESP_Mail_Client::errorReason(bool isSMTP, int errorCode, const char *msg)
     break;
   case MAIL_CLIENT_ERROR_OUT_OF_MEMORY:
     ret = esp_mail_error_mem_str_8; /* "out of memory" */
-    break;
-  case MAIL_CLIENT_ERROR_CUSTOM_CLIENT_DISABLED:
-    ret = esp_mail_error_client_str_2; /* "custom Client is not yet enabled" */
     break;
   case MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT:
     ret = esp_mail_error_network_str_2; /* "NTP server time reading timed out" */
