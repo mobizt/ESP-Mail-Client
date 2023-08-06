@@ -277,7 +277,7 @@ int BSSL_TCP_Client::setTimeout(uint32_t seconds)
     return 1;
 }
 
-unsigned int BSSL_TCP_Client::getTimeout() const { _ssl_client.getTimeout() / 1000; }
+int BSSL_TCP_Client::getTimeout() const { _ssl_client.getTimeout() / 1000; }
 
 void BSSL_TCP_Client::setHandshakeTimeout(unsigned long handshake_timeout)
 {
