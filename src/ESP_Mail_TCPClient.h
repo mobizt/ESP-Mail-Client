@@ -473,8 +473,10 @@ public:
         if (!_ssl_client.connect(_host.c_str(), _port))
             return false;
 
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
         if (_client_type == esp_mail_client_type_internal_basic_client)
             ((WiFiClient *)_basic_client)->setNoDelay(true);
+#endif
 
         // For TCP keepalive should work in ESP8266 core > 3.1.2.
         // https://github.com/esp8266/Arduino/pull/8940
