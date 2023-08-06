@@ -1334,11 +1334,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   bool ntpEnabled = false;
 #endif
 
-  bool timeShouldBeValid = true;
-
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
   bool timeShouldBeValid = false;
-#endif
 
   if (isSMTP)
     timeShouldBeValid = true;
