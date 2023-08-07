@@ -286,6 +286,12 @@ public:
     int setTimeout(uint32_t seconds);
 
     /**
+     * Get the TCP timeout.
+     * @return The TCP timeout in seconds.
+     */
+    unsigned int getTimeout() const;
+
+    /**
      * Set the SSL handshake timeout in seconds.
      * @param handshake_timeout The SSL handshake timeout in seconds.
      */

@@ -54,9 +54,9 @@
 #if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include "BSSL_TCP_Client.h"
-//#include <lwip/sockets.h>
-//#include <lwip/netdb.h>
-//#include <errno.h>
+// #include <lwip/sockets.h>
+// #include <lwip/netdb.h>
+// #include <errno.h>
 
 #undef connect
 #undef write
@@ -277,6 +277,8 @@ int BSSL_TCP_Client::setTimeout(uint32_t seconds)
     return 1;
 }
 
+unsigned int BSSL_TCP_Client::getTimeout() const { return _timeout / 1000; }
+
 void BSSL_TCP_Client::setHandshakeTimeout(unsigned long handshake_timeout)
 {
     _handshake_timeout = handshake_timeout * 1000;
@@ -299,7 +301,7 @@ void BSSL_TCP_Client::setBufferSizes(int recv, int xmit)
 
 int BSSL_TCP_Client::availableForWrite() { return _ssl_client.availableForWrite(); };
 
-void BSSL_TCP_Client::setSession(BearSSL_Session *session) {_ssl_client.setSession(session);};
+void BSSL_TCP_Client::setSession(BearSSL_Session *session) { _ssl_client.setSession(session); };
 
 void BSSL_TCP_Client::setKnownKey(const PublicKey *pk, unsigned usages)
 {
