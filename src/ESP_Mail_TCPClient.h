@@ -473,7 +473,7 @@ public:
         if (!_ssl_client.connect(_host.c_str(), _port))
             return false;
 
-#if defined(ESP32)
+#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
         if (_client_type == esp_mail_client_type_internal_basic_client)
             reinterpret_cast<WiFiClient *>(_basic_client)->setNoDelay(true);
 #endif
