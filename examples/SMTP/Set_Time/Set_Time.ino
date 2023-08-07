@@ -37,8 +37,10 @@
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#else
-
+#elif __has_include(<WiFiNINA.h>)
+#include <WiFiNINA.h>
+#elif __has_include(<WiFi101.h>)
+#include <WiFi101.h>
 #endif
 
 #include <ESP_Mail_Client.h>
@@ -76,7 +78,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-    
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -101,42 +103,35 @@ void setup()
 
     Serial.print("Waiting for NTP server time reading");
 
-    configTime(3, 0, "pool.ntp.org", "time.nist.gov");
+#if defined(ESP8266) || defined(ESP32) && !defined(ARDUINO_NANO_RP2040_CONNECT)
 
-    ms = millis();
-
-    while (millis() - ms < 10000 && time(nullptr) < ESP_TIME_DEFAULT_TS)
+    configTime(0, 0, "pool.ntp.org", "time.nist.gov");
+    while (time(nullptr) < ESP_MAIL_CLIENT_VALID_TS)
     {
-        Serial.print(".");
-        delay(300);
+        delay(100);
     }
-    Serial.println();
-    Serial.println();
 
-    // Method 2, set timestamp directly via smtp.setSystemTime or imap.setSystemTime
-    // This method doen not require internet connection.
-    // This method suites for non-system time (device local time) devices e.g. ARM, SAMD and AVR devices.
-    // The timestamp is the seconds since Midnight Jan 1, 1970 and can be taken from RTC chip
-    // and other providers.
+#elif defined(ARDUINO_RASPBERRY_PI_PICO_W)
 
-    // If use this method with ESP8266 and ESP32, the device system time will be set automatically.
+    configTime(10000, 0, "pool.ntp.org", "time.nist.gov");
+    while (time(nullptr) < ESP_MAIL_CLIENT_VALID_TS)
+    {
+        delay(100);
+    }
 
-    // time_t ts = 1577836800;
+#elif __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
+    time_t ts = 0;
+    do
+    {
+        ts = WiFi.getTime();
+        delay(100);
+    } while (ts < ESP_MAIL_CLIENT_VALID_TS);
 
-    /*
-    Set the NTP config time
-    For times east of the Prime Meridian use 0-12
-    For times west of the Prime Meridian add 12 to the offset.
-    Ex. American/Denver GMT would be -6. 6 + 12 = 18
-    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
-    */
-    // float gmtOffset = 3.0; // GMT offset in hour
+    float gmtOffset = 3.0; // GMT offset in hour
 
-    // smtp.setSystemTime(ts, gmtOffset);
+    smtp.setSystemTime(ts, gmtOffset);
 
-    // Note:
-    // If time setting faild when using method 1 and method 2, the library internal NTP time reading will
-    // be started when valid time is required during server connection.
+#endif
 
     // To disable library internal NTP time reading, please comment or remove the following macro defined in src/ESP_Mail_FS.h
     // #define ENABLE_NTP_TIME
