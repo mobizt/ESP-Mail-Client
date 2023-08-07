@@ -14,6 +14,14 @@ The library also supported other Arduino devices via client libraries e.g. WiFiC
 
 The Arduino device to use this libray should has at least 80k flash space and 20k memory.
 
+## Updates
+
+The new library version 3.4.0 is available for test now.
+
+It supports all Arduino devices without External SSL Client requirement and TinyGSMClient integration.
+
+You can try it [here](https://github.com/mobizt/ESP-Mail-Client/tree/v3.4.0). Please see the [example](https://github.com/mobizt/ESP-Mail-Client/tree/v3.4.0/examples) or [Readme](https://github.com/mobizt/ESP-Mail-Client/blob/v3.4.0/README.md) for the changes.
+
 ## Contents
 
 
@@ -86,8 +94,6 @@ The Arduino device to use this libray should has at least 80k flash space and 20
   - [ESP32 and W5500](#esp32-and-w5500)
 
 [8. License](#license)
-
-
 
 ## Features
 
