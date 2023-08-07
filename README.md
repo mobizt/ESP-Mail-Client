@@ -23,7 +23,6 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
 [1. Features](#features)
 
 [2. Supported Devices](#supported-devices)
-- [Supported Devices with flash size > 80k, using custom Clients.](#supported-devices-with-flash-size--80k-using-custom-clients)
 
 [3. Prerequisites](#prerequisites)
 - [Gmail SMTP and IMAP required App Passwords to sign in](#gmail-smtp-and-imap-required-app-passwords-to-sign-in)
@@ -37,10 +36,6 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
 - [ESP32 and ESP8266 SDKs](#esp32-and-esp8266-sdks)
 
 - [RP2040 Arduino SDK](#rp2040-arduino-sdk)
-
-- [SAMD21 custom build firmware](#samd21-custom-build-firmware)
-
-- [Install Custom Build WiFiNINA Firmware](#install-custom-build-wifinina-firmware)
 
 [4. Library Instalation](#library-instalation)
 
@@ -84,8 +79,6 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
 
   - [TTGO T-A7670 LTE with TinyGSM](#ttgo-t-a7670-lte-with-tinygsm)
 
-  - [MKR 1000 and WiFi101](#mkr-1000-and-wifi101)
-
   - [ESP32 and W5500](#esp32-and-w5500)
 
 [8. License](#license)
@@ -120,6 +113,7 @@ This following devices are supported.
  * ESP8266 MCUs based boards
  * ESP32 MCUs based boards
  * Arduino MKR WiFi 1010
+ * Arduino MKR 1000 WIFI
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
  * Raspberry Pi Pico (RP2040)
@@ -129,19 +123,7 @@ This following devices are supported.
  * ENC28J60 SPI Ethernet module
  * W5100 SPI Ethernet module
  * W5500 SPI Ethernet module
-
-
-### Supported Devices with flash size > 80k, using custom Clients.
-
- * ESP32
- * ESP8266
- * Arduino SAMD
- * Arduino STM32
- * Arduino AVR
- * Teensy 3.1 to 4.1
- * Arduino Nano RP2040 Connect
- * Raspberry Pi Pico 
-
+ * SIMCom Modules with TinyGSMClient
 
 
 
