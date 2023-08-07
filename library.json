@@ -2,7 +2,7 @@
   "name": "ESP Mail Client",
   "version": "3.4.0",
   "keywords": "communication, email, imap, smtp, esp32, esp8266, samd, arduino",
-  "description": "Arduino E-Mail Client Library to send, read and get incoming email notification for ESP32, ESP8266 and SAMD21 devices. The library also supported other Arduino Devices using Clients interfaces e.g. WiFiClient, EthernetClient, and GSMClient.",
+  "description": "Arduino E-Mail Client Library for all Arduino devices for sending and reading Email messages. This library also supports externet networking devices wirh Arduino Clients e.g. WiFiClient, EthernetClient, and GSMClient.",
   "repository": {
     "type": "git",
     "url": "https://github.com/mobizt/ESP-Mail-Client.git"
