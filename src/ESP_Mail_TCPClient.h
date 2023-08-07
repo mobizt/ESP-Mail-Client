@@ -285,7 +285,7 @@ public:
 
         // We will not invoke the network status request when device has built-in WiFi or Ethernet and it is connected.
         if (WiFI_CONNECTED || ethLinkUp())
-            _network_status = true;
+            _network_status = validIP(WiFi.localIP());
         else if (_client_type == esp_mail_client_type_external_basic_client)
         {
             if (!_network_status_cb)
@@ -314,7 +314,7 @@ public:
             // We can reconnect WiFi when device connected via built-in WiFi that supports reconnect
             if (WiFI_CONNECTED)
             {
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
+#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
                 WiFi.reconnect();
                 return;
 #endif
@@ -473,9 +473,9 @@ public:
         if (!_ssl_client.connect(_host.c_str(), _port))
             return false;
 
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#if defined(ESP32)
         if (_client_type == esp_mail_client_type_internal_basic_client)
-            ((WiFiClient *)_basic_client)->setNoDelay(true);
+            reinterpret_cast<WiFiClient *>(_basic_client)->setNoDelay(true);
 #endif
 
         // For TCP keepalive should work in ESP8266 core > 3.1.2.
@@ -940,7 +940,9 @@ private:
     X509List *_x509 = nullptr;
     Client *_basic_client = nullptr;
     esp_mail_wifi_credentials_t *_wifi_multi = nullptr;
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
     Session_Config *_session_config = nullptr;
+#endif
     NetworkConnectionRequestCallback _network_connection_cb = NULL;
     NetworkStatusRequestCallback _network_status_cb = NULL;
 #if defined(ESP_MAIL_HAS_WIFIMULTI)

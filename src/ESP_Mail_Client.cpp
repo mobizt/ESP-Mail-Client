@@ -1334,14 +1334,16 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   bool ntpEnabled = false;
 #endif
 
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
   bool timeShouldBeValid = false;
+#endif
 
   if (isSMTP)
     timeShouldBeValid = true;
   else
     timeShouldBeValid = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
 
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO) || defined(ARDUINO_ARCH_SAMD) || defined(__AVR_ATmega4809__) || defined(MB_ARDUINO_NANO_RP2040_CONNECT)
 
   bool isCb = false;
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)

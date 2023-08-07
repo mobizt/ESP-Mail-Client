@@ -35,7 +35,6 @@
 #define BSSL_SSL_CLIENT_CPP
 
 #pragma GCC diagnostic ignored "-Wunused-function"
-#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wvla"
 
 #include <Arduino.h>
