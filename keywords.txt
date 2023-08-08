@@ -142,11 +142,10 @@ getUID  KEYWORD2
 setTCPTimeout   KEYWORD2
 setClient   KEYWORD2
 setGSMClient    KEYWORD2
-connectionRequestCallback   KEYWORD2
-connectionUpgradeRequestCallback    KEYWORD2
 networkConnectionRequestCallback    KEYWORD2
-networkDisconnectionRequestCallback KEYWORD2
 networkStatusRequestCallback    KEYWORD2
+setNetworkStatus    KEYWORD2
+setSSLBufferSize    KEYWORD2
 setSystemTime   KEYWORD2
 mimeDataStreamCallback  KEYWORD2
 characterDecodingCallback   KEYWORD2

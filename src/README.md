@@ -414,6 +414,7 @@ void networkConnectionRequestCallback(NetworkConnectionRequestCallback networkCo
 ```
 
 
+
 #### Assign the callback function to handle the network connection status acknowledgement.
 
 param **`networkStatusCB`** The function that handle the network connection status acknowledgement.
@@ -421,6 +422,29 @@ param **`networkStatusCB`** The function that handle the network connection stat
 ```cpp
 void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
 ```
+
+
+
+#### Set the network status acknowledgement.
+
+param **`status`** The network status.
+
+```cpp
+void setNetworkStatus(bool status);
+```
+
+
+
+#### Set the BearSSL IO buffer size.
+
+param **`rx`** The BearSSL receive buffer size in bytes.
+
+param **`tx`** The BearSSL trasmit buffer size in bytes.
+
+```cpp
+void setSSLBufferSize(int rx = -1, int tx = -1);
+```
+
 
 
 #### Set system time with timestamp.
@@ -1348,6 +1372,28 @@ param **`networkStatusCB`** The function that handle the network connection stat
 
 ```cpp
 void networkStatusRequestCallback(NetworkStatusRequestCallback networkStatusCB);
+```
+
+
+
+#### Set the network status acknowledgement.
+
+param **`status`** The network status.
+
+```cpp
+void setNetworkStatus(bool status);
+```
+
+
+
+#### Set the BearSSL IO buffer size.
+
+param **`rx`** The BearSSL receive buffer size in bytes.
+
+param **`tx`** The BearSSL trasmit buffer size in bytes.
+
+```cpp
+void setSSLBufferSize(int rx = -1, int tx = -1);
 ```
 
 
