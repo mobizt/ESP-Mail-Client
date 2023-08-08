@@ -117,6 +117,7 @@ This following devices are supported.
  * Arduino Nano 33 IoT
  * Arduino MKR Vidor 4000
  * Raspberry Pi Pico (RP2040)
+ * Arduino UNO R4 WiFi (Renesas).
  * LAN8720 Ethernet PHY
  * TLK110 Ethernet PHY
  * IP101 Ethernet PHY

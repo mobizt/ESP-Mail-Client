@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.5 for Arduino devices.
+ * BSSL_TCP_Client v2.0.6 for Arduino devices.
  *
- * Created August 6, 2023
+ * Created August 8, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -54,9 +54,9 @@
 #if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include "BSSL_TCP_Client.h"
-// #include <lwip/sockets.h>
-// #include <lwip/netdb.h>
-// #include <errno.h>
+//#include <lwip/sockets.h>
+//#include <lwip/netdb.h>
+//#include <errno.h>
 
 #undef connect
 #undef write
@@ -277,7 +277,7 @@ int BSSL_TCP_Client::setTimeout(uint32_t seconds)
     return 1;
 }
 
-unsigned int BSSL_TCP_Client::getTimeout() const { return _timeout / 1000; }
+int BSSL_TCP_Client::getTimeout() { return _ssl_client.getTimeout() / 1000; }
 
 void BSSL_TCP_Client::setHandshakeTimeout(unsigned long handshake_timeout)
 {
@@ -301,7 +301,7 @@ void BSSL_TCP_Client::setBufferSizes(int recv, int xmit)
 
 int BSSL_TCP_Client::availableForWrite() { return _ssl_client.availableForWrite(); };
 
-void BSSL_TCP_Client::setSession(BearSSL_Session *session) { _ssl_client.setSession(session); };
+void BSSL_TCP_Client::setSession(BearSSL_Session *session) {_ssl_client.setSession(session);};
 
 void BSSL_TCP_Client::setKnownKey(const PublicKey *pk, unsigned usages)
 {

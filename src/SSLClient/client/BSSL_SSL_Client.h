@@ -1,5 +1,5 @@
 /**
- * BSSL_SSL_Client library v1.0.4 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.5 for Arduino devices.
  *
  * Created August 6, 2003
  *

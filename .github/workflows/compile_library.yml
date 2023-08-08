@@ -28,6 +28,7 @@ jobs:
           - "mkr1000USB"
           - "teensy36"
           - "teensy41"
+          - "uno_r4_wifi"
     steps:
     - uses: actions/checkout@v2
     - name: Cache pip

@@ -322,15 +322,12 @@ public:
 
         if (_client_type == esp_mail_client_type_external_basic_client)
         {
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-
+#if defined(ESP_MAIL_HAS_WIFI_DISCONNECT)
             // We can reconnect WiFi when device connected via built-in WiFi that supports reconnect
             if (WiFI_CONNECTED)
             {
-#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
                 WiFi.reconnect();
                 return;
-#endif
             }
 
 #endif

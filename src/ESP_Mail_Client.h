@@ -45,11 +45,14 @@
 #include <vector>
 #endif
 
+#if __has_include(<string.h>)
+#include <string.h>
+#endif
+
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Const.h"
 #include "extras/MB_Time.h"
 #include "ESP_Mail_Print.h"
-
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 

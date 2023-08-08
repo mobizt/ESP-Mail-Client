@@ -41,6 +41,8 @@
 #include <WiFiNINA.h>
 #elif __has_include(<WiFi101.h>)
 #include <WiFi101.h>
+#elif __has_include(<WiFiS3.h>)
+#include <WiFiS3.h>
 #endif
 
 #include <ESP_Mail_Client.h>

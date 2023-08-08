@@ -10,7 +10,7 @@
 
 #include "SDK_Version_Common.h"
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || __has_include(<WiFiNINA.h>) ||__has_include(<WiFi101.h>)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || __has_include(<WiFiNINA.h>) ||__has_include(<WiFi101.h>) || __has_include(<WiFiS3.h>)
 
 #if !defined(ESP_MAIL_DISABLE_ONBOARD_WIFI)
 
@@ -24,11 +24,15 @@
 #include <WiFiNINA.h>
 #elif __has_include(<WiFi101.h>)
 #include <WiFi101.h>
+#elif __has_include(<WiFiS3.h>)
+#include <WiFiS3.h>
+#endif
+
+#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD) && !__has_include(<WiFiS3.h>)
+#define ESP_MAIL_HAS_WIFI_DISCONNECT
 #endif
 
 #endif
-
-
 
 //////////////////////////////////
 
@@ -38,20 +42,19 @@
 #include <ETH.h>
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #elif defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
-#if defined(INC_ENC28J60_LWIP) &&  defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
+#if defined(INC_ENC28J60_LWIP) && defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #endif
 #endif
 
-
 #endif
-
 
 ////////////////////////////
 
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
 
-#if __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
+// WiFiS3 getTime is currently return 0 (not implemented)
+#if __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>) // || __has_include(<WiFiS3.h>)
 #define ESP_MAIL_HAS_WIFI_TIME
 #endif
 

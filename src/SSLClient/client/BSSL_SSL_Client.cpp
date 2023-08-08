@@ -1,5 +1,5 @@
 /**
- * BSSL_SSL_Client library v1.0.4 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.5 for Arduino devices.
  *
  * Created August 6, 2003
  *
@@ -35,6 +35,7 @@
 #define BSSL_SSL_CLIENT_CPP
 
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wunused-variable"
 #pragma GCC diagnostic ignored "-Wvla"
 
 #include <Arduino.h>
