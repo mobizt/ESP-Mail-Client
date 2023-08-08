@@ -3677,6 +3677,11 @@ void SMTPSession::setNetworkStatus(bool status)
     MailClient.networkStatus = status;
 }
 
+void SMTPSession::setSSLBufferSize(int rx, int tx)
+{
+    this->client.setIOBufferSize(rx, tx);
+}
+
 SMTP_Status::SMTP_Status()
 {
 }

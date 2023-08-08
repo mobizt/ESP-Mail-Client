@@ -909,8 +909,7 @@ public:
   void networkReconnect(bool reconnect);
 
   /* Obsoleted */
-  void setUDPClient(void *client, float gmtOffset){}
-
+  void setUDPClient(void *client, float gmtOffset) {}
 
   /** Clear all WiFi access points assigned.
    *
@@ -1710,6 +1709,13 @@ public:
    * @param status The network status.
    */
   void setNetworkStatus(bool status);
+
+  /** Set the BearSSL IO buffer size.
+   *
+   * @param rx The BearSSL receive buffer size in bytes.
+   * @param tx The BearSSL trasmit buffer size in bytes.
+   */
+  void setSSLBufferSize(int rx = -1, int tx = -1);
 
   /** Begin the IMAP server connection.
    *
@@ -2545,6 +2551,13 @@ public:
    * @param status The network status.
    */
   void setNetworkStatus(bool status);
+
+  /** Set the BearSSL IO buffer size.
+   *
+   * @param rx The BearSSL receive buffer size in bytes.
+   * @param tx The BearSSL trasmit buffer size in bytes.
+   */
+  void setSSLBufferSize(int rx = -1, int tx = -1);
 
   /** Begin the SMTP server connection.
    *

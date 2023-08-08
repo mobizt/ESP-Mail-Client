@@ -5144,6 +5144,11 @@ void IMAPSession::setNetworkStatus(bool status)
     MailClient.networkStatus = status;
 }
 
+void IMAPSession::setSSLBufferSize(int rx, int tx)
+{
+    this->client.setIOBufferSize(rx, tx);
+}
+
 bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
 {
     if (!connected())

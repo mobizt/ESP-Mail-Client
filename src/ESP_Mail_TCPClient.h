@@ -161,6 +161,17 @@ public:
         _ssl_client.setTimeout(timeoutSec);
     }
 
+    /**  Set the BearSSL IO buffer size.
+     *
+     * @param rx The BearSSL receive buffer size in bytes.
+     * @param tx The BearSSL trasmit buffer size in bytes.
+     */
+    void setIOBufferSize(int rx, int tx)
+    {
+        _rx_size = rx;
+        _tx_size = tx;
+    }
+
     /**
      * Get the ethernet link status.
      * @return true for link up or false for link down.
@@ -426,7 +437,10 @@ public:
     {
         _host = host;
         _port = port;
-        _ssl_client.setBufferSizes(_maxRXBufSize / rxBufDivider, _maxTXBufSize / txBufDivider);
+        if (_rx_size >= 512 && _tx_size >= 512)
+            _ssl_client.setBufferSizes(_rx_size, _tx_size);
+        else
+            _ssl_client.setBufferSizes(_maxRXBufSize / rxBufDivider, _maxTXBufSize / txBufDivider);
         _last_error = 0;
         return true;
     }
@@ -965,6 +979,7 @@ private:
     bool _clock_ready = false;
     int _last_error = 0;
     volatile bool _network_status = false;
+    int _rx_size = -1, _tx_size = -1;
 
     esp_mail_cert_type _cert_type = esp_mail_cert_type_undefined;
     esp_mail_client_type _client_type = esp_mail_client_type_undefined;
