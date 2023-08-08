@@ -43,6 +43,7 @@
 #include <WiFi101.h>
 #elif __has_include(<WiFiS3.h>)
 #include <WiFiS3.h>
+#include "RTC.h"
 #endif
 
 #include <ESP_Mail_Client.h>
@@ -132,6 +133,23 @@ void setup()
     float gmtOffset = 3.0; // GMT offset in hour
 
     smtp.setSystemTime(ts, gmtOffset);
+
+#elif __has_include(<WiFiS3.h>)
+
+    // see https://docs.arduino.cc/tutorials/uno-r4-wifi/rtc
+
+    RTC.begin();
+
+    // RTCTime startTime(30, Month::JUNE, 2023, 13, 37, 00, DayOfWeek::WEDNESDAY, SaveLight::SAVING_TIME_ACTIVE);
+    // RTC.setTime(startTime);
+
+    RTCTime currentTime;
+
+    // Get current time from RTC
+    RTC.getTime(currentTime);
+
+    float gmtOffset = 3.0;  // GMT offset in hour
+    smtp.setSystemTime(currentTime.getUnixTime(), gmtOffset);
 
 #endif
 
