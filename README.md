@@ -771,10 +771,10 @@ If device has on-board WiFi and supports native (SDK) Ethernet, these two native
 If you don't want to let Mail Client library to use the native networking and use external networking devices using Arduino Clients instead, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
 
 ```cpp
-#define ESP_MAIL_NOT_USE_ONBOARD_WIFI
+#define ESP_MAIL_DISABLE_ONBOARD_WIFI
 
 
-#define ESP_MAIL_NOT_USE_NATIVE_ETHERNET
+#define ESP_MAIL_DISABLE_NATIVE_ETHERNET
 ```
 
 See [External Client Examples](/examples/SMTP/External_Client) for more external Client usage.

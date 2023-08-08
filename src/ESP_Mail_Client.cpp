@@ -45,7 +45,7 @@
 
 void ESP_Mail_Client::networkReconnect(bool reconnect)
 {
-#if defined(ESP32) || defined(ESP8266)
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && (defined(ESP32) || defined(ESP8266))
   WiFi.setAutoReconnect(reconnect);
 #endif
   networkAutoReconnect = reconnect;
@@ -1328,12 +1328,6 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, void *sess
 bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP)
 {
 
-#if defined(ENABLE_NTP_TIME)
-  bool ntpEnabled = true;
-#else
-  bool ntpEnabled = false;
-#endif
-
   bool timeShouldBeValid = false;
 
   if (isSMTP)
@@ -1341,7 +1335,13 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   else
     timeShouldBeValid = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
 
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) 
+#if defined(ENABLE_NTP_TIME) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+  bool ntpEnabled = true;
+#else
+  bool ntpEnabled = false;
+#endif
+
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
 
   bool isCb = false;
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
@@ -1381,35 +1381,35 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
       setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
     }
-
-#if defined(ESP32)
-    if (Time.clockReady() && !timezoneEnvSet)
-      getSetTimezoneEnv(session_config->time.timezone_file.c_str(), session_config->time.timezone_env_string.c_str());
-#endif
-
-    if (Time.clockReady())
-      return true;
-    else
-    {
-      if (isSMTP)
-      {
-#if defined(ENABLE_SMTP)
-        SMTPSession *smtp = (SMTPSession *)sessionPtr;
-        errorStatusCB(smtp, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
-#endif
-      }
-      else
-      {
-#if defined(ENABLE_IMAP)
-        IMAPSession *imap = (IMAPSession *)sessionPtr;
-        errorStatusCB(imap, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, true);
-#endif
-      }
-      return false;
-    }
   }
 
 #endif
+
+#if defined(ESP32)
+  if (Time.clockReady() && !timezoneEnvSet)
+    getSetTimezoneEnv(session_config->time.timezone_file.c_str(), session_config->time.timezone_env_string.c_str());
+#endif
+
+  if (Time.clockReady())
+    return true;
+  else
+  {
+    if (isSMTP)
+    {
+#if defined(ENABLE_SMTP)
+      SMTPSession *smtp = (SMTPSession *)sessionPtr;
+      errorStatusCB(smtp, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
+#endif
+    }
+    else
+    {
+#if defined(ENABLE_IMAP)
+      IMAPSession *imap = (IMAPSession *)sessionPtr;
+      errorStatusCB(imap, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, true);
+#endif
+    }
+    return false;
+  }
 
   return true;
 }

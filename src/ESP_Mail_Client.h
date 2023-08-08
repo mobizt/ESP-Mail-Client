@@ -45,20 +45,11 @@
 #include <vector>
 #endif
 
-#if __has_include(<WiFiNINA.h>)
-#include <WiFiNINA.h>
-#elif __has_include(<WiFi101.h>)
-#include <WiFi101.h>
-#endif
-
-#include "extras/MB_Time.h"
-#include "ESP_Mail_Print.h"
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Const.h"
+#include "extras/MB_Time.h"
+#include "ESP_Mail_Print.h"
 
-#if __has_include(<WiFi101.h>)
-#include <WiFi101.h>
-#endif
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
@@ -66,21 +57,15 @@
 
 #if defined(ESP32)
 
-#include <WiFi.h>
-#if !defined(ENABLE_CUSTOM_CLIENT)
-#include <ETH.h>
-#endif
 #define ESP_MAIL_MIN_MEM 70000
 
 #elif defined(ESP8266)
 
-#include <ESP8266WiFi.h>
 #define SD_CS_PIN 15
 #define ESP_MAIL_MIN_MEM 4000
 
 #elif defined(MB_ARDUINO_PICO)
 
-#include <WiFi.h>
 #define ESP_MAIL_MIN_MEM 70000
 #define SD_CS_PIN PIN_SPI1_SS
 

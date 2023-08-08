@@ -180,7 +180,7 @@ public:
     {
         bool ret = false;
 
-#if !defined(ESP_MAIL_NOT_USE_NATIVE_ETHERNET)
+#if defined(ESP_MAIL_ETH_IS_AVAILABLE)
 
 #if defined(ESP32)
         if (validIP(ETH.localIP()))

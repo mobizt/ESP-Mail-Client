@@ -143,10 +143,10 @@
 
 
 /* 📌 If on-board WiFi is not used in this library */
-// #define ESP_MAIL_NOT_USE_ONBOARD_WIFI
+// #define ESP_MAIL_DISABLE_ONBOARD_WIFI
 
 /* 📌 If native Ethernet (Ethernet interfaces that supported by SDK) is not used in this library */
-// #define ESP_MAIL_NOT_USE_NATIVE_ETHERNET
+// #define ESP_MAIL_DISABLE_NATIVE_ETHERNET
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
 // You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of
