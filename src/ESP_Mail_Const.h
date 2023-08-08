@@ -2921,7 +2921,7 @@ private:
             multi->run();
 
 #elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        WiFi.begin(credentials[0].ssid.c_str(), credentials[0].password.c_str());
+        WiFi.begin((CONST_STRING_CAST)credentials[0].ssid.c_str(), credentials[0].password.c_str());
 #endif
     }
 

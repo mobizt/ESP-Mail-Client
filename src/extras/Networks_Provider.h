@@ -10,9 +10,18 @@
 
 #include "SDK_Version_Common.h"
 
+// Renesas devices
+#if defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_MINIMA) || defined(ARDUINO_PORTENTA_C33)
+#define ESP_MAIL_STRSEP strsepImpl
+#define ESP_MAIL_USE_STRSEP_IMPL
+#else
 #define ESP_MAIL_STRSEP strsep
+#endif
 
-#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || __has_include(<WiFiNINA.h>) ||__has_include(<WiFi101.h>) || __has_include(<WiFiS3.h>)
+#if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || \
+    defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_PORTENTA_C33) ||                \
+    defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_PORTENTA_H7_M4) ||         \
+    __has_include(<WiFiNINA.h>) ||__has_include(<WiFi101.h>)
 
 #if !defined(ESP_MAIL_DISABLE_ONBOARD_WIFI)
 
@@ -28,21 +37,37 @@
 #include <WiFi101.h>
 #elif __has_include(<WiFiS3.h>)
 #include <WiFiS3.h>
+#elif __has_include(<WiFi.h>)
+#include <WiFi.h>
 #endif
 
-#if __has_include(<WiFiS3.h>)
-#undef ESP_MAIL_STRSEP
-#define ESP_MAIL_STRSEP strsepImpl
-#define ESP_MAIL_USE_STRSEP_IMPL
-#endif
-
-#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD) && !__has_include(<WiFiS3.h>)
+#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && \
+    !defined(MB_ARDUINO_ARCH_SAMD) &&        \
+    !defined(MB_ARDUINO_MBED_PORTENTA) &&    \
+    !defined(ARDUINO_UNOWIFIR4) &&           \
+    !defined(ARDUINO_PORTENTA_C33) &&        \
+    !defined(ARDUINO_NANO_RP2040_CONNECT)
 #define ESP_MAIL_HAS_WIFI_DISCONNECT
 #endif
 
+#if defined(ARDUINO_PORTENTA_C33)
+#define CONST_STRING_CAST char * // C33 WiFi library SSID is char array
+#else
+#define CONST_STRING_CAST const char *
 #endif
 
-//////////////////////////////////
+// WiFiS3 getTime is currently return 0 (not implemented)
+#if __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>)
+#define ESP_MAIL_HAS_WIFI_TIME
+#endif
+
+#if defined(MB_ARDUINO_PICO) && __has_include(<WiFiMulti.h>)
+#define ESP_MAIL_HAS_WIFIMULTI
+#endif
+
+#endif
+
+#endif
 
 #if !defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)
 
@@ -53,23 +78,6 @@
 #if defined(INC_ENC28J60_LWIP) && defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #endif
-#endif
-
-#endif
-
-////////////////////////////
-
-#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-
-// WiFiS3 getTime is currently return 0 (not implemented)
-#if __has_include(<WiFiNINA.h>) || __has_include(<WiFi101.h>) // || __has_include(<WiFiS3.h>)
-#define ESP_MAIL_HAS_WIFI_TIME
-#endif
-
-#if defined(MB_ARDUINO_PICO) && __has_include(<WiFiMulti.h>)
-#define ESP_MAIL_HAS_WIFIMULTI
-#endif
-
 #endif
 
 #endif

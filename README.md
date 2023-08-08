@@ -12,7 +12,7 @@ This library was tested and works well with ESP32s, ESP8266s, SAMD21s and RP2040
 
 The library supported external networking devices hat work with Arduino Clients e.g. WiFiClient, EthernetClient, and GSMClient.
 
-Minimum 128k flash space device is recommended for library installation and user code.
+Minimum 200k flash space device is recommended for library installation and user code.
 
 The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP application may required up to 20k memory while SMTP application required much less memory.
 
