@@ -437,10 +437,8 @@ public:
     {
         _host = host;
         _port = port;
-        if (_rx_size >= 512 && _tx_size >= 512)
-            _ssl_client.setBufferSizes(_rx_size, _tx_size);
-        else
-            _ssl_client.setBufferSizes(_maxRXBufSize / rxBufDivider, _maxTXBufSize / txBufDivider);
+        _ssl_client.setBufferSizes(_rx_size >= _minRXTXBufSize && _rx_size <= _maxRXBufSize ? _rx_size : _maxRXBufSize / rxBufDivider,
+                                   _tx_size >= _minRXTXBufSize && _tx_size <= _maxTXBufSize ? _tx_size : _maxTXBufSize / txBufDivider);
         _last_error = 0;
         return true;
     }
@@ -947,8 +945,9 @@ private:
 
     uint16_t _bsslRxSize = 1024;
     uint16_t _bsslTxSize = 1024;
-    int _maxRXBufSize = 16384; // SSL full supported 16 kB
-    int _maxTXBufSize = 16384;
+    const int _maxRXBufSize = 16384; // SSL full supported 16 kB
+    const int _maxTXBufSize = 16384;
+    const int _minRXTXBufSize = 512;
 
     ESP_SSLClient _ssl_client;
     MB_String _host;
