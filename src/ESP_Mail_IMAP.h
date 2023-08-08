@@ -3658,7 +3658,8 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
 
         while (pp != NULL)
         {
-            strsep(&end, " ");
+            // See RFC2047.h
+            ESP_MAIL_STRSEP(&end, " ");
             count++;
 
             if (count >= tkPos && strlen(pp) > 0)
@@ -3923,7 +3924,8 @@ bool ESP_Mail_Client::getFlags(IMAPSession *imap, char *buf, esp_mail_imap_respo
 
         while (pp != NULL)
         {
-            strsep(&end, " ");
+             // See RFC2047.h
+            ESP_MAIL_STRSEP(&end, " ");
             count++;
             if (count >= tkPos && strlen(pp) > 0)
             {

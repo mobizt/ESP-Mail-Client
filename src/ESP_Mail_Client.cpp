@@ -767,7 +767,8 @@ void ESP_Mail_Client::splitToken(const char *str, MB_VECTOR<MB_String> &tk, cons
   MB_String tmp;
   while (pp != NULL)
   {
-    strsep(&end, delim);
+     // See RFC2047.h
+    ESP_MAIL_STRSEP(&end, delim);
     if (strlen(pp) > 0)
     {
       tmp = pp;

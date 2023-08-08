@@ -10,6 +10,8 @@
 
 #include "SDK_Version_Common.h"
 
+#define ESP_MAIL_STRSEP strsep
+
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || __has_include(<WiFiNINA.h>) ||__has_include(<WiFi101.h>) || __has_include(<WiFiS3.h>)
 
 #if !defined(ESP_MAIL_DISABLE_ONBOARD_WIFI)
@@ -26,6 +28,12 @@
 #include <WiFi101.h>
 #elif __has_include(<WiFiS3.h>)
 #include <WiFiS3.h>
+#endif
+
+#if __has_include(<WiFiS3.h>)
+#undef ESP_MAIL_STRSEP
+#define ESP_MAIL_STRSEP strsepImpl
+#define ESP_MAIL_USE_STRSEP_IMPL
 #endif
 
 #if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD) && !__has_include(<WiFiS3.h>)
