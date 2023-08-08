@@ -96,7 +96,7 @@
 
 #if defined(ESP_MAIL_TINYGSM_IS_AVAILABLE) && __has_include(<TinyGsmClient.h>)
 #include <TinyGsmClient.h>
-#define ESP_MAIL_HAS_TINYGSM
+#define ESP_MAIL_GSM_MODEM_IS_AVAILABLE
 #endif
 
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)

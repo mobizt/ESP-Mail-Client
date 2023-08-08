@@ -75,7 +75,7 @@ public:
      */
     void setGSMClient(Client *client, void *modem = nullptr, const char *pin = nullptr, const char *apn = nullptr, const char *user = nullptr, const char *password = nullptr)
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         _pin = pin;
         _apn = apn;
         _user = user;
@@ -802,7 +802,7 @@ public:
 
     bool gprsConnect()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         if (gsmModem)
         {
@@ -817,13 +817,13 @@ public:
 
 #if !defined(SILENT_MODE)
             if (_debug_level > 0 && _last_error == 0)
-                esp_mail_debug_print_tag("Waiting for network...", esp_mail_debug_tag_type_info, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Waiting for network..."), esp_mail_debug_tag_type_info, false);
 #endif
             if (!gsmModem->waitForNetwork())
             {
 #if !defined(SILENT_MODE)
                 if (_debug_level > 0 && _last_error == 0)
-                    esp_mail_debug_print_tag(" fail", esp_mail_debug_tag_type_info, true, false);
+                    esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" fail"), esp_mail_debug_tag_type_info, true, false);
 #endif
                 _last_error = 1;
                 _network_status = false;
@@ -832,7 +832,7 @@ public:
 
 #if !defined(SILENT_MODE)
             if (_debug_level > 0 && _last_error == 0)
-                esp_mail_debug_print_tag(" success", esp_mail_debug_tag_type_info, true, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" success"), esp_mail_debug_tag_type_info, true, false);
 #endif
 
             if (gsmModem->isNetworkConnected())
@@ -840,7 +840,7 @@ public:
 #if !defined(SILENT_MODE)
                 if (_debug_level > 0 && _last_error == 0)
                 {
-                    esp_mail_debug_print_tag("Connecting to ", esp_mail_debug_tag_type_info, false);
+                    esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connecting to "), esp_mail_debug_tag_type_info, false);
                     esp_mail_debug_print_tag(_apn.c_str(), esp_mail_debug_tag_type_info, false, false);
                 }
 #endif
@@ -851,9 +851,9 @@ public:
                 if (_debug_level > 0 && _last_error == 0)
                 {
                     if (_network_status)
-                        esp_mail_debug_print_tag(" success", esp_mail_debug_tag_type_info, true, false);
+                        esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" success"), esp_mail_debug_tag_type_info, true, false);
                     else
-                        esp_mail_debug_print_tag(" fail", esp_mail_debug_tag_type_info, true, false);
+                        esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" fail"), esp_mail_debug_tag_type_info, true, false);
                 }
 #endif
             }
@@ -870,7 +870,7 @@ public:
 
     bool gprsConnected()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         _network_status = gsmModem && gsmModem->isGprsConnected();
 #endif
@@ -879,7 +879,7 @@ public:
 
     bool gprsDisconnect()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         _network_status = gsmModem && gsmModem->gprsDisconnect();
 #endif
@@ -965,7 +965,7 @@ private:
 #if defined(ESP_MAIL_HAS_WIFIMULTI)
     WiFiMulti *_multi = nullptr;
 #endif
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
     MB_String _pin, _apn, _user, _password;
     void *_modem = nullptr;
 #endif
