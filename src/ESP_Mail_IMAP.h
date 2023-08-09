@@ -1487,7 +1487,7 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, PGM_P data, bool newline)
 
     int toSend = newline ? s.length() + 2 : s.length();
 
-    if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_maintener && !imap->_customCmdResCallback)
+    if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_maintainer && !imap->_customCmdResCallback)
         esp_mail_debug_print(s.c_str(), newline);
 
     sent = newline ? imap->client.println(s.c_str()) : imap->client.print(s.c_str());
@@ -5076,7 +5076,7 @@ void IMAPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
-        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintainer)
             level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;

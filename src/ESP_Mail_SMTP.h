@@ -1731,7 +1731,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, PGM_P data, bool newline)
     int toSend = newline ? s.length() + 2 : s.length();
 
 #if !defined(SILENT_MODE)
-    if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_maintener)
+    if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_maintainer)
         esp_mail_debug_print(s.c_str(), newline);
 #endif
 
@@ -3508,7 +3508,7 @@ void SMTPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
-        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintainer)
             level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;

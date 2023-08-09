@@ -552,8 +552,8 @@ enum esp_mail_debug_level
 {
     esp_mail_debug_level_none = 0,
     esp_mail_debug_level_basic,
-    esp_mail_debug_level_maintener = 0xfff,
-    esp_mail_debug_level_developer = esp_mail_debug_level_maintener + 1
+    esp_mail_debug_level_maintainer = 0xfff,
+    esp_mail_debug_level_developer = esp_mail_debug_level_maintainer + 1
 };
 
 /* The content transfer encoding enum */
