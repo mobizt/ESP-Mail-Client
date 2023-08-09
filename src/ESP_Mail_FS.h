@@ -141,12 +141,14 @@
 /* 📌 To use ESP8266 W5100 Ethernet module */
 // #define ENABLE_ESP8266_W5100_ETH
 
-
-/* 📌 If on-board WiFi is not used in this library */
+/* 📌 If not use on-board WiFi */
 // #define ESP_MAIL_DISABLE_ONBOARD_WIFI
 
-/* 📌 If native Ethernet (Ethernet interfaces that supported by SDK) is not used in this library */
+/* 📌 If not use native Ethernet (Ethernet interfaces that supported by SDK) */
 // #define ESP_MAIL_DISABLE_NATIVE_ETHERNET
+
+/* 📌 If not use SSL */
+// #define ESP_MAIL_DISABLE_SSL
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
 // You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of

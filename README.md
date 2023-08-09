@@ -662,7 +662,7 @@ void setup()
   IMAP_MSG_List msgList = imap.data();
 
   // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
-  // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+  // that works for all supported Arduino platform SDKs e.g. SAMD, ESP32 and ESP8266.
   // In ESP32 and ESP32, you can use Serial.printf directly.
 
   for (size_t i = 0; i < msgList.msgItems.size(); i++)

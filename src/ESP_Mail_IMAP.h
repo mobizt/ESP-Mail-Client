@@ -1214,12 +1214,16 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
         return false;
 
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
-
+    
+#if !defined(ESP_MAIL_DISABLE_SSL)
 unauthenticate:
+#endif
 
     // capabilities may change after TLS negotiation
     if (!imap->checkCapabilities())
         return false;
+
+#if !defined(ESP_MAIL_DISABLE_SSL)
 
     // start TLS when needed or the server issues
     if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS) && !ssl)
@@ -1260,6 +1264,8 @@ unauthenticate:
         // check the capabilitiy again to prevent the man in the middle attack
         goto unauthenticate;
     }
+
+#endif
 
     imap->clearMessageData();
     imap->_mailboxOpened = false;
@@ -3924,7 +3930,7 @@ bool ESP_Mail_Client::getFlags(IMAPSession *imap, char *buf, esp_mail_imap_respo
 
         while (pp != NULL)
         {
-             // See RFC2047.h
+            // See RFC2047.h
             ESP_MAIL_STRSEP(&end, " ");
             count++;
             if (count >= tkPos && strlen(pp) > 0)

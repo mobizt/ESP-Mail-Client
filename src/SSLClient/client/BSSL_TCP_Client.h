@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.6 for Arduino devices.
+ * BSSL_TCP_Client v2.0.7 for Arduino devices.
  *
- * Created August 8, 2023
+ * Created August 9, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -52,6 +52,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include "BSSL_SSL_Client.h"

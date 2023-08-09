@@ -29,6 +29,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 
 #if defined(USE_EMBED_SSL_ENGINE)
 
@@ -73,6 +74,7 @@
 
 #endif
 
+#if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 // Cache for a TLS session with a server
 // Use with BearSSL::WiFiClientSecure::setSession
 // to accelerate the TLS handshake
@@ -441,5 +443,6 @@ namespace bssl
     }
 
 };
+#endif
 
 #endif

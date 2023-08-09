@@ -73,7 +73,9 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp, bool &ssl)
 
     smtp->_auth_capability[esp_mail_auth_capability_login] = false;
 
+#if !defined(ESP_MAIL_DISABLE_SSL)
 initial_stage:
+#endif
 
 // Sending greeting helo response
 #if !defined(SILENT_MODE)
@@ -129,6 +131,7 @@ initial_stage:
     else
         smtp->_send_capability[esp_mail_smtp_send_capability_esmtp] = true;
 
+#if !defined(ESP_MAIL_DISABLE_SSL)
     // start TLS when needed
     // rfc3207
     if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS) && !ssl)
@@ -171,6 +174,8 @@ initial_stage:
         if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
             goto initial_stage;
     }
+
+#endif
 
     bool creds = smtp->_session_cfg->login.email.length() > 0 && smtp->_session_cfg->login.password.length() > 0;
     bool sasl_auth_oauth = smtp->_session_cfg->login.accessToken.length() > 0 && smtp->_auth_capability[esp_mail_auth_capability_xoauth2];

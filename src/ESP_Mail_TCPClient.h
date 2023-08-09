@@ -49,9 +49,22 @@
 class ESP_Mail_TCPClient
 {
 public:
-    ESP_Mail_TCPClient() {}
+    ESP_Mail_TCPClient()
+    {
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client = new ESP_SSLClient();
+#endif
+    }
 
-    ~ESP_Mail_TCPClient() { clear(); }
+    ~ESP_Mail_TCPClient()
+    {
+        clear();
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        if (_tcp_client)
+            delete _tcp_client;
+        _tcp_client = nullptr;
+#endif
+    }
 
     /**
      * Set the client.
@@ -91,13 +104,14 @@ public:
      */
     void setCACert(const char *caCert)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (caCert)
         {
             if (_x509)
                 delete _x509;
 
             _x509 = new X509List(caCert);
-            _ssl_client.setTrustAnchors(_x509);
+            _tcp_client->setTrustAnchors(_x509);
 
             setCertType(esp_mail_cert_type_data);
             setTA(true);
@@ -107,6 +121,7 @@ public:
             setCertType(esp_mail_cert_type_none);
             setInSecure();
         }
+#endif
     }
 
     /**
@@ -117,6 +132,7 @@ public:
      */
     bool setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (!_mbfs)
             return false;
 
@@ -141,13 +157,14 @@ public:
                     delete _x509;
 
                 _x509 = new X509List(der, len);
-                _ssl_client.setTrustAnchors(_x509);
+                _tcp_client->setTrustAnchors(_x509);
                 setTA(true);
                 _mbfs->delP(&der);
 
                 setCertType(esp_mail_cert_type_file);
             }
         }
+#endif
 
         return getCertType() == esp_mail_cert_type_file;
     }
@@ -158,7 +175,7 @@ public:
      */
     void setTimeout(uint32_t timeoutSec)
     {
-        _ssl_client.setTimeout(timeoutSec);
+        _tcp_client->setTimeout(timeoutSec);
     }
 
     /**  Set the BearSSL IO buffer size.
@@ -434,8 +451,10 @@ public:
     {
         _host = host;
         _port = port;
-        _ssl_client.setBufferSizes(_rx_size >= _minRXTXBufSize && _rx_size <= _maxRXBufSize ? _rx_size : _maxRXBufSize / rxBufDivider,
-                                   _tx_size >= _minRXTXBufSize && _tx_size <= _maxTXBufSize ? _tx_size : _maxTXBufSize / txBufDivider);
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->setBufferSizes(_rx_size >= _minRXTXBufSize && _rx_size <= _maxRXBufSize ? _rx_size : _maxRXBufSize / rxBufDivider,
+                                    _tx_size >= _minRXTXBufSize && _tx_size <= _maxTXBufSize ? _tx_size : _maxTXBufSize / txBufDivider);
+#endif
         _last_error = 0;
         return true;
     }
@@ -450,10 +469,12 @@ public:
     bool connect(bool secured, bool verify)
     {
         _last_error = 0;
-        _ssl_client.enableSSL(secured);
 
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->enableSSL(secured);
         setSecure(secured);
         setVerify(verify);
+#endif
 
         if (connected())
         {
@@ -481,9 +502,13 @@ public:
             }
         }
 
-        _ssl_client.setClient(_basic_client);
+#if defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client = _basic_client;
+#else
+        _tcp_client->setClient(_basic_client);
+#endif
 
-        if (!_ssl_client.connect(_host.c_str(), _port))
+        if (!_tcp_client->connect(_host.c_str(), _port))
             return false;
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
@@ -542,14 +567,15 @@ public:
 
     bool connectSSL(bool verify)
     {
-        _ssl_client.setDebugLevel(2);
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->setDebugLevel(2);
 
-        bool ret = _ssl_client.connected();
+        bool ret = _tcp_client->connected();
 
         if (ret)
         {
             setVerify(verify);
-            ret = _ssl_client.connectSSL(_host.c_str(), _port);
+            ret = _tcp_client->connectSSL(_host.c_str(), _port);
             if (ret)
                 _secured = true;
         }
@@ -558,18 +584,24 @@ public:
             stop();
 
         return ret;
+#endif
+        return false;
     }
 
     /**
      * Stop TCP connection.
      */
-    void stop() { _ssl_client.stop(); }
+    void stop()
+    {
+        if (_tcp_client)
+            _tcp_client->stop();
+    }
 
     /**
      * Get the TCP connection status.
      * @return true for connected or false for not connected.
      */
-    bool connected() { return _ssl_client.connected(); };
+    bool connected() { return _tcp_client && _tcp_client->connected(); };
 
     /**
      * The TCP data write function.
@@ -579,6 +611,9 @@ public:
      */
     int write(uint8_t *data, int len)
     {
+        if (!_tcp_client)
+            return TCP_CLIENT_ERROR_NOT_INITIALIZED;
+
         if (!data)
             return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
 
@@ -598,7 +633,7 @@ public:
             if (sent + toSend > len)
                 toSend = len - sent;
 
-            if ((int)_ssl_client.write(data + sent, toSend) != toSend)
+            if ((int)_tcp_client->write(data + sent, toSend) != toSend)
                 return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
 
             sent += toSend;
@@ -674,7 +709,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.available();
+        return _tcp_client->available();
     }
 
     /**
@@ -686,7 +721,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.read();
+        return _tcp_client->read();
     }
 
     /**
@@ -700,7 +735,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.read(buf, len);
+        return _tcp_client->read(buf, len);
     }
 
     /**
@@ -719,7 +754,8 @@ public:
      */
     void flush()
     {
-        _ssl_client.flush();
+        if (_tcp_client)
+            _tcp_client->flush();
     }
 
     /**
@@ -769,7 +805,12 @@ public:
 
     void setDebugLevel(int debug) { _debug_level = debug; }
 
-    unsigned long tcpTimeout() { return 1000 * _ssl_client.getTimeout(); }
+    unsigned long tcpTimeout()
+    {
+        if (_tcp_client)
+            return 1000 * _tcp_client->getTimeout();
+        return 0;
+    }
 
     void disconnect(){};
 
@@ -787,11 +828,15 @@ public:
 
     void clear()
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (_basic_client && _client_type == esp_mail_client_type_internal_basic_client)
         {
             delete (ESP_Mail_TCPClient *)_basic_client;
             _basic_client = nullptr;
         }
+#else
+        _basic_client = nullptr;
+#endif
         _client_type = esp_mail_client_type_undefined;
     }
 
@@ -905,17 +950,21 @@ public:
 
     void setInSecure()
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         _use_insecure = true;
         setTA(false);
+#endif
     }
 
     void setVerify(bool verify)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (_has_ta)
             _use_insecure = !verify;
 
         if (_use_insecure)
-            _ssl_client.setInsecure();
+            _tcp_client->setInsecure();
+#endif
     }
 
     bool isSecure()
@@ -945,13 +994,17 @@ private:
     const int _maxRXBufSize = 16384; // SSL full supported 16 kB
     const int _maxTXBufSize = 16384;
     const int _minRXTXBufSize = 512;
+#if defined(ESP_MAIL_DISABLE_SSL)
+    Client *_tcp_client = nullptr;
+#else
+    ESP_SSLClient *_tcp_client = nullptr;
+    X509List *_x509 = nullptr;
+#endif
 
-    ESP_SSLClient _ssl_client;
     MB_String _host;
     uint16_t _port = 443;
 
     MB_FS *_mbfs = nullptr;
-    X509List *_x509 = nullptr;
     Client *_basic_client = nullptr;
     esp_mail_wifi_credentials_t *_wifi_multi = nullptr;
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)

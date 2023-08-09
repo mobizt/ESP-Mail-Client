@@ -767,7 +767,7 @@ void ESP_Mail_Client::splitToken(const char *str, MB_VECTOR<MB_String> &tk, cons
   MB_String tmp;
   while (pp != NULL)
   {
-     // See RFC2047.h
+    // See RFC2047.h
     ESP_MAIL_STRSEP(&end, delim);
     if (strlen(pp) > 0)
     {
@@ -1333,8 +1333,10 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
   if (isSMTP)
     timeShouldBeValid = true;
+#if !defined(ESP_MAIL_DISABLE_SSL)
   else
     timeShouldBeValid = session_config->certificate.cert_file.length() > 0 || session_config->cert_ptr != 0;
+#endif
 
 #if defined(ENABLE_NTP_TIME) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
   bool ntpEnabled = true;
@@ -1475,6 +1477,8 @@ void ESP_Mail_Client::setSecure(ESP_Mail_TCPClient &client, Session_Config *sess
 
   client.setSession(session_config);
 
+#if !defined(ESP_MAIL_DISABLE_SSL)
+
   if (client.getCertType() == esp_mail_cert_type_undefined || session_config->cert_updated)
   {
     if (session_config->certificate.cert_file.length() > 0 || session_config->certificate.cert_data != NULL || session_config->cert_ptr > 0)
@@ -1498,6 +1502,7 @@ void ESP_Mail_Client::setSecure(ESP_Mail_TCPClient &client, Session_Config *sess
     }
     session_config->cert_updated = false;
   }
+#endif
 }
 
 void ESP_Mail_Client::appendMultipartContentType(MB_String &buf, esp_mail_multipart_types type, const char *boundary)

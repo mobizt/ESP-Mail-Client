@@ -23,6 +23,10 @@
 #include <algorithm>
 #endif
 
+#if !defined(FPSTR)
+#define FPSTR
+#endif
+
 #include "extras/Networks_Provider.h"
 #include "extras/MB_List.h"
 #include "extras/SDK_Version_Common.h"
