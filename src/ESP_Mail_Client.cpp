@@ -221,7 +221,7 @@ void ESP_Mail_Client::appendSpace(MB_String &buf, bool withTag, PGM_P value)
   if (withTag)
     appendTagSpace(buf);
   buf += value;
-  buf += esp_mail_str_2 /* " " */;
+  appendSpace(buf);
 }
 
 void ESP_Mail_Client::appendSpace(MB_String &buf, bool withTag, int nunArgs, ...)
@@ -236,18 +236,18 @@ void ESP_Mail_Client::appendSpace(MB_String &buf, bool withTag, int nunArgs, ...
     buf += p;
   for (int i = 2; i <= nunArgs; i++)
   {
-    buf += esp_mail_str_2; /* " " */
+    appendSpace(buf);
     p = va_arg(ap, PGM_P);
     if (p)
       buf += p;
   }
   va_end(ap);
-  buf += esp_mail_str_2 /* " " */;
+  appendSpace(buf);
 }
 
 void ESP_Mail_Client::prependSpace(MB_String &buf, PGM_P value)
 {
-  buf += esp_mail_str_2 /* " " */;
+  appendSpace(buf);
   buf += value;
 }
 
@@ -274,7 +274,7 @@ void ESP_Mail_Client::joinStringSpace(MB_String &buf, bool withTag, int nunArgs,
     buf += p;
   for (int i = 2; i <= nunArgs; i++)
   {
-    buf += esp_mail_str_2; /* " " */
+    appendSpace(buf);
     p = va_arg(ap, PGM_P);
     if (p)
       buf += p;
@@ -287,7 +287,7 @@ void ESP_Mail_Client::appendImap4KeyValue(MB_String &buf, PGM_P key, PGM_P value
   buf += esp_mail_str_11; /* "\"" */
   buf += key;
   buf += esp_mail_str_11; /* "\"" */
-  buf += esp_mail_str_2;  /* " " */
+  appendSpace(buf);
   buf += esp_mail_str_11; /* "\"" */
   buf += value;
   buf += esp_mail_str_11; /* "\"" */
@@ -420,9 +420,9 @@ void ESP_Mail_Client::printProgress(int progress, int &lastProgress)
         if (i == len - 1)
           s += ']';
       }
-      s += esp_mail_str_2; /* " " */
+      appendSpace(s);
       s += progress;
-      s += esp_mail_str_2;  /* " " */
+      appendSpace(s);
       s += esp_mail_str_24; /* "%" */
       esp_mail_debug_print_tag(s.c_str(), esp_mail_debug_tag_type_client, true);
     }
@@ -679,18 +679,18 @@ bool ESP_Mail_Client::mAppendMessage(IMAPSession *imap, SMTP_Message *msg, bool 
   if (imap->_prev_imap_cmd != esp_mail_imap_cmd_append)
     joinStringSpace(cmd, true, 2, imap_commands[esp_mail_imap_command_append].text, imap->_currentFolder.c_str());
 
-  cmd += esp_mail_str_2 /* " " */;
+  appendSpace(cmd);
 
   if (_flags.length() > 0)
   {
     appendString(cmd, _flags.c_str(), false, false, esp_mail_string_mark_type_round_bracket);
-    cmd += esp_mail_str_2 /* " " */;
+    appendSpace(cmd);
   }
 
   if (_dt.length() > 0)
   {
     appendString(cmd, _dt.c_str(), false, false, esp_mail_string_mark_type_double_quote);
-    cmd += esp_mail_str_2 /* " " */;
+    appendSpace(cmd);
   }
 
   appendString(cmd, MB_String((int)dataLen).c_str(), false, false, esp_mail_string_mark_type_curly_bracket);
@@ -910,7 +910,7 @@ void ESP_Mail_Client::appendHeaderName(MB_String &buf, const char *name, bool cl
     buf += name;
   buf += esp_mail_str_34; /* ":" */
   if (space)
-    buf += esp_mail_str_2; /* " " */
+    appendSpace(buf);
 }
 
 void ESP_Mail_Client::appendLowerCaseString(MB_String &buf, PGM_P value, bool clear)
@@ -926,7 +926,7 @@ void ESP_Mail_Client::appendHeaderProp(MB_String &buf, PGM_P prop, const char *v
 {
   if (firstProp)
     buf += esp_mail_str_35; /* ";" */
-  buf += esp_mail_str_2;    /* " " */
+  appendSpace(buf);
   if (lowerCase)
     appendLowerCaseString(buf, prop);
   else

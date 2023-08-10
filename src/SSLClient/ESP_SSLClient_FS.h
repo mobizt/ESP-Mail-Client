@@ -30,6 +30,9 @@
 // for Filesystem support that required for CertStore
 #define ESP_SSLCLIENT_USE_FILESYSTEM
 
+// For external SRAM (PSRAM) support
+#define ESP_SSLCLIENT_USE_PSRAM
+
 #if defined __has_include
 #if __has_include(<Custom_ESP_SSLClient_FS.h>)
 #include "Custom_ESP_SSLClient_FS.h"

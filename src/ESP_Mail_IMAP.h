@@ -5953,7 +5953,7 @@ bool IMAPSession::mFetchSequenceSet()
 MB_String IMAPSession::prependTag(PGM_P cmd, PGM_P tag)
 {
     MB_String s = (tag == NULL) ? esp_mail_imap_tag_str : tag;
-    s += esp_mail_str_2; /* " " */
+    MailClient.appendSpace(s);
     s += cmd;
     return s;
 }

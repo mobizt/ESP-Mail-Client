@@ -1,6 +1,6 @@
 /**
  *
- * The ESP SSL Client Class, ESP_SSLClient.h v2.1.0
+ * The ESP SSL Client Class, ESP_SSLClient.h v2.1.1
  *
  * Created August 10, 2023
  *

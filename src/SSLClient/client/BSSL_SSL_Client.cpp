@@ -1,5 +1,5 @@
 /**
- * BSSL_SSL_Client library v1.0.6 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.7 for Arduino devices.
  *
  * Created August 9, 2003
  *
@@ -45,6 +45,12 @@
 
 #include "BSSL_Helper.h"
 #include "BSSL_SSL_Client.h"
+
+#if defined(ESP8266) && defined(MMU_EXTERNAL_HEAP) && defined(ESP_SSLCLIENT_USE_PSRAM)
+#include <umm_malloc/umm_malloc.h>
+#include <umm_malloc/umm_heap_select.h>
+#define ESP_SSLCLIENT_ESP8266_USE_EXTERNAL_HEAP
+#endif
 
 #if defined(USE_EMBED_SSL_ENGINE)
 #include <list>
@@ -97,7 +103,7 @@ BSSL_SSL_Client::~BSSL_SSL_Client()
             _basic_client->stop();
         _basic_client = nullptr;
     }
-    _cipher_list = nullptr; // std::shared will free if last reference
+    freeImpl(&_cipher_list);
     mFreeSSL();
 #if defined(USE_EMBED_SSL_ENGINE)
     stack_thunk_del_ref();
@@ -456,12 +462,12 @@ void BSSL_SSL_Client::stop()
             // run SSL to finish any existing transactions
             flush();
         }
-
-        mFreeSSL();
     }
     // close the socket
     _basic_client->flush();
     _basic_client->stop();
+
+    mFreeSSL();
 
     _secure = false;
     _is_connected = false;
@@ -908,16 +914,15 @@ void BSSL_SSL_Client::setCertStore(CertStoreBase *certStore)
 // Set custom list of ciphers
 bool BSSL_SSL_Client::setCiphers(const uint16_t *cipherAry, int cipherCount)
 {
-    _cipher_list = nullptr;
-    _cipher_list = std::shared_ptr<uint16_t>(new (std::nothrow) uint16_t[cipherCount], std::default_delete<uint16_t[]>());
-    if (!_cipher_list.get())
+    _cipher_list = (uint16_t *)mallocImpl(cipherCount);
+    if (!_cipher_list)
     {
 #if defined(ESP_SSLCLIENT_ENABLE_DEBUG)
         esp_ssl_debug_print(PSTR("list empty"), _debug_level, esp_ssl_debug_error, __func__);
 #endif
         return false;
     }
-    memcpy_P(_cipher_list.get(), cipherAry, cipherCount * sizeof(uint16_t));
+    memcpy_P(_cipher_list, cipherAry, cipherCount * sizeof(uint16_t));
     _cipher_cnt = cipherCount;
     return true;
 }
@@ -1050,39 +1055,39 @@ void BSSL_SSL_Client::setPrivateKey(const char *private_key)
 bool BSSL_SSL_Client::loadCACert(Stream &stream, size_t size)
 {
     bool ret = false;
-    auto buff = new char[size];
+    auto buff = (char *)mallocImpl(size);
     if (size == stream.readBytes(buff, size))
     {
         setCACert(buff);
         ret = true;
     }
-    delete[] buff;
+    freeImpl(&buff);
     return ret;
 }
 
 bool BSSL_SSL_Client::loadCertificate(Stream &stream, size_t size)
 {
     bool ret = false;
-    auto buff = new char[size];
+    auto buff = (char *)mallocImpl(size);
     if (size == stream.readBytes(buff, size))
     {
         setCertificate(buff);
         ret = true;
     }
-    delete[] buff;
+    freeImpl(&buff);
     return ret;
 }
 
 bool BSSL_SSL_Client::loadPrivateKey(Stream &stream, size_t size)
 {
     bool ret = false;
-    auto buff = new char[size];
+    auto buff = (char *)mallocImpl(size);
     if (size == stream.readBytes(buff, size))
     {
         setPrivateKey(buff);
         ret = true;
     }
-    delete[] buff;
+    freeImpl(&buff);
     return ret;
 }
 
@@ -1198,7 +1203,7 @@ bool BSSL_SSL_Client::mProbeMaxFragmentLength(Client *probe, uint16_t len)
         return false; // Invalid size
     }
     int ttlLen = sizeof(clientHelloHead_P) + (2 + sizeof(suites_P)) + (sizeof(clientHelloTail_P) + 1);
-    uint8_t *clientHello = new (std::nothrow) uint8_t[ttlLen];
+    uint8_t *clientHello = (uint8_t *)mallocImpl(ttlLen);
     if (!clientHello)
     {
 #if defined(ESP_SSLCLIENT_ENABLE_DEBUG)
@@ -1227,7 +1232,7 @@ bool BSSL_SSL_Client::mProbeMaxFragmentLength(Client *probe, uint16_t len)
     clientHello[8] = (ttlLen - 5 - 4) & 0xff;
 
     int ret = probe->write(clientHello, ttlLen);
-    delete[] clientHello; // We're done w/the hello message
+    freeImpl(&clientHello); // We're done w/the hello message
     if (!probe->connected() || (ret != ttlLen))
     {
 #if defined(ESP_SSLCLIENT_ENABLE_DEBUG)
@@ -1454,8 +1459,8 @@ int BSSL_SSL_Client::mConnectSSL(const char *host)
     _sc = std::make_shared<br_ssl_client_context>();
     _eng = &_sc->eng; // Allocation/deallocation taken care of by the _sc shared_ptr
 
-    _iobuf_in = mIOBufMemAloc(_iobuf_in_size);
-    _iobuf_out = mIOBufMemAloc(_iobuf_out_size);
+    _iobuf_in = (unsigned char *)mallocImpl(_iobuf_in_size);
+    _iobuf_out = (unsigned char *)mallocImpl(_iobuf_out_size);
 
     if (!_sc || !_iobuf_in || !_iobuf_out)
     {
@@ -1468,10 +1473,10 @@ int BSSL_SSL_Client::mConnectSSL(const char *host)
     }
 
     // If no cipher list yet set, use defaults
-    if (!_cipher_list.get())
+    if (!_cipher_list)
         bssl::br_ssl_client_base_init(_sc.get(), suites_P, sizeof(suites_P) / sizeof(suites_P[0]));
     else
-        bssl::br_ssl_client_base_init(_sc.get(), _cipher_list.get(), _cipher_cnt);
+        bssl::br_ssl_client_base_init(_sc.get(), _cipher_list, _cipher_cnt);
 
     // Only failure possible in the installation is OOM
     if (!mInstallClientX509Validator())
@@ -1484,7 +1489,7 @@ int BSSL_SSL_Client::mConnectSSL(const char *host)
         return 0;
     }
 
-    br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in.get(), _iobuf_in_size, _iobuf_out.get(), _iobuf_out_size);
+    br_ssl_engine_set_buffers_bidi(_eng, _iobuf_in, _iobuf_in_size, _iobuf_out, _iobuf_out_size);
     br_ssl_engine_set_versions(_eng, _tls_min, _tls_max);
 
     // Apply any client certificates, if supplied.
@@ -1964,8 +1969,9 @@ void BSSL_SSL_Client::mClear()
     _x509_minimal = nullptr;
     _x509_insecure = nullptr;
     _x509_knownkey = nullptr;
-    _iobuf_in = nullptr;
-    _iobuf_out = nullptr;
+
+    freeImpl(&_iobuf_in);
+    freeImpl(&_iobuf_out);
     _now = 0; // You can override or ensure time() is correct w/configTime
     _ta = nullptr;
     setBufferSizes(16384, 512); // Minimum safe
@@ -1974,7 +1980,7 @@ void BSSL_SSL_Client::mClear()
     _recvapp_len = 0;
     _oom_err = false;
     _session = nullptr;
-    _cipher_list = nullptr;
+    freeImpl(&_cipher_list);
     _cipher_cnt = 0;
     _tls_min = BR_TLS10;
     _tls_max = BR_TLS12;
@@ -2077,28 +2083,6 @@ bool BSSL_SSL_Client::mInstallClientX509Validator()
     return true;
 }
 
-std::shared_ptr<unsigned char> BSSL_SSL_Client::mIOBufMemAloc(size_t sz)
-{
-#if defined(ESP8266)
-    // Allocate buffer with preference to IRAM
-#if defined(ESP8266_CORE_SDK_V3_X_X)
-    HeapSelectIram primary;
-    auto sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-    if (!sptr)
-    {
-        HeapSelectDram alternate;
-        sptr = std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-    }
-    return sptr;
-#else
-    return std::shared_ptr<unsigned char>(new unsigned char[sz], std::default_delete<unsigned char[]>());
-#endif
-
-#else
-    return std::shared_ptr<unsigned char>(new (std::nothrow) unsigned char[sz], std::default_delete<unsigned char[]>());
-    ;
-#endif
-}
 void BSSL_SSL_Client::mFreeSSL()
 {
     // These are smart pointers and will free if refcnt==0
@@ -2106,8 +2090,8 @@ void BSSL_SSL_Client::mFreeSSL()
     _x509_minimal = nullptr;
     _x509_insecure = nullptr;
     _x509_knownkey = nullptr;
-    _iobuf_in = nullptr;
-    _iobuf_out = nullptr;
+    freeImpl(&_iobuf_in);
+    freeImpl(&_iobuf_out);
     // Reset non-allocated ptrs (pointing to bits potentially free'd above)
     _recvapp_buf = nullptr;
     _recvapp_len = 0;
@@ -2133,6 +2117,66 @@ uint8_t *BSSL_SSL_Client::mStreamLoad(Stream &stream, size_t size)
     }
     dest[size] = '\0';
     return dest;
+}
+
+// Allocate memory
+void *BSSL_SSL_Client::mallocImpl(size_t len, bool clear)
+{
+    void *p;
+    size_t newLen = getReservedLen(len);
+#if defined(BOARD_HAS_PSRAM) && defined(ESP_SSLCLIENT_USE_PSRAM)
+
+    if (ESP.getPsramSize() > 0)
+        p = (void *)ps_malloc(newLen);
+    else
+        p = (void *)malloc(newLen);
+
+    if (!p)
+        return NULL;
+
+#else
+
+#if defined(ESP_SSLCLIENT_ESP8266_USE_EXTERNAL_HEAP)
+    ESP.setExternalHeap();
+#endif
+
+    p = (void *)malloc(newLen);
+    bool nn = p ? true : false;
+
+#if defined(ESP_SSLCLIENT_ESP8266_USE_EXTERNAL_HEAP)
+    ESP.resetHeap();
+#endif
+
+    if (!nn)
+        return NULL;
+
+#endif
+    if (clear)
+        memset(p, 0, newLen);
+    return p;
+}
+
+// Free reserved memory at pointer.
+void BSSL_SSL_Client::freeImpl(void *ptr)
+{
+    void **p = (void **)ptr;
+    if (*p)
+    {
+        free(*p);
+        *p = 0;
+    }
+}
+
+size_t BSSL_SSL_Client::getReservedLen(size_t len)
+{
+    int blen = len + 1;
+
+    int newlen = (blen / 4) * 4;
+
+    if (newlen < blen)
+        newlen += 4;
+
+    return (size_t)newlen;
 }
 
 #endif

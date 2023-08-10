@@ -1,5 +1,5 @@
 /**
- * BSSL_SSL_Client library v1.0.6 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.7 for Arduino devices.
  *
  * Created August 9, 2003
  *
@@ -44,7 +44,7 @@
 #include <vector>
 #include <memory>
 #if defined __has_include
-#if __has_include(<pgmspace.h>) 
+#if __has_include(<pgmspace.h>)
 #include <pgmspace.h>
 #endif
 #endif
@@ -252,11 +252,15 @@ private:
 
     bool mInstallClientX509Validator();
 
-    std::shared_ptr<unsigned char> mIOBufMemAloc(size_t sz);
-
     void mFreeSSL();
 
     uint8_t *mStreamLoad(Stream &stream, size_t size);
+
+    void *mallocImpl(size_t len, bool clear = true);
+
+    void freeImpl(void *ptr);
+
+    size_t getReservedLen(size_t len);
 
     // store whether to enable debug logging
     int _debug_level = 0;
@@ -281,8 +285,8 @@ private:
     std::shared_ptr<struct bssl::br_x509_insecure_context> _x509_insecure;
     std::shared_ptr<br_x509_knownkey_context> _x509_knownkey;
 
-    std::shared_ptr<unsigned char> _iobuf_in;
-    std::shared_ptr<unsigned char> _iobuf_out;
+    unsigned char *_iobuf_in = nullptr;
+    unsigned char *_iobuf_out = nullptr;
     int _iobuf_in_size = 512;
     int _iobuf_out_size = 512;
 
@@ -309,7 +313,7 @@ private:
     unsigned int _knownkey_usages = 0;
 
     // Custom cipher list pointer or nullptr if default
-    std::shared_ptr<uint16_t> _cipher_list;
+    uint16_t *_cipher_list = nullptr;
     uint8_t _cipher_cnt = 0;
 
     // TLS ciphers allowed
