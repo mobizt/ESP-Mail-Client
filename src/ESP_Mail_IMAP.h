@@ -1214,7 +1214,7 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
         return false;
 
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
-    
+
 #if !defined(ESP_MAIL_DISABLE_SSL)
 unauthenticate:
 #endif
@@ -1225,44 +1225,47 @@ unauthenticate:
 
 #if !defined(ESP_MAIL_DISABLE_SSL)
 
-    // start TLS when needed or the server issues
-    if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS) && !ssl)
+    if (imap->_session_cfg->secure.mode != esp_mail_secure_mode_nonsecure)
     {
+        // start TLS when needed or the server issues
+        if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS || imap->_session_cfg->secure.mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        {
 #if !defined(SILENT_MODE)
-        printDebug((void *)(imap),
-                   false,
-                   esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
-                   esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
-                   esp_mail_debug_tag_type_client,
-                   true,
-                   false);
+            printDebug((void *)(imap),
+                       false,
+                       esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
+                       esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
+                       esp_mail_debug_tag_type_client,
+                       true,
+                       false);
 #endif
 
-        imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_starttls].text).c_str(), true);
+            imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_starttls].text).c_str(), true);
 
-        // rfc2595 section 3.1
-        imap->_imap_cmd = esp_mail_imap_cmd_starttls;
-        if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
-            return false;
+            // rfc2595 section 3.1
+            imap->_imap_cmd = esp_mail_imap_cmd_starttls;
+            if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
+                return false;
 
 #if !defined(SILENT_MODE)
-        if (imap->_debug)
-            esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+            if (imap->_debug)
+                esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
 #endif
 
-        // connect in secure mode
-        // do TLS handshake
+            // connect in secure mode
+            // do TLS handshake
 
-        if (!imap->client.connectSSL(imap->_session_cfg->certificate.verify))
-            return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+            if (!imap->client.connectSSL(imap->_session_cfg->certificate.verify))
+                return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
 
-        // set the secure mode
-        imap->_session_cfg->secure.startTLS = false;
-        ssl = true;
-        imap->_secure = true;
+            // set the secure mode
+            imap->_session_cfg->secure.startTLS = false;
+            ssl = true;
+            imap->_secure = true;
 
-        // check the capabilitiy again to prevent the man in the middle attack
-        goto unauthenticate;
+            // check the capabilitiy again to prevent the man in the middle attack
+            goto unauthenticate;
+        }
     }
 
 #endif

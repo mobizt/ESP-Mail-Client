@@ -97,6 +97,19 @@ enum esp_mail_file_storage_type
     esp_mail_file_storage_type_sd
 };
 
+/* The secure connection mode preference */
+typedef enum
+{
+    // No preferences
+    esp_mail_secure_mode_undefined = 0,
+    // Always use SSL and TLS via STARTTLS rfc2595 section 3 and rfc3207
+    esp_mail_secure_mode_ssl_tls,
+    // Plain text mode only (non SSL/TLS)
+    // To disable SSL/TLS permanently, define ESP_MAIL_DISABLE_SSL in ESP_Mail_FS.h
+    esp_mail_secure_mode_nonsecure
+
+} esp_mail_secure_mode;
+
 using namespace mb_string;
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
@@ -2674,8 +2687,11 @@ struct esp_mail_sesson_time_config_t
 
 struct esp_mail_sesson_secure_config_t
 {
-    /* The option to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
+    /** The option (obsoleted) to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
     bool startTLS = false;
+    
+    /* The secure connection mode preference */
+    esp_mail_secure_mode mode = esp_mail_secure_mode_undefined;
 };
 
 struct esp_mail_spi_ethernet_module_t

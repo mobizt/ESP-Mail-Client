@@ -172,6 +172,17 @@ void setup()
    */
   config.login.user_domain = F("mydomain.net");
 
+  /** If non-secure port is prefered (not allow SSL and TLS connection), use
+   *  config.secure.mode = esp_mail_secure_mode_nonsecure;
+   *  
+   *  If SSL and TLS are always required, use
+   *  config.secure.mode = esp_mail_secure_mode_ssl_tls;
+   * 
+   *  To disable SSL permanently (use less program space), define ESP_MAIL_DISABLE_SSL in ESP_Mail_FS.h
+   *  or Custom_ESP_Mail_FS.h
+   */
+  // config.secure.mode = esp_mail_secure_mode_nonsecure;
+
   /*
   Set the NTP config time
   For times east of the Prime Meridian use 0-12

@@ -132,47 +132,51 @@ initial_stage:
         smtp->_send_capability[esp_mail_smtp_send_capability_esmtp] = true;
 
 #if !defined(ESP_MAIL_DISABLE_SSL)
-    // start TLS when needed
-    // rfc3207
-    if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS) && !ssl)
+
+    if (smtp->_session_cfg->secure.mode != esp_mail_secure_mode_nonsecure)
     {
+        // start TLS when needed
+        // rfc3207
+        if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS || smtp->_session_cfg->secure.mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        {
 // send starttls command
 #if !defined(SILENT_MODE)
-        printDebug((void *)(smtp),
-                   true,
-                   esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
-                   esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
-                   esp_mail_debug_tag_type_client,
-                   true,
-                   false);
+            printDebug((void *)(smtp),
+                       true,
+                       esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
+                       esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
+                       esp_mail_debug_tag_type_client,
+                       true,
+                       false);
 #endif
 
-        // expected success status code 250 for complete the request
-        // some server returns 220 to restart to initial state
+            // expected success status code 250 for complete the request
+            // some server returns 220 to restart to initial state
 
-        // expected error status code 500, 501, 504, 421
-        smtpSend(smtp, smtp_commands[esp_mail_smtp_command_starttls].text, true);
-        if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
-            return false;
+            // expected error status code 500, 501, 504, 421
+            smtpSend(smtp, smtp_commands[esp_mail_smtp_command_starttls].text, true);
+            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
+                return false;
 
 #if !defined(SILENT_MODE)
-        if (smtp->_debug)
-            esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+            if (smtp->_debug)
+                esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
 #endif
 
-        // connect in secure mode
-        // do TLS handshake
-        if (!smtp->client.connectSSL(smtp->_session_cfg->certificate.verify))
-            return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
+            // connect in secure mode
+            // do TLS handshake
+            if (!smtp->client.connectSSL(smtp->_session_cfg->certificate.verify))
+                return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 
-        // set the secure mode
-        smtp->_session_cfg->secure.startTLS = false;
-        ssl = true;
-        smtp->_secure = true;
+            // set the secure mode
+            smtp->_session_cfg->secure.startTLS = false;
+            ssl = true;
+            smtp->_secure = true;
 
-        // return to initial stage if the response status is 220.
-        if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
-            goto initial_stage;
+            // return to initial stage if the response status is 220.
+            if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
+                goto initial_stage;
+        }
     }
 
 #endif
