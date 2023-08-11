@@ -2611,8 +2611,8 @@ void ESP_Mail_Client::smtpCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bo
 void ESP_Mail_Client::smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bool success)
 {
 #if !defined(SILENT_MODE)
-    MB_String e = esp_mail_str_12;
-    e += info;
+    MB_String e = esp_mail_str_12; /* "Error, " */
+    e += info; 
     smtpCB(smtp, e.c_str(), prependCRLF, success);
 #endif
 }
