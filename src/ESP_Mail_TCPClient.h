@@ -282,8 +282,8 @@ public:
             goto ex;
 #endif
 #if defined(INC_W5100_LWIP)
-        if wcs
-            ->(_session_config->spi_ethernet_module.w5100) goto ex;
+        if (_session_config->spi_ethernet_module.w5100)
+            goto ex;
 #endif
 #if defined(INC_W5500_LWIP)
         if (_session_config->spi_ethernet_module.w5500)
