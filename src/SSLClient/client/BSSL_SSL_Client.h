@@ -1,7 +1,7 @@
 /**
- * BSSL_SSL_Client library v1.0.7 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.8 for Arduino devices.
  *
- * Created August 9, 2003
+ * Created August 11, 2003
  *
  * This work contains codes based on WiFiClientSecure from Earle F. Philhower and SSLClient from OSU OPEnS Lab.
  *
@@ -224,7 +224,9 @@ private:
     //      return changed or add their own extensions.
     bool mProbeMaxFragmentLength(Client *probe, uint16_t len);
 
-    int mIsClientInitialized();
+    bool mProbeMaxFragmentLength(const char *name, IPAddress ip, uint16_t port, uint16_t len);
+
+    int mIsClientInitialized(bool notify);
 
     int mConnectBasicClient(const char *host, IPAddress ip, uint16_t port);
     // Returns whether or not the engine is connected, without polling the client over SPI or other (as opposed to connected())

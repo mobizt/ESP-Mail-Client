@@ -82,13 +82,6 @@ typedef enum
 
 } esp_mail_client_type;
 
-typedef enum
-{
-    esp_mail_external_client_type_none,
-    esp_mail_external_client_type_basic,
-    esp_mail_external_client_type_ssl
-} esp_mail_external_client_type;
-
 /* The filesystem types enum */
 enum esp_mail_file_storage_type
 {
