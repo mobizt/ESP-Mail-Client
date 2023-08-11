@@ -2793,6 +2793,7 @@ public:
         server.port = 0;
 
         secure.startTLS = false;
+        secure.mode = esp_mail_secure_mode_undefined;
 
         login.email.clear();
         login.password.clear();
@@ -2816,6 +2817,11 @@ private:
     int cert_ptr = 0;
     bool cert_updated = false;
     MB_List<int> *listPtr = nullptr;
+    
+    // Internal flags use to keep user sercure.startTLS and secure.mode.
+    bool int_start_tls = false;
+    esp_mail_secure_mode int_mode = esp_mail_secure_mode_undefined;
+
     void clearPorts()
     {
         if (ports_functions.list)

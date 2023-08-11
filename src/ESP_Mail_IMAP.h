@@ -1215,6 +1215,9 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
 
+    imap->_session_cfg->int_start_tls = imap->_session_cfg->secure.startTLS;
+    imap->_session_cfg->int_mode = imap->_session_cfg->secure.mode;
+
 #if !defined(ESP_MAIL_DISABLE_SSL)
 unauthenticate:
 #endif
@@ -1225,10 +1228,10 @@ unauthenticate:
 
 #if !defined(ESP_MAIL_DISABLE_SSL)
 
-    if (imap->_session_cfg->secure.mode != esp_mail_secure_mode_nonsecure)
+    if (imap->_session_cfg->int_mode != esp_mail_secure_mode_nonsecure)
     {
         // start TLS when needed or the server issues
-        if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS || imap->_session_cfg->secure.mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->int_start_tls || imap->_session_cfg->int_mode == esp_mail_secure_mode_ssl_tls) && !ssl)
         {
 #if !defined(SILENT_MODE)
             printDebug((void *)(imap),
@@ -1259,7 +1262,8 @@ unauthenticate:
                 return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
 
             // set the secure mode
-            imap->_session_cfg->secure.startTLS = false;
+            imap->_session_cfg->int_start_tls = false;
+            imap->_session_cfg->int_mode = esp_mail_secure_mode_undefined;
             ssl = true;
             imap->_secure = true;
 
@@ -6210,7 +6214,11 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
 
         // set the secure mode
         if (_session_cfg)
+        {
+            // We reset the prefer connection mode in case user set it.
             _session_cfg->secure.startTLS = false;
+            _session_cfg->secure.mode = esp_mail_secure_mode_undefined;
+        }
 
         _secure = true;
     }

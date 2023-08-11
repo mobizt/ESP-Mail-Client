@@ -73,6 +73,9 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp, bool &ssl)
 
     smtp->_auth_capability[esp_mail_auth_capability_login] = false;
 
+    smtp->_session_cfg->int_start_tls = smtp->_session_cfg->secure.startTLS;
+    smtp->_session_cfg->int_mode = smtp->_session_cfg->secure.mode;
+
 #if !defined(ESP_MAIL_DISABLE_SSL)
 initial_stage:
 #endif
@@ -133,11 +136,11 @@ initial_stage:
 
 #if !defined(ESP_MAIL_DISABLE_SSL)
 
-    if (smtp->_session_cfg->secure.mode != esp_mail_secure_mode_nonsecure)
+    if (smtp->_session_cfg->int_mode != esp_mail_secure_mode_nonsecure)
     {
         // start TLS when needed
         // rfc3207
-        if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS || smtp->_session_cfg->secure.mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->int_start_tls || smtp->_session_cfg->int_mode == esp_mail_secure_mode_ssl_tls) && !ssl)
         {
 // send starttls command
 #if !defined(SILENT_MODE)
@@ -169,7 +172,8 @@ initial_stage:
                 return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 
             // set the secure mode
-            smtp->_session_cfg->secure.startTLS = false;
+            smtp->_session_cfg->int_start_tls = false;
+            smtp->_session_cfg->int_mode = esp_mail_secure_mode_undefined;
             ssl = true;
             smtp->_secure = true;
 
@@ -2612,7 +2616,7 @@ void ESP_Mail_Client::smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRL
 {
 #if !defined(SILENT_MODE)
     MB_String e = esp_mail_str_12; /* "Error, " */
-    e += info; 
+    e += info;
     smtpCB(smtp, e.c_str(), prependCRLF, success);
 #endif
 }
@@ -3480,7 +3484,11 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
 
         // set the secure mode
         if (_session_cfg)
-            _session_cfg->secure.startTLS = false;
+        {
+            // We reset the prefer connection mode in case user set it.
+            _session_cfg->secure.startTLS = false; 
+            _session_cfg->secure.mode = esp_mail_secure_mode_undefined;
+        }
 
         _secure = true;
     }
