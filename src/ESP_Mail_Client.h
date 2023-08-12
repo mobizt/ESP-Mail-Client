@@ -1000,7 +1000,7 @@ public:
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
 
   // Decode Latin1 to UTF-8
-  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);  
+  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
 
   // Decode TIS620 to UTF-8
   void decodeTIS620_UTF8(char *out, const char *in, size_t len);
