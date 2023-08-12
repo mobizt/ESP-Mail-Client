@@ -391,11 +391,11 @@ public:
     {
         bool rdy = true;
 #if !defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        if (_client_type != esp_mail_client_type_external_basic_client ||
-            _client_type != esp_mail_client_type_external_gsm_client)
+        if (_client_type == esp_mail_client_type_external_basic_client &&
+            (!_network_connection_cb || !_network_status_cb))
             rdy = false;
-        else if (_client_type == esp_mail_client_type_external_basic_client &&
-                 (!_network_connection_cb || !_network_status_cb))
+        else if (_client_type != esp_mail_client_type_external_basic_client ||
+                 _client_type != esp_mail_client_type_external_gsm_client)
             rdy = false;
 #else
         // assume external client is WiFiClient and network status request callback is not required

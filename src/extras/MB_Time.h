@@ -442,6 +442,8 @@ private:
 #elif defined(ESP_MAIL_HAS_WIFI_TIME)
     if (WiFI_CONNECTED)
       sys_ts = WiFi.getTime() > ESP_TIME_DEFAULT_TS ? WiFi.getTime() : sys_ts;
+#else
+     sys_ts = _ts_offset + millis() / 1000;
 #endif
   }
 
