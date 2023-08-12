@@ -1330,6 +1330,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 {
 
   bool timeShouldBeValid = false;
+  esp_mail_client_type client_type = esp_mail_client_type_undefined;
 
   if (isSMTP)
     timeShouldBeValid = true;
@@ -1355,6 +1356,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   {
 #if defined(ENABLE_SMTP)
     SMTPSession *smtp = (SMTPSession *)sessionPtr;
+    client_type = smtp->client.type();
     isCb = isResponseCB((void *)smtp->_customCmdResCallback, isSMTP);
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
     debug = smtp->_debug;
@@ -1365,6 +1367,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
   {
 #if defined(ENABLE_IMAP)
     IMAPSession *imap = (IMAPSession *)sessionPtr;
+    client_type = imap->client.type();
     isCb = isResponseCB((void *)imap->_customCmdResCallback, isSMTP);
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
     debug = imap->_debug;
@@ -1372,17 +1375,26 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #endif
   }
 
-  if (!isCb && (session_config->time.ntp_server.length() > 0 || timeShouldBeValid))
+  if (session_config->time.ntp_server.length() > 0 || timeShouldBeValid)
   {
     if (!Time.clockReady())
     {
+      if (client_type == esp_mail_client_type_external_gsm_client)
+      {
+        uint32_t _time = tcpClient->gprsGetTime();
+        if (_time > 0)
+          Time.setTimestamp(_time);
+      }
+      else
+      {
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
-      if (debug && !isCb)
-        esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, true);
+        if (debug && !isCb)
+          esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, true);
 #endif
-      setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+        setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
+      }
     }
   }
 

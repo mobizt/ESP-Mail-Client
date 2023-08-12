@@ -936,6 +936,28 @@ public:
         return !_network_status;
     }
 
+    uint32_t gprsGetTime()
+    {
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE) && defined(TINY_GSM_MODEM_HAS_TIME)
+        TinyGsm *gsmModem = (TinyGsm *)_modem;
+        int year3 = 0;
+        int month3 = 0;
+        int day3 = 0;
+        int hour3 = 0;
+        int min3 = 0;
+        int sec3 = 0;
+        float timezone = 0;
+        for (int8_t i = 5; i; i--)
+        {
+            if (gsmModem->getNetworkTime(&year3, &month3, &day3, &hour3, &min3, &sec3, &timezone))
+            {
+                return TimeHelper::getTimestamp(year3, month3, day3, hour3, min3, sec3);
+            }
+        }
+#endif
+        return 0;
+    }
+
     int setOption(int option, int *value)
     {
 #if defined(ESP32) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)

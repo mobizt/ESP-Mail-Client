@@ -337,7 +337,7 @@ public:
     return tbuf;
   }
 
-  void syncSysTeme()
+  void syncSysTime()
   {
     getTime();
 
@@ -361,7 +361,7 @@ public:
     {
       getTime();
 
-      syncSysTeme();
+      syncSysTime();
 
       _clockReady = sys_ts > ESP_TIME_DEFAULT_TS;
 
