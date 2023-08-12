@@ -939,6 +939,10 @@ public:
     uint32_t gprsGetTime()
     {
 #if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE) && defined(TINY_GSM_MODEM_HAS_TIME)
+
+        if (!gprsConnected())
+            return 0;
+            
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         int year3 = 0;
         int month3 = 0;
