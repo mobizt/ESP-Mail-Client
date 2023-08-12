@@ -996,6 +996,18 @@ public:
 
   MB_Time Time;
 
+  // Get encoding type from character set string
+  esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
+
+  // Decode Latin1 to UTF-8
+  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);  
+
+  // Decode TIS620 to UTF-8
+  void decodeTIS620_UTF8(char *out, const char *in, size_t len);
+
+  // handle rfc2047 Q (quoted printable) and B (base64) decodings
+  RFC2047_Decoder RFC2047Decoder;
+
 private:
   friend class SMTPSession;
   friend class IMAPSession;
@@ -1424,9 +1436,6 @@ private:
 
 #if defined(ENABLE_IMAP)
 
-  // handle rfc2047 Q (quoted printable) and B (base64) decodings
-  RFC2047_Decoder RFC2047Decoder;
-
   // Check if child part (part number string) is a member of the parent part (part number string)
   // part number string format: <part number>.<sub part number>.<sub part number>
   bool multipartMember(const MB_String &parent, const MB_String &child);
@@ -1443,14 +1452,8 @@ private:
   // Actually not decode because 8bit string is enencode string unless prepare valid 8bit string
   char *decode8Bit_UTF8(char *buf);
 
-  // Get encoding type from character set string
-  esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
-
   // Decode string base on encoding
   void decodeString(IMAPSession *imap, MB_String &string, const char *enc = "");
-
-  // Decode Latin1 to UTF-8
-  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
 
   /**
    * Encode a code point using UTF-8
@@ -1465,9 +1468,6 @@ private:
    * @return number of bytes on success, 0 on failure (also produces U+FFFD, which uses 3 bytes)
    */
   int encodeUnicode_UTF8(char *out, uint32_t utf);
-
-  // Decode TIS620 to UTF-8
-  void decodeTIS620_UTF8(char *out, const char *in, size_t len);
 
   // Network reconnection and return the connection status
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
