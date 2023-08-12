@@ -40,7 +40,6 @@
 
 #if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 #include "IPAddress.h"
-#include <WiFiClient.h>
 #include "lwip/sockets.h"
 #endif
 
@@ -298,9 +297,11 @@ public:
 
 #if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
     ex:
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
         WiFiClient client;
         client.connect(_session_config->server.host_name.c_str(), _session_config->server.port);
         client.stop();
+#endif
 #endif
     }
 
@@ -511,7 +512,7 @@ public:
         if (!_tcp_client->connect(_host.c_str(), _port))
             return false;
 
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && (defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO))
         if (_client_type == esp_mail_client_type_internal_basic_client)
             reinterpret_cast<WiFiClient *>(_basic_client)->setNoDelay(true);
 #endif
@@ -525,6 +526,7 @@ public:
         {
             if (isKeepAliveSet())
             {
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
 
 #if defined(ESP8266)
                 if (_tcpKeepIdleSeconds == 0 || _tcpKeepIntervalSeconds == 0 || _tcpKeepCount == 0)
@@ -546,6 +548,8 @@ public:
                                setOption(TCP_KEEPCNT, &_tcpKeepCount) > -1;
                 if (!success)
                     _isKeepAlive = false;
+#endif
+
 #endif
             }
         }
@@ -831,7 +835,11 @@ public:
 #if !defined(ESP_MAIL_DISABLE_SSL)
         if (_basic_client && _client_type == esp_mail_client_type_internal_basic_client)
         {
-            delete (ESP_Mail_TCPClient *)_basic_client;
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+            delete (WiFiClient *)_basic_client;
+#else
+            delete _basic_client;
+#endif
             _basic_client = nullptr;
         }
 #else
@@ -930,7 +938,7 @@ public:
 
     int setOption(int option, int *value)
     {
-#if defined(ESP32)
+#if defined(ESP32) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
         // Actually we wish to use setSocketOption directly but it is ambiguous in old ESP32 core v1.0.x.;
         // Use setOption instead for old core support.
         return reinterpret_cast<WiFiClient *>(_basic_client)->setOption(option, value);
