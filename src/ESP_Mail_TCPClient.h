@@ -313,7 +313,13 @@ public:
     {
 
         // We will not invoke the network status request when device has built-in WiFi or Ethernet and it is connected.
-        if (WiFI_CONNECTED || ethLinkUp())
+        if (_client_type == esp_mail_client_type_external_gsm_client)
+        {
+            _network_status = gprsConnected();
+            if (!_network_status)
+                gprsConnect();
+        }
+        else if (WiFI_CONNECTED || ethLinkUp())
             _network_status = true;
         else if (_client_type == esp_mail_client_type_external_basic_client)
         {
@@ -321,12 +327,6 @@ public:
                 _last_error = 1;
             else
                 _network_status_cb();
-        }
-        else if (_client_type == esp_mail_client_type_external_gsm_client)
-        {
-            _network_status = gprsConnected();
-            if (!_network_status)
-                gprsConnect();
         }
 
         return _network_status;

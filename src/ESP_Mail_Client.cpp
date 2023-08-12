@@ -1331,6 +1331,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
   bool timeShouldBeValid = false;
   esp_mail_client_type client_type = esp_mail_client_type_undefined;
+  ESP_Mail_TCPClient *client = nullptr;
 
   if (isSMTP)
     timeShouldBeValid = true;
@@ -1357,6 +1358,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_SMTP)
     SMTPSession *smtp = (SMTPSession *)sessionPtr;
     client_type = smtp->client.type();
+    client = smtp->client;
     isCb = isResponseCB((void *)smtp->_customCmdResCallback, isSMTP);
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
     debug = smtp->_debug;
@@ -1368,6 +1370,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 #if defined(ENABLE_IMAP)
     IMAPSession *imap = (IMAPSession *)sessionPtr;
     client_type = imap->client.type();
+    client = imap->client;
     isCb = isResponseCB((void *)imap->_customCmdResCallback, isSMTP);
 #if defined(ENABLE_NTP_TIME) && !defined(SILENT_MODE)
     debug = imap->_debug;
@@ -1381,7 +1384,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
     {
       if (client_type == esp_mail_client_type_external_gsm_client)
       {
-        uint32_t _time = tcpClient->gprsGetTime();
+        uint32_t _time = client->gprsGetTime();
         if (_time > 0)
           Time.setTimestamp(_time);
       }
