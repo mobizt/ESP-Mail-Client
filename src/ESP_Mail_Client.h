@@ -996,6 +996,8 @@ public:
 
   MB_Time Time;
 
+#if defined(ENABLE_IMAP)
+
   // Get encoding type from character set string
   esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
 
@@ -1007,6 +1009,8 @@ public:
 
   // handle rfc2047 Q (quoted printable) and B (base64) decodings
   RFC2047_Decoder RFC2047Decoder;
+
+#endif
 
 private:
   friend class SMTPSession;
