@@ -1,7 +1,7 @@
 /**
- * BSSL_SSL_Client library v1.0.8 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.9 for Arduino devices.
  *
- * Created August 11, 2003
+ * Created August 13, 2003
  *
  * This work contains codes based on WiFiClientSecure from Earle F. Philhower and SSLClient from OSU OPEnS Lab.
  *
@@ -180,6 +180,7 @@ uint8_t BSSL_SSL_Client::connected()
         }
 
         // set the write error so the engine doesn't try to close the connection
+        _is_connected = false;
         stop();
     }
     else if (!wr_ok)
@@ -444,34 +445,30 @@ int BSSL_SSL_Client::connectSSL(const char *host, uint16_t port)
 
 void BSSL_SSL_Client::stop()
 {
-
-    if (!_is_connected)
+    if (!_secure)
         return;
 
-    if (_secure)
-    {
-        // Only if we've already connected, store session params and clear the connection options
-        if (_session)
-            br_ssl_engine_get_session_parameters(_eng, _session->getSession());
+    // Only if we've already connected, store session params and clear the connection options
+    if (_session)
+        br_ssl_engine_get_session_parameters(_eng, _session->getSession());
 
-        // tell the SSL connection to gracefully close
-        // Disabled to prevent close_notify from hanging BSSL_SSL_Client
-        // br_ssl_engine_close(_eng);
-        // if the engine isn't closed, and the socket is still open
-        auto state = br_ssl_engine_current_state(_eng);
-        if (state != BR_SSL_CLOSED && state != 0 && connected())
-        {
-            // Discard any incoming application data.
-            _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
-            if (_recvapp_buf != nullptr)
-                br_ssl_engine_recvapp_ack(_eng, _recvapp_len);
-            // run SSL to finish any existing transactions
-            flush();
-        }
+    // tell the SSL connection to gracefully close
+    // Disabled to prevent close_notify from hanging BSSL_SSL_Client
+    // br_ssl_engine_close(_eng);
+    // if the engine isn't closed, and the socket is still open
+    auto state = br_ssl_engine_current_state(_eng);
+    if (state != BR_SSL_CLOSED && state != 0 && connected())
+    {
+        // Discard any incoming application data.
+        _recvapp_buf = br_ssl_engine_recvapp_buf(_eng, &_recvapp_len);
+        if (_recvapp_buf != nullptr)
+            br_ssl_engine_recvapp_ack(_eng, _recvapp_len);
+        // run SSL to finish any existing transactions
+        flush();
     }
 
     // close the socket
-    if (_basic_client && _basic_client->connected())
+    if (_basic_client)
     {
         _basic_client->flush();
         _basic_client->stop();

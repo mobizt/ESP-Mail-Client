@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.9 for Arduino devices.
+ * BSSL_TCP_Client v2.0.10 for Arduino devices.
  *
- * Created August 11, 2023
+ * Created August 13, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
