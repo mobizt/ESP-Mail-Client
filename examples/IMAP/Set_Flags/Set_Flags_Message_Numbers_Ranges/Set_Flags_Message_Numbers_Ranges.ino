@@ -100,9 +100,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -263,7 +260,7 @@ void setup()
     else
         Serial.println("\nError, removing FLAG with message numbers ranges");
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -282,7 +279,7 @@ void printAllMailboxesInfo(IMAPSession &imap)
         {
             /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+            MailClient.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
     }
 }
@@ -290,22 +287,22 @@ void printAllMailboxesInfo(IMAPSession &imap)
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
     /* Show the mailbox info */
-    ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    ESP_MAIL_PRINTF("UID Validity: %d\n", sFolder.uidValidity());
-    ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
+    MailClient.printf("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
+    MailClient.printf("UID Validity: %d\n", sFolder.uidValidity());
+    MailClient.printf("Predicted next UID: %d\n", sFolder.nextUID());
     if (sFolder.unseenIndex() > 0)
-        ESP_MAIL_PRINTF("First Unseen Message Number: %d\n", sFolder.unseenIndex());
+        MailClient.printf("First Unseen Message Number: %d\n", sFolder.unseenIndex());
     else
-        ESP_MAIL_PRINTF("Unseen Messages: No\n");
+        MailClient.printf("Unseen Messages: No\n");
 
     if (sFolder.modSeqSupported())
-        ESP_MAIL_PRINTF("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
+        MailClient.printf("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
-        ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+        MailClient.printf("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
 
     if (sFolder.flagCount(true))
     {
         for (size_t i = 0; i < sFolder.flagCount(true); i++)
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Permanent Flags: " : ", ", sFolder.flag(i, true).c_str(), i == sFolder.flagCount(true) - 1 ? "\n" : "");
+            MailClient.printf("%s%s%s", i == 0 ? "Permanent Flags: " : ", ", sFolder.flag(i, true).c_str(), i == sFolder.flagCount(true) - 1 ? "\n" : "");
     }
 }

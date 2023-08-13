@@ -46,8 +46,7 @@ void loop()
 
 #endif
 
-#include "ESP_Mail_FS.h"
-#include "ESP_Mail_Print.h"
+#include "ESP_Mail_Client.h"
 
 class HeapStat
 {
@@ -140,7 +139,7 @@ public:
 
     void print()
     {
-        ESP_MAIL_PRINTF("#### Heap Info\n#### Current: %d, Min: %d, Max: %d, Diff_1: %d, Diff_%d: %d\n", current(), min(), max(), diff1(), count(), diffN());
+        MailClient.printf("#### Heap Info\n#### Current: %d, Min: %d, Max: %d, Diff_1: %d, Diff_%d: %d\n", current(), min(), max(), diff1(), count(), diffN());
     }
 };
 

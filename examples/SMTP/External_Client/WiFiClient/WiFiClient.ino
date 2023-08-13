@@ -144,7 +144,7 @@ void setup()
 
   smtp.closeSession();
 
-  ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+  MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()

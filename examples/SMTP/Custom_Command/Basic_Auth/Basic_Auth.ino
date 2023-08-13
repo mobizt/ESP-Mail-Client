@@ -93,12 +93,12 @@ void customCommandCallback(SMTP_Response res)
 
     // If command identifier number was not set in those functions, the res.id received will be auto increased and begins with 0
 
-    ESP_MAIL_PRINTF("> C: Command ID %d\n", res.id);
-    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
+    MailClient.printf("> C: Command ID %d\n", res.id);
+    MailClient.printf("< S: %s\n", res.text.c_str());
 
     if (res.statusCode > 0)
     {
-        ESP_MAIL_PRINTF("> C: Response finished with status code %d\n\n", res.statusCode);
+        MailClient.printf("> C: Response finished with status code %d\n\n", res.statusCode);
     }
 }
 
@@ -110,9 +110,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -125,7 +122,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -217,7 +214,7 @@ void setup()
     // to clear sending result log
     // smtp.sendingResult.clear();
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()

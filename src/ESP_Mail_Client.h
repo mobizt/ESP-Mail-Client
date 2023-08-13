@@ -49,10 +49,19 @@
 #include <string.h>
 #endif
 
+#if __has_include(<stdarg.h>)
+#include <stdarg.h>
+#endif
+
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Const.h"
 #include "extras/MB_Time.h"
-#include "ESP_Mail_Print.h"
+
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
+#define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf
+#else
+#define ESP_MAIL_PRINTF MailClient.printf
+#endif
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
@@ -2804,27 +2813,6 @@ public:
 };
 
 #endif
-
-static void __attribute__((used)) esp_mail_dump_blob(unsigned char *buf, size_t len)
-{
-
-  size_t u;
-
-  for (u = 0; u < len; u++)
-  {
-    if ((u & 15) == 0)
-    {
-      ESP_MAIL_PRINTF("\n%08lX  ", (unsigned long)u);
-    }
-    else if ((u & 7) == 0)
-    {
-      ESP_MAIL_PRINTF(" ");
-    }
-    ESP_MAIL_PRINTF(" %02x", buf[u]);
-  }
-
-  ESP_MAIL_PRINTF("\n");
-}
 
 extern ESP_Mail_Client MailClient;
 

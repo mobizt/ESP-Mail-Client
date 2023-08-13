@@ -99,9 +99,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -192,7 +189,7 @@ void setup()
     if (imap.moveMessages(&toMove, F("test")))
         Serial.println("\nMessages moved");
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -211,7 +208,7 @@ void printAllMailboxesInfo(IMAPSession &imap)
         {
             /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+            MailClient.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
     }
 }

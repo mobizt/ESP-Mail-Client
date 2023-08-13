@@ -35,6 +35,7 @@
 #endif
 
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 
 #include "ESP_Mail_Const.h"
 

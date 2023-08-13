@@ -109,9 +109,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -227,12 +224,12 @@ void setup()
     // If not, one message can append for a APPEND command.
     // Outlook.com does not accept flag and date/time arguments in APPEND command
     if (!MailClient.appendMessage(&imap, &message[0], false /* if not last message to append */, "\\Flagged" /* flags or empty string for Outlook.com */, "Thu, 16 Jun 2022 12:30:25 -0800 (PST)" /* date/time or empty string for Outlook.com */))
-        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
 
     if (!MailClient.appendMessage(&imap, &message[1], true /* last message to append */))
-        ESP_MAIL_PRINTF("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Message appending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 
 #endif
 }

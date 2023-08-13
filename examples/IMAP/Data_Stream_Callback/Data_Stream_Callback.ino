@@ -100,9 +100,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();

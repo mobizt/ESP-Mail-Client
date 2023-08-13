@@ -102,12 +102,12 @@ void customCommandCallback(IMAP_Response res)
     // When you send multiple commands with different tag simultaneously,
     // tag will be used as command identifier.
 
-    ESP_MAIL_PRINTF("> C: TAG %s\n", res.tag.c_str());
-    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
+    MailClient.printf("> C: TAG %s\n", res.tag.c_str());
+    MailClient.printf("< S: %s\n", res.text.c_str());
 
     if (res.completed)
     {
-        ESP_MAIL_PRINTF("> C: Response finished with status %s\n\n", res.status.c_str());
+        MailClient.printf("> C: Response finished with status %s\n\n", res.status.c_str());
     }
 }
 
@@ -119,9 +119,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();

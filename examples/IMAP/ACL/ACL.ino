@@ -96,9 +96,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -183,7 +180,7 @@ void setup()
 
         for (size_t i = 0; i < acl_list.size(); i++)
         {
-            ESP_MAIL_PRINTF("Identifier: %s, Rights: ", acl_list[i].identifier.c_str());
+            MailClient.printf("Identifier: %s, Rights: ", acl_list[i].identifier.c_str());
             if (acl_list[i].rights.lookup)
                 Serial.print("l");
             if (acl_list[i].rights.read)
@@ -290,7 +287,7 @@ void setup()
         Serial.println("Delete ACLs success");
     }
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()

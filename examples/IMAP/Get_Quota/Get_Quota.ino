@@ -96,9 +96,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -179,7 +176,7 @@ void setup()
     }
     else
     {
-        ESP_MAIL_PRINTF("Quota root: %s, Resource name: %s, Usage (k): %d, Limit (k): %d\n", info.quota_root.c_str(), info.name.c_str(), (int)info.usage, (int)info.limit);
+        MailClient.printf("Quota root: %s, Resource name: %s, Usage (k): %d, Limit (k): %d\n", info.quota_root.c_str(), info.name.c_str(), (int)info.usage, (int)info.limit);
     }
 
     IMAP_Quota_Roots_List quota_roots;
@@ -193,7 +190,7 @@ void setup()
     else
     {
         for (size_t i = 0; i < quota_roots.size(); i++)
-            ESP_MAIL_PRINTF("%d, Quota root: %s, Resource name: %s, Usage (k): %d, Limit (k): %d\n", (int)i + 1, quota_roots[i].quota_root.c_str(), quota_roots[i].name.c_str(), (int)quota_roots[i].usage, (int)quota_roots[i].limit);
+            MailClient.printf("%d, Quota root: %s, Resource name: %s, Usage (k): %d, Limit (k): %d\n", (int)i + 1, quota_roots[i].quota_root.c_str(), quota_roots[i].name.c_str(), (int)quota_roots[i].usage, (int)quota_roots[i].limit);
     }
 
     Serial.println("\nSet quota root...");
@@ -210,7 +207,7 @@ void setup()
         Serial.println("\nSet quota root success");
     }
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()

@@ -96,9 +96,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -188,7 +185,7 @@ void setup()
             Serial.println("\nPersonal Namespaces...");
             for (size_t i = 0; i < ns_list.personal_namespaces.size(); i++)
             {
-                ESP_MAIL_PRINTF("Prefix: %s, Delimiter: %s\n", ns_list.personal_namespaces[i].prefix.c_str(), ns_list.personal_namespaces[i].delimiter.c_str());
+                MailClient.printf("Prefix: %s, Delimiter: %s\n", ns_list.personal_namespaces[i].prefix.c_str(), ns_list.personal_namespaces[i].delimiter.c_str());
             }
         }
 
@@ -197,7 +194,7 @@ void setup()
             Serial.println("\nOther Users Namespaces...");
             for (size_t i = 0; i < ns_list.other_users_namespaces.size(); i++)
             {
-                ESP_MAIL_PRINTF("Prefix: %s, Delimiter: %s\n", ns_list.other_users_namespaces[i].prefix.c_str(), ns_list.other_users_namespaces[i].delimiter.c_str());
+                MailClient.printf("Prefix: %s, Delimiter: %s\n", ns_list.other_users_namespaces[i].prefix.c_str(), ns_list.other_users_namespaces[i].delimiter.c_str());
             }
         }
 
@@ -206,12 +203,12 @@ void setup()
             Serial.println("\nShared Namespaces...");
             for (size_t i = 0; i < ns_list.shared_namespaces.size(); i++)
             {
-                ESP_MAIL_PRINTF("Prefix: %s, Delimiter: %s\n", ns_list.shared_namespaces[i].prefix.c_str(), ns_list.shared_namespaces[i].delimiter.c_str());
+                MailClient.printf("Prefix: %s, Delimiter: %s\n", ns_list.shared_namespaces[i].prefix.c_str(), ns_list.shared_namespaces[i].delimiter.c_str());
             }
         }
     }
 
-    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
+    MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()

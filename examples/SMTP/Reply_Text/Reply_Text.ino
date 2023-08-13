@@ -147,9 +147,6 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
 #endif
 
     Serial.println();
@@ -288,7 +285,7 @@ bool setupHelloSMTP()
     /* Connect to the server */
     if (!hello_smtp.connect(&hello_smtp_config))
     {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
         return false;
     }
 
@@ -317,7 +314,7 @@ bool setupReplySMTP()
     /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_config))
     {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
         return false;
     }
 
@@ -348,7 +345,7 @@ void sendHelloMessage()
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&hello_smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
 }
 
 void sendReplyMessage(const char *subject, const char *reply_email, const char *msgID, const char *references)
@@ -380,7 +377,7 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&reply_smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
 }
 
 void printPollingStatus(IMAPSession &imap)
@@ -391,9 +388,9 @@ void printPollingStatus(IMAPSession &imap)
     if (sFolder.pollingStatus().type == imap_polling_status_type_new_message)
     {
         /* Show the mailbox info */
-        ESP_MAIL_PRINTF("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
+        MailClient.printf("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
 
-        ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
+        MailClient.printf("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
 
         // we need to stop polling before do anything
         imap.stopListen();
@@ -448,8 +445,8 @@ void helloSMTPCallback(SMTP_Status status)
     if (status.success())
     {
         Serial.println("----------------");
-        ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
+        MailClient.printf("Message sent success: %d\n", status.completedCount());
+        MailClient.printf("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -458,11 +455,11 @@ void helloSMTPCallback(SMTP_Status status)
             /* Get the result item */
             SMTP_Result result = hello_smtp.sendingResult.getItem(i);
 
-            ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
-            ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
+            MailClient.printf("Message No: %d\n", i + 1);
+            MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
+            MailClient.printf("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            MailClient.printf("Recipient: %s\n", result.recipients.c_str());
+            MailClient.printf("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 
@@ -480,8 +477,8 @@ void replySMTPCallback(SMTP_Status status)
     if (status.success())
     {
         Serial.println("----------------");
-        ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
+        MailClient.printf("Message sent success: %d\n", status.completedCount());
+        MailClient.printf("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -490,11 +487,11 @@ void replySMTPCallback(SMTP_Status status)
             /* Get the result item */
             SMTP_Result result = reply_smtp.sendingResult.getItem(i);
 
-            ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
-            ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
+            MailClient.printf("Message No: %d\n", i + 1);
+            MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
+            MailClient.printf("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            MailClient.printf("Recipient: %s\n", result.recipients.c_str());
+            MailClient.printf("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 
