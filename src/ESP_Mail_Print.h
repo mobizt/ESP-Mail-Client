@@ -12,15 +12,8 @@
 
 #else
 
-#include "extras/mb_print/mb_print.h"
 
-extern "C" __attribute__((weak)) void
-mb_print_putchar(char c)
-{
-    ESP_MAIL_DEFAULT_DEBUG_PORT.print(c);
-}
-
-#define ESP_MAIL_PRINTF mb_print_printf
+#define ESP_MAIL_PRINTF MailClient.printf
 
 #endif
 
