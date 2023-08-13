@@ -51,6 +51,17 @@ void ESP_Mail_Client::networkReconnect(bool reconnect)
   networkAutoReconnect = reconnect;
 }
 
+void ESP_Mail_Client::printf(const char *format, ...)
+{
+    int size = 2048;
+    char s[size];
+    va_list va;
+    va_start(va, format);
+    vsnprintf(s, size, format, va);
+    va_end(va);
+    ESP_MAIL_DEFAULT_DEBUG_PORT.print(s);
+}
+
 void ESP_Mail_Client::addAP(const String &ssid, const String &password)
 {
   wifi.addAP(ssid, password);

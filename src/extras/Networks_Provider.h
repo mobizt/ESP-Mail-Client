@@ -8,7 +8,11 @@
 #error "Mixed versions compilation."
 #endif
 
-#include "SDK_Version_Common.h"
+#if __has_include(<esp_idf_version.h>)
+#include <esp_idf_version.h>
+#endif
+
+#include "ESP8266_Supports.h"
 
 // Renesas devices
 #if defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_MINIMA) || defined(ARDUINO_PORTENTA_C33)

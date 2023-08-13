@@ -29,7 +29,7 @@
 
 #include "extras/Networks_Provider.h"
 #include "extras/MB_List.h"
-#include "extras/SDK_Version_Common.h"
+#include "extras/ESP8266_Supports.h"
 
 #if defined(ESP8266)
 #if __has_include(<core_esp8266_version.h>)

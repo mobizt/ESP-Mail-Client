@@ -1,5 +1,5 @@
-#ifndef _SDK_VERSION_COMMON_H
-#define _SDK_VERSION_COMMON_H
+#ifndef ESP8266_SUPPORTS_H
+#define ESP8266_SUPPORTS_H
 #include <Arduino.h>
 #include "MB_MCU.h"
 #if defined(ESP8266) || defined(MB_ARDUINO_PICO)

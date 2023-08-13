@@ -911,6 +911,12 @@ public:
    */
   void addAP(const String &ssid, const String &password);
 
+  /**
+   * Formatted printing on debug port.
+   *
+   */
+  void printf(const char *format, ...);
+
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
   /** Initiate SD card with SPI port configuration.
