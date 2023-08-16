@@ -44,6 +44,14 @@
 #include "lwip/sockets.h"
 #endif
 
+#if defined(ESP32)
+#include "extras/WiFiClientImpl.h"
+#define BASE_WIFICLIENT WiFiClientImpl
+#elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#include "WiFiClient.h"
+#define BASE_WIFICLIENT WiFiClient
+#endif
+
 #include "SSLClient/ESP_SSLClient.h"
 
 class ESP_Mail_TCPClient
@@ -299,7 +307,7 @@ public:
 #if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
     ex:
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        WiFiClient client;
+        BASE_WIFICLIENT client;
         client.connect(_session_config->server.host_name.c_str(), _session_config->server.port);
         client.stop();
 #endif
@@ -495,7 +503,7 @@ public:
             {
 // Device has no built-in WiFi, external client required.
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-                _basic_client = new WiFiClient();
+                _basic_client = new BASE_WIFICLIENT();
                 _client_type = esp_mail_client_type_internal_basic_client;
 #else
                 _last_error = 1;
@@ -515,7 +523,7 @@ public:
 
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && (defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO))
         if (_client_type == esp_mail_client_type_internal_basic_client)
-            reinterpret_cast<WiFiClient *>(_basic_client)->setNoDelay(true);
+            reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->setNoDelay(true);
 #endif
 
         // For TCP keepalive should work in ESP8266 core > 3.1.2.
@@ -531,9 +539,9 @@ public:
 
 #if defined(ESP8266)
                 if (_tcpKeepIdleSeconds == 0 || _tcpKeepIntervalSeconds == 0 || _tcpKeepCount == 0)
-                    reinterpret_cast<WiFiClient *>(_basic_client)->disableKeepAlive();
+                    reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->disableKeepAlive();
                 else
-                    reinterpret_cast<WiFiClient *>(_basic_client)->keepAlive(_tcpKeepIdleSeconds, _tcpKeepIntervalSeconds, _tcpKeepCount);
+                    reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->keepAlive(_tcpKeepIdleSeconds, _tcpKeepIntervalSeconds, _tcpKeepCount);
 
 #elif defined(ESP32)
 
@@ -837,7 +845,7 @@ public:
         if (_basic_client && _client_type == esp_mail_client_type_internal_basic_client)
         {
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-            delete (WiFiClient *)_basic_client;
+            delete (BASE_WIFICLIENT *)_basic_client;
 #else
             delete _basic_client;
 #endif
@@ -968,7 +976,7 @@ public:
 #if defined(ESP32) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
         // Actually we wish to use setSocketOption directly but it is ambiguous in old ESP32 core v1.0.x.;
         // Use setOption instead for old core support.
-        return reinterpret_cast<WiFiClient *>(_basic_client)->setOption(option, value);
+        return reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->setOption(option, value);
 #endif
         return 0;
     }
