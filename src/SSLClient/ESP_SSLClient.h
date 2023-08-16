@@ -1,8 +1,8 @@
 /**
  *
- * The ESP SSL Client Class, ESP_SSLClient.h v2.1.3
+ * The ESP SSL Client Class, ESP_SSLClient.h v2.1.4
  *
- * Created August 13, 2023
+ * Created August 16, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -38,13 +38,42 @@
 #if defined(USE_EMBED_SSL_ENGINE) || defined(USE_LIB_SSL_ENGINE)
 #include "client/BSSL_TCP_Client.h"
 class ESP_SSLClient : public BSSL_TCP_Client
-#else
-class ESP_SSLClient
-#endif
 {
 public:
     ESP_SSLClient(){};
     ~ESP_SSLClient(){};
 };
+
+class ESP_SSLClient2 : public BSSL_TCP_Client
+{
+public:
+    ESP_SSLClient2(Client &client, bool enableSSL = true) : _base_client(client)
+    {
+        setClient(&_base_client, enableSSL);
+    };
+    ~ESP_SSLClient2(){};
+
+private:
+    Client &_base_client;
+};
+
+#else
+class ESP_SSLClient
+{
+public:
+    ESP_SSLClient(){};
+    ~ESP_SSLClient(){};
+};
+
+class ESP_SSLClient2
+{
+public:
+    ESP_SSLClient2(Client &client, bool enableSSL = true) : _base_client(client){};
+    ~ESP_SSLClient2(){};
+
+private:
+    Client &_base_client;
+};
+#endif
 
 #endif
