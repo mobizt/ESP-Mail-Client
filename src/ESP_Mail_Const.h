@@ -18,8 +18,10 @@
 #include <time.h>
 #include <ctype.h>
 
-#ifdef ESP_MAIL_DEBUG_PORT
+#if defined(ESP_MAIL_DEBUG_PORT)
 #define ESP_MAIL_DEFAULT_DEBUG_PORT ESP_MAIL_DEBUG_PORT
+#else
+#define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
 #endif
 
 #if !defined(__AVR__)

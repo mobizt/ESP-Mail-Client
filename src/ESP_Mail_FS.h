@@ -13,42 +13,42 @@
 #include <Arduino.h>
 #include "extras/MB_MCU.h"
 
-/** 📌 Predefined Options
+/** 📌 Predefined Build Options
  * ⛔ Use following build flag to disable all predefined options.
- * -D DISABLE_ALL_OPTIONS or -DDISABLE_ALL_OPTIONS in PlatformIO
+ * -D DISABLE_ALL_OPTIONS
  */
 
-/**📍 Enable the NTP server time reading
+/**📍 For enabling the device or library time setup from NTP server
  * ⛔ Use following build flag to disable.
- * -D DISABLE_NTP_TIME or -DDISABLE_NTP_TIME in PlatformIO
+ * -D DISABLE_NTP_TIME
  */
 #define ENABLE_NTP_TIME
 
-/**📍 Enable the error string from error reason
+/**📍 For enabling the error string from error reason
  * ⛔ Use following build flag to disable.
- * -D DISABLE_ERROR_STRING or -DDISABLE_ERROR_STRING in PlatformIO
+ * -D DISABLE_ERROR_STRING
  */
 #define ENABLE_ERROR_STRING
 
-/**📍 Enable IMAP class compilation option
+/**📍 For IMAP class compilation
  * ⛔ Use following build flag to disable.
- * -D DISABLE_IMAP or -DDISABLE_IMAP in PlatformIO
+ * -D DISABLE_IMAP
  */
-#define ENABLE_IMAP // comment this line to disable or exclude it
+#define ENABLE_IMAP
 
-/**📍 Enable SMTP class compilation option
+/**📍 For SMTP class compilation
  * ⛔ Use following build flag to disable.
- * -D DISABLE_SMTP or -DDISABLE_SMTP in PlatformIO
+ * -D DISABLE_SMTP
  */
-#define ENABLE_SMTP // comment this line to disable or exclude it
+#define ENABLE_SMTP
 
-/**📍 PSRAM compilation option for ESP32/ESP8266 module
+/**📍 For enabling PSRAM support
  * ⛔ Use following build flag to disable.
- * -D DISABLE_PSRAM or -DDISABLE_PSRAM in PlatformIO
+ * -D DISABLE_PSRAM
  */
 #define ESP_MAIL_USE_PSRAM
 
-/**📌 Flash Filesystem compilation options
+/**📌 For enabling flash filesystem support
  *
  * 📍 For SPIFFS
  * #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
@@ -98,7 +98,7 @@
 // For ESP32, format SPIFFS or FFat if mounting failed
 #define ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED 1
 
-/**📌 SD Filesystem compilation options
+/**📌 For enabling SD filesystem support
  *
  * 📍 For SD
  * #include <SD.h>
@@ -132,37 +132,37 @@
 #define ESP_MAIL_CARD_TYPE_SD 1
 #endif
 
-/** 🔖 Optional macros
+/** 🔖 Optional Build Options
  *
- * 🏷️ To enable silent mode (no debug printing and callback)
+ * 🏷️ For silent operation (no debug printing and callback)
  * #define SILENT_MODE
  *
- * 🏷️ To use ESP8266 ENC28J60 Ethernet module
+ * 🏷️ For ENC28J60 Ethernet module support in ESP8266
  * #define ENABLE_ESP8266_ENC28J60_ETH
  *
- * 🏷️ To use ESP8266 W5500 Ethernet module
+ * 🏷️ For W5500 Ethernet module support in ESP8266
  * #define ENABLE_ESP8266_W5500_ETH
  *
- * 🏷️ To use ESP8266 W5100 Ethernet module
+ * 🏷️ For W5100 Ethernet module support in ESP8266
  * #define ENABLE_ESP8266_W5100_ETH
  *
- * 🏷️ To disable on-board WiFi
+ * 🏷️ For disabling on-board WiFI functionality in case external Client usage
  * #define ESP_MAIL_DISABLE_ONBOARD_WIFI
  *
- * 🏷️ To disable native Ethernet (Ethernet interfaces that supported by SDK)
+ * 🏷️ For disabling native (sdk) Ethernet functionality in case external Client usage
  * #define ESP_MAIL_DISABLE_NATIVE_ETHERNET
  *
- * 🏷️ To disable SSL
+ * 🏷️ For disabling SSL connection (also disabling TLS using STARTTLS) in MAP and SMTP application
  * #define ESP_MAIL_DISABLE_SSL
  *
- * 🏷️ To assign debug port
- * #define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
+ * 🏷️ For debug port assignment if SILENT_MODE option was not set
+ * #define ESP_MAIL_DEBUG_PORT Serial
  */
 
 #if __has_include("Custom_ESP_Mail_FS.h")
 #include "Custom_ESP_Mail_FS.h"
 #endif
 
-#include "extras/Options.h"
+#include "extras/Build_Options.h"
 
 #endif

@@ -1,5 +1,5 @@
-#ifndef PREPROCESSORS_H
-#define PREPROCESSORS_H
+#ifndef BUILD_OPTIONS_H
+#define BUILD_OPTIONS_H
 
 #if defined(DISABLE_ALL_OPTIONS)
 #undef ENABLE_NTP_TIME

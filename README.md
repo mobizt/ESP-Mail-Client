@@ -426,6 +426,8 @@ DISABLE_ERROR_STRING // For disabling the error string from error reason
 DISABLE_PSRAM // For disabling PSRAM support
 DISABLE_FLASH // For disabling flash filesystem support
 DISABLE_SD // For disabling SD filesystem support
+
+DISABLE_ALL_OPTIONS // For disabling all predefined build options above
 ```
 
 Note that, `Custom_ESP_Mail_FS.h` for user config should be placed in the library install folder inside src folder.
