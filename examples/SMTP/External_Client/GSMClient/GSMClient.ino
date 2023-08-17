@@ -36,9 +36,8 @@
  *
  */
 
-//To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h.
-// #define TINY_GSM_MODEM_SIM7600
-
+// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h.
+//  #define TINY_GSM_MODEM_SIM7600
 
 #define TINY_GSM_MODEM_SIM7600 // SIMA7670 Compatible with SIM7600 AT instructions
 
@@ -66,6 +65,10 @@ const char apn[] = "YourAPN";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
+
+#define uS_TO_S_FACTOR 1000000ULL // Conversion factor for micro seconds to seconds
+#define TIME_TO_SLEEP 600         // Time ESP32 will go to sleep (in seconds)
+
 #define UART_BAUD 115200
 #define PIN_DTR 25
 #define PIN_TX 26
@@ -82,103 +85,153 @@ const char gprsPass[] = "";
 #define SD_SCLK 14
 #define SD_CS 13
 
-#include <ESP_Mail_Client.h>
 
+#include <ESP_Mail_Client.h>
 #include <TinyGsmClient.h>
 
-
-// Set serial for debug console
-#define SerialMon Serial
-
-// Set serial for AT commands (to the module)
-#define SerialAT Serial1
 
 TinyGsm modem(SerialAT);
 
 TinyGsmClient gsm_client(modem); // basic non-secure client
 
+SMTPSession smtp;
 
-SMTPSession smtp; 
+void smtpCallback(SMTP_Status status);
 
-
-void initModem()
-{
-
-    if(modem.isGprsConnected())
-    {
-      modem.gprsDisconnect();
-      SerialMon.println(F("GPRS disconnected"));
-    }
-
-    // Restart takes quite some time
-    // To skip it, call init() instead of restart()
-    DBG("Initializing modem...");
-    if (!modem.init())
-    {
-        DBG("Failed to restart modem, delaying 10s and retrying");
-        return;
-    }
-
-    /*
-    2 Automatic
-    13 GSM Only
-    14 WCDMA Only
-    38 LTE Only
-    */
-    modem.setNetworkMode(38);
-    if (modem.waitResponse(10000L) != 1)
-    {
-        DBG(" setNetworkMode faill");
-        return;
-    }
-
-}
 
 void setup()
 {
 
-    SerialMon.begin(115200);
+  SerialMon.begin(115200);
 
-    SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
+  smtp.debug(1);
 
-    String name = modem.getModemName();
-    DBG("Modem Name:", name);
+  /* Set the callback function to get the sending results */
+  smtp.callback(smtpCallback);
 
-    String modemInfo = modem.getModemInfo();
-    DBG("Modem Info:", modemInfo);
+  delay(10);
+  pinMode(BAT_EN, OUTPUT);
+  digitalWrite(BAT_EN, HIGH);
 
-    initModem();
+  // A7670 Reset
+  pinMode(RESET, OUTPUT);
+  digitalWrite(RESET, LOW);
+  delay(100);
+  digitalWrite(RESET, HIGH);
+  delay(3000);
+  digitalWrite(RESET, LOW);
 
-    config.server.host_name = "smtp.gmail.com"; //for gmail.com
-    config.server.port = 587; // requires connection upgrade via STARTTLS
-    config.login.email = "your Email address"; //set to empty for no SMTP Authentication
-    config.login.password = "your Email password"; //set to empty for no SMTP Authentication
-    config.login.user_domain = "client domain or ip e.g. mydomain.com";
+  pinMode(PWR_PIN, OUTPUT);
+  digitalWrite(PWR_PIN, LOW);
+  delay(100);
+  digitalWrite(PWR_PIN, HIGH);
+  delay(1000);
+  digitalWrite(PWR_PIN, LOW);
 
-    // Declare the SMTP_Message class variable to handle to message being transport
-    SMTP_Message message;
+  DBG("Wait...");
 
-    // Set the message headers
-    message.sender.name = "My Mail";
-    message.sender.email = "sender or your Email address";
-    message.subject = "Test sending Email";
-    message.addRecipient("name1", "email1");
-    message.addRecipient("name2", "email2");
+  delay(3000);
 
-    message.addCc("email3");
-    message.addBcc("email4");
+  SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
 
-    // Set the message content
-    message.text.content = "This is simple plain text message";
+  // Restart takes quite some time
+  // To skip it, call init() instead of restart()
+  DBG("Initializing modem...");
+  if (!modem.init())
+  {
+    DBG("Failed to restart modem, delaying 10s and retrying");
+    return;
+  }
 
+  /*
+  2 Automatic
+  13 GSM Only
+  14 WCDMA Only
+  38 LTE Only
+  */
+  modem.setNetworkMode(38);
+  if (modem.waitResponse(10000L) != 1)
+  {
+    DBG(" setNetworkMode faill");
+  }
 
-    smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
-  
-    // Connect to the server with the defined session and options
-    smtp.connect(&config);
+  String name = modem.getModemName();
+  DBG("Modem Name:", name);
 
-    // Start sending Email and close the session
-    if (!MailClient.sendMail(&smtp, &message))
-      Serial.println("Error sending Email, " + smtp.errorReason());
+  String modemInfo = modem.getModemInfo();
+  DBG("Modem Info:", modemInfo);
 
+  Session_Config config;
+
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
+  config.login.user_domain = F("mydomain.net");
+
+  // Declare the SMTP_Message class variable to handle to message being transport
+  SMTP_Message message;
+
+  // Set the message headers
+  message.sender.name = F("ESP Mail");
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = F("Test sending plain text Email using GSM module");
+  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
+
+  // Set the message content
+  message.text.content = "This is simple plain text message";
+
+  smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
+
+  // Connect to the server with the defined session and options
+  smtp.connect(&config);
+
+  // Start sending Email and close the session
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
+}
+
+void loop()
+{
+}
+
+/* Callback function to get the Email sending status */
+void smtpCallback(SMTP_Status status)
+{
+  /* Print the current status */
+  Serial.println(status.info());
+
+  /* Print the sending result */
+  if (status.success())
+  {
+    // MailClient.printf used in the examples is for format printing via debug Serial port
+    // that works for all supported Arduino platform SDKs e.g. SAMD, ESP32 and ESP8266.
+    // In ESP8266 and ESP32, you can use Serial.printf directly.
+
+    Serial.println("----------------");
+    MailClient.printf("Message sent success: %d\n", status.completedCount());
+    MailClient.printf("Message sent failed: %d\n", status.failedCount());
+    Serial.println("----------------\n");
+
+    for (size_t i = 0; i < smtp.sendingResult.size(); i++)
+    {
+      /* Get the result item */
+      SMTP_Result result = smtp.sendingResult.getItem(i);
+
+      // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
+      // your device time was synched with NTP server.
+      // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
+      // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
+
+      MailClient.printf("Message No: %d\n", i + 1);
+      MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
+      MailClient.printf("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+      MailClient.printf("Recipient: %s\n", result.recipients.c_str());
+      MailClient.printf("Subject: %s\n", result.subject.c_str());
+    }
+    Serial.println("----------------\n");
+
+    // You need to clear sending result as the memory usage will grow up.
+    smtp.sendingResult.clear();
+  }
 }

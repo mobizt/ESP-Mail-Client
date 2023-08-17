@@ -32,6 +32,7 @@
 #if __has_include(<FS.h>) && defined(ESP_SSLCLIENT_USE_FILESYSTEM)
 #include <FS.h>
 #define ESP_SSL_FS_SUPPORTED
+using namespace fs;
 #endif
 #endif
 

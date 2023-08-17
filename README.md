@@ -60,7 +60,11 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
   - [PlatformIO IDE](#platformio-ide-1)
 
 
-[6. Exclude unused classes to save program space](#exclude-unused-classes-to-save-program-space)
+[6. Library Build Options](#library-build-options)
+
+  - [Predefined Options](#predefined-options)
+
+  - [Optional Options](#optional-options)
 
 
 [7. Usage](#usage)
@@ -361,85 +365,72 @@ As in ESP8266, once the external Heap memory was enabled in IDE, to allow the li
 
 
 
-## Exclude unused classes to save program space 
+## Library Build Options 
 
-Now you can compile the library only for seclected classes.
+The library build options are defined as preprocessor macros (`#define name`).
 
-In [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h), the IMAP and SMTP class can be enabled with the macros.
+Some options can be disabled to reduce program space.
+
+### Predefined Options
+
+The predefined options that are already set in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) are following.
 
 ```cpp
-#define ENABLE_IMAP
+ENABLE_IMAP // For IMAP class compilation
+ENABLE_SMTP // For SMTP class compilation
+ENABLE_NTP_TIME // For enabling the device or library time setup from NTP server
+ENABLE_ERROR_STRING // For enabling the error string from error reason
+ESP_MAIL_USE_PSRAM // For enabling PSRAM support
+ESP_MAIL_DEFAULT_FLASH_FS // For enabling flash filesystem support
+ESP_MAIL_DEFAULT_SD_FS // For enabling SD filesystem support
+```
 
-#define ENABLE_SMTP
+### Optional Options
+
+The following options are not yet defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) and can be assigned by user.
+
+```cpp
+SILENT_MODE // For silent operation (no debug printing and callback)
+ENABLE_ESP8266_ENC28J60_ETH //  For ENC28J60 Ethernet module support in ESP8266
+ENABLE_ESP8266_W5500_ETH // For W5500 Ethernet module support in ESP8266
+ENABLE_ESP8266_W5100_ETH // For W5100 Ethernet module support in ESP8266
+ESP_MAIL_DISABLE_ONBOARD_WIFI // For disabling on-board WiFI functionality in case external Client usage
+ESP_MAIL_DISABLE_NATIVE_ETHERNET // For disabling native (sdk) Ethernet functionality in case external Client usage
+ESP_MAIL_DISABLE_SSL // // For disabling SSL connection (also disabling TLS using STARTTLS) in MAP and SMTP application 
+ESP_MAIL_DEBUG_PORT // For debug port assignment if SILENT_MODE option was not set
 ```
 
 
-In ESP8266 and ESP32, when no attachments require for uploading and downloading, the storage file systems libraries e.g. SD or SD_MMC (ESP32), SPIFFS and LittleFS will no longer use and can be excluded when compiling the code to reduce program flash size, by comment the following macros to exclude them.
+You can assign the optional build options using one of the following method.
 
-```cpp
-#define ESP_MAIL_DEFAULT_SD_FS SD
+1. By creating user config file `Custom_ESP_Mail_FS.h` in library installed folder and define these optional options in it.
 
-#define ESP_Mail_DEFAULT_FLASH_FS SPIFFS
+2. By adding compiler build flags with `-D name`.
+
+
+In PlatformIO IDE, using `build_flags` in PlatformIO IDE's platformio.ini is more convenient 
+
+```ini
+build_flags = -D ESP_MAIL_DEBUG_PORT=Serial
+              -D DISABLE_IMAP
+              -D ESP_MAIL_DISABLE_ONBOARD_WIFI
 ```
 
-In case you want to set your device/library time manually, you can exclude the internal NTP time reading by comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+For disabling predefined options instead of editing the [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) or using `#undef` in `Custom_ESP_Mail_FS.h`, you can define these build flags with these names or macros in `Custom_ESP_Mail_FS.h`.
 
 ```cpp
-#define ENABLE_NTP_TIME
+DISABLE_IMAP // For excluding the IMAP class compilation
+ENABLE_SMTP // For excluding the SMTP class compilation
+DISABLE_NTP_TIME // For disabling the NTP time setting
+DISABLE_ERROR_STRING // For disabling the error string from error reason
+DISABLE_PSRAM // For disabling PSRAM support
+DISABLE_FLASH // For disabling flash filesystem support
+DISABLE_SD // For disabling SD filesystem support
 ```
 
-To set the time manually, please see [**examples/SMTP/Set_Time/Set_Time.ino**](examples/SMTP/Set_Time/Set_Time.ino)
+Note that, `Custom_ESP_Mail_FS.h` for user config should be placed in the library install folder inside src folder.
 
-
-In case you don't want to print any debug and error in debug port and completely exclude all flash string that used for debug and error, please define SILENT_MODE macro in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
-
-```cpp
-#define SILENT_MODE
-```
-
-In case you only want to exclude the error flash string from library, please comment this macro that defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
-
-
-```cpp
-#define ENABLE_ERROR_STRING
-```
-
-Since this library is not a single header library, the macro defined before the library inclusion in user sketch file will not be used or seen by all library codes in all source files due to different File Scope.
-
-Then your modified version of [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) need to be back up before update the library because it will be overwritten when update the library.
-
-Alternatively, by leaving config in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) as its default setting and creat your own config file
- Custom_ESP_Mail_FS.h in the same folder as [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) and undefine the macro that already defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
-
-When the library updated, the config file [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) will be overwritten or replaced unless your Custom_ESP_Mail_FS.h will not be replaced and stayed there. 
-
-
-The following is the example of Custom_ESP_Mail_FS.h
-
-```cpp
-#ifndef ESP_MAIL_CUSTOM_FS_H_
-#define ESP_MAIL_CUSTOM_FS_H_
-
-// Not use SD
-#undef ESP_MAIL_DEFAULT_SD_FS 
-
-// Not use Flash
-#undef ESP_MAIL_DEFAULT_FLASH_FS
-
-// Not use NTP time (required device time should set by user)
-#undef ENABLE_NTP_TIME
-
-// Not show error string (show only error code)
-#undef ENABLE_ERROR_STRING
-
-// Not use SMTP
-#undef ENABLE_SMTP 
-
-// Not print all debug and callback
-#define SILENT_MODE
-
-#endif
-```
+This `Custom_ESP_Mail_FS.h` will not change or overwrite when update the library.
 
 
 
@@ -458,7 +449,6 @@ The usefull blogs that described how to send and read E-mail in detail can be fo
 
 
 The following code snippet showed the minimum usage of the library.
-
 
 
 ### Send Email message
@@ -487,6 +477,9 @@ SMTPSession smtp;
 
 // Declare the global used Session_Config for user defined session credentials
 Session_Config config;
+
+// Callback function to get the Email sending status
+void smtpCallback(SMTP_Status status);
 
 void setup()
 {
@@ -564,6 +557,12 @@ void setup()
   // Add attachment to the message
   message.addAttachment(att);
 
+  // Set debug option
+  smtp.debug(1);
+
+  // Set the callback function to get the sending results
+  smtp.callback(smtpCallback);
+
   // Connect to the server
   smtp.connect(&config);
 
@@ -571,6 +570,17 @@ void setup()
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 
+}
+
+void smtpCallback(SMTP_Status status)
+{
+ 
+  Serial.println(status.info());
+
+  if (status.success())
+  {
+    // See example for how to get the sending result
+  }
 }
 
 
@@ -603,6 +613,8 @@ IMAPSession imap;
 // Declare the global used Session_Config for user defined session credentials
 Session_Config config;
 
+// Callback function to get the Email reading status
+void imapCallback(IMAP_Status status)
 
 void setup()
 {
@@ -637,6 +649,13 @@ void setup()
   imap_data.enable.text = true;
 
 
+  // Set the debug option
+  imap.debug(1);
+
+  // Set the callback function to get message information
+  imap.callback(imapCallback);
+
+
   // Connect to the server
   imap.connect(&config, &imap_data);
 
@@ -658,46 +677,18 @@ void setup()
   MailClient.readMail(&imap);
 
 
-  // Get the message(s) list
-  IMAP_MSG_List msgList = imap.data();
+}
 
-  // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
-  // that works for all supported Arduino platform SDKs e.g. SAMD, ESP32 and ESP8266.
-  // In ESP32 and ESP32, you can use Serial.printf directly.
 
-  for (size_t i = 0; i < msgList.msgItems.size(); i++)
-  {
-    // Iterate to get each message data through the message item data
-    IMAP_MSG_Item msg = msgList.msgItems[i];
+void imapCallback(IMAP_Status status)
+{
+    
+    Serial.println(status.info());
 
-    Serial.println("################################");
-    ESP_MAIL_PRINTF("Messsage Number: %s\n", msg.msgNo);
-    ESP_MAIL_PRINTF("Messsage UID: %s\n", msg.UID);
-    ESP_MAIL_PRINTF("Messsage ID: %s\n", msg.ID);
-    ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
-    ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
-    ESP_MAIL_PRINTF("From: %s\n", msg.from);
-    ESP_MAIL_PRINTF("From Charset: %s\n", msg.fromCharset);
-    ESP_MAIL_PRINTF("To: %s\n", msg.to);
-    ESP_MAIL_PRINTF("To Charset: %s\n", msg.toCharset);
-    ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
-    ESP_MAIL_PRINTF("CC Charset: %s\n", msg.ccCharset);
-    ESP_MAIL_PRINTF("Date: %s\n", msg.date);
-    ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
-    ESP_MAIL_PRINTF("Subject Charset: %s\n", msg.subjectCharset);
-
-    // If the message body is available
-    if (!imap.headerOnly())
+    if (status.success())
     {
-      ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
-      ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
-      ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
-      ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
-      ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
-      ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+        // See example for how to get the message info 
     }
-  }
-
 }
 
 ```
@@ -823,6 +814,10 @@ const char apn[] = "YourAPN";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
+
+#define uS_TO_S_FACTOR 1000000ULL // Conversion factor for micro seconds to seconds
+#define TIME_TO_SLEEP 600         // Time ESP32 will go to sleep (in seconds)
+
 #define UART_BAUD 115200
 #define PIN_DTR 25
 #define PIN_TX 26
@@ -839,107 +834,133 @@ const char gprsPass[] = "";
 #define SD_SCLK 14
 #define SD_CS 13
 
-#include <ESP_Mail_Client.h>
 
+#include <ESP_Mail_Client.h>
 #include <TinyGsmClient.h>
 
-
-// Set serial for debug console
-#define SerialMon Serial
-
-// Set serial for AT commands (to the module)
-#define SerialAT Serial1
 
 TinyGsm modem(SerialAT);
 
 TinyGsmClient gsm_client(modem); // basic non-secure client
 
+SMTPSession smtp;
 
-SMTPSession smtp; 
-
-
-void initModem()
-{
-
-    if(modem.isGprsConnected())
-    {
-      modem.gprsDisconnect();
-      SerialMon.println(F("GPRS disconnected"));
-    }
-
-    // Restart takes quite some time
-    // To skip it, call init() instead of restart()
-    DBG("Initializing modem...");
-    if (!modem.init())
-    {
-        DBG("Failed to restart modem, delaying 10s and retrying");
-        return;
-    }
-
-    /*
-    2 Automatic
-    13 GSM Only
-    14 WCDMA Only
-    38 LTE Only
-    */
-    modem.setNetworkMode(38);
-    if (modem.waitResponse(10000L) != 1)
-    {
-        DBG(" setNetworkMode faill");
-        return;
-    }
-
-}
+// Callback function to get the Email sending status
+void smtpCallback(SMTP_Status status);
 
 void setup()
 {
 
-    SerialMon.begin(115200);
-
-    SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
-
-    String name = modem.getModemName();
-    DBG("Modem Name:", name);
-
-    String modemInfo = modem.getModemInfo();
-    DBG("Modem Info:", modemInfo);
-
-    initModem();
-
-    config.server.host_name = "smtp.gmail.com"; //for gmail.com
-    config.server.port = 587; // requires connection upgrade via STARTTLS
-    config.login.email = "your Email address"; //set to empty for no SMTP Authentication
-    config.login.password = "your Email password"; //set to empty for no SMTP Authentication
-    config.login.user_domain = "client domain or ip e.g. mydomain.com";
-
-    // Declare the SMTP_Message class variable to handle to message being transport
-    SMTP_Message message;
-
-    // Set the message headers
-    message.sender.name = "My Mail";
-    message.sender.email = "sender or your Email address";
-    message.subject = "Test sending Email";
-    message.addRecipient("name1", "email1");
-    message.addRecipient("name2", "email2");
-
-    message.addCc("email3");
-    message.addBcc("email4");
-
-    // Set the message content
-    message.text.content = "This is simple plain text message";
-
-
-    smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
+  SerialMon.begin(115200);
   
-    // Connect to the server with the defined session and options
-    smtp.connect(&config);
+  // Set debug option
+  smtp.debug(1);
 
-    // Start sending Email and close the session
-    if (!MailClient.sendMail(&smtp, &message))
-      Serial.println("Error sending Email, " + smtp.errorReason());
+  // Set the callback function to get the sending results
+  smtp.callback(smtpCallback);
 
+  delay(10);
+  pinMode(BAT_EN, OUTPUT);
+  digitalWrite(BAT_EN, HIGH);
+
+  // A7670 Reset
+  pinMode(RESET, OUTPUT);
+  digitalWrite(RESET, LOW);
+  delay(100);
+  digitalWrite(RESET, HIGH);
+  delay(3000);
+  digitalWrite(RESET, LOW);
+
+  pinMode(PWR_PIN, OUTPUT);
+  digitalWrite(PWR_PIN, LOW);
+  delay(100);
+  digitalWrite(PWR_PIN, HIGH);
+  delay(1000);
+  digitalWrite(PWR_PIN, LOW);
+
+  DBG("Wait...");
+
+  delay(3000);
+
+  SerialAT.begin(UART_BAUD, SERIAL_8N1, PIN_RX, PIN_TX);
+
+  // Restart takes quite some time
+  // To skip it, call init() instead of restart()
+  DBG("Initializing modem...");
+  if (!modem.init())
+  {
+    DBG("Failed to restart modem, delaying 10s and retrying");
+    return;
+  }
+
+  /*
+  2 Automatic
+  13 GSM Only
+  14 WCDMA Only
+  38 LTE Only
+  */
+  modem.setNetworkMode(38);
+  if (modem.waitResponse(10000L) != 1)
+  {
+    DBG(" setNetworkMode faill");
+  }
+
+  String name = modem.getModemName();
+  DBG("Modem Name:", name);
+
+  String modemInfo = modem.getModemInfo();
+  DBG("Modem Info:", modemInfo);
+
+  Session_Config config;
+
+  config.server.host_name = SMTP_HOST;
+  config.server.port = SMTP_PORT;
+  config.login.email = AUTHOR_EMAIL;
+  config.login.password = AUTHOR_PASSWORD;
+  config.login.user_domain = F("mydomain.net");
+
+  // Declare the SMTP_Message class variable to handle to message being transport
+  SMTP_Message message;
+
+  // Set the message headers
+  message.sender.name = F("ESP Mail");
+  message.sender.email = AUTHOR_EMAIL;
+  message.subject = F("Test sending plain text Email using GSM module");
+  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
+
+  // Set the message content
+  message.text.content = "This is simple plain text message";
+ 
+  // Set debug option
+  smtp.debug(1);
+
+  // Set the callback function to get the sending results
+  smtp.callback(smtpCallback);
+
+  smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
+
+  // Connect to the server with the defined session and options
+  smtp.connect(&config);
+
+  // Start sending Email and close the session
+  if (!MailClient.sendMail(&smtp, &message))
+    Serial.println("Error sending Email, " + smtp.errorReason());
 }
 
+void loop()
+{
+}
+
+void smtpCallback(SMTP_Status status)
+{
+ 
+  Serial.println(status.info());
+
+  if (status.success())
+  {
+    // See example for how to get the sending result
+  }
+}
 
 ```
 
@@ -968,6 +989,9 @@ uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
 SMTPSession smtp; 
 
 Session_Config config;
+
+// Callback function to get the Email sending status
+void smtpCallback(SMTP_Status status);
 
 void ResetEthernet()
 {
@@ -1011,11 +1035,10 @@ void networkConnection()
 
 void networkStatusRequestCallback()
 {
-
     smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
 }
 
-void serup()
+void setup()
 {
     Serial.begin(115200);
 
@@ -1050,6 +1073,12 @@ void serup()
 
     smtp.setClient(&eth_client);
 
+    // Set debug option
+    smtp.debug(1);
+    
+    // Set the callback function to get the sending results
+    smtp.callback(smtpCallback);
+
     // Connect to the server with the defined session and options
     smtp.connect(&config);
 
@@ -1059,6 +1088,16 @@ void serup()
   
 }
 
+void smtpCallback(SMTP_Status status)
+{
+ 
+  Serial.println(status.info());
+
+  if (status.success())
+  {
+    // See example for how to get the sending result
+  }
+}
 
 ```
 

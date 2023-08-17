@@ -33,6 +33,7 @@
 #if !defined(WIFICLIENT_IMPL_H) && defined(ESP32)
 #define WIFICLIENT_IMPL_H
 
+#include <lwip/sockets.h>
 class WiFiClientImpl : public Client
 {
 public:
@@ -43,9 +44,10 @@ public:
     int connect(const char *host, uint16_t port)
     {
         IPAddress address((uint32_t)0);
+#if defined(ENABLE_WIFI)
         if (!WiFiGenericClass::hostByName(host, address))
             return -1;
-
+#endif
         return tcpConnect(address, port, _timeout);
     }
     int connect(const char *host, uint16_t port, int32_t timeout_ms)

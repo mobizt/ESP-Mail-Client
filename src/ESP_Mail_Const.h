@@ -18,6 +18,10 @@
 #include <time.h>
 #include <ctype.h>
 
+#ifdef ESP_MAIL_DEBUG_PORT
+#define ESP_MAIL_DEFAULT_DEBUG_PORT ESP_MAIL_DEBUG_PORT
+#endif
+
 #if !defined(__AVR__)
 #include <vector>
 #include <algorithm>

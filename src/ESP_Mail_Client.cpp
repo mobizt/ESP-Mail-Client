@@ -53,13 +53,13 @@ void ESP_Mail_Client::networkReconnect(bool reconnect)
 
 void ESP_Mail_Client::printf(const char *format, ...)
 {
-    int size = 2048;
-    char s[size];
-    va_list va;
-    va_start(va, format);
-    vsnprintf(s, size, format, va);
-    va_end(va);
-    ESP_MAIL_DEFAULT_DEBUG_PORT.print(s);
+  int size = 2048;
+  char s[size];
+  va_list va;
+  va_start(va, format);
+  vsnprintf(s, size, format, va);
+  va_end(va);
+  ESP_MAIL_DEFAULT_DEBUG_PORT.print(s);
 }
 
 void ESP_Mail_Client::addAP(const String &ssid, const String &password)
@@ -1395,9 +1395,15 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
     {
       if (client && client_type == esp_mail_client_type_external_gsm_client)
       {
-        uint32_t _time = client->gprsGetTime();
-        if (_time > 0)
-          Time.setTimestamp(_time);
+        int year = 0;
+        int month = 0;
+        int day = 0;
+        int hour = 0;
+        int min = 0;
+        int sec = 0;
+        float timezone = 0;
+        if (client->gprsGetTime(year, month, day, hour, min, sec, timezone))
+          Time.setTimestamp(Time.getTimestamp(year, month, day, hour, min, sec));
       }
       else
       {

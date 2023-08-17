@@ -45,8 +45,13 @@
 #endif
 
 #if defined(ESP32)
+
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#define ENABLE_WIFI
+#endif
 #include "extras/WiFiClientImpl.h"
 #define BASE_WIFICLIENT WiFiClientImpl
+
 #elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
 #include "WiFiClient.h"
 #define BASE_WIFICLIENT WiFiClient
@@ -103,6 +108,7 @@ public:
         _password = password;
         _modem = modem;
         _client_type = esp_mail_client_type_external_gsm_client;
+        _basic_client = client;
 #endif
     }
 
@@ -419,7 +425,7 @@ public:
 
         if (!rdy)
         {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
             if (_debug_level > 0)
             {
                 if (!_network_connection_cb)
@@ -478,6 +484,9 @@ public:
 
     bool connect(bool secured, bool verify)
     {
+        bool ret = false;
+
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
         _last_error = 0;
 
 #if !defined(ESP_MAIL_DISABLE_SSL)
@@ -563,11 +572,10 @@ public:
             }
         }
 
-        bool ret = connected();
-
+        ret = connected();
         if (!ret)
             stop();
-
+#endif
         return ret;
     }
 
@@ -874,13 +882,13 @@ public:
             gsmModem->gprsConnect(_apn.c_str(), _user.c_str(), _password.c_str());
 #endif
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0 && _last_error == 0)
                 esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Waiting for network..."), esp_mail_debug_tag_type_info, false);
 #endif
             if (!gsmModem->waitForNetwork())
             {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
                     esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" fail"), esp_mail_debug_tag_type_info, true, false);
 #endif
@@ -889,14 +897,14 @@ public:
                 return false;
             }
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0 && _last_error == 0)
                 esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" success"), esp_mail_debug_tag_type_info, true, false);
 #endif
 
             if (gsmModem->isNetworkConnected())
             {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
                 {
                     esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connecting to "), esp_mail_debug_tag_type_info, false);
@@ -906,7 +914,7 @@ public:
                 _network_status = gsmModem->gprsConnect(_apn.c_str(), _user.c_str(), _password.c_str()) &&
                                   gsmModem->isGprsConnected();
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
                 {
                     if (_network_status)
@@ -945,30 +953,30 @@ public:
         return !_network_status;
     }
 
-    uint32_t gprsGetTime()
+    bool gprsGetTime(int &year, int &month, int &day, int &hour, int &min, int &sec, float &timezone)
     {
 #if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE) && defined(TINY_GSM_MODEM_HAS_TIME)
 
         if (!gprsConnected())
             return 0;
-            
+
         TinyGsm *gsmModem = (TinyGsm *)_modem;
-        int year3 = 0;
-        int month3 = 0;
-        int day3 = 0;
-        int hour3 = 0;
-        int min3 = 0;
-        int sec3 = 0;
-        float timezone = 0;
+        year = 0;
+        month = 0;
+        day = 0;
+        hour = 0;
+        min = 0;
+        sec = 0;
+        timezone = 0;
         for (int8_t i = 5; i; i--)
         {
-            if (gsmModem->getNetworkTime(&year3, &month3, &day3, &hour3, &min3, &sec3, &timezone))
+            if (gsmModem->getNetworkTime(&year, &month, &day, &hour, &min, &sec, &timezone))
             {
-                return TimeHelper::getTimestamp(year3, month3, day3, hour3, min3, sec3);
+                return true;
             }
         }
 #endif
-        return 0;
+        return false;
     }
 
     int setOption(int option, int *value)
