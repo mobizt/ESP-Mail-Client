@@ -401,12 +401,11 @@ ESP_MAIL_DEBUG_PORT // For debug port assignment if SILENT_MODE option was not s
 ```
 
 
-You can assign the optional build options using one of the following method.
+You can assign the optional build options using one of the following methods.
 
-1. By creating user config file `Custom_ESP_Mail_FS.h` in library installed folder and define these optional options in it.
+- By creating user config file `Custom_ESP_Mail_FS.h` in library installed folder and define these optional options.
 
-2. By adding compiler build flags with `-D name`.
-
+- By adding compiler build flags with `-D name`.
 
 In PlatformIO IDE, using `build_flags` in PlatformIO IDE's platformio.ini is more convenient 
 
@@ -420,7 +419,7 @@ For disabling predefined options instead of editing the [**ESP_Mail_FS.h**](src/
 
 ```cpp
 DISABLE_IMAP // For excluding the IMAP class compilation
-ENABLE_SMTP // For excluding the SMTP class compilation
+DISABLE_SMTP // For excluding the SMTP class compilation
 DISABLE_NTP_TIME // For disabling the NTP time setting
 DISABLE_ERROR_STRING // For disabling the error string from error reason
 DISABLE_PSRAM // For disabling PSRAM support
