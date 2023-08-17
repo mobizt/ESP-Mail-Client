@@ -777,10 +777,10 @@ See [External Client Examples](/examples/SMTP/External_Client) for more external
 
 The following example showed how to use TTGO T-A7670 with `GSMClient` to connect to SMTP server.
 
-To allow TinyGSM library integration, the following macro should be defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h).
+To allow TinyGSM library integration, the following build flag or macro should be defined in `Custom_ESP_Mail_FS.h`.
 
 ```cpp
-#define TINY_GSM_MODEM_SIM7600
+TINY_GSM_MODEM_SIM7600
 ```
 
 See the TinyGSM documentation and example for other SIMCom modules definition.
