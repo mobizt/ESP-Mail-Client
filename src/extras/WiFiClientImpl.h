@@ -44,8 +44,8 @@ public:
     int connect(const char *host, uint16_t port)
     {
         IPAddress address((uint32_t)0);
-#if defined(ENABLE_WIFI)
-        if (!WiFiGenericClass::hostByName(host, address))
+#if defined(WIFI_HAS_HOST_BY_NAME)
+        if (!WiFi::hostByName(host, address))
             return -1;
 #endif
         return tcpConnect(address, port, _timeout);

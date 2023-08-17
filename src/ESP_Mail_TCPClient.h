@@ -47,7 +47,7 @@
 #if defined(ESP32)
 
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-#define ENABLE_WIFI
+#define WIFI_HAS_HOST_BY_NAME
 #endif
 #include "extras/WiFiClientImpl.h"
 #define BASE_WIFICLIENT WiFiClientImpl
