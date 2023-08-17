@@ -1376,8 +1376,19 @@ unauthenticate:
                 return false;
 
             imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_plain;
+
+            unsigned long tmo = imap->client.tcpTimeout();
+
+            imap->client.setTimeout(1000);
+
             if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
-                return false;
+            {
+                imap->client.setTimeout(tmo);
+                // Authenticate plain failed, try sending login
+                goto try_login;
+            }
+            
+            imap->client.setTimeout(tmo);
 
             cmd = encodeBase64Str(tmp, p);
             // release memory
@@ -1393,6 +1404,8 @@ unauthenticate:
     }
     else if (sasl_login)
     {
+
+    try_login:
 
 #if !defined(SILENT_MODE)
         if (imap->_debug)
