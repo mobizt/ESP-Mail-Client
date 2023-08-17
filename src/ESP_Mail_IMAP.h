@@ -1377,18 +1377,8 @@ unauthenticate:
 
             imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_plain;
 
-            unsigned long tmo = imap->client.tcpTimeout();
-
-            imap->client.setTimeout(1000);
-
             if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
-            {
-                imap->client.setTimeout(tmo);
-                // Authenticate plain failed, try sending login
-                goto try_login;
-            }
-            
-            imap->client.setTimeout(tmo);
+                return false;
 
             cmd = encodeBase64Str(tmp, p);
             // release memory
@@ -1404,8 +1394,6 @@ unauthenticate:
     }
     else if (sasl_login)
     {
-
-    try_login:
 
 #if !defined(SILENT_MODE)
         if (imap->_debug)
@@ -2928,6 +2916,22 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
                         // No response ever parsed
 
+                        if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
+                        {
+                            if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
+                            {
+                                if (isOAuthError(res.response, res.readLen, res.chunkIdx, 2))
+                                    res.completedResponse = true;
+                            }
+
+                            // In case SASL-IR extension does not support, check for initial zero-length server challenge first "+ "
+                            if (!imap->_auth_capability[esp_mail_auth_capability_sasl_ir] && strcmp(res.response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
+                            {
+                                res.imapResp = esp_mail_imap_resp_ok;
+                                res.completedResponse = true;
+                            }
+                        }
+
                         if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_login || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain)
                         {
                             int i = 0;
@@ -2954,21 +2958,6 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             res.imapResp = esp_mail_imap_resp_ok;
                             res.completedResponse = true;
-                        }
-                        else if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
-                        {
-                            if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
-                            {
-                                if (isOAuthError(res.response, res.readLen, res.chunkIdx, 2))
-                                    res.completedResponse = true;
-                            }
-
-                            // multiline auth SASL (no SASL-IR extension supported)
-                            if (strcmp(res.response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
-                            {
-                                res.imapResp = esp_mail_imap_resp_ok;
-                                res.completedResponse = true;
-                            }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_capability)
                             parseCapabilityResponse(imap, res.response, res.chunkIdx);
