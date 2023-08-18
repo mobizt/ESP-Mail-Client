@@ -9,31 +9,12 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2023 mobizt
- *
- */
-
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
- *
- * "ESP_Mail_Session" changes to "Session_Config"
- * "IMAP_Config" changes to "IMAP_Data"
- *
- * Changes in the examples
- *
- * ESP_Mail_Session session;
- * to
- * Session_Config config;
- *
- * IMAP_Config config;
- * to
- * IMAP_Data imap_data;
+ * Copyright (c) 2022 mobizt
  *
  */
 
 #include <Arduino.h>
-#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
+#if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -74,9 +55,6 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Recipient email address */
-#define RECIPIENT_EMAIL "<recipient email here>"
-
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -85,10 +63,6 @@ void smtpCallback(SMTP_Status status);
 
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
                                   "-----END CERTIFICATE-----\n";
-
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-WiFiMulti multi;
-#endif
 
 void setup()
 {
@@ -99,48 +73,29 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
 #endif
 
     Serial.println();
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
-    multi.run();
-#else
+    Serial.print("Connecting to AP");
+
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
-
-    Serial.print("Connecting to Wi-Fi");
-        
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    unsigned long ms = millis();
-#endif
-
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(300);
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-        if (millis() - ms > 10000)
-            break;
-#endif
+        delay(200);
     }
-    Serial.println();
-    Serial.print("Connected with IP: ");
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
-
-    // The WiFi credentials are required for Pico W
-    // due to it does not have reconnect feature.
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    MailClient.clearAP();
-    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
-#endif
 
     /** Enable the debug via Serial port
      * 0 for no debugging
@@ -153,56 +108,39 @@ void setup()
     /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);
 
-    /* Declare the Session_Config for user defined session credentials */
-    Session_Config config;
+    /* Declare the ESP_Mail_Session for user defined session credentials */
+    ESP_Mail_Session session;
 
     /* Set the session config */
-    config.server.host_name = SMTP_HOST;
-    config.server.port = SMTP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
+    session.server.host_name = SMTP_HOST;
+    session.server.port = SMTP_PORT;
+    session.login.email = AUTHOR_EMAIL;
+    session.login.password = AUTHOR_PASSWORD;
+    session.login.user_domain = F("mydomain.net");
 
-    /** Assign your host name or you public IPv4 or IPv6 only
-     * as this is the part of EHLO/HELO command to identify the client system
-     * to prevent connection rejection.
-     * If host name or public IP is not available, ignore this or
-     * use generic host "mydomain.net".
-     *
-     * Assign any text to this option may cause the connection rejection.
-     */
-    config.login.user_domain = F("mydomain.net");
-
-    /*
-    Set the NTP config time
-    For times east of the Prime Meridian use 0-12
-    For times west of the Prime Meridian add 12 to the offset.
-    Ex. American/Denver GMT would be -6. 6 + 12 = 18
-    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
-    */
-    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    config.time.gmt_offset = 3;
-    config.time.day_light_offset = 0;
+    /* Set the NTP config time */
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    session.time.gmt_offset = 3;
+    session.time.day_light_offset = 0;
 
     /** Set the ports and protocols
-     *  This allows non-standard port to work with this library
-     *  The port that assigned with config.server.port will map with the
-     *  protocol assigned here
+     *  This allows non-standard port to work with this library.
      */
 
-    config.ports_functions.list = new port_function[4];
-    config.ports_functions.size = 4;
+    session.ports_functions.list = new port_function[4];
+    session.ports_functions.size = 3;
 
-    config.ports_functions.list[0].port = 25;
-    config.ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
+    session.ports_functions.list[0].port = 25;
+    session.ports_functions.list[0].protocol = esp_mail_protocol_plain_text;
 
-    config.ports_functions.list[1].port = 465;
-    config.ports_functions.list[1].protocol = esp_mail_protocol_ssl;
+    session.ports_functions.list[1].port = 465;
+    session.ports_functions.list[1].protocol = esp_mail_protocol_ssl;
 
-    config.ports_functions.list[2].port = 587;
-    config.ports_functions.list[2].protocol = esp_mail_protocol_tls;
+    session.ports_functions.list[2].port = 587;
+    session.ports_functions.list[2].protocol = esp_mail_protocol_tls;
 
-    config.ports_functions.list[3].port = 2525;
-    config.ports_functions.list[3].protocol = esp_mail_protocol_tls;
+    session.ports_functions.list[3].port = 2525;
+    session.ports_functions.list[3].protocol = esp_mail_protocol_tls;
 
     /** In ESP32, timezone environment will not keep after wake up boot from sleep.
      * The local time will equal to GMT time.
@@ -210,16 +148,16 @@ void setup()
      * To sync or set time with NTP server with the valid local time after wake up boot,
      * set both gmt and day light offsets to 0 and assign the timezone environment string e.g.
 
-       config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-       config.time.gmt_offset = 0;
-       config.time.day_light_offset = 0;
-       config.time.timezone_env_string = "JST-9"; // for Tokyo
+       session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+       session.time.gmt_offset = 0;
+       session.time.day_light_offset = 0;
+       session.time.timezone_env_string = "JST-9"; // for Tokyo
 
      * The library will get (sync) the time from NTP server without GMT time offset adjustment
      * and set the timezone environment variable later.
      *
      * This timezone environment string will be stored to flash or SD file named "/tz_env.txt"
-     * which set via config.time.timezone_file.
+     * which set via session.time.timezone_file.
      *
      * See the timezone environment string list from
      * https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
@@ -233,7 +171,7 @@ void setup()
     message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
     message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
     message.subject = F("Test sending plain text Email");
-    message.addRecipient(F("Someone"), RECIPIENT_EMAIL); // This will be used with RCPT TO command and 'To' header field.
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
 
     String textMsg = "This is simple plain text message";
     message.text.content = textMsg;
@@ -298,11 +236,11 @@ void setup()
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
     // For Root CA certificate verification (ESP8266 and ESP32 only)
-    // config.certificate.cert_data = rootCACert;
+    // session.certificate.cert_data = rootCACert;
     // or
-    // config.certificate.cert_file = "/path/to/der/file";
-    // config.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-    // config.certificate.verify = true;
+    // session.certificate.cert_file = "/path/to/der/file";
+    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    // session.certificate.verify = true;
 
     // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
@@ -310,25 +248,17 @@ void setup()
 
     // Library will be trying to sync the time with NTP server if time is never sync or set.
     // This is 10 seconds blocking process.
-    // If time reading was timed out, the error "NTP server time reading timed out" will show via debug and callback function.
+    // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
     // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
     /* Connect to the server */
-    if (!smtp.connect(&config))
-    {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    if (!smtp.connect(&session /* session credentials */))
         return;
-    }
-
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
-    else
-        Serial.println("\nConnected with no Auth.");
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        Serial.println("Error sending Email, " + smtp.errorReason());
 
     // to clear sending result log
     // smtp.sendingResult.clear();
@@ -351,7 +281,7 @@ void smtpCallback(SMTP_Status status)
     {
         // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
         // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
-        // In ESP8266 and ESP32, you can use Serial.printf directly.
+        // In ESP32 and ESP32, you can use Serial.printf directly.
 
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
@@ -367,10 +297,11 @@ void smtpCallback(SMTP_Status status)
             // your device time was synched with NTP server.
             // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
             // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
+            time_t ts = (time_t)result.timestamp;
 
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            ESP_MAIL_PRINTF("Date/Time: %s\n", asctime(localtime(&ts)));
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }

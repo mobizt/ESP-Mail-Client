@@ -9,26 +9,7 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2023 mobizt
- *
- */
-
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
- *
- * "ESP_Mail_Session" changes to "Session_Config"
- * "IMAP_Config" changes to "IMAP_Data"
- *
- * Changes in the examples
- *
- * ESP_Mail_Session session;
- * to
- * Session_Config config;
- *
- * IMAP_Config config;
- * to
- * IMAP_Data imap_data;
+ * Copyright (c) 2022 mobizt
  *
  */
 
@@ -76,9 +57,6 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
-/* Recipient email address */
-#define RECIPIENT_EMAIL "<recipient email here>"
-
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession smtp;
 
@@ -90,27 +68,22 @@ const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
 
 void sendEmail()
 {
-    /* Declare the Session_Config for user defined session credentials */
-    Session_Config config;
+    /* Declare the ESP_Mail_Session for user defined session credentials */
+    ESP_Mail_Session session;
 
     /* Set the session config */
-    config.server.host_name = SMTP_HOST;
-    config.server.port = SMTP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
-    config.login.user_domain = F("mydomain.net");
+    session.server.host_name = SMTP_HOST;
+    session.server.port = SMTP_PORT;
+    session.login.email = AUTHOR_EMAIL;
+    session.login.password = AUTHOR_PASSWORD;
+    session.login.user_domain = F("mydomain.net");
 
-    /*
-    Set the NTP config time
-    For times east of the Prime Meridian use 0-12
-    For times west of the Prime Meridian add 12 to the offset.
-    Ex. American/Denver GMT would be -6. 6 + 12 = 18
-    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
-    */
-    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    config.time.gmt_offset = 0;
-    config.time.day_light_offset = 0;
-    config.time.timezone_env_string = "JST-9"; // for Tokyo
+    /* Set the NTP config time */
+
+    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    session.time.gmt_offset = 0;
+    session.time.day_light_offset = 0;
+    session.time.timezone_env_string = "JST-9"; // for Tokyo
 
     // See the timezone environment string list from https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 
@@ -121,7 +94,7 @@ void sendEmail()
     message.sender.name = F("ESP Mail"); // This witll be used with 'MAIL FROM' command and 'From' header field.
     message.sender.email = AUTHOR_EMAIL; // This witll be used with 'From' header field.
     message.subject = F("Test sending plain text Email");
-    message.addRecipient(F("Someone"), RECIPIENT_EMAIL); // This will be used with RCPT TO command and 'To' header field.
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com")); // This will be used with RCPT TO command and 'To' header field.
 
     String textMsg = "This is simple plain text message";
     message.text.content = textMsg;
@@ -186,11 +159,11 @@ void sendEmail()
     message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
     // For Root CA certificate verification (ESP8266 and ESP32 only)
-    // config.certificate.cert_data = rootCACert;
+    // session.certificate.cert_data = rootCACert;
     // or
-    // config.certificate.cert_file = "/path/to/der/file";
-    // config.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
-    // config.certificate.verify = true;
+    // session.certificate.cert_file = "/path/to/der/file";
+    // session.certificate.cert_file_storage_type = esp_mail_file_storage_type_flash; // esp_mail_file_storage_type_sd
+    // session.certificate.verify = true;
 
     // The WiFiNINA firmware the Root CA certification can be added via the option in Firmware update tool in Arduino IDE
 
@@ -198,20 +171,17 @@ void sendEmail()
 
     // Library will be trying to sync the time with NTP server if time is never sync or set.
     // This is 10 seconds blocking process.
-    // If time reading was timed out, the error "NTP server time reading timed out" will show via debug and callback function.
+    // If time synching was timed out, the error "NTP server time synching timed out" will show via debug and callback function.
     // You can manually sync time by yourself with NTP library or calling configTime in ESP32 and ESP8266.
     // Time can be set manually with provided timestamp to function smtp.setSystemTime.
 
     /* Connect to the server */
-    if (!smtp.connect(&config))
-    {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    if (!smtp.connect(&session /* session credentials */))
         return;
-    }
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        Serial.println("Error sending Email, " + smtp.errorReason());
 
     // to clear sending result log
     // smtp.sendingResult.clear();
@@ -282,7 +252,7 @@ void smtpCallback(SMTP_Status status)
     {
         // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
         // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
-        // In ESP8266 and ESP32, you can use Serial.printf directly.
+        // In ESP32 and ESP32, you can use Serial.printf directly.
 
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
@@ -299,10 +269,12 @@ void smtpCallback(SMTP_Status status)
             // your device time was synched with NTP server.
             // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
             // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
-            
+            time_t ts = (time_t)result.timestamp;
+            localtime_r(&ts, &dt);
+
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }

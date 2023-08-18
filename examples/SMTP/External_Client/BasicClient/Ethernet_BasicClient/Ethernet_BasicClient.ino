@@ -4,154 +4,8 @@
  * This example shows how to send Email using EthernetClient.
  *
  * This example used ESP32 and WIZnet W5500 Ethernet module.
- *
- * ///////////////////////////////////////////////////////////////
- * Important Information when using the custom or external Client
- * ///////////////////////////////////////////////////////////////
- *
- * 1. The custom or external Client that works with network interface module
- * e.g. WiFiClient, EthernetClient and GSMClient can be used with this library.
- *
- * To let the library knows that external client was used, user needs to define
- * "ENABLE_CUSTOM_CLIENT" macro in file "src/ESP_Mail_FS.h" or
- * "src/Custom_ESP_Mail_FS.h" like the following
- *
- * #define ENABLE_CUSTOM_CLIENT
- *
- * 2. The two or three callback functions required to allow library to
- * check the network status and resume or reconnect the network interface module
- * and upgrade the connection mode (do SSL/TLS handshake) from non-secure connection
- * to secure connection.
- *
- * The purposes of callback functions are following
- *
- * 2.1 networkConnectionRequestCallback function is for resume or reconnect the network.
- *
- * User needs to place the code to reset or re-connect the network here.
- *
- * User can assign the callback via
- *
- * smtp.networkConnectionRequestCallback(<callback function>);
- * imap.networkConnectionRequestCallback(<callback function>);
- *
- * 2.2 networkStatusRequestCallback function is for network status acknowledgement.
- *
- * User needs to place the code to set back the network status via method smtp.setNetworkStatus(<bool>);
- * and imap.setNetworkStatus(<bool>);
- *
- * User can assign the callback via
- *
- * smtp.networkStatusRequestCallback(<callback function>);
- * imap.networkStatusRequestCallback(<callback function>);
- *
- * 2.3 connectionUpgradeRequestCallback function is for SSL/TLS handshake to upgrade the server connection
- * from pain text mode (non-secure) to SSL mode. This callback function will be called when STARTTLS
- * command request was accepted by server.
- *
- * User needs to place the code that tells the external Client to do SSL/TLS handshake.
- *
- * User can assign the callback via
- *
- * smtp.connectionUpgradeRequestCallback(<callback function>);
- * imap.connectionUpgradeRequestCallback(<callback function>);
- *
- * The SSL clients that can connect in both non-secure and secure modes are
- *
- * Mobizt's ESP_SSLClient library https://github.com/mobizt/ESP_SSLClient. This library supports all Arduino devices.
- *
- * OPEnSLab's SSLClient fork version library https://github.com/mobizt/SSLClient. This library supports all Arduino devices except for ESP8266 that has stack overfow issue.
- *
- * With above two SSL client libraries, the SSL/TLS hanshake can be done via
- *
- * #if defined(SSLCLIENT_CONNECTION_UPGRADABLE)
- * ssl_client.connectSSL(); // Require host/ip and port as parameter in SSLClient library
- * #endif
- *
- * The mcro "SSLCLIENT_CONNECTION_UPGRADABLE" was defined in the those two SSL client libraries.
- *
- * 2.4 connectionRequestCallback is the function for starting server connection which is currently not required.
- *
- * User can assign the callback via
- *
- * smtp.connectionRequestCallback(<callback function>);
- * imap.connectionRequestCallback(<callback function>);
- *
- * The callback function assigned should accept the const char* for hosname and integer for port ,
- * user needs to place the code using external client to connect to the server as the following.
- *
- * void connectionRequestCallback(const char *host, int port)
- * {
- *  basic_or_ssl_client.connect(host, port);
- * }
- *
- * 3. SSL client can be adssigned to the IMAPSession and SMTPSession objects during class constructor
- *
- * SMTPSession smtp(&basic_client, esp_mail_external_client_type_basic);
- * IMAPSession imap(&ssl_client, esp_mail_external_client_type_ssl)
- *
- * Or can be assign through the method
- *
- * smtp.setClient(&basic_client, esp_mail_external_client_type_basic);
- * imap.setClient(&ssl_client, esp_mail_external_client_type_ssl);
- *
- * The first argument of class constructor and method is the pointer to Arduino client class.
- * The second argument of class constructor and method is the esp_mail_external_client_type enum
- * i.e., esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl
- *
- * If the first argument is basic client or non-secure client which works directly with network module
- * e.g. WiFiClient, EthernetClient and GSMClient, the second argument should be
- * esp_mail_external_client_type_basic.
- *
- * This kind of client can be used for IMAP and SMTP transports via non-secure ports e.g., 25 (SMTP) and 143 (IMAP).
- *
- * If the first argument is ssl client that starting connection in secure mode e.g., WiFiClientSecure and
- * WiFiSSLClient, the second argument should be esp_mail_external_client_type_ssl.
- *
- * This kind of client can be used for IMAP and SMTP transports via secure ports e.g., 465 (SMTP) and 993 (IMAP).
- *
- * If the first argument is ssl client that can starting connection in non-secure mode as Mobizt's ESP_SSLClient and
- * OPEnSLab's SSLClient fork version, the second argument should be esp_mail_external_client_type_basic.
- *
- * This kind of client can be used for IMAP and SMTP transports via Plain/TLS via STARTTLS ports
- * e.g., 25 (SMTP), 25 (587), and 143 (IMAP).
- *
- * With this type of client, the callback function connectionUpgradeRequestCallback is required to perform SSL/TLS handshake.
- *
- *
- * When using ESP8266 and Raspberry Pi Pico devices with network interface module, the external SSL client library is not required
- * because internal SSL engine is used.
- *
- * User can use the basic client of network module directly and choose esp_mail_external_client_type_basic for the second argument of the method.
- *
- * For ESP32, since the library version 3.3.0, the internal SSL engine (mbedTLS) will not handle SSL handshake for external client any more, 
- * then user needs to use external SSL client (ESP_SSLClient or SSLClient) to do handshake and it required connectionUpgradeRequestCallback setup.  
- *
- * 4. When using external client to do some tasks that required valid time e.g., sending Email and SSL certificate validation, the external
- * UDP client is required for internal NTP time reading.
- *
- * User can assign the UDP client via
- *
- * MailClient.setUDPClient(&udp_client, 0);
- *
- * Which the second argument is the GMT offset. This GMT offset will be used to set the time offset instead of GMT offset set from the session object
- * config.time.gmt_offset.
- *
- * IN ESP8266 and ESP32, device time will be updated after reading fishished and can get via time(nullptr).
- *
- * In Raspberry Pi Pico and other Arduino devices, the device time is not available. The valid time can be obtained from
- *
- * uint32_t timestamp = MailClient.Time.getCurrentTimestamp();
- *
- * If the valid time can be obtaoned from RTC chip or other sources, the library internal time can be changed or set with
- *
- * MailClient.Time.setTimestamp(timestamp);
- *
- * In Raspberry Pi Pico, the device time can not set manually by user except for using SDK's NTP class that works with WiFi only.
- * When use this device with external client, the device time will not be changed and user should call
- * MailClient.Time.getCurrentTimestamp() to get the valid time instead.
- *
- *
- * ///////////////////////////////////////////////////////////////
+ * 
+ * No SSLClient is required for ESP8266 and ESP32 devices.
  *
  * Created by K. Suwatchai (Mobizt)
  *
@@ -159,26 +13,7 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2023 mobizt
- *
- */
-
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
- *
- * "ESP_Mail_Session" changes to "Session_Config"
- * "IMAP_Config" changes to "IMAP_Data"
- *
- * Changes in the examples
- *
- * ESP_Mail_Session session;
- * to
- * Session_Config config;
- *
- * IMAP_Config config;
- * to
- * IMAP_Data imap_data;
+ * Copyright (c) 2022 mobizt
  *
  */
 
@@ -186,15 +21,38 @@
 
 #include <ESP_Mail_Client.h>
 
+// https://github.com/OPEnSLab-OSU/EthernetLarge
+// #include <EthernetLarge.h>
+
 #include <Ethernet.h>
+
+// For NTP client
 #include <EthernetUdp.h>
+#include <extras/MB_NTP.h>
 
+/** For Gmail, the app password will be used for log in
+ *  Check out https://github.com/mobizt/ESP-Mail-Client#gmail-smtp-and-imap-required-app-passwords-to-sign-in
+ *
+ * For Yahoo mail, log in to your yahoo mail in web browser and generate app password by go to
+ * https://login.yahoo.com/account/security/app-passwords/add/confirm?src=noSrc
+ *
+ * To use Gmai and Yahoo's App Password to sign in, define the AUTHOR_PASSWORD with your App Password
+ * and AUTHOR_EMAIL with your account email.
+ */
+
+/** The smtp host name e.g. smtp.gmail.com for GMail or smtp.office365.com for Outlook or smtp.mail.yahoo.com */
 #define SMTP_HOST "smtp.gmail.com"
-#define SMTP_PORT 587
 
+/** The smtp port e.g.
+ * 25  or esp_mail_smtp_port_25
+ * 465 or esp_mail_smtp_port_465
+ * 587 or esp_mail_smtp_port_587
+ */
+#define SMTP_PORT esp_mail_smtp_port_587
+
+/* The log in credentials */
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
-#define RECIPIENT_EMAIL "<recipient email here>"
 
 #define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
 #define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
@@ -202,18 +60,33 @@
 #define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
 #define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
 
+// For NTP client
+EthernetUDP udpClient;
+
+MB_NTP ntpClient(&udpClient, "pool.ntp.org" /* NTP host */, 123 /* NTP port */, 0 /* timezone offset in seconds */);
+
+unsigned long timestamp = 0;
+
 unsigned long sentMillis = 0;
 
-const int analog_pin = 34;
+const int analog_pin = 34; // ESP32 GPIO 34 (Analog pin)
 
 uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
 
-SMTPSession smtp;
+IPAddress Eth_IP(192, 168, 1, 104);
 
-EthernetClient basic_client;
-EthernetUDP udp_client;
+EthernetClient client;
 
+/* Declare the global used SMTPSession object for SMTP transport */
+SMTPSession smtp(&client, esp_mail_external_client_type_basic /* type of client e.g. esp_mail_external_client_type_basic and esp_mail_external_client_type_ssl */);
+// or assign the Client later with smtp.setClient(&ssl_client, esp_mail_external_client_type_basic);
+
+/* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status);
+
+void sendNTPpacket(const char *address);
+
+void getTime();
 
 void ResetEthernet()
 {
@@ -235,7 +108,7 @@ void networkConnection()
     ResetEthernet();
 
     Serial.println("Starting Ethernet connection...");
-    Ethernet.begin(Eth_MAC);
+    Ethernet.begin(Eth_MAC, Eth_IP);
 
     unsigned long to = millis();
 
@@ -251,55 +124,127 @@ void networkConnection()
     }
     else
     {
-        Serial.println("Can't connect");
+        Serial.println("Can't connected");
     }
 }
 
+// Define the callback function to handle server status acknowledgement
 void networkStatusRequestCallback()
 {
+    // Set the network status
     smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
 }
 
-void sendEmail()
+// Define the callback function to handle server connection
+void connectionRequestCallback(const char *host, int port)
 {
 
-    Session_Config config;
+    Serial.print("> U: Connecting to server via custom Client... ");
+    if (!client.connect(host, port))
+    {
+        Serial.println("failed.");
+        return;
+    }
+    Serial.println("success.");
+}
 
-    config.server.host_name = SMTP_HOST;
-    config.server.port = SMTP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
+/*
+// Define the callback function to handle connection upgrade (TLS handshake).
+void connectionUpgradeRequestCallback()
+{
+    Serial.println("> U: Upgrad the connection...");
+    // Code for TLS handshake here
+}
+*/
 
-    config.login.user_domain = F("mydomain.net");
+void sendEmail()
+{
+    // Get time from NTP server
+    if (timestamp == 0)
+    {
+        timestamp = ntpClient.getTime(2000 /* wait 2000 ms */);
 
+        if (timestamp > 0)
+            smtp.setSystemTime(timestamp);
+    }
+
+     /* Declare the ESP_Mail_Session for user defined session credentials */
+    ESP_Mail_Session session;
+
+    /* Set the session config */
+    session.server.host_name = SMTP_HOST;
+    session.server.port = SMTP_PORT;
+    session.login.email = AUTHOR_EMAIL;
+    session.login.password = AUTHOR_PASSWORD;
+    session.login.user_domain = F("mydomain.net");
+
+    /* Declare the message class */
     SMTP_Message message;
 
+    /* Set the message headers */
     message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
     message.subject = F("Test sending plain text Email");
 
-    message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
+    // Please don't forget to change the recipient email address.
+    message.addRecipient(F("Someone"), F("change_this@your_mail_dot_com"));
 
-    message.text.content = "This is simple plain text message";
+    String textMsg = "This is simple plain text message";
+    message.text.content = "hiiiiii";
 
-    smtp.setClient(&basic_client, esp_mail_external_client_type_basic);
+    /** The Plain text message character set e.g.
+     * us-ascii
+     * utf-8
+     * utf-7
+     * The default value is utf-8
+     */
+    message.text.charSet = F("us-ascii");
+
+    /** The content transfer encoding e.g.
+     * enc_7bit or "7bit" (not encoded)
+     * enc_qp or "quoted-printable" (encoded)
+     * enc_base64 or "base64" (encoded)
+     * enc_binary or "binary" (not encoded)
+     * enc_8bit or "8bit" (not encoded)
+     * The default value is "7bit"
+     */
+    message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+
+    // If this is a reply message
+    // message.in_reply_to = "<parent message id>";
+    // message.references = "<parent references> <parent message id>";
+
+    /** The message priority
+     * esp_mail_smtp_priority_high or 1
+     * esp_mail_smtp_priority_normal or 3
+     * esp_mail_smtp_priority_low or 5
+     * The default value is esp_mail_smtp_priority_low
+     */
+    message.priority = esp_mail_smtp_priority::esp_mail_smtp_priority_low;
+
+    /* Set the custom message header */
+    message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
+
+    // Set the callback functions to hadle the required tasks.
+    smtp.connectionRequestCallback(connectionRequestCallback);
 
     smtp.networkConnectionRequestCallback(networkConnection);
+
     smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+    
+    // This is not required for ESP8266/ESP32 with external basic client
+    // imap.connectionUpgradeRequestCallback(connectionUpgradeRequestCallback);
 
-    if (!smtp.connect(&config))
-    {
-        ESP_MAIL_PRINTF("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
-        return;
-    }
+   /* Connect to the server */
+  if (!smtp.connect(&session /* session credentials */))
+    return;
 
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
-    else
-        Serial.println("\nConnected with no Auth.");
-
+    /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
-        ESP_MAIL_PRINTF("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        Serial.println("Error sending Email, " + smtp.errorReason());
+
+    // to clear sending result log
+    // smtp.sendingResult.clear();
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
@@ -313,18 +258,19 @@ void setup()
 
     networkConnection();
 
-    /*
-    For internal NTP client
-    For times east of the Prime Meridian use 0-12
-    For times west of the Prime Meridian add 12 to the offset.
-    Ex. American/Denver GMT would be -6. 6 + 12 = 18
-    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
-    */
-    MailClient.setUDPClient(&udp_client, 0 /* GMT offset */);
-
+    /** Enable the debug via Serial port
+     * 0 for no debugging
+     * 1 for basic level debugging
+     *
+     * Debug port can be changed via ESP_MAIL_DEFAULT_DEBUG_PORT in ESP_Mail_FS.h
+     */
     smtp.debug(1);
 
+    /* Set the callback function to get the sending results */
     smtp.callback(smtpCallback);
+
+    // Begin NTP client
+    ntpClient.begin();
 }
 
 void loop()
@@ -336,12 +282,19 @@ void loop()
     }
 }
 
+/* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status)
 {
+    /* Print the current status */
     Serial.println(status.info());
 
+    /* Print the sending result */
     if (status.success())
     {
+        // ESP_MAIL_PRINTF used in the examples is for format printing via debug Serial port
+        // that works for all supported Arduino platform SDKs e.g. AVR, SAMD, ESP32 and ESP8266.
+        // In ESP32 and ESP32, you can use Serial.printf directly.
+
         Serial.println("----------------");
         ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
         ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
@@ -349,15 +302,24 @@ void smtpCallback(SMTP_Status status)
 
         for (size_t i = 0; i < smtp.sendingResult.size(); i++)
         {
+            /* Get the result item */
             SMTP_Result result = smtp.sendingResult.getItem(i);
+
+            // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
+            // your device time was synched with NTP server.
+            // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
+            // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
+            time_t ts = (time_t)result.timestamp;
 
             ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
             ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            ESP_MAIL_PRINTF("Date/Time: %s\n", asctime(localtime(&ts)));
             ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
             ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
+
+        // You need to clear sending result as the memory usage will grow up.
         smtp.sendingResult.clear();
     }
 }

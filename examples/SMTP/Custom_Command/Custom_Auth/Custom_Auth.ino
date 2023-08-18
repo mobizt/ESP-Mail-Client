@@ -9,31 +9,12 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2023 mobizt
- *
- */
-
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
- *
- * "ESP_Mail_Session" changes to "Session_Config"
- * "IMAP_Config" changes to "IMAP_Data"
- *
- * Changes in the examples
- *
- * ESP_Mail_Session session;
- * to
- * Session_Config config;
- *
- * IMAP_Config config;
- * to
- * IMAP_Data imap_data;
+ * Copyright (c) 2022 mobizt
  *
  */
 
 #include <Arduino.h>
-#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
+#if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -80,10 +61,6 @@ SMTPSession smtp;
 const char rootCACert[] PROGMEM = "-----BEGIN CERTIFICATE-----\n"
                                   "-----END CERTIFICATE-----\n";
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-WiFiMulti multi;
-#endif
-
 void customCommandCallback(SMTP_Response res)
 {
 
@@ -93,12 +70,17 @@ void customCommandCallback(SMTP_Response res)
 
     // If command identifier number was not set in those functions, the res.id received will be auto increased and begins with 0
 
-    ESP_MAIL_PRINTF("> C: Command ID %d\n", res.id);
-    ESP_MAIL_PRINTF("< S: %s\n", res.text.c_str());
+    Serial.print("> C: Command ID ");
+    Serial.println(res.id);
 
-    if (res.statusCode > 0)
+    Serial.print("< S: ");
+    Serial.println(res.text.c_str());
+
+    if (res.respCode > 0)
     {
-        ESP_MAIL_PRINTF("> C: Response finished with status code %d\n\n", res.statusCode);
+        Serial.print("> C: Response finished with code ");
+        Serial.println(res.respCode);
+        Serial.println();
     }
 }
 
@@ -111,62 +93,43 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
 #endif
 
     Serial.println();
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
-    multi.run();
-#else
+    Serial.print("Connecting to AP");
+
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
-
-    Serial.print("Connecting to Wi-Fi");
-        
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    unsigned long ms = millis();
-#endif
-
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(300);
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-        if (millis() - ms > 10000)
-            break;
-#endif
+        delay(200);
     }
-    Serial.println();
-    Serial.print("Connected with IP: ");
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
 
-    // The WiFi credentials are required for Pico W
-    // due to it does not have reconnect feature.
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    MailClient.clearAP();
-    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
-#endif
-
-    /* Declare the Session_Config for user defined session credentials */
-    Session_Config config;
+    /* Declare the ESP_Mail_Session for user defined session credentials */
+    ESP_Mail_Session session;
 
     /* Set the session config */
-    config.server.host_name = SMTP_HOST;
-    config.server.port = SMTP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
+    session.server.host_name = SMTP_HOST;
+    session.server.port = SMTP_PORT;
+    session.login.email = AUTHOR_EMAIL;
+    session.login.password = AUTHOR_PASSWORD;
 
     /* Connect to the server */
-    if (smtp.customConnect(&config /* session credentials */, customCommandCallback) != 220)
+    if (smtp.customConnect(&session /* session credentials */, customCommandCallback) != 220)
     {
-        Serial.println("! E: Unable to connect to server");
+        Serial.println("> E: Unable to connect to server");
         return;
     }
 
@@ -182,22 +145,17 @@ void setup()
         return;
     }
 
-    if (smtp.sendCustomCommand(MailClient.toBase64(config.login.email), customCommandCallback) != 334)
+    if (smtp.sendCustomCommand(MailClient.toBase64(session.login.email), customCommandCallback) != 334)
     {
         smtp.closeSession();
         return;
     }
 
-    if (smtp.sendCustomCommand(MailClient.toBase64(config.login.password), customCommandCallback) != 235)
+    if (smtp.sendCustomCommand(MailClient.toBase64(session.login.password), customCommandCallback) != 235)
     {
         smtp.closeSession();
         return;
     }
-
-    if (smtp.isAuthenticated())
-        Serial.println("Successfully logged in.\n");
-    else
-        Serial.println("Connected with no Auth.\n");
 
     // Please don't forget to change sender@xxxxxx.com to your email
     if (smtp.sendCustomCommand(F("MAIL FROM:<sender@xxxxxx.com>"), customCommandCallback) != 250)

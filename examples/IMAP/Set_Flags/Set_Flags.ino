@@ -1,7 +1,5 @@
 /**
- * This example shows how to search all messages with the keywords in the opened mailbox folder.
- *
- * Created by K. Suwatchai (Mobizt)
+ * This example shows how to set the argument to the flags and read the message.
  *
  * Email: suwatchai@outlook.com
  *
@@ -24,7 +22,7 @@
 #include <ESP8266WiFi.h>
 #else
 
-// other Client defined here
+// Other Client defined here
 // To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
 // See the example Custom_Client.ino for how to use.
 
@@ -124,9 +122,6 @@ void setup()
     /* Set the callback function to get the reading results */
     imap.callback(imapCallback);
 
-    /* Declare the ESP_Mail_Session for user defined session credentials */
-    ESP_Mail_Session session;
-
     /** In case the SD card/adapter was used for the file storagge, the SPI pins can be configure from
      * MailClient.sdBegin function which may be different for ESP32 and ESP8266
      * For ESP32, assign all of SPI pins
@@ -137,39 +132,25 @@ void setup()
      * Which pin 15 is the CS pin of SD card adapter
      */
 
+    /* Declare the ESP_Mail_Session for user defined session credentials */
+    ESP_Mail_Session session;
+
     /* Set the session config */
     session.server.host_name = IMAP_HOST;
     session.server.port = IMAP_PORT;
     session.login.email = AUTHOR_EMAIL;
     session.login.password = AUTHOR_PASSWORD;
 
-    /** Declare the IMAP_Config object used for user defined IMAP operating options
+    /** Define the IMAP_Config object used for user defined IMAP operating options
      * and contains the IMAP operating result 
     */
     IMAP_Config config;
 
-    /* Message UID to fetch or read */
-    config.fetch.uid.clear();
+    /* Set seen flag */
+    // config.fetch.set_seen = true;
 
-    /** Search criteria
-     *
-     * A search key can also be a parenthesized list of one or more search keys
-     * (e.g., for use with the OR and NOT keys).
-     *
-     * Since IMAP protocol uses Polish notation, the search criteria which in the polish notation form can be.
-     *
-     * To search the message from "someone@email.com" with the subject "my subject" since 1 Jan 2021, your search criteria can be
-     * UID SEARCH (OR SUBJECT "my subject" FROM "someone@email.com") SINCE "Fri, 1 Jan 2021 21:52:25 -0800"
-     *
-     * To search the message from "mail1@domain.com" or from "mail2@domain.com", the search criteria will be
-     * UID SEARCH OR FROM mail1@domain.com FROM mail2@domain.com
-     *
-     * For more details on using parentheses, AND, OR and NOT search keys in search criteria.
-     * https://www.limilabs.com/blog/imap-search-requires-parentheses
-     *
-     *
-     */
-    config.search.criteria = F("UID SEARCH ALL");
+    /* Search criteria */
+    config.search.criteria.clear();
 
     /* Also search the unseen message */
     config.search.unseen_msg = true;
@@ -208,10 +189,6 @@ void setup()
     /* Set to report the download progress via the default serial port */
     config.enable.download_status = true;
 
-    /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
-    , to allow case sensitive parse, uncomment below line*/
-    // config.enable.header_case_sensitive = true;
-
     /* Set the limit of number of messages in the search results */
     config.limit.search = 5;
 
@@ -241,37 +218,32 @@ void setup()
     /*  {Optional} */
     printSelectedMailboxInfo(imap.selectedFolder());
 
-    /** Read or search the Email and keep the TCP session to open
-     * The second parameter is for close the session.
+    /* Message UID to fetch or read e.g. 100 */
+    int uid = imap.getUID(imap.selectedFolder().msgCount());
+
+    /** Set \Seen and \Answered to flags for message with UID
+     * The seesion will keep open.
      */
-    MailClient.readMail(&imap, false);
+    if (MailClient.setFlag(&imap, uid, F("\\Seen \\Answered"), false))
+        Serial.println("Setting FLAG success");
+    else
+        Serial.println("Error, setting FLAG");
+
+    /* Add \Seen and \Answered to flags for message with UID 100 */
+    // MailClient.addFlag(imap, 100, "\\Seen \\Answered", false);
+
+    /* Remove \Seen and \Answered from flags for message with UID 100 */
+    // MailClient.removeFlag(imap, 100, "\\Seen \\Answered", false);
+
+    config.fetch.uid = uid;
+
+    /* Read or search the Email and close the session */
+    MailClient.readMail(&imap);
 
     /* Clear all stored data in IMAPSession object */
     imap.empty();
 
-    /** Open or select other mailbox folder
-     * The folder that previousely opened will be closed
-     */
-    if (imap.selectFolder(F("Junk")))
-    {
-        /*  {Optional} */
-        printSelectedMailboxInfo(imap.selectedFolder());
-
-        /* Config to search all messages in the opened mailboax (Search mode) */
-        config.search.criteria = F("UID SEARCH ALL"); // or "UID SEARCH NEW" for recent received messages
-
-        /* No message UID provide for fetching */
-        config.fetch.uid.clear();
-
-        /* Search the Email and close the session */
-        MailClient.readMail(&imap);
-    }
-
-    /* Close the seeion in case the session is still open */
-    imap.closeSession();
-
-    /* Clear all stored data in IMAPSession object */
-    imap.empty();
+    ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
 }
 
 void loop()
@@ -356,8 +328,6 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
         ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
 
-        // The attachment may not detect in search because the multipart/mixed
-        // was not found in Content-Type header field.
         ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
         if (strlen(msg.acceptLang))
@@ -410,12 +380,9 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
 
             if (msg.rfc822.size() > 0)
             {
-                ESP_MAIL_PRINTF("\r\nRFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
                 printMessages(msg.rfc822, headerOnly);
             }
-
-            if (msg.attachments.size() > 0)
-                printAttacements(msg.attachments);
         }
 
         Serial.println();

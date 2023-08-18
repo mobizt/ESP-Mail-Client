@@ -9,26 +9,7 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2023 mobizt
- *
- */
-
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
- *
- * "ESP_Mail_Session" changes to "Session_Config"
- * "IMAP_Config" changes to "IMAP_Data"
- *
- * Changes in the examples
- *
- * ESP_Mail_Session session;
- * to
- * Session_Config config;
- *
- * IMAP_Config config;
- * to
- * IMAP_Data imap_data;
+ * Copyright (c) 2022 mobizt
  *
  */
 
@@ -43,7 +24,7 @@
  */
 
 #include <Arduino.h>
-#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
+#if defined(ESP32)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
@@ -113,19 +94,13 @@ int totalMessage = 0;
 int msgNum = 0;
 int sign = -1;
 
-/* Declare the global used Session_Config for user defined session credentials */
-Session_Config config;
+/* Declare the global used ESP_Mail_Session for user defined session credentials */
+ESP_Mail_Session session;
 
-/* Define the IMAP_Data object used for user defined IMAP operating options. */
-IMAP_Data imap_data;
-
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-WiFiMulti multi;
-#endif
-
-// For Free Heap checking
-#include "HeapStat.h"
-HeapStat heapInfo;
+/** Declare the global used IMAP_Config object used for user defined IMAP operating options
+ * and contains the IMAP operating result
+ */
+IMAP_Config config;
 
 void setup()
 {
@@ -136,48 +111,29 @@ void setup()
     while (!Serial)
         ;
     Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\n");
-    Serial.println("To install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-build-wifinina-firmware");
+    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
+
 #endif
 
     Serial.println();
 
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
-    multi.run();
-#else
+    Serial.print("Connecting to AP");
+
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-#endif
-
-    Serial.print("Connecting to Wi-Fi");
-
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    unsigned long ms = millis();
-#endif
-
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(300);
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-        if (millis() - ms > 10000)
-            break;
-#endif
+        delay(200);
     }
-    Serial.println();
-    Serial.print("Connected with IP: ");
+
+    Serial.println("");
+    Serial.println("WiFi connected.");
+    Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
-
-    // The WiFi credentials are required for Pico W
-    // due to it does not have reconnect feature.
-#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    MailClient.clearAP();
-    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
-#endif
 
 #if defined(ESP_MAIL_DEFAULT_SD_FS) // defined in src/ESP_Mail_FS.h
     // Mount SD card.
@@ -206,113 +162,76 @@ void setup()
      */
 
     /* Set the session config */
-    config.server.host_name = IMAP_HOST;
-    config.server.port = IMAP_PORT;
-    config.login.email = AUTHOR_EMAIL;
-    config.login.password = AUTHOR_PASSWORD;
+    session.server.host_name = IMAP_HOST;
+    session.server.port = IMAP_PORT;
+    session.login.email = AUTHOR_EMAIL;
+    session.login.password = AUTHOR_PASSWORD;
 
     /* Message UID to fetch or read */
-    imap_data.fetch.uid.clear();
+    config.fetch.uid.clear();
 
     /* Search criteria */
-    imap_data.search.criteria.clear();
+    config.search.criteria.clear();
 
     /* Also search the unseen message */
-    imap_data.search.unseen_msg = true;
+    config.search.unseen_msg = true;
 
     /* Set the storage to save the downloaded files and attachments */
-    imap_data.storage.saved_path = F("/email_data");
+    config.storage.saved_path = F("/email_data");
 
     /** The file storage type e.g.
      * esp_mail_file_storage_type_none,
      * esp_mail_file_storage_type_flash, and
      * esp_mail_file_storage_type_sd
      */
-    imap_data.storage.type = esp_mail_file_storage_type_sd;
+    config.storage.type = esp_mail_file_storage_type_sd;
 
-    /** Set to download headers, text and html messaeges,
+    /** Set to download heades, text and html messaeges,
      * attachments and inline images respectively.
      */
-    imap_data.download.header = false;
-    imap_data.download.text = false;
-    imap_data.download.html = false;
-    imap_data.download.attachment = false;
-    imap_data.download.inlineImg = false;
+    config.download.header = false;
+    config.download.text = false;
+    config.download.html = false;
+    config.download.attachment = false;
+    config.download.inlineImg = false;
 
     /** Set to enable the results i.e. html and text messaeges
      * which the content stored in the IMAPSession object is limited
-     * by the option imap_data.limit.msg_size.
-     * The whole message can be download through imap_data.download.text
-     * or imap_data.download.html which not depends on these enable options.
+     * by the option config.limit.msg_size.
+     * The whole message can be download through config.download.text
+     * or config.download.html which not depends on these enable options.
      */
-    imap_data.enable.html = true;
-    imap_data.enable.text = true;
+    config.enable.html = true;
+    config.enable.text = true;
 
     /* Set to enable the sort the result by message UID in the decending order */
-    imap_data.enable.recent_sort = true;
+    config.enable.recent_sort = true;
 
     /* Set to report the download progress via the default serial port */
-    imap_data.enable.download_status = true;
+    config.enable.download_status = true;
 
     /* Header fields parsing is case insensitive by default to avoid uppercase header in some server e.g. iCloud
     , to allow case sensitive parse, uncomment below line*/
-    // imap_data.enable.header_case_sensitive = true;
+    // config.enable.header_case_sensitive = true;
 
     /* Set the limit of number of messages in the search results */
-    imap_data.limit.search = 5;
+    config.limit.search = 5;
 
     /** Set the maximum size of message stored in
      * IMAPSession object in byte
      */
-    imap_data.limit.msg_size = 512;
+    config.limit.msg_size = 512;
 
     /** Set the maximum attachments and inline images files size
      * that can be downloaded in byte.
      * The file which its size is largger than this limit may be saved
      * as truncated file.
      */
-    imap_data.limit.attachment_size = 1024 * 1024 * 5;
-
-    // If ID extension was supported by IMAP server, assign the client identification
-    // name, version, vendor, os, os_version, support_url, address, command, arguments, environment
-    // Server ID can be optained from imap.serverID() after calling imap.connect and imap.id.
-
-    // imap_data.identification.name = "User";
-    // imap_data.identification.version = "1.0";
-
-    /* Set the TCP response read timeout in seconds */
-    // imap.setTCPTimeout(10);
+    config.limit.attachment_size = 1024 * 1024 * 5;
 
     /* Connect to the server */
-    if (!imap.connect(&config, &imap_data))
+    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
-
-    // Client identification can be sent to server later with
-    /**
-     * IMAP_Identification iden;
-     * iden.name = "user";
-     * iden.version = "1.0";
-     *
-     * if (imap.id(&iden))
-     * {
-     *    Serial.println("\nSend Identification success");
-     *    Serial.println(imap.serverID());
-     * }
-     * else
-     *    ESP_MAIL_PRINTF("nIdentification sending error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
-     */
-
-    if (!imap.isLoggedIn())
-    {
-        Serial.println("\nNot yet logged in.");
-    }
-    else
-    {
-        if (imap.isAuthenticated())
-            Serial.println("\nSuccessfully logged in.");
-        else
-            Serial.println("\nConnected with no Auth.");
-    }
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);
@@ -339,24 +258,17 @@ void loop()
 {
     if (millis() - readMillis > 10000 || readMillis == 0)
     {
-        readMillis = millis();
-
         // If session was closed, reconnect and re-select the mailbox
         if (!imap.connected())
         {
-            if (!imap.connect(&config, &imap_data))
+            if (!imap.connect(&session, &config))
                 return;
 
             if (!imap.selectFolder(F("INBOX")))
                 return;
-
-            if (totalMessage == 0)
-            {
-                totalMessage = imap.selectedFolder().msgCount();
-                msgNum = totalMessage;
-                sign = -1;
-            }
         }
+
+        readMillis = millis();
 
         if (msgNum <= 0)
         {
@@ -370,13 +282,10 @@ void loop()
         }
 
         /* Message number to fetch or read */
-        imap_data.fetch.number = msgNum;
+        config.fetch.number = msgNum;
 
         /* Set seen flag */
-        // imap_data.fetch.set_seen = true;
-
-        /* Fetch or read only message header */
-        // imap_data.fetch.headerOnly = true;
+        // config.fetch.set_seen = true;
 
         /** Read or search the Email and keep the TCP session to open
          * The second parameter is for close the session.
@@ -385,8 +294,7 @@ void loop()
         // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
         // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
         // to message, see the Set_Flags.ino example.
-        if (MailClient.readMail(&imap, false))
-            msgNum += sign;
+        MailClient.readMail(&imap, false);
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
@@ -411,12 +319,6 @@ void imapCallback(IMAP_Status status)
 
         /* Clear all stored data in IMAPSession object */
         imap.empty();
-
-        // Collect memory info
-        heapInfo.collect();
-
-        // Print memory info
-        heapInfo.print();
     }
 }
 
@@ -441,23 +343,10 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
     /* Show the mailbox info */
     ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    ESP_MAIL_PRINTF("UID Validity: %d\n", sFolder.uidValidity());
     ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
-    if (sFolder.unseenIndex() > 0)
-        ESP_MAIL_PRINTF("First Unseen Message Number: %d\n", sFolder.unseenIndex());
-    else
-        ESP_MAIL_PRINTF("Unseen Messages: No\n");
-
-    if (sFolder.modSeqSupported())
-        ESP_MAIL_PRINTF("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
+    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
         ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
-
-    if (sFolder.flagCount(true))
-    {
-        for (size_t i = 0; i < sFolder.flagCount(true); i++)
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Permanent Flags: " : ", ", sFolder.flag(i, true).c_str(), i == sFolder.flagCount(true) - 1 ? "\n" : "");
-    }
 }
 
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
@@ -494,15 +383,14 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         Serial.println("****************************");
         ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
         ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-
-        // The attachment status in search may be true in case the "multipart/mixed"
-        // content type header was set with no real attachtment included.
-        ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
-
         ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
 
-        if (strlen(msg.flags))
-            ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
+        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
+
+        // The attachment may not detect in search because the multipart/mixed
+        // was not found in Content-Type header field.
+        ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
+
         if (strlen(msg.acceptLang))
             ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
         if (strlen(msg.contentLang))

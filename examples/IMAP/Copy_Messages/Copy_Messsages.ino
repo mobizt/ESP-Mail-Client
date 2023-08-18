@@ -1,5 +1,5 @@
 /**
- * This example shows how to append message to mailbox.
+ * This example shows how to copy messages from the mailbox to other folder.
  *
  * Email: suwatchai@outlook.com
  *
@@ -9,8 +9,10 @@
  *
  */
 
-/** Assign SD card type and FS used in src/ESP_Mail_FS.h and
- * change the config for that card interfaces in src/extras/SDHelper.h
+/** For ESP8266, with BearSSL WiFi Client
+ * The memory reserved for completed valid SSL response from IMAP is 16 kbytes which
+ * may cause your device out of memory reset in case the memory
+ * allocation error.
  */
 
 #include <Arduino.h>
@@ -26,12 +28,9 @@
 
 #endif
 
-#include <data.h>
-
 #include <ESP_Mail_Client.h>
 
-// required IMAP and SMTP
-#if defined(ENABLE_IMAP) && defined(ENABLE_SMTP)
+// To use only IMAP functions, you can exclude the SMTP from compilation, see ESP_Mail_FS.h.
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -63,25 +62,19 @@
 #define AUTHOR_EMAIL "<email>"
 #define AUTHOR_PASSWORD "<password>"
 
+/* Print the list of mailbox folders */
+void printAllMailboxesInfo(IMAPSession &imap);
+
+/* Print the selected folder info */
+void printSelectedMailboxInfo(IMAPSession &imap);
+
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
-
-/* Callback function to get the Email reading status */
-void imapCallback(IMAP_Status status)
-{
-    /* Print the current status */
-    Serial.println(status.info());
-}
-
-#endif
 
 void setup()
 {
 
     Serial.begin(115200);
-
-// required IMAP and SMTP
-#if defined(ENABLE_IMAP) && defined(ENABLE_SMTP)
 
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
@@ -119,9 +112,6 @@ void setup()
      */
     imap.debug(1);
 
-    /* Set the callback function to get the reading results */
-    imap.callback(imapCallback);
-
     /* Declare the ESP_Mail_Session for user defined session credentials */
     ESP_Mail_Session session;
 
@@ -136,61 +126,55 @@ void setup()
      */
     IMAP_Config config;
 
-    ESP_Mail_Message message[2]; // The same usage as SMTP_Message
-
-    message[0].sender.name = "Fred Foobar";
-    message[0].sender.email = "foobar@Blurdybloop.example.COM";
-    message[0].subject = "afternoon meeting";
-    message[0].addRecipient("Joe Mooch", "mooch@owatagu.example.net");
-    message[0].text.content = "Hello Joe, do you think we can meet at 3:30 tomorrow?";
-    message[0].text.charSet = "us-ascii";
-    message[0].text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
-
-    ESP_Mail_Attachment att[2]; // The same usage as SMTP_Attachment
-
-    att[0].descr.filename = "haun.png";
-    att[0].descr.mime = "image/png";
-    att[0].blob.data = shaun_png;
-    att[0].blob.size = sizeof(shaun_png);
-    att[0].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-    message[0].addAttachment(att[0]);
-
-    message[1].sender.name = "Joe Mooch";
-    message[1].sender.email = "mooch@OWaTaGu.example.net";
-    message[1].subject = "Re: afternoon meeting";
-    message[1].addRecipient("Fred Foobar", "foobar@blurdybloop.example.com");
-    message[1].text.content = "3:30 is fine with me.";
-    message[1].text.charSet = "us-ascii";
-    message[1].text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
-
-    att[1].descr.filename = "mu_law.wav";
-    att[1].descr.mime = "audio/basic";
-    att[1].blob.data = mu_law_wave;
-    att[1].blob.size = sizeof(mu_law_wave);
-    att[1].descr.transfer_encoding = Content_Transfer_Encoding::enc_base64;
-
-    message[1].addAttachment(att[1]);
-
     /* Connect to the server */
     if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
         return;
 
+    /*  {Optional} */
+    printAllMailboxesInfo(imap);
+
+    /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
         return;
 
-    // If MULTIAPPEND extension is supported, the multiple messages will send by a single APPEND command.
-    // If not, one message can append for a APPEND command.
-    if (!MailClient.appendMessage(&imap, &message[0], false /* if not last message to append */, "\\Flagged" /* flags */, "Thu, 16 Jun 2022 12:30:25 -0800 (PST)" /* date time */))
-        Serial.println("Error appending message, " + imap.errorReason());
+    /* Define the MessageList class to add the message to copy */
+    MessageList toCopy;
 
-    if (!MailClient.appendMessage(&imap, &message[1], true /* last message to append */))
-        Serial.println("Error appending message, " + imap.errorReason());
+    /* Add message uid to copy to the list */
+    toCopy.add(3);
+    toCopy.add(4);
+
+    // imap.createFolder("test");
+
+    /* Copy all messages in the list to the folder "test" */
+    if (imap.copyMessages(&toCopy, F("test")))
+        Serial.println("Messages copied");
+
+    /* Delete all messages in the list from the opened folder (move to trash) */
+    // imap.deleteMessages(&toCopy);
+
+    // imap.deleteolder("test");
 
     ESP_MAIL_PRINTF("Free Heap: %d\n", MailClient.getFreeHeap());
-
-#endif
 }
 
 void loop()
 {
+}
+
+void printAllMailboxesInfo(IMAPSession &imap)
+{
+    /* Declare the folder collection class to get the list of mailbox folders */
+    FoldersCollection folders;
+
+    /* Get the mailbox folders */
+    if (imap.getFolders(folders))
+    {
+        for (size_t i = 0; i < folders.size(); i++)
+        {
+            /* Iterate each folder info using the  folder info item data */
+            FolderInfo folderInfo = folders.info(i);
+            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+        }
+    }
 }
