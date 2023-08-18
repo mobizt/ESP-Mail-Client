@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 6, 2023
+ * Created August 18, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1215,51 +1215,64 @@ bool ESP_Mail_Client::imapAuth(IMAPSession *imap, bool &ssl)
 
     imap->_auth_capability[esp_mail_auth_capability_login] = false;
 
+    imap->_session_cfg->int_start_tls = imap->_session_cfg->secure.startTLS;
+    imap->_session_cfg->int_mode = imap->_session_cfg->secure.mode;
+
+#if !defined(ESP_MAIL_DISABLE_SSL)
 unauthenticate:
+#endif
 
     // capabilities may change after TLS negotiation
     if (!imap->checkCapabilities())
         return false;
 
-    // start TLS when needed or the server issues
-    if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->secure.startTLS) && !ssl)
+#if !defined(ESP_MAIL_DISABLE_SSL)
+
+    if (imap->_session_cfg->int_mode != esp_mail_secure_mode_nonsecure)
     {
+        // start TLS when needed or the server issues
+        if ((imap->_auth_capability[esp_mail_auth_capability_starttls] || imap->_session_cfg->int_start_tls || imap->_session_cfg->int_mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        {
 #if !defined(SILENT_MODE)
-        printDebug((void *)(imap),
-                   false,
-                   esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
-                   esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
-                   esp_mail_debug_tag_type_client,
-                   true,
-                   false);
+            printDebug((void *)(imap),
+                       false,
+                       esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
+                       esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
+                       esp_mail_debug_tag_type_client,
+                       true,
+                       false);
 #endif
 
-        imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_starttls].text).c_str(), true);
+            imapSend(imap, imap->prependTag(imap_commands[esp_mail_imap_command_starttls].text).c_str(), true);
 
-        // rfc2595 section 3.1
-        imap->_imap_cmd = esp_mail_imap_cmd_starttls;
-        if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
-            return false;
+            // rfc2595 section 3.1
+            imap->_imap_cmd = esp_mail_imap_cmd_starttls;
+            if (!handleIMAPResponse(imap, IMAP_STATUS_BAD_COMMAND, false))
+                return false;
 
 #if !defined(SILENT_MODE)
-        if (imap->_debug)
-            esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+            if (imap->_debug)
+                esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
 #endif
 
-        // connect in secure mode
-        // do TLS handshake
+            // connect in secure mode
+            // do TLS handshake
 
-        if (!imap->client.connectSSL(imap->_session_cfg->certificate.verify))
-            return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
+            if (!imap->client.connectSSL(imap->_session_cfg->certificate.verify))
+                return handleIMAPError(imap, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP, false);
 
-        // set the secure mode
-        imap->_session_cfg->secure.startTLS = false;
-        ssl = true;
-        imap->_secure = true;
+            // set the secure mode
+            imap->_session_cfg->int_start_tls = false;
+            imap->_session_cfg->int_mode = esp_mail_secure_mode_undefined;
+            ssl = true;
+            imap->_secure = true;
 
-        // check the capabilitiy again to prevent the man in the middle attack
-        goto unauthenticate;
+            // check the capabilitiy again to prevent the man in the middle attack
+            goto unauthenticate;
+        }
     }
+
+#endif
 
     imap->clearMessageData();
     imap->_mailboxOpened = false;
@@ -1363,6 +1376,7 @@ unauthenticate:
                 return false;
 
             imap->_imap_cmd = esp_mail_imap_cmd_sasl_auth_plain;
+
             if (!handleIMAPResponse(imap, IMAP_STATUS_AUTHENTICATE_FAILED, true))
                 return false;
 
@@ -1481,7 +1495,7 @@ size_t ESP_Mail_Client::imapSend(IMAPSession *imap, PGM_P data, bool newline)
 
     int toSend = newline ? s.length() + 2 : s.length();
 
-    if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_maintener && !imap->_customCmdResCallback)
+    if (imap->_debug && imap->_debugLevel > esp_mail_debug_level_maintainer && !imap->_customCmdResCallback)
         esp_mail_debug_print(s.c_str(), newline);
 
     sent = newline ? imap->client.println(s.c_str()) : imap->client.print(s.c_str());
@@ -2596,6 +2610,9 @@ char *ESP_Mail_Client::urlDecode(const char *str)
 
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
+     if (!imap)
+        return false;
+
     imap->client.setSession(imap->_session_cfg);
     networkStatus = imap->client.networkReady();
 
@@ -2902,6 +2919,22 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
                         // No response ever parsed
 
+                        if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
+                        {
+                            if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
+                            {
+                                if (isOAuthError(res.response, res.readLen, res.chunkIdx, 2))
+                                    res.completedResponse = true;
+                            }
+
+                            // In case SASL-IR extension does not support, check for initial zero-length server challenge first "+ "
+                            if (!imap->_auth_capability[esp_mail_auth_capability_sasl_ir] && strcmp(res.response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
+                            {
+                                res.imapResp = esp_mail_imap_resp_ok;
+                                res.completedResponse = true;
+                            }
+                        }
+
                         if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_login || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain)
                         {
                             int i = 0;
@@ -2928,21 +2961,6 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
                         {
                             res.imapResp = esp_mail_imap_resp_ok;
                             res.completedResponse = true;
-                        }
-                        else if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_plain || imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
-                        {
-                            if (imap->_imap_cmd == esp_mail_imap_cmd_sasl_auth_oauth)
-                            {
-                                if (isOAuthError(res.response, res.readLen, res.chunkIdx, 2))
-                                    res.completedResponse = true;
-                            }
-
-                            // multiline auth SASL (no SASL-IR extension supported)
-                            if (strcmp(res.response, pgm2Str(esp_mail_str_63 /* "+ " */)) == 0)
-                            {
-                                res.imapResp = esp_mail_imap_resp_ok;
-                                res.completedResponse = true;
-                            }
                         }
                         else if (imap->_imap_cmd == esp_mail_imap_cmd_capability)
                             parseCapabilityResponse(imap, res.response, res.chunkIdx);
@@ -3658,7 +3676,8 @@ void ESP_Mail_Client::parseFoldersResponse(IMAPSession *imap, char *buf, bool li
 
         while (pp != NULL)
         {
-            strsep(&end, " ");
+            // See RFC2047.h
+            ESP_MAIL_STRSEP(&end, " ");
             count++;
 
             if (count >= tkPos && strlen(pp) > 0)
@@ -3923,7 +3942,8 @@ bool ESP_Mail_Client::getFlags(IMAPSession *imap, char *buf, esp_mail_imap_respo
 
         while (pp != NULL)
         {
-            strsep(&end, " ");
+            // See RFC2047.h
+            ESP_MAIL_STRSEP(&end, " ");
             count++;
             if (count >= tkPos && strlen(pp) > 0)
             {
@@ -4950,6 +4970,11 @@ bool IMAPSession::mCustomConnect(Session_Config *session_config, imapResponseCal
 bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *imap_data, bool &ssl)
 {
 
+     _session_cfg = session_config;
+
+      if (!client.isInitialized())
+        return MailClient.handleIMAPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED, false);
+
     // Resources are also released if network disconnected.
     if (!MailClient.reconnect(this))
         return false;
@@ -5068,7 +5093,7 @@ void IMAPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
-        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintainer)
             level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;
@@ -5142,6 +5167,11 @@ void IMAPSession::setNetworkStatus(bool status)
 {
     this->client.setNetworkStatus(status);
     MailClient.networkStatus = status;
+}
+
+void IMAPSession::setSSLBufferSize(int rx, int tx)
+{
+    this->client.setIOBufferSize(rx, tx);
 }
 
 bool IMAPSession::mOpenFolder(MB_StringPtr folderName, bool readOnly)
@@ -5937,7 +5967,7 @@ bool IMAPSession::mFetchSequenceSet()
 MB_String IMAPSession::prependTag(PGM_P cmd, PGM_P tag)
 {
     MB_String s = (tag == NULL) ? esp_mail_imap_tag_str : tag;
-    s += esp_mail_str_2; /* " " */
+    MailClient.appendSpace(s);
     s += cmd;
     return s;
 }
@@ -6194,7 +6224,11 @@ bool IMAPSession::mSendCustomCommand(MB_StringPtr cmd, imapResponseCallback call
 
         // set the secure mode
         if (_session_cfg)
+        {
+            // We reset the prefer connection mode in case user set it.
             _session_cfg->secure.startTLS = false;
+            _session_cfg->secure.mode = esp_mail_secure_mode_undefined;
+        }
 
         _secure = true;
     }

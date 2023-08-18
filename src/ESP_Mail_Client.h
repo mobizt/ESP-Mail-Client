@@ -9,7 +9,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 6, 2023
+ * Created August 18, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -45,19 +45,22 @@
 #include <vector>
 #endif
 
-#if __has_include(<WiFiNINA.h>)
-#include <WiFiNINA.h>
-#elif __has_include(<WiFi101.h>)
-#include <WiFi101.h>
+#if __has_include(<string.h>)
+#include <string.h>
 #endif
 
-#include "extras/MB_Time.h"
-#include "ESP_Mail_Print.h"
+#if __has_include(<stdarg.h>)
+#include <stdarg.h>
+#endif
+
 #include "ESP_Mail_FS.h"
 #include "ESP_Mail_Const.h"
+#include "extras/MB_Time.h"
 
-#if __has_include(<WiFi101.h>)
-#include <WiFi101.h>
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
+#define ESP_MAIL_PRINTF ESP_MAIL_DEFAULT_DEBUG_PORT.printf
+#else
+#define ESP_MAIL_PRINTF MailClient.printf
 #endif
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
@@ -66,21 +69,15 @@
 
 #if defined(ESP32)
 
-#include <WiFi.h>
-#if !defined(ENABLE_CUSTOM_CLIENT)
-#include <ETH.h>
-#endif
 #define ESP_MAIL_MIN_MEM 70000
 
 #elif defined(ESP8266)
 
-#include <ESP8266WiFi.h>
 #define SD_CS_PIN 15
 #define ESP_MAIL_MIN_MEM 4000
 
 #elif defined(MB_ARDUINO_PICO)
 
-#include <WiFi.h>
 #define ESP_MAIL_MIN_MEM 70000
 #define SD_CS_PIN PIN_SPI1_SS
 
@@ -909,8 +906,7 @@ public:
   void networkReconnect(bool reconnect);
 
   /* Obsoleted */
-  void setUDPClient(void *client, float gmtOffset){}
-
+  void setUDPClient(void *client, float gmtOffset) {}
 
   /** Clear all WiFi access points assigned.
    *
@@ -923,6 +919,12 @@ public:
    * @param password The WiFi password.
    */
   void addAP(const String &ssid, const String &password);
+
+  /**
+   * Formatted printing on debug port.
+   *
+   */
+  void printf(const char *format, ...);
 
 #if defined(MBFS_SD_FS) && defined(MBFS_CARD_TYPE_SD)
 
@@ -1008,6 +1010,22 @@ public:
   String toBase64(T str) { return mGetBase64(toStringPtr(str)).c_str(); }
 
   MB_Time Time;
+
+#if defined(ENABLE_IMAP)
+
+  // Get encoding type from character set string
+  esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
+
+  // Decode Latin1 to UTF-8
+  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
+
+  // Decode TIS620 to UTF-8
+  void decodeTIS620_UTF8(char *out, const char *in, size_t len);
+
+  // handle rfc2047 Q (quoted printable) and B (base64) decodings
+  RFC2047_Decoder RFC2047Decoder;
+
+#endif
 
 private:
   friend class SMTPSession;
@@ -1437,9 +1455,6 @@ private:
 
 #if defined(ENABLE_IMAP)
 
-  // handle rfc2047 Q (quoted printable) and B (base64) decodings
-  RFC2047_Decoder RFC2047Decoder;
-
   // Check if child part (part number string) is a member of the parent part (part number string)
   // part number string format: <part number>.<sub part number>.<sub part number>
   bool multipartMember(const MB_String &parent, const MB_String &child);
@@ -1456,14 +1471,8 @@ private:
   // Actually not decode because 8bit string is enencode string unless prepare valid 8bit string
   char *decode8Bit_UTF8(char *buf);
 
-  // Get encoding type from character set string
-  esp_mail_char_decoding_scheme getEncodingFromCharset(const char *enc);
-
   // Decode string base on encoding
   void decodeString(IMAPSession *imap, MB_String &string, const char *enc = "");
-
-  // Decode Latin1 to UTF-8
-  int decodeLatin1_UTF8(unsigned char *out, int *outlen, const unsigned char *in, int *inlen);
 
   /**
    * Encode a code point using UTF-8
@@ -1478,9 +1487,6 @@ private:
    * @return number of bytes on success, 0 on failure (also produces U+FFFD, which uses 3 bytes)
    */
   int encodeUnicode_UTF8(char *out, uint32_t utf);
-
-  // Decode TIS620 to UTF-8
-  void decodeTIS620_UTF8(char *out, const char *in, size_t len);
 
   // Network reconnection and return the connection status
   bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
@@ -1710,6 +1716,13 @@ public:
    * @param status The network status.
    */
   void setNetworkStatus(bool status);
+
+  /** Set the BearSSL IO buffer size.
+   *
+   * @param rx The BearSSL receive buffer size in bytes.
+   * @param tx The BearSSL trasmit buffer size in bytes.
+   */
+  void setSSLBufferSize(int rx = -1, int tx = -1);
 
   /** Begin the IMAP server connection.
    *
@@ -2546,6 +2559,13 @@ public:
    */
   void setNetworkStatus(bool status);
 
+  /** Set the BearSSL IO buffer size.
+   *
+   * @param rx The BearSSL receive buffer size in bytes.
+   * @param tx The BearSSL trasmit buffer size in bytes.
+   */
+  void setSSLBufferSize(int rx = -1, int tx = -1);
+
   /** Begin the SMTP server connection.
    *
    * @param session_config The pointer to Session_Config structured data that keeps
@@ -2793,27 +2813,6 @@ public:
 };
 
 #endif
-
-static void __attribute__((used)) esp_mail_dump_blob(unsigned char *buf, size_t len)
-{
-
-  size_t u;
-
-  for (u = 0; u < len; u++)
-  {
-    if ((u & 15) == 0)
-    {
-      ESP_MAIL_PRINTF("\n%08lX  ", (unsigned long)u);
-    }
-    else if ((u & 7) == 0)
-    {
-      ESP_MAIL_PRINTF(" ");
-    }
-    ESP_MAIL_PRINTF(" %02x", buf[u]);
-  }
-
-  ESP_MAIL_PRINTF("\n");
-}
 
 extern ESP_Mail_Client MailClient;
 

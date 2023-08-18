@@ -2,7 +2,7 @@
  *
  * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.0
  *
- * Created August 6, 2023
+ * Created August 18, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -35,13 +35,26 @@
 #endif
 
 #pragma GCC diagnostic ignored "-Wunused-variable"
+#pragma GCC diagnostic ignored "-Wdelete-non-virtual-dtor"
 
 #include "ESP_Mail_Const.h"
 
 #if defined(ESP32) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
 #include "IPAddress.h"
-#include <WiFiClient.h>
 #include "lwip/sockets.h"
+#endif
+
+#if defined(ESP32)
+
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#define WIFI_HAS_HOST_BY_NAME
+#endif
+#include "extras/WiFiClientImpl.h"
+#define BASE_WIFICLIENT WiFiClientImpl
+
+#elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+#include "WiFiClient.h"
+#define BASE_WIFICLIENT WiFiClient
 #endif
 
 #include "SSLClient/ESP_SSLClient.h"
@@ -49,9 +62,22 @@
 class ESP_Mail_TCPClient
 {
 public:
-    ESP_Mail_TCPClient() {}
+    ESP_Mail_TCPClient()
+    {
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client = new ESP_SSLClient();
+#endif
+    }
 
-    ~ESP_Mail_TCPClient() { clear(); }
+    ~ESP_Mail_TCPClient()
+    {
+        clear();
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        if (_tcp_client)
+            delete _tcp_client;
+        _tcp_client = nullptr;
+#endif
+    }
 
     /**
      * Set the client.
@@ -75,13 +101,14 @@ public:
      */
     void setGSMClient(Client *client, void *modem = nullptr, const char *pin = nullptr, const char *apn = nullptr, const char *user = nullptr, const char *password = nullptr)
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         _pin = pin;
         _apn = apn;
         _user = user;
         _password = password;
         _modem = modem;
         _client_type = esp_mail_client_type_external_gsm_client;
+        _basic_client = client;
 #endif
     }
 
@@ -91,13 +118,14 @@ public:
      */
     void setCACert(const char *caCert)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (caCert)
         {
             if (_x509)
                 delete _x509;
 
             _x509 = new X509List(caCert);
-            _ssl_client.setTrustAnchors(_x509);
+            _tcp_client->setTrustAnchors(_x509);
 
             setCertType(esp_mail_cert_type_data);
             setTA(true);
@@ -107,6 +135,7 @@ public:
             setCertType(esp_mail_cert_type_none);
             setInSecure();
         }
+#endif
     }
 
     /**
@@ -117,6 +146,7 @@ public:
      */
     bool setCertFile(const char *certFile, mb_fs_mem_storage_type storageType)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (!_mbfs)
             return false;
 
@@ -141,13 +171,14 @@ public:
                     delete _x509;
 
                 _x509 = new X509List(der, len);
-                _ssl_client.setTrustAnchors(_x509);
+                _tcp_client->setTrustAnchors(_x509);
                 setTA(true);
                 _mbfs->delP(&der);
 
                 setCertType(esp_mail_cert_type_file);
             }
         }
+#endif
 
         return getCertType() == esp_mail_cert_type_file;
     }
@@ -158,7 +189,18 @@ public:
      */
     void setTimeout(uint32_t timeoutSec)
     {
-        _ssl_client.setTimeout(timeoutSec);
+        _tcp_client->setTimeout(timeoutSec);
+    }
+
+    /**  Set the BearSSL IO buffer size.
+     *
+     * @param rx The BearSSL receive buffer size in bytes.
+     * @param tx The BearSSL trasmit buffer size in bytes.
+     */
+    void setIOBufferSize(int rx, int tx)
+    {
+        _rx_size = rx;
+        _tx_size = tx;
     }
 
     /**
@@ -169,7 +211,7 @@ public:
     {
         bool ret = false;
 
-#if !defined(ESP_MAIL_NOT_USE_NATIVE_ETHERNET)
+#if defined(ESP_MAIL_ETH_IS_AVAILABLE)
 
 #if defined(ESP32)
         if (validIP(ETH.localIP()))
@@ -254,8 +296,8 @@ public:
             goto ex;
 #endif
 #if defined(INC_W5100_LWIP)
-        if wcs
-            ->(_session_config->spi_ethernet_module.w5100) goto ex;
+        if (_session_config->spi_ethernet_module.w5100)
+            goto ex;
 #endif
 #if defined(INC_W5500_LWIP)
         if (_session_config->spi_ethernet_module.w5500)
@@ -270,9 +312,11 @@ public:
 
 #if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
     ex:
-        WiFiClient client;
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+        BASE_WIFICLIENT client;
         client.connect(_session_config->server.host_name.c_str(), _session_config->server.port);
         client.stop();
+#endif
 #endif
     }
 
@@ -284,20 +328,20 @@ public:
     {
 
         // We will not invoke the network status request when device has built-in WiFi or Ethernet and it is connected.
-        if (WiFI_CONNECTED || ethLinkUp())
-            _network_status = validIP(WiFi.localIP());
+        if (_client_type == esp_mail_client_type_external_gsm_client)
+        {
+            _network_status = gprsConnected();
+            if (!_network_status)
+                gprsConnect();
+        }
+        else if (WiFI_CONNECTED || ethLinkUp())
+            _network_status = true;
         else if (_client_type == esp_mail_client_type_external_basic_client)
         {
             if (!_network_status_cb)
                 _last_error = 1;
             else
                 _network_status_cb();
-        }
-        else if (_client_type == esp_mail_client_type_external_gsm_client)
-        {
-            _network_status = gprsConnected();
-            if (!_network_status)
-                gprsConnect();
         }
 
         return _network_status;
@@ -311,14 +355,15 @@ public:
 
         if (_client_type == esp_mail_client_type_external_basic_client)
         {
+#if defined(ESP_MAIL_HAS_WIFI_DISCONNECT)
             // We can reconnect WiFi when device connected via built-in WiFi that supports reconnect
             if (WiFI_CONNECTED)
             {
-#if !defined(ARDUINO_RASPBERRY_PI_PICO_W) && !defined(MB_ARDUINO_ARCH_SAMD)
                 WiFi.reconnect();
                 return;
-#endif
             }
+
+#endif
 
             if (_network_connection_cb)
                 _network_connection_cb();
@@ -361,11 +406,11 @@ public:
     {
         bool rdy = true;
 #if !defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        if (_client_type != esp_mail_client_type_external_basic_client ||
-            _client_type != esp_mail_client_type_external_gsm_client)
+        if (_client_type == esp_mail_client_type_external_basic_client &&
+            (!_network_connection_cb || !_network_status_cb))
             rdy = false;
-        else if (_client_type == esp_mail_client_type_external_basic_client &&
-                 (!_network_connection_cb || !_network_status_cb))
+        else if (_client_type != esp_mail_client_type_external_basic_client ||
+                 _client_type != esp_mail_client_type_external_gsm_client)
             rdy = false;
 #else
         // assume external client is WiFiClient and network status request callback is not required
@@ -380,7 +425,7 @@ public:
 
         if (!rdy)
         {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
             if (_debug_level > 0)
             {
                 if (!_network_connection_cb)
@@ -422,7 +467,10 @@ public:
     {
         _host = host;
         _port = port;
-        _ssl_client.setBufferSizes(_maxRXBufSize / rxBufDivider, _maxTXBufSize / txBufDivider);
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->setBufferSizes(_rx_size >= _minRXTXBufSize && _rx_size <= _maxRXBufSize ? _rx_size : _maxRXBufSize / rxBufDivider,
+                                    _tx_size >= _minRXTXBufSize && _tx_size <= _maxTXBufSize ? _tx_size : _maxTXBufSize / txBufDivider);
+#endif
         _last_error = 0;
         return true;
     }
@@ -436,11 +484,16 @@ public:
 
     bool connect(bool secured, bool verify)
     {
-        _last_error = 0;
-        _ssl_client.enableSSL(secured);
+        bool ret = false;
 
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+        _last_error = 0;
+
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->enableSSL(secured);
         setSecure(secured);
         setVerify(verify);
+#endif
 
         if (connected())
         {
@@ -459,7 +512,7 @@ public:
             {
 // Device has no built-in WiFi, external client required.
 #if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-                _basic_client = new WiFiClient();
+                _basic_client = new BASE_WIFICLIENT();
                 _client_type = esp_mail_client_type_internal_basic_client;
 #else
                 _last_error = 1;
@@ -468,13 +521,19 @@ public:
             }
         }
 
-        _ssl_client.setClient(_basic_client);
+#if defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client = _basic_client;
+#else
+        _tcp_client->setClient(_basic_client);
+#endif
 
-        if (!_ssl_client.connect(_host.c_str(), _port))
+        if (!_tcp_client->connect(_host.c_str(), _port))
             return false;
 
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE) && (defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO))
         if (_client_type == esp_mail_client_type_internal_basic_client)
-            ((WiFiClient *)_basic_client)->setNoDelay(true);
+            reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->setNoDelay(true);
+#endif
 
         // For TCP keepalive should work in ESP8266 core > 3.1.2.
         // https://github.com/esp8266/Arduino/pull/8940
@@ -485,12 +544,13 @@ public:
         {
             if (isKeepAliveSet())
             {
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
 
 #if defined(ESP8266)
                 if (_tcpKeepIdleSeconds == 0 || _tcpKeepIntervalSeconds == 0 || _tcpKeepCount == 0)
-                    reinterpret_cast<WiFiClient *>(_basic_client)->disableKeepAlive();
+                    reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->disableKeepAlive();
                 else
-                    reinterpret_cast<WiFiClient *>(_basic_client)->keepAlive(_tcpKeepIdleSeconds, _tcpKeepIntervalSeconds, _tcpKeepCount);
+                    reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->keepAlive(_tcpKeepIdleSeconds, _tcpKeepIntervalSeconds, _tcpKeepCount);
 
 #elif defined(ESP32)
 
@@ -507,14 +567,15 @@ public:
                 if (!success)
                     _isKeepAlive = false;
 #endif
+
+#endif
             }
         }
 
-        bool ret = connected();
-
+        ret = connected();
         if (!ret)
             stop();
-
+#endif
         return ret;
     }
 
@@ -527,14 +588,15 @@ public:
 
     bool connectSSL(bool verify)
     {
-        _ssl_client.setDebugLevel(2);
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        _tcp_client->setDebugLevel(2);
 
-        bool ret = _ssl_client.connected();
+        bool ret = _tcp_client->connected();
 
         if (ret)
         {
             setVerify(verify);
-            ret = _ssl_client.connectSSL(_host.c_str(), _port);
+            ret = _tcp_client->connectSSL(_host.c_str(), _port);
             if (ret)
                 _secured = true;
         }
@@ -543,18 +605,24 @@ public:
             stop();
 
         return ret;
+#endif
+        return false;
     }
 
     /**
      * Stop TCP connection.
      */
-    void stop() { _ssl_client.stop(); }
+    void stop()
+    {
+        if (_tcp_client)
+            _tcp_client->stop();
+    }
 
     /**
      * Get the TCP connection status.
      * @return true for connected or false for not connected.
      */
-    bool connected() { return _ssl_client.connected(); };
+    bool connected() { return _tcp_client && _tcp_client->connected(); };
 
     /**
      * The TCP data write function.
@@ -564,6 +632,9 @@ public:
      */
     int write(uint8_t *data, int len)
     {
+        if (!_tcp_client)
+            return TCP_CLIENT_ERROR_NOT_INITIALIZED;
+
         if (!data)
             return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
 
@@ -583,7 +654,7 @@ public:
             if (sent + toSend > len)
                 toSend = len - sent;
 
-            if ((int)_ssl_client.write(data + sent, toSend) != toSend)
+            if ((int)_tcp_client->write(data + sent, toSend) != toSend)
                 return TCP_CLIENT_ERROR_SEND_DATA_FAILED;
 
             sent += toSend;
@@ -659,7 +730,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.available();
+        return _tcp_client->available();
     }
 
     /**
@@ -671,7 +742,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.read();
+        return _tcp_client->read();
     }
 
     /**
@@ -685,7 +756,7 @@ public:
         if (!_basic_client)
             return TCP_CLIENT_ERROR_NOT_INITIALIZED;
 
-        return _ssl_client.read(buf, len);
+        return _tcp_client->read(buf, len);
     }
 
     /**
@@ -704,7 +775,8 @@ public:
      */
     void flush()
     {
-        _ssl_client.flush();
+        if (_tcp_client)
+            _tcp_client->flush();
     }
 
     /**
@@ -754,7 +826,12 @@ public:
 
     void setDebugLevel(int debug) { _debug_level = debug; }
 
-    unsigned long tcpTimeout() { return 1000 * _ssl_client.getTimeout(); }
+    unsigned long tcpTimeout()
+    {
+        if (_tcp_client)
+            return 1000 * _tcp_client->getTimeout();
+        return 0;
+    }
 
     void disconnect(){};
 
@@ -772,11 +849,19 @@ public:
 
     void clear()
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (_basic_client && _client_type == esp_mail_client_type_internal_basic_client)
         {
-            delete (ESP_Mail_TCPClient *)_basic_client;
+#if defined(ESP_MAIL_WIFI_IS_AVAILABLE)
+            delete (BASE_WIFICLIENT *)_basic_client;
+#else
+            delete _basic_client;
+#endif
             _basic_client = nullptr;
         }
+#else
+        _basic_client = nullptr;
+#endif
         _client_type = esp_mail_client_type_undefined;
     }
 
@@ -784,7 +869,7 @@ public:
 
     bool gprsConnect()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         if (gsmModem)
         {
@@ -797,45 +882,45 @@ public:
             gsmModem->gprsConnect(_apn.c_str(), _user.c_str(), _password.c_str());
 #endif
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0 && _last_error == 0)
-                esp_mail_debug_print_tag("Waiting for network...", esp_mail_debug_tag_type_info, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Waiting for network..."), esp_mail_debug_tag_type_info, false);
 #endif
             if (!gsmModem->waitForNetwork())
             {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
-                    esp_mail_debug_print_tag(" fail", esp_mail_debug_tag_type_info, true, false);
+                    esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" fail"), esp_mail_debug_tag_type_info, true, false);
 #endif
                 _last_error = 1;
                 _network_status = false;
                 return false;
             }
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0 && _last_error == 0)
-                esp_mail_debug_print_tag(" success", esp_mail_debug_tag_type_info, true, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" success"), esp_mail_debug_tag_type_info, true, false);
 #endif
 
             if (gsmModem->isNetworkConnected())
             {
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
                 {
-                    esp_mail_debug_print_tag("Connecting to ", esp_mail_debug_tag_type_info, false);
+                    esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connecting to "), esp_mail_debug_tag_type_info, false);
                     esp_mail_debug_print_tag(_apn.c_str(), esp_mail_debug_tag_type_info, false, false);
                 }
 #endif
                 _network_status = gsmModem->gprsConnect(_apn.c_str(), _user.c_str(), _password.c_str()) &&
                                   gsmModem->isGprsConnected();
 
-#if !defined(SILENT_MODE)
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
                 if (_debug_level > 0 && _last_error == 0)
                 {
                     if (_network_status)
-                        esp_mail_debug_print_tag(" success", esp_mail_debug_tag_type_info, true, false);
+                        esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" success"), esp_mail_debug_tag_type_info, true, false);
                     else
-                        esp_mail_debug_print_tag(" fail", esp_mail_debug_tag_type_info, true, false);
+                        esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR(" fail"), esp_mail_debug_tag_type_info, true, false);
                 }
 #endif
             }
@@ -852,7 +937,7 @@ public:
 
     bool gprsConnected()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         _network_status = gsmModem && gsmModem->isGprsConnected();
 #endif
@@ -861,19 +946,45 @@ public:
 
     bool gprsDisconnect()
     {
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
         TinyGsm *gsmModem = (TinyGsm *)_modem;
         _network_status = gsmModem && gsmModem->gprsDisconnect();
 #endif
         return !_network_status;
     }
 
+    bool gprsGetTime(int &year, int &month, int &day, int &hour, int &min, int &sec, float &timezone)
+    {
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE) && defined(TINY_GSM_MODEM_HAS_TIME)
+
+        if (!gprsConnected())
+            return 0;
+
+        TinyGsm *gsmModem = (TinyGsm *)_modem;
+        year = 0;
+        month = 0;
+        day = 0;
+        hour = 0;
+        min = 0;
+        sec = 0;
+        timezone = 0;
+        for (int8_t i = 5; i; i--)
+        {
+            if (gsmModem->getNetworkTime(&year, &month, &day, &hour, &min, &sec, &timezone))
+            {
+                return true;
+            }
+        }
+#endif
+        return false;
+    }
+
     int setOption(int option, int *value)
     {
-#if defined(ESP32)
+#if defined(ESP32) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
         // Actually we wish to use setSocketOption directly but it is ambiguous in old ESP32 core v1.0.x.;
         // Use setOption instead for old core support.
-        return reinterpret_cast<WiFiClient *>(_basic_client)->setOption(option, value);
+        return reinterpret_cast<BASE_WIFICLIENT *>(_basic_client)->setOption(option, value);
 #endif
         return 0;
     }
@@ -890,17 +1001,21 @@ public:
 
     void setInSecure()
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         _use_insecure = true;
         setTA(false);
+#endif
     }
 
     void setVerify(bool verify)
     {
+#if !defined(ESP_MAIL_DISABLE_SSL)
         if (_has_ta)
             _use_insecure = !verify;
 
         if (_use_insecure)
-            _ssl_client.setInsecure();
+            _tcp_client->setInsecure();
+#endif
     }
 
     bool isSecure()
@@ -927,24 +1042,31 @@ private:
 
     uint16_t _bsslRxSize = 1024;
     uint16_t _bsslTxSize = 1024;
-    int _maxRXBufSize = 16384; // SSL full supported 16 kB
-    int _maxTXBufSize = 16384;
+    const int _maxRXBufSize = 16384; // SSL full supported 16 kB
+    const int _maxTXBufSize = 16384;
+    const int _minRXTXBufSize = 512;
+#if defined(ESP_MAIL_DISABLE_SSL)
+    Client *_tcp_client = nullptr;
+#else
+    ESP_SSLClient *_tcp_client = nullptr;
+    X509List *_x509 = nullptr;
+#endif
 
-    ESP_SSLClient _ssl_client;
     MB_String _host;
     uint16_t _port = 443;
 
     MB_FS *_mbfs = nullptr;
-    X509List *_x509 = nullptr;
     Client *_basic_client = nullptr;
     esp_mail_wifi_credentials_t *_wifi_multi = nullptr;
+#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
     Session_Config *_session_config = nullptr;
+#endif
     NetworkConnectionRequestCallback _network_connection_cb = NULL;
     NetworkStatusRequestCallback _network_status_cb = NULL;
 #if defined(ESP_MAIL_HAS_WIFIMULTI)
     WiFiMulti *_multi = nullptr;
 #endif
-#if defined(ESP_MAIL_HAS_TINYGSM)
+#if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
     MB_String _pin, _apn, _user, _password;
     void *_modem = nullptr;
 #endif
@@ -957,6 +1079,7 @@ private:
     bool _clock_ready = false;
     int _last_error = 0;
     volatile bool _network_status = false;
+    int _rx_size = -1, _tx_size = -1;
 
     esp_mail_cert_type _cert_type = esp_mail_cert_type_undefined;
     esp_mail_client_type _client_type = esp_mail_client_type_undefined;

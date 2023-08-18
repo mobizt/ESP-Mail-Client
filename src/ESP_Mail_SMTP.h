@@ -10,7 +10,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 6, 2023
+ * Created August 18, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -73,7 +73,12 @@ bool ESP_Mail_Client::smtpAuth(SMTPSession *smtp, bool &ssl)
 
     smtp->_auth_capability[esp_mail_auth_capability_login] = false;
 
+    smtp->_session_cfg->int_start_tls = smtp->_session_cfg->secure.startTLS;
+    smtp->_session_cfg->int_mode = smtp->_session_cfg->secure.mode;
+
+#if !defined(ESP_MAIL_DISABLE_SSL)
 initial_stage:
+#endif
 
 // Sending greeting helo response
 #if !defined(SILENT_MODE)
@@ -129,48 +134,56 @@ initial_stage:
     else
         smtp->_send_capability[esp_mail_smtp_send_capability_esmtp] = true;
 
-    // start TLS when needed
-    // rfc3207
-    if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->secure.startTLS) && !ssl)
+#if !defined(ESP_MAIL_DISABLE_SSL)
+
+    if (smtp->_session_cfg->int_mode != esp_mail_secure_mode_nonsecure)
     {
+        // start TLS when needed
+        // rfc3207
+        if ((smtp->_auth_capability[esp_mail_auth_capability_starttls] || smtp->_session_cfg->int_start_tls || smtp->_session_cfg->int_mode == esp_mail_secure_mode_ssl_tls) && !ssl)
+        {
 // send starttls command
 #if !defined(SILENT_MODE)
-        printDebug((void *)(smtp),
-                   true,
-                   esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
-                   esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
-                   esp_mail_debug_tag_type_client,
-                   true,
-                   false);
+            printDebug((void *)(smtp),
+                       true,
+                       esp_mail_cb_str_2 /* "Sending STARTTLS command..." */,
+                       esp_mail_dbg_str_1 /* "send command, STARTTLS" */,
+                       esp_mail_debug_tag_type_client,
+                       true,
+                       false);
 #endif
 
-        // expected success status code 250 for complete the request
-        // some server returns 220 to restart to initial state
+            // expected success status code 250 for complete the request
+            // some server returns 220 to restart to initial state
 
-        // expected error status code 500, 501, 504, 421
-        smtpSend(smtp, smtp_commands[esp_mail_smtp_command_starttls].text, true);
-        if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
-            return false;
+            // expected error status code 500, 501, 504, 421
+            smtpSend(smtp, smtp_commands[esp_mail_smtp_command_starttls].text, true);
+            if (!handleSMTPResponse(smtp, esp_mail_smtp_cmd_start_tls, esp_mail_smtp_status_code_250, SMTP_STATUS_SMTP_GREETING_SEND_ACK_FAILED))
+                return false;
 
 #if !defined(SILENT_MODE)
-        if (smtp->_debug)
-            esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
+            if (smtp->_debug)
+                esp_mail_debug_print_tag(esp_mail_dbg_str_22 /* "perform SSL/TLS handshake" */, esp_mail_debug_tag_type_client, true);
 #endif
 
-        // connect in secure mode
-        // do TLS handshake
-        if (!smtp->client.connectSSL(smtp->_session_cfg->certificate.verify))
-            return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
+            // connect in secure mode
+            // do TLS handshake
+            if (!smtp->client.connectSSL(smtp->_session_cfg->certificate.verify))
+                return handleSMTPError(smtp, MAIL_CLIENT_ERROR_SSL_TLS_STRUCTURE_SETUP);
 
-        // set the secure mode
-        smtp->_session_cfg->secure.startTLS = false;
-        ssl = true;
-        smtp->_secure = true;
+            // set the secure mode
+            smtp->_session_cfg->int_start_tls = false;
+            smtp->_session_cfg->int_mode = esp_mail_secure_mode_undefined;
+            ssl = true;
+            smtp->_secure = true;
 
-        // return to initial stage if the response status is 220.
-        if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
-            goto initial_stage;
+            // return to initial stage if the response status is 220.
+            if (smtp->_smtpStatus.statusCode == esp_mail_smtp_status_code_220)
+                goto initial_stage;
+        }
     }
+
+#endif
 
     bool creds = smtp->_session_cfg->login.email.length() > 0 && smtp->_session_cfg->login.password.length() > 0;
     bool sasl_auth_oauth = smtp->_session_cfg->login.accessToken.length() > 0 && smtp->_auth_capability[esp_mail_auth_capability_xoauth2];
@@ -920,8 +933,8 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
                 return false;
         }
     }
-
-    smtp->_cbData._success = true;
+    if (smtp)
+        smtp->_cbData._success = true;
     return true;
 }
 
@@ -1726,7 +1739,7 @@ size_t ESP_Mail_Client::smtpSend(SMTPSession *smtp, PGM_P data, bool newline)
     int toSend = newline ? s.length() + 2 : s.length();
 
 #if !defined(SILENT_MODE)
-    if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_maintener)
+    if (!smtp->_customCmdResCallback && smtp->_debugLevel > esp_mail_debug_level_maintainer)
         esp_mail_debug_print(s.c_str(), newline);
 #endif
 
@@ -2602,7 +2615,7 @@ void ESP_Mail_Client::smtpCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bo
 void ESP_Mail_Client::smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF, bool success)
 {
 #if !defined(SILENT_MODE)
-    MB_String e = esp_mail_str_12;
+    MB_String e = esp_mail_str_12; /* "Error, " */
     e += info;
     smtpCB(smtp, e.c_str(), prependCRLF, success);
 #endif
@@ -2946,7 +2959,6 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
         return false;
 
     smtp->client.setSession(smtp->_session_cfg);
-
     networkStatus = smtp->client.networkReady();
 
     if (dataTime > 0)
@@ -3340,6 +3352,8 @@ int SMTPSession::customConnect(Session_Config *session_config, smtpResponseCallb
 
 bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
 {
+     _session_cfg = session_config;
+
     if (!client.isInitialized())
         return MailClient.handleSMTPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED);
 
@@ -3471,7 +3485,11 @@ int SMTPSession::mSendCustomCommand(MB_StringPtr cmd, smtpResponseCallback callb
 
         // set the secure mode
         if (_session_cfg)
-            _session_cfg->secure.startTLS = false;
+        {
+            // We reset the prefer connection mode in case user set it.
+            _session_cfg->secure.startTLS = false; 
+            _session_cfg->secure.mode = esp_mail_secure_mode_undefined;
+        }
 
         _secure = true;
     }
@@ -3503,7 +3521,7 @@ void SMTPSession::debug(int level)
 {
     if (level > esp_mail_debug_level_none)
     {
-        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintener)
+        if (level > esp_mail_debug_level_basic && level < esp_mail_debug_level_maintainer)
             level = esp_mail_debug_level_basic;
         _debugLevel = level;
         _debug = true;
@@ -3675,6 +3693,11 @@ void SMTPSession::setNetworkStatus(bool status)
 {
     this->client.setNetworkStatus(status);
     MailClient.networkStatus = status;
+}
+
+void SMTPSession::setSSLBufferSize(int rx, int tx)
+{
+    this->client.setIOBufferSize(rx, tx);
 }
 
 SMTP_Status::SMTP_Status()
