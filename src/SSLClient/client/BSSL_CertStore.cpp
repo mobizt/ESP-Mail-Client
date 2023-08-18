@@ -24,6 +24,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE)
 
 #include "BSSL_CertStore.h"

@@ -16,6 +16,26 @@
 #endif
 #endif
 
+// Renesas
+#if defined(ARDUINO_PORTENTA_C33)
+
+#endif
+
+// Renesas
+#if defined(ARDUINO_UNOWIFIR4)
+
+#endif
+
+// Renesas
+#if defined(ARDUINO_MINIMA)
+
+#endif
+
+#if defined(ARDUINO_PORTENTA_H7_M7) || defined(ARDUINO_PORTENTA_H7_M4) || defined(ARDUINO_PORTENTA_X8)
+
+#endif
+
+
 #if defined(ARDUINO_ARCH_SAMD)
 #ifndef MB_ARDUINO_ARCH_SAMD
 #define MB_ARDUINO_ARCH_SAMD

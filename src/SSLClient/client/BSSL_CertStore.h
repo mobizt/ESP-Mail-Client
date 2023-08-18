@@ -16,7 +16,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
 #ifndef BSSL_CERTSTORE_H
 #define BSSL_CERTSTORE_H
 
@@ -25,6 +24,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE)
 
 
@@ -32,6 +32,9 @@
 #if __has_include(<FS.h>) && defined(ESP_SSLCLIENT_USE_FILESYSTEM)
 #include <FS.h>
 #define ESP_SSL_FS_SUPPORTED
+#if !defined(TEENSYDUINO)
+using namespace fs;
+#endif
 #endif
 #endif
 

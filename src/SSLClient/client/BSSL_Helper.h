@@ -20,7 +20,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
 #ifndef BSSL_HELPER_H
 #define BSSL_HELPER_H
 
@@ -29,6 +28,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 
 #if defined(USE_EMBED_SSL_ENGINE)
 
@@ -73,6 +73,7 @@
 
 #endif
 
+#if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 // Cache for a TLS session with a server
 // Use with BearSSL::WiFiClientSecure::setSession
 // to accelerate the TLS handshake
@@ -441,5 +442,6 @@ namespace bssl
     }
 
 };
+#endif
 
 #endif

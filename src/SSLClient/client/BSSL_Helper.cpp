@@ -19,7 +19,6 @@
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
-
 #ifndef BSSL_HELPER_CPP
 #define BSSL_HELPER_CPP
 
@@ -28,6 +27,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE)
 
 #include "BSSL_Helper.h"
@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #if defined __has_include
-#if __has_include(<pgmspace.h>) 
+#if __has_include(<pgmspace.h>)
 #include <pgmspace.h>
 #endif
 #endif
@@ -112,6 +112,7 @@ namespace key_bssl
   bool looks_like_DER(const unsigned char *buf, size_t len);
   pem_object *decode_pem(const void *src, size_t len, size_t *num);
   void free_pem_object_contents(pem_object *po);
+  char *strdupImpl(const char *s);
 
   // Used as callback multiple places to append a string to a vector
   static void byte_vector_append(void *ctx, const void *buff, size_t len)
@@ -283,6 +284,16 @@ namespace key_bssl
     }
   }
 
+  char *strdupImpl(const char *s)
+  {
+    size_t slen = strlen(s);
+    char *result = (char *)malloc(slen + 1);
+    if (!result)
+      return NULL;
+    memcpy(result, s, slen + 1);
+    return result;
+  }
+
   // Converts a PEM (~=base64) source into a set of DER-encoded binary blobs.
   // Each blob is named by the ---- BEGIN xxx ---- field, and multiple
   // blobs may be returned.
@@ -317,7 +328,7 @@ namespace key_bssl
       switch (br_pem_decoder_event(pc.get()))
       {
       case BR_PEM_BEGIN_OBJ:
-        po.name = strdup(br_pem_decoder_name(pc.get()));
+        po.name = strdupImpl(br_pem_decoder_name(pc.get()));
         br_pem_decoder_setdest(pc.get(), byte_vector_append, &bv);
         inobj = true;
         break;

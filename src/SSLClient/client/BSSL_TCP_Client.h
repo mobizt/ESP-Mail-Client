@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.5 for Arduino devices.
+ * BSSL_TCP_Client v2.0.10 for Arduino devices.
  *
- * Created August 6, 2023
+ * Created August 13, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -52,6 +52,7 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include "BSSL_SSL_Client.h"
@@ -284,6 +285,12 @@ public:
      * @param seconds The TCP timeout in seconds.
      */
     int setTimeout(uint32_t seconds);
+
+    /**
+     * Get the TCP timeout in seconds.
+     * @return The TCP timeout in seconds.
+     */
+    int getTimeout();
 
     /**
      * Set the SSL handshake timeout in seconds.

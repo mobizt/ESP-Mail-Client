@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.5 for Arduino devices.
+ * BSSL_TCP_Client v2.0.10 for Arduino devices.
  *
- * Created August 6, 2023
+ * Created August 13, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -51,12 +51,13 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
+#include "../ESP_SSLClient_Const.h"
 #if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include "BSSL_TCP_Client.h"
-//#include <lwip/sockets.h>
-//#include <lwip/netdb.h>
-//#include <errno.h>
+// #include <lwip/sockets.h>
+// #include <lwip/netdb.h>
+// #include <errno.h>
 
 #undef connect
 #undef write
@@ -98,7 +99,8 @@ int BSSL_TCP_Client::connect(IPAddress ip, uint16_t port, int32_t timeout)
     if (timeout > 0)
     {
         _timeout = timeout;
-        _basic_client->setTimeout(_timeout);
+        if (_basic_client)
+            _basic_client->setTimeout(_timeout);
         _ssl_client.setTimeout(_timeout);
     }
 
@@ -119,7 +121,8 @@ int BSSL_TCP_Client::connect(const char *host, uint16_t port, int32_t timeout)
     if (timeout > 0)
     {
         _timeout = timeout;
-        _basic_client->setTimeout(_timeout);
+        if (_basic_client)
+            _basic_client->setTimeout(_timeout);
         _ssl_client.setTimeout(_timeout);
     }
 
@@ -133,22 +136,15 @@ uint8_t BSSL_TCP_Client::connected()
 
 int BSSL_TCP_Client::available()
 {
-    if (!_ssl_client.connected())
-        return 0;
     return _ssl_client.available();
 }
 
 int BSSL_TCP_Client::read()
 {
-    if (!_basic_client)
-        return 0;
-
     uint8_t data = -1;
     int res = read(&data, 1);
     if (res < 0)
-    {
         return res;
-    }
     return data;
 }
 
@@ -228,13 +224,7 @@ size_t BSSL_TCP_Client::write(Stream &stream) { return _ssl_client.write(stream)
 
 int BSSL_TCP_Client::peek()
 {
-    if (!_basic_client)
-        return 0;
-
-    if (!_basic_client->connected())
-        return 0;
-
-    return _basic_client->peek();
+    return _ssl_client.peek();
 }
 
 void BSSL_TCP_Client::setInsecure()
@@ -255,7 +245,6 @@ bool BSSL_TCP_Client::connectSSL()
         stop();
         return 0;
     }
-
     return 1;
 }
 
@@ -263,10 +252,6 @@ bool BSSL_TCP_Client::connectSSL(const String host, uint16_t port) { return conn
 
 void BSSL_TCP_Client::stop()
 {
-    if (!_basic_client)
-        return;
-
-    _basic_client->stop();
     _ssl_client.stop();
 }
 
@@ -276,6 +261,8 @@ int BSSL_TCP_Client::setTimeout(uint32_t seconds)
     _ssl_client.setTimeout(_timeout);
     return 1;
 }
+
+int BSSL_TCP_Client::getTimeout() { return _ssl_client.getTimeout() / 1000; }
 
 void BSSL_TCP_Client::setHandshakeTimeout(unsigned long handshake_timeout)
 {
@@ -299,7 +286,7 @@ void BSSL_TCP_Client::setBufferSizes(int recv, int xmit)
 
 int BSSL_TCP_Client::availableForWrite() { return _ssl_client.availableForWrite(); };
 
-void BSSL_TCP_Client::setSession(BearSSL_Session *session) {_ssl_client.setSession(session);};
+void BSSL_TCP_Client::setSession(BearSSL_Session *session) { _ssl_client.setSession(session); };
 
 void BSSL_TCP_Client::setKnownKey(const PublicKey *pk, unsigned usages)
 {

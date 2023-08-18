@@ -9,6 +9,12 @@
 #include <Arduino.h>
 #include <Client.h>
 
+#if defined(__AVR__)
+#undef USE_LIB_SSL_ENGINE
+#undef USE_EMBED_SSL_ENGINE
+#error "Not support AVR architecture"
+#endif
+
 #define ESP_SSLCLIENT_VALID_TIMESTAMP 1690979919
 
 #ifndef SSLCLIENT_CONNECTION_UPGRADABLE
@@ -23,6 +29,12 @@
 #else
 #define ESP_SSLCLIENT_DEBUG_PRINT(...)
 #endif
+
+#if !defined(FPSTR)
+#define FPSTR
+#endif
+
+#if defined(USE_EMBED_SSL_ENGINE) || defined(USE_LIB_SSL_ENGINE)
 
 enum esp_ssl_client_debug_level
 {
@@ -120,5 +132,7 @@ static bool send_abort(Client *probe, bool supportsLen)
 }
 
 const uint16_t _secure_ports[26] = {443 /* HTTPS */, 465 /* SMTP */, 563 /* NNTP */, 636 /* LDAPS */, 695 /* IEEE-MMS-SSL */, 832 /* NETCONF */, 853 /* DNS */, 989 /* FTPS */, 990 /* FTPS */, 992 /* Telnet */, 993 /* IMAP */, 995 /* POP3 */, 4116 /* Smartcard */, 4843 /* OPC */, 5061 /* SIP */, 5085 /* LLIP */, 5349 /* NAT */, 5671 /* AMQP */, 5986 /* WinRM-HTTPS */, 6513 /* NETCONF */, 6514 /* Syslog */, 6515 /* Elipse RPC */, 6619 /* OFTP */, 8243 /* Apache Synapse */, 8403 /* GxFWD */, 8883 /* MQTT */};
+
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 /**
- * BSSL_SSL_Client library v1.0.4 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.9 for Arduino devices.
  *
- * Created August 6, 2003
+ * Created August 13, 2003
  *
  * This work contains codes based on WiFiClientSecure from Earle F. Philhower and SSLClient from OSU OPEnS Lab.
  *
@@ -38,22 +38,17 @@
 
 #include <Arduino.h>
 #include "../ESP_SSLClient_FS.h"
-#if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
-
 #include "../ESP_SSLClient_Const.h"
+#if defined(USE_LIB_SSL_ENGINE) || defined(USE_EMBED_SSL_ENGINE)
 
 #include <vector>
 #include <memory>
 #if defined __has_include
-#if __has_include(<pgmspace.h>) 
+#if __has_include(<pgmspace.h>)
 #include <pgmspace.h>
 #endif
 #endif
 
-
-#if !defined(FPSTR)
-#define FPSTR
-#endif
 #if defined(USE_LIB_SSL_ENGINE)
 
 #include "BSSL_Helper.h"
@@ -229,7 +224,9 @@ private:
     //      return changed or add their own extensions.
     bool mProbeMaxFragmentLength(Client *probe, uint16_t len);
 
-    int mIsClientInitialized();
+    bool mProbeMaxFragmentLength(const char *name, IPAddress ip, uint16_t port, uint16_t len);
+
+    int mIsClientInitialized(bool notify);
 
     int mConnectBasicClient(const char *host, IPAddress ip, uint16_t port);
     // Returns whether or not the engine is connected, without polling the client over SPI or other (as opposed to connected())
@@ -257,11 +254,15 @@ private:
 
     bool mInstallClientX509Validator();
 
-    std::shared_ptr<unsigned char> mIOBufMemAloc(size_t sz);
-
     void mFreeSSL();
 
     uint8_t *mStreamLoad(Stream &stream, size_t size);
+
+    void *mallocImpl(size_t len, bool clear = true);
+
+    void freeImpl(void *ptr);
+
+    size_t getReservedLen(size_t len);
 
     // store whether to enable debug logging
     int _debug_level = 0;
@@ -286,8 +287,8 @@ private:
     std::shared_ptr<struct bssl::br_x509_insecure_context> _x509_insecure;
     std::shared_ptr<br_x509_knownkey_context> _x509_knownkey;
 
-    std::shared_ptr<unsigned char> _iobuf_in;
-    std::shared_ptr<unsigned char> _iobuf_out;
+    unsigned char *_iobuf_in = nullptr;
+    unsigned char *_iobuf_out = nullptr;
     int _iobuf_in_size = 512;
     int _iobuf_out_size = 512;
 
@@ -314,7 +315,7 @@ private:
     unsigned int _knownkey_usages = 0;
 
     // Custom cipher list pointer or nullptr if default
-    std::shared_ptr<uint16_t> _cipher_list;
+    uint16_t *_cipher_list = nullptr;
     uint8_t _cipher_cnt = 0;
 
     // TLS ciphers allowed

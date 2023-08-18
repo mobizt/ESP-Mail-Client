@@ -13,69 +13,80 @@
 #include <Arduino.h>
 #include "extras/MB_MCU.h"
 
-/* 📌 Enable silent mode (no debug printing and callback) */
-// #define SILENT_MODE
+/** 📌 Predefined Build Options
+ * ⛔ Use following build flag to disable all predefined options.
+ * -D DISABLE_ALL_OPTIONS
+ */
 
-/* 📌 Enable the NTP server time reading */
+/**📍 For enabling the device or library time setup from NTP server
+ * ⛔ Use following build flag to disable.
+ * -D DISABLE_NTP_TIME
+ */
 #define ENABLE_NTP_TIME
 
-/* 📌 Enable the error string from error reason */
+/**📍 For enabling the error string from error reason
+ * ⛔ Use following build flag to disable.
+ * -D DISABLE_ERROR_STRING
+ */
 #define ENABLE_ERROR_STRING
 
-/* 📌 Enable IMAP class compilation option */
-#define ENABLE_IMAP // comment this line to disable or exclude it
+/**📍 For IMAP class compilation
+ * ⛔ Use following build flag to disable.
+ * -D DISABLE_IMAP
+ */
+#define ENABLE_IMAP
 
-/* 📌 Enable SMTP class compilation option */
-#define ENABLE_SMTP // comment this line to disable or exclude it
+/**📍 For SMTP class compilation
+ * ⛔ Use following build flag to disable.
+ * -D DISABLE_SMTP
+ */
+#define ENABLE_SMTP
 
-/* 📌 PSRAM compilation option for ESP32/ESP8266 module */
-#if defined(ESP32) || defined(ESP8266)
+/**📍 For enabling PSRAM support
+ * ⛔ Use following build flag to disable.
+ * -D DISABLE_PSRAM
+ */
 #define ESP_MAIL_USE_PSRAM
-#endif
 
-/** 📌Flash Filesystem compilation options
+/**📌 For enabling flash filesystem support
  *
- * ::::::: To use SPIFFS :::::::
- *
+ * 📍 For SPIFFS
  * #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
  *
  *
- * ::::::: To use LittleFS Filesystem :::::::
- *
+ * 📍 For LittleFS Filesystem
  * #include <LittleFS.h>
  * #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
  *
  *
- * ::::::: To use SPIFFS Filesystem :::::::
- *
+ * 📍 For SPIFFS Filesystem
  * #if defined(ESP32)
  * #include <SPIFFS.h>
  * #endif
  * #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
  *
  *
- * ::::::: To use FAT Filesystem :::::::
- *
+ * 📍 For FAT Filesystem
  * #include <FFat.h>
  * #define ESP_MAIL_DEFAULT_FLASH_FS FFat  //For ESP32 FAT
  *
+ * 🚫 Use following build flags to disable.
+ * -D DISABLE_FLASH or -DDISABLE_FLASH in PlatformIO
  */
+
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
 #if defined(ESP8266) || defined(MB_ARDUINO_PICO)
-// Use LittleFS as default flash filesystem for ESP8266
 
 #include <LittleFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 
 #elif defined(ESP_ARDUINO_VERSION) /* ESP32 core >= v2.0.x */ /* ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(2, 0, 0) */
-// Use LittleFS as default flash filesystem for ESP32 core v2.0.x
 
 #include <LittleFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
 
 #else
-// Use SPIFFS as default flash filesystem for ESP32 core v1.0.6 and earlier
 
 #include <SPIFFS.h>
 #define ESP_MAIL_DEFAULT_FLASH_FS SPIFFS
@@ -87,30 +98,28 @@
 // For ESP32, format SPIFFS or FFat if mounting failed
 #define ESP_MAIL_FORMAT_FLASH_IF_MOUNT_FAILED 1
 
-/** 📌 SD Filesystem compilation options
+/**📌 For enabling SD filesystem support
  *
- * ::::::: To use SD SPI interface :::::::
- *
+ * 📍 For SD
  * #include <SD.h>
  * #define ESP_MAIL_DEFAULT_SD_FS SD
  * #define ESP_MAIL_CARD_TYPE_SD 1
  *
- * ::::::: To Use SD MMC interface on ESP32 :::::::
- *
+ * 📍 For SD MMC (ESP32)
  * #include <SD_MMC.h>
  * #define ESP_MAIL_DEFAULT_SD_FS SD_MMC //For ESP32 SDMMC
  * #define ESP_MAIL_CARD_TYPE_SD_MMC 1
  *
- * ::::::: To use SdFat on ESP32 and other devices except for ESP8266 :::::::
- *
+ * 📍 For SdFat on ESP32 and other devices except for ESP8266
  * #include <SdFat.h> //https://github.com/greiman/SdFat
  * static SdFat sd_fat_fs;   //should declare as static here
  * #define ESP_MAIL_DEFAULT_SD_FS sd_fat_fs
  * #define ESP_MAIL_CARD_TYPE_SD 1
  * #define ESP_MAIL_SD_FS_FILE SdFile
  *
- * The SdFat (https://github.com/greiman/SdFat) is already implemented as wrapper class in ESP8266 core library.
- * Do not include SdFat.h library in ESP8266 target code which it conflicts with the wrapper one.
+ *
+ * ⛔ Use following build flags to disable.
+ * -D DISABLE_SD or -DDISABLE_SD in PlatformIO
  */
 #if defined(ESP32) || defined(ESP8266)
 #include <SD.h>
@@ -123,64 +132,39 @@
 #define ESP_MAIL_CARD_TYPE_SD 1
 #endif
 
-/* 📌 Debug port compilation option */
-#ifdef ESP_MAIL_DEBUG_PORT
-#define ESP_MAIL_DEFAULT_DEBUG_PORT ESP_MAIL_DEBUG_PORT
-#endif
+/** 🔖 Optional Build Options
+ *
+ * 🏷️ For silent operation (no debug printing and callback)
+ * #define SILENT_MODE
+ *
+ * 🏷️ For ENC28J60 Ethernet module support in ESP8266
+ * #define ENABLE_ESP8266_ENC28J60_ETH
+ *
+ * 🏷️ For W5500 Ethernet module support in ESP8266
+ * #define ENABLE_ESP8266_W5500_ETH
+ *
+ * 🏷️ For W5100 Ethernet module support in ESP8266
+ * #define ENABLE_ESP8266_W5100_ETH
+ *
+ * 🏷️ For disabling on-board WiFI functionality in case external Client usage
+ * #define ESP_MAIL_DISABLE_ONBOARD_WIFI
+ *
+ * 🏷️ For disabling native (sdk) Ethernet functionality in case external Client usage
+ * #define ESP_MAIL_DISABLE_NATIVE_ETHERNET
+ *
+ * 🏷️ For disabling SSL connection (also disabling TLS using STARTTLS) in MAP and SMTP application
+ * #define ESP_MAIL_DISABLE_SSL
+ *
+ * 🏷️ For debug port assignment if SILENT_MODE option was not set
+ * #define ESP_MAIL_DEBUG_PORT Serial
+ */
 
-#ifndef ESP_MAIL_DEFAULT_DEBUG_PORT
-#define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
-#endif
+#define ENABLE_ESP8266_ENC28J60_ETH
 
-/* 📌 To use ESP8266 ENC28J60 Ethernet module */
-// #define ENABLE_ESP8266_ENC28J60_ETH
-
-/* 📌 To use ESP8266 W5500 Ethernet module */
-// #define ENABLE_ESP8266_W5500_ETH
-
-/* 📌 To use ESP8266 W5100 Ethernet module */
-// #define ENABLE_ESP8266_W5100_ETH
-
-
-/* 📌 If on-board WiFi is not used in this library */
-// #define ESP_MAIL_NOT_USE_ONBOARD_WIFI
-
-/* 📌 If native Ethernet (Ethernet interfaces that supported by SDK) is not used in this library */
-// #define ESP_MAIL_NOT_USE_NATIVE_ETHERNET
-
-//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
-// You can create your own header file "Custom_ESP_Mail_FS.h" in the same diectory of
-// "ESP_Mail_FS.h" and put your own custom config to overwrite or
-// change the default config in "ESP_Mail_FS.h".
-//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
-
-/** This is an example of "Custom_ESP_Mail_FS.h"
-
-#pragma once
-
-#ifndef Custom_ESP_Mail_FS_H
-#define Custom_ESP_Mail_FS_H
-
-// Use LittleFS instead of SPIFFS
-#include "LittleFS.h"
-#undef ESP_MAIL_DEFAULT_FLASH_FS // remove Flash FS defined macro
-#define ESP_MAIL_DEFAULT_FLASH_FS LittleFS
-
-// Use SD_MMC instead of SD
-#if defined(ESP32)
-#include <SD_MMC.h>
-#undef ESP_MAIL_DEFAULT_SD_FS // remove SD defined macro
-#undef ESP_MAIL_CARD_TYPE_SD_MMC // remove SD defined macro
-#define ESP_MAIL_DEFAULT_SD_FS SD_MMC
-#define ESP_MAIL_CARD_TYPE_SD_MMC 1
-#endif
-
-
-#endif
-
-*/
 #if __has_include("Custom_ESP_Mail_FS.h")
 #include "Custom_ESP_Mail_FS.h"
 #endif
+
+#include "extras/Build_Options.h"
 
 #endif

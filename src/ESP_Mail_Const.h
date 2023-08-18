@@ -18,14 +18,24 @@
 #include <time.h>
 #include <ctype.h>
 
+#if defined(ESP_MAIL_DEBUG_PORT)
+#define ESP_MAIL_DEFAULT_DEBUG_PORT ESP_MAIL_DEBUG_PORT
+#else
+#define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
+#endif
+
 #if !defined(__AVR__)
 #include <vector>
 #include <algorithm>
 #endif
 
+#if !defined(FPSTR)
+#define FPSTR
+#endif
+
 #include "extras/Networks_Provider.h"
 #include "extras/MB_List.h"
-#include "extras/SDK_Version_Common.h"
+#include "extras/ESP8266_Supports.h"
 
 #if defined(ESP8266)
 #if __has_include(<core_esp8266_version.h>)
@@ -78,13 +88,6 @@ typedef enum
 
 } esp_mail_client_type;
 
-typedef enum
-{
-    esp_mail_external_client_type_none,
-    esp_mail_external_client_type_basic,
-    esp_mail_external_client_type_ssl
-} esp_mail_external_client_type;
-
 /* The filesystem types enum */
 enum esp_mail_file_storage_type
 {
@@ -92,6 +95,19 @@ enum esp_mail_file_storage_type
     esp_mail_file_storage_type_flash,
     esp_mail_file_storage_type_sd
 };
+
+/* The secure connection mode preference */
+typedef enum
+{
+    // No preferences
+    esp_mail_secure_mode_undefined = 0,
+    // Always use SSL and TLS via STARTTLS rfc2595 section 3 and rfc3207
+    esp_mail_secure_mode_ssl_tls,
+    // Plain text mode only (non SSL/TLS)
+    // To disable SSL/TLS permanently, define ESP_MAIL_DISABLE_SSL in ESP_Mail_FS.h
+    esp_mail_secure_mode_nonsecure
+
+} esp_mail_secure_mode;
 
 using namespace mb_string;
 
@@ -548,8 +564,8 @@ enum esp_mail_debug_level
 {
     esp_mail_debug_level_none = 0,
     esp_mail_debug_level_basic,
-    esp_mail_debug_level_maintener = 0xfff,
-    esp_mail_debug_level_developer = esp_mail_debug_level_maintener + 1
+    esp_mail_debug_level_maintainer = 0xfff,
+    esp_mail_debug_level_developer = esp_mail_debug_level_maintainer + 1
 };
 
 /* The content transfer encoding enum */
@@ -2670,8 +2686,11 @@ struct esp_mail_sesson_time_config_t
 
 struct esp_mail_sesson_secure_config_t
 {
-    /* The option to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
+    /** The option (obsoleted) to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
     bool startTLS = false;
+    
+    /* The secure connection mode preference */
+    esp_mail_secure_mode mode = esp_mail_secure_mode_undefined;
 };
 
 struct esp_mail_spi_ethernet_module_t
@@ -2773,6 +2792,7 @@ public:
         server.port = 0;
 
         secure.startTLS = false;
+        secure.mode = esp_mail_secure_mode_undefined;
 
         login.email.clear();
         login.password.clear();
@@ -2796,6 +2816,11 @@ private:
     int cert_ptr = 0;
     bool cert_updated = false;
     MB_List<int> *listPtr = nullptr;
+    
+    // Internal flags use to keep user sercure.startTLS and secure.mode.
+    bool int_start_tls = false;
+    esp_mail_secure_mode int_mode = esp_mail_secure_mode_undefined;
+
     void clearPorts()
     {
         if (ports_functions.list)
@@ -2921,7 +2946,7 @@ private:
             multi->run();
 
 #elif defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        WiFi.begin(credentials[0].ssid.c_str(), credentials[0].password.c_str());
+        WiFi.begin((CONST_STRING_CAST)credentials[0].ssid.c_str(), credentials[0].password.c_str());
 #endif
     }
 
