@@ -933,6 +933,7 @@ bool ESP_Mail_Client::sendMSGData(SMTPSession *smtp, SMTP_Message *msg, bool clo
                 return false;
         }
     }
+  
     if (smtp)
         smtp->_cbData._success = true;
     return true;

@@ -17,6 +17,14 @@ Minimum 200k flash space device is recommended for library installation and user
 The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP application may required up to 20k memory while SMTP application required much less memory.
 
 
+## Updates
+
+The new library version 3.4.0 is available for test now.
+
+It supports all Arduino devices without External SSL Client required and TinyGSMClient integration.
+
+You can try it [here](https://github.com/mobizt/ESP-Mail-Client/tree/v3.4.0). Please see the [example](https://github.com/mobizt/ESP-Mail-Client/tree/v3.4.0/examples) or [Readme](https://github.com/mobizt/ESP-Mail-Client/blob/v3.4.0/README.md) for the changes.
+
 ## Contents
 
 
@@ -86,8 +94,6 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
   - [ESP32 and W5500](#esp32-and-w5500)
 
 [8. License](#license)
-
-
 
 ## Features
 
