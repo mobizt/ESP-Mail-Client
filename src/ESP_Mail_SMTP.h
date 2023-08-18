@@ -2959,7 +2959,6 @@ bool ESP_Mail_Client::reconnect(SMTPSession *smtp, unsigned long dataTime)
         return false;
 
     smtp->client.setSession(smtp->_session_cfg);
-
     networkStatus = smtp->client.networkReady();
 
     if (dataTime > 0)
@@ -3353,6 +3352,8 @@ int SMTPSession::customConnect(Session_Config *session_config, smtpResponseCallb
 
 bool SMTPSession::handleConnection(Session_Config *session_config, bool &ssl)
 {
+     _session_cfg = session_config;
+
     if (!client.isInitialized())
         return MailClient.handleSMTPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED);
 

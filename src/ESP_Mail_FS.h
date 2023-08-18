@@ -159,6 +159,8 @@
  * #define ESP_MAIL_DEBUG_PORT Serial
  */
 
+#define ENABLE_ESP8266_ENC28J60_ETH
+
 #if __has_include("Custom_ESP_Mail_FS.h")
 #include "Custom_ESP_Mail_FS.h"
 #endif

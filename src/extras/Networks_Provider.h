@@ -79,7 +79,7 @@
 #include <ETH.h>
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #elif defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
-#if defined(INC_ENC28J60_LWIP) && defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
+#if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #endif
 #endif

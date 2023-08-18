@@ -1427,11 +1427,11 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, void *sessionP
 
   if (Time.clockReady())
     return true;
-  else
+  else if (WiFI_CONNECTED)
   {
     if (isSMTP)
     {
-#if defined(ENABLE_SMTP)
+#if defined(ENABLE_SMTP) 
       SMTPSession *smtp = (SMTPSession *)sessionPtr;
       errorStatusCB(smtp, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET);
 #endif

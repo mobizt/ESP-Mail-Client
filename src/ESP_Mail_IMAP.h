@@ -2610,6 +2610,9 @@ char *ESP_Mail_Client::urlDecode(const char *str)
 
 bool ESP_Mail_Client::reconnect(IMAPSession *imap, unsigned long dataTime, bool downloadRequest)
 {
+     if (!imap)
+        return false;
+
     imap->client.setSession(imap->_session_cfg);
     networkStatus = imap->client.networkReady();
 
@@ -4966,6 +4969,11 @@ bool IMAPSession::mCustomConnect(Session_Config *session_config, imapResponseCal
 
 bool IMAPSession::handleConnection(Session_Config *session_config, IMAP_Data *imap_data, bool &ssl)
 {
+
+     _session_cfg = session_config;
+
+      if (!client.isInitialized())
+        return MailClient.handleIMAPError(this, TCP_CLIENT_ERROR_NOT_INITIALIZED, false);
 
     // Resources are also released if network disconnected.
     if (!MailClient.reconnect(this))
