@@ -9,26 +9,45 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2022 mobizt
+ * Copyright (c) 2023 mobizt
+ *
+ */
+
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
  *
  */
 
 // The account 2 will send Hello message to account 1.
 
 // The account 1 will poll the mailbox for incoming message, when new message received with matched subject
-// and sent from account 1, the account 1 will send a reply messsage to account 2.
+// and sent from account 2, the account 1 will send a reply messsage to account 2.
 
 #include <Arduino.h>
-#if defined(ESP32)
+#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#else
-
-// Other Client defined here
-// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-// See the example Custom_Client.ino for how to use.
-
+#elif __has_include(<WiFiNINA.h>)
+#include <WiFiNINA.h>
+#elif __has_include(<WiFi101.h>)
+#include <WiFi101.h>
+#elif __has_include(<WiFiS3.h>)
+#include <WiFiS3.h>
 #endif
 
 #include <ESP_Mail_Client.h>
@@ -94,27 +113,31 @@ void replySMTPCallback(SMTP_Status status);
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/*  Declare the global used ESP_Mail_Session for user defined IMAP session credentials */
-ESP_Mail_Session imap_mail_app_session;
+/*  Declare the global used Session_Config for user defined IMAP session credentials */
+Session_Config imap_config;
 
-/** Define the IMAP_Config object used for user defined IMAP operating options
- * and contains the IMAP operating result 
-*/
-IMAP_Config imap_config;
+/** Define the IMAP_Data object used for user defined IMAP operating options
+ * and contains the IMAP operating result
+ */
+IMAP_Data imap_data;
 
 /* Declare the global used SMTPSession object for SMTP transport */
 SMTPSession hello_smtp;
 SMTPSession reply_smtp;
 
-/* Declare the global used ESP_Mail_Session for user defined SMTP session credentials */
-ESP_Mail_Session hello_smtp_mail_app_session;
-ESP_Mail_Session reply_smtp_mail_app_session;
+/* Declare the global used Session_Config for user defined SMTP session credentials */
+Session_Config hello_smtp_config;
+Session_Config reply_smtp_config;
 
 bool imapSetupOk = false;
 
 unsigned long helloSendingMillis = 0;
 
 String sendingSubject = "ESP Mail Hello Test!";
+
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
 
 void setup()
 {
@@ -124,27 +147,46 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
 #endif
 
     Serial.println();
 
-    Serial.print("Connecting to AP");
-
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+    Serial.print("Connecting to Wi-Fi");
+        
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    unsigned long ms = millis();
+#endif
+
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(200);
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
     }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
+    Serial.println();
+    Serial.print("Connected with IP: ");
     Serial.println(WiFi.localIP());
     Serial.println();
+
+    /*  Set the network reconnection option */
+    MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for Pico W
+    // due to it does not have reconnect feature.
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
     Serial.print("Setup and connect to IMAP server... ");
 
@@ -185,14 +227,19 @@ void setupIMAP()
     imap.callback(imapCallback);
 
     /* Set the imap app config */
-    imap_mail_app_session.server.host_name = IMAP_HOST;
-    imap_mail_app_session.server.port = IMAP_PORT;
-    imap_mail_app_session.login.email = IMAP_AUTHOR_EMAIL;
-    imap_mail_app_session.login.password = IMAP_AUTHOR_PASSWORD;
+    imap_config.server.host_name = IMAP_HOST;
+    imap_config.server.port = IMAP_PORT;
+    imap_config.login.email = IMAP_AUTHOR_EMAIL;
+    imap_config.login.password = IMAP_AUTHOR_PASSWORD;
 
     /* Connect to the server */
-    if (!imap.connect(&imap_mail_app_session /* session credentials */, &imap_config /* operating options and its result */))
+    if (!imap.connect(&imap_config, &imap_data))
         return;
+
+    if (imap.isAuthenticated())
+        Serial.println("\nIMAP client, successfully logged in.");
+    else
+        Serial.println("\nIMAP client, connected with no Auth.");
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))
@@ -209,20 +256,43 @@ bool setupHelloSMTP()
     hello_smtp.callback(helloSMTPCallback);
 
     /* Set the session config */
-    hello_smtp_mail_app_session.server.host_name = HELLO_SMTP_HOST;
-    hello_smtp_mail_app_session.server.port = HELLO_SMTP_PORT;
-    hello_smtp_mail_app_session.login.email = HELLO_SMTP_AUTHOR_EMAIL;
-    hello_smtp_mail_app_session.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
-    hello_smtp_mail_app_session.login.user_domain = F("mydomain.net");
+    hello_smtp_config.server.host_name = HELLO_SMTP_HOST;
+    hello_smtp_config.server.port = HELLO_SMTP_PORT;
+    hello_smtp_config.login.email = HELLO_SMTP_AUTHOR_EMAIL;
+    hello_smtp_config.login.password = HELLO_SMTP_AUTHOR_PASSWORD;
 
-    /* Set the NTP config time */
-    hello_smtp_mail_app_session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    hello_smtp_mail_app_session.time.gmt_offset = 3;
-    hello_smtp_mail_app_session.time.day_light_offset = 0;
+    /** Assign your host name or you public IPv4 or IPv6 only
+     * as this is the part of EHLO/HELO command to identify the client system
+     * to prevent connection rejection.
+     * If host name or public IP is not available, ignore this or
+     * use generic host "mydomain.net".
+     *
+     * Assign any text to this option may cause the connection rejection.
+     */
+    hello_smtp_config.login.user_domain = F("mydomain.net");
+
+    /*
+    Set the NTP config time
+    For times east of the Prime Meridian use 0-12
+    For times west of the Prime Meridian add 12 to the offset.
+    Ex. American/Denver GMT would be -6. 6 + 12 = 18
+    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
+    */
+    hello_smtp_config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    hello_smtp_config.time.gmt_offset = 3;
+    hello_smtp_config.time.day_light_offset = 0;
 
     /* Connect to the server */
-    if (!hello_smtp.connect(&hello_smtp_mail_app_session /* session credentials */))
+    if (!hello_smtp.connect(&hello_smtp_config))
+    {
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
         return false;
+    }
+
+    if (imap.isAuthenticated())
+        Serial.println("\nHello SMTP client, successfully logged in.");
+    else
+        Serial.println("\nHello SMTP client, connected with no Auth.");
 
     return true;
 }
@@ -235,15 +305,23 @@ bool setupReplySMTP()
     reply_smtp.callback(replySMTPCallback);
 
     /* Set the session config */
-    reply_smtp_mail_app_session.server.host_name = REPLY_SMTP_HOST;
-    reply_smtp_mail_app_session.server.port = REPLY_SMTP_PORT;
-    reply_smtp_mail_app_session.login.email = REPLY_SMTP_AUTHOR_EMAIL;
-    reply_smtp_mail_app_session.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
-    reply_smtp_mail_app_session.login.user_domain = F("mydomain.net");
+    reply_smtp_config.server.host_name = REPLY_SMTP_HOST;
+    reply_smtp_config.server.port = REPLY_SMTP_PORT;
+    reply_smtp_config.login.email = REPLY_SMTP_AUTHOR_EMAIL;
+    reply_smtp_config.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
+    reply_smtp_config.login.user_domain = F("mydomain.net");
 
-     /* Connect to the server */
-    if (!reply_smtp.connect(&reply_smtp_mail_app_session /* session credentials */))
+    /* Connect to the server */
+    if (!reply_smtp.connect(&reply_smtp_config))
+    {
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
         return false;
+    }
+
+    if (imap.isAuthenticated())
+        Serial.println("\nReply SMTP client, successfully logged in.");
+    else
+        Serial.println("\nReply SMTP client, connected with no Auth.");
 
     return true;
 }
@@ -267,7 +345,7 @@ void sendHelloMessage()
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&hello_smtp, &message))
-        Serial.println("Error sending Email, " + hello_smtp.errorReason());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
 }
 
 void sendReplyMessage(const char *subject, const char *reply_email, const char *msgID, const char *references)
@@ -299,7 +377,7 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&reply_smtp, &message))
-        Serial.println("Error sending Email, " + reply_smtp.errorReason());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
 }
 
 void printPollingStatus(IMAPSession &imap)
@@ -310,15 +388,15 @@ void printPollingStatus(IMAPSession &imap)
     if (sFolder.pollingStatus().type == imap_polling_status_type_new_message)
     {
         /* Show the mailbox info */
-        ESP_MAIL_PRINTF("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
+        MailClient.printf("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
 
-        ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
+        MailClient.printf("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
 
         // we need to stop polling before do anything
         imap.stopListen();
 
         // Get the UID of new message and fetch
-        imap_config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
+        imap_data.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
 
         // When message was fetched or read, the /Seen flag will not set or message remained in unseen or unread status,
         // as this is the purpose of library (not UI application), user can set the message status as read by set \Seen flag
@@ -367,8 +445,8 @@ void helloSMTPCallback(SMTP_Status status)
     if (status.success())
     {
         Serial.println("----------------");
-        ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
+        MailClient.printf("Message sent success: %d\n", status.completedCount());
+        MailClient.printf("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -376,14 +454,12 @@ void helloSMTPCallback(SMTP_Status status)
         {
             /* Get the result item */
             SMTP_Result result = hello_smtp.sendingResult.getItem(i);
-            time_t ts = (time_t)result.timestamp;
-            localtime_r(&ts, &dt);
 
-            ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
-            ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
+            MailClient.printf("Message No: %d\n", i + 1);
+            MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
+            MailClient.printf("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            MailClient.printf("Recipient: %s\n", result.recipients.c_str());
+            MailClient.printf("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 
@@ -401,8 +477,8 @@ void replySMTPCallback(SMTP_Status status)
     if (status.success())
     {
         Serial.println("----------------");
-        ESP_MAIL_PRINTF("Message sent success: %d\n", status.completedCount());
-        ESP_MAIL_PRINTF("Message sent failed: %d\n", status.failedCount());
+        MailClient.printf("Message sent success: %d\n", status.completedCount());
+        MailClient.printf("Message sent failed: %d\n", status.failedCount());
         Serial.println("----------------\n");
         struct tm dt;
 
@@ -410,14 +486,12 @@ void replySMTPCallback(SMTP_Status status)
         {
             /* Get the result item */
             SMTP_Result result = reply_smtp.sendingResult.getItem(i);
-            time_t ts = (time_t)result.timestamp;
-            localtime_r(&ts, &dt);
 
-            ESP_MAIL_PRINTF("Message No: %d\n", i + 1);
-            ESP_MAIL_PRINTF("Status: %s\n", result.completed ? "success" : "failed");
-            ESP_MAIL_PRINTF("Date/Time: %d/%d/%d %d:%d:%d\n", dt.tm_year + 1900, dt.tm_mon + 1, dt.tm_mday, dt.tm_hour, dt.tm_min, dt.tm_sec);
-            ESP_MAIL_PRINTF("Recipient: %s\n", result.recipients.c_str());
-            ESP_MAIL_PRINTF("Subject: %s\n", result.subject.c_str());
+            MailClient.printf("Message No: %d\n", i + 1);
+            MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
+            MailClient.printf("Date/Time: %s\n", MailClient.Time.getDateTimeString(result.timestamp, "%B %d, %Y %H:%M:%S").c_str());
+            MailClient.printf("Recipient: %s\n", result.recipients.c_str());
+            MailClient.printf("Subject: %s\n", result.subject.c_str());
         }
         Serial.println("----------------\n");
 

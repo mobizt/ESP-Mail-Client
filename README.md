@@ -16,6 +16,7 @@ Minimum 200k flash space device is recommended for library installation and user
 
 The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP application may required up to 20k memory while SMTP application required much less memory.
 
+
 ## Contents
 
 
@@ -85,6 +86,8 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
   - [ESP32 and W5500](#esp32-and-w5500)
 
 [8. License](#license)
+
+
 
 ## Features
 
@@ -761,9 +764,9 @@ If device has on-board WiFi and supports native (SDK) Ethernet, these two native
 If you don't want to let `ESP Mail Client` library to use the native networking and use external networking devices using Arduino Clients instead, the following build flags or macros should be defined in `Custom_ESP_Mail_FS.h`.
 
 ```cpp
-#define ESP_MAIL_DISABLE_ONBOARD_WIFI
+ESP_MAIL_DISABLE_ONBOARD_WIFI
 
-#define ESP_MAIL_DISABLE_NATIVE_ETHERNET
+ESP_MAIL_DISABLE_NATIVE_ETHERNET
 ```
 
 See [External Client Examples](/examples/SMTP/External_Client) for more external Client usage.

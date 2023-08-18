@@ -5,7 +5,26 @@
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
- * Copyright (c) 2022 mobizt
+ * Copyright (c) 2023 mobizt
+ *
+ */
+
+/** ////////////////////////////////////////////////
+ *  Struct data names changed from v2.x.x to v3.x.x
+ *  ////////////////////////////////////////////////
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
  *
  */
 
@@ -16,16 +35,16 @@
  */
 
 #include <Arduino.h>
-#if defined(ESP32)
+#if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
 #include <WiFi.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#else
-
-// Other Client defined here
-// To use custom Client, define ENABLE_CUSTOM_CLIENT in  src/ESP_Mail_FS.h.
-// See the example Custom_Client.ino for how to use.
-
+#elif __has_include(<WiFiNINA.h>)
+#include <WiFiNINA.h>
+#elif __has_include(<WiFi101.h>)
+#include <WiFi101.h>
+#elif __has_include(<WiFiS3.h>)
+#include <WiFiS3.h>
 #endif
 
 #include <ESP_Mail_Client.h>
@@ -83,30 +102,46 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
 /* Declare the global used IMAPSession object for IMAP transport */
 IMAPSession imap;
 
-/* Declare the global used ESP_Mail_Session for user defined session credentials */
-ESP_Mail_Session session;
+/* Declare the global used Session_Config for user defined session credentials */
+Session_Config config;
 
-/** Declare the global used IMAP_Config object used for user defined IMAP operating options
- * and contains the IMAP operating result
- */
-IMAP_Config config;
+/* Define the IMAP_Data object used for user defined IMAP operating options. */
+IMAP_Data imap_data;
+
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+WiFiMulti multi;
+#endif
 
 void connectWiFi()
 {
     WiFi.disconnect();
 
-    Serial.print("Connecting to AP");
+    Serial.println();
 
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    multi.addAP(WIFI_SSID, WIFI_PASSWORD);
+    multi.run();
+#else
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+#endif
+
+    Serial.print("Connecting to Wi-Fi");
+
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    unsigned long ms = millis();
+#endif
+
     while (WiFi.status() != WL_CONNECTED)
     {
         Serial.print(".");
-        delay(200);
+        delay(300);
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+        if (millis() - ms > 10000)
+            break;
+#endif
     }
-
-    Serial.println("");
-    Serial.println("WiFi connected.");
-    Serial.println("IP address: ");
+    Serial.println();
+    Serial.print("Connected with IP: ");
     Serial.println(WiFi.localIP());
     Serial.println();
 }
@@ -119,15 +154,19 @@ void setup()
 #if defined(ARDUINO_ARCH_SAMD)
     while (!Serial)
         ;
-    Serial.println();
-    Serial.println("**** Custom built WiFiNINA firmware need to be installed.****\nTo install firmware, read the instruction here, https://github.com/mobizt/ESP-Mail-Client#install-custom-built-wifinina-firmware");
-
 #endif
 
     Serial.println();
 
     /*  Set the network reconnection option */
     MailClient.networkReconnect(true);
+
+    // The WiFi credentials are required for Pico W
+    // due to it does not have reconnect feature.
+#if defined(ARDUINO_RASPBERRY_PI_PICO_W)
+    MailClient.clearAP();
+    MailClient.addAP(WIFI_SSID, WIFI_PASSWORD);
+#endif
 
     connectWiFi();
 
@@ -153,23 +192,46 @@ void setup()
      */
 
     /* Set the session config */
-    session.server.host_name = IMAP_HOST;
-    session.server.port = IMAP_PORT;
-    session.login.email = AUTHOR_EMAIL;
-    session.login.password = AUTHOR_PASSWORD;
+    config.server.host_name = IMAP_HOST;
+    config.server.port = IMAP_PORT;
+    config.login.email = AUTHOR_EMAIL;
+    config.login.password = AUTHOR_PASSWORD;
 
-    session.time.ntp_server = F("pool.ntp.org,time.nist.gov");
-    session.time.gmt_offset = 3;
-    session.time.day_light_offset = 0;
+    /*
+    Set the NTP config time
+    For times east of the Prime Meridian use 0-12
+    For times west of the Prime Meridian add 12 to the offset.
+    Ex. American/Denver GMT would be -6. 6 + 12 = 18
+    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
+    */
+    config.time.ntp_server = F("pool.ntp.org,time.nist.gov");
+    config.time.gmt_offset = 3;
+    config.time.day_light_offset = 0;
 
     /** Assign internet connection handler function
      * in case of lost internet connection for re-listening the mailbox.
      */
-    session.network_connection_handler = connectWiFi;
+    config.network_connection_handler = connectWiFi;
+
+    // You can use TCP KeepAlive for more reliable of listen (idle) operation, please read this for detail.
+    // https://github.com/mobizt/ESP-Mail-Client#using-tcp-session-keepalive-in-esp8266-and-esp32
+    // You can use keepAlive in ESP8266 core version newer than v3.1.2.
+    // Or you can use git version (v3.1.2) https://github.com/esp8266/Arduino
+#if defined(ESP32)
+    imap.keepAlive(5, 5, 1);
+#endif
+
+    /* Set the TCP response read timeout in seconds */
+    // smtp.setTCPTimeout(10);
 
     /* Connect to the server */
-    if (!imap.connect(&session /* session credentials */, &config /* operating options and its result */))
+    if (!imap.connect(&config, &imap_data))
         return;
+
+    if (imap.isAuthenticated())
+        Serial.println("\nSuccessfully logged in.");
+    else
+        Serial.println("\nConnected with no Auth.");
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);
@@ -203,40 +265,27 @@ void printPollingStatus(IMAPSession &imap)
     SelectedFolderInfo sFolder = imap.selectedFolder();
 
     /* Show the mailbox info */
-    ESP_MAIL_PRINTF("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
+    MailClient.printf("\nMailbox status changed\n----------------------\nTotal Messages: %d\n", sFolder.msgCount());
 
     if (sFolder.pollingStatus().type == imap_polling_status_type_new_message)
     {
 
-        ESP_MAIL_PRINTF("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
+        MailClient.printf("New message %d, has been addedd, reading message...\n", (int)sFolder.pollingStatus().messageNum);
 
         // if (sFolder.recentCount() > 0)
-        //     ESP_MAIL_PRINTF("\nMesssage count which recent flag set: %d\n", sFolder.recentCount());
+        //     MailClient.printf("\nMesssage count which recent flag set: %d\n", sFolder.recentCount());
 
         // we need to stop polling before do anything
         imap.stopListen();
 
         // Get the UID of new message and fetch
-        config.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
+        imap_data.fetch.uid = imap.getUID(sFolder.pollingStatus().messageNum);
         MailClient.readMail(&imap, false);
     }
     else if (sFolder.pollingStatus().type == imap_polling_status_type_remove_message)
-        ESP_MAIL_PRINTF("Message %d, has been removed\n\n", (int)sFolder.pollingStatus().messageNum);
+        MailClient.printf("Message %d, has been removed\n\n", (int)sFolder.pollingStatus().messageNum);
     else if (sFolder.pollingStatus().type == imap_polling_status_type_fetch_message)
-        ESP_MAIL_PRINTF("Message %d, has been fetched with the argument %s\n\n", (int)sFolder.pollingStatus().messageNum, sFolder.pollingStatus().argument.c_str());
-}
-
-void printSelectedMailboxInfo(IMAPSession &imap)
-{
-    /* Declare the selected folder info class to get the info of selected mailbox folder */
-    SelectedFolderInfo sFolder = imap.selectedFolder();
-
-    /* Show the mailbox info */
-    ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
-    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
-    for (size_t i = 0; i < sFolder.flagCount(); i++)
-        ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+        MailClient.printf("Message %d, has been fetched with the argument %s\n\n", (int)sFolder.pollingStatus().messageNum, sFolder.pollingStatus().argument.c_str());
 }
 
 /* Callback function to get the Email reading status */
@@ -270,7 +319,7 @@ void printAllMailboxesInfo(IMAPSession &imap)
         {
             /* Iterate each folder info using the  folder info item data */
             FolderInfo folderInfo = folders.info(i);
-            ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
+            MailClient.printf("%s%s%s", i == 0 ? "\nAvailable folders: " : ", ", folderInfo.name, i == folders.size() - 1 ? "\n" : "");
         }
     }
 }
@@ -278,16 +327,29 @@ void printAllMailboxesInfo(IMAPSession &imap)
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
 {
     /* Show the mailbox info */
-    ESP_MAIL_PRINTF("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
-    ESP_MAIL_PRINTF("Predicted next UID: %d\n", sFolder.nextUID());
-    ESP_MAIL_PRINTF("Unseen Message Index: %d\n", sFolder.unseenIndex());
+    MailClient.printf("\nInfo of the selected folder\nTotal Messages: %d\n", sFolder.msgCount());
+    MailClient.printf("UID Validity: %d\n", sFolder.uidValidity());
+    MailClient.printf("Predicted next UID: %d\n", sFolder.nextUID());
+    if (sFolder.unseenIndex() > 0)
+        MailClient.printf("First Unseen Message Number: %d\n", sFolder.unseenIndex());
+    else
+        MailClient.printf("Unseen Messages: No\n");
+
+    if (sFolder.modSeqSupported())
+        MailClient.printf("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
-        ESP_MAIL_PRINTF("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+        MailClient.printf("%s%s%s", i == 0 ? "Flags: " : ", ", sFolder.flag(i).c_str(), i == sFolder.flagCount() - 1 ? "\n" : "");
+
+    if (sFolder.flagCount(true))
+    {
+        for (size_t i = 0; i < sFolder.flagCount(true); i++)
+            MailClient.printf("%s%s%s", i == 0 ? "Permanent Flags: " : ", ", sFolder.flag(i, true).c_str(), i == sFolder.flagCount(true) - 1 ? "\n" : "");
+    }
 }
 
 void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
 {
-    ESP_MAIL_PRINTF("Attachment: %d file(s)\n****************************\n", atts.size());
+    MailClient.printf("Attachment: %d file(s)\n****************************\n", atts.size());
     for (size_t j = 0; j < atts.size(); j++)
     {
         IMAP_Attach_Item att = atts[j];
@@ -296,7 +358,7 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
          * esp_mail_att_type_attachment or 1
          * esp_mail_att_type_inline or 2
          */
-        ESP_MAIL_PRINTF("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Description: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.description, att.creationDate);
+        MailClient.printf("%d. Filename: %s, Name: %s, Size: %d, MIME: %s, Type: %s, Description: %s, Creation Date: %s\n", j + 1, att.filename, att.name, att.size, att.mime, att.type == esp_mail_att_type_attachment ? "attachment" : "inline", att.description, att.creationDate);
     }
     Serial.println();
 }
@@ -311,67 +373,68 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
         IMAP_MSG_Item msg = msgItems[i];
 
         Serial.println("****************************");
-        ESP_MAIL_PRINTF("Number: %d\n", msg.msgNo);
-        ESP_MAIL_PRINTF("UID: %d\n", msg.UID);
-        ESP_MAIL_PRINTF("Messsage-ID: %s\n", msg.ID);
+        MailClient.printf("Number: %d\n", msg.msgNo);
+        MailClient.printf("UID: %d\n", msg.UID);
 
-        ESP_MAIL_PRINTF("Flags: %s\n", msg.flags);
+        // The attachment status in search may be true in case the "multipart/mixed"
+        // content type header was set with no real attachtment included.
+        MailClient.printf("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
 
-        // The attachment may not detect in search because the multipart/mixed
-        // was not found in Content-Type header field.
-        ESP_MAIL_PRINTF("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
+        MailClient.printf("Messsage-ID: %s\n", msg.ID);
 
+        if (strlen(msg.flags))
+            MailClient.printf("Flags: %s\n", msg.flags);
         if (strlen(msg.acceptLang))
-            ESP_MAIL_PRINTF("Accept Language: %s\n", msg.acceptLang);
+            MailClient.printf("Accept Language: %s\n", msg.acceptLang);
         if (strlen(msg.contentLang))
-            ESP_MAIL_PRINTF("Content Language: %s\n", msg.contentLang);
+            MailClient.printf("Content Language: %s\n", msg.contentLang);
         if (strlen(msg.from))
-            ESP_MAIL_PRINTF("From: %s\n", msg.from);
+            MailClient.printf("From: %s\n", msg.from);
         if (strlen(msg.sender))
-            ESP_MAIL_PRINTF("Sender: %s\n", msg.sender);
+            MailClient.printf("Sender: %s\n", msg.sender);
         if (strlen(msg.to))
-            ESP_MAIL_PRINTF("To: %s\n", msg.to);
+            MailClient.printf("To: %s\n", msg.to);
         if (strlen(msg.cc))
-            ESP_MAIL_PRINTF("CC: %s\n", msg.cc);
+            MailClient.printf("CC: %s\n", msg.cc);
         if (strlen(msg.date))
         {
-            ESP_MAIL_PRINTF("Date: %s\n", msg.date);
-            ESP_MAIL_PRINTF("Timestamp: %d\n", (int)MailClient.Time.getTimestamp(msg.date));
+            MailClient.printf("Date: %s\n", msg.date);
+            MailClient.printf("Timestamp: %d\n", (int)MailClient.Time.getTimestamp(msg.date));
         }
         if (strlen(msg.subject))
-            ESP_MAIL_PRINTF("Subject: %s\n", msg.subject);
+            MailClient.printf("Subject: %s\n", msg.subject);
         if (strlen(msg.reply_to))
-            ESP_MAIL_PRINTF("Reply-To: %s\n", msg.reply_to);
+            MailClient.printf("Reply-To: %s\n", msg.reply_to);
         if (strlen(msg.return_path))
-            ESP_MAIL_PRINTF("Return-Path: %s\n", msg.return_path);
+            MailClient.printf("Return-Path: %s\n", msg.return_path);
         if (strlen(msg.in_reply_to))
-            ESP_MAIL_PRINTF("In-Reply-To: %s\n", msg.in_reply_to);
+            MailClient.printf("In-Reply-To: %s\n", msg.in_reply_to);
         if (strlen(msg.references))
-            ESP_MAIL_PRINTF("References: %s\n", msg.references);
+            MailClient.printf("References: %s\n", msg.references);
         if (strlen(msg.comments))
-            ESP_MAIL_PRINTF("Comments: %s\n", msg.comments);
+            MailClient.printf("Comments: %s\n", msg.comments);
         if (strlen(msg.keywords))
-            ESP_MAIL_PRINTF("Keywords: %s\n", msg.keywords);
+            MailClient.printf("Keywords: %s\n", msg.keywords);
 
         /* If the result contains the message info (Fetch mode) */
         if (!headerOnly)
         {
             if (strlen(msg.text.content))
-                ESP_MAIL_PRINTF("Text Message: %s\n", msg.text.content);
+                MailClient.printf("Text Message: %s\n", msg.text.content);
             if (strlen(msg.text.charSet))
-                ESP_MAIL_PRINTF("Text Message Charset: %s\n", msg.text.charSet);
+                MailClient.printf("Text Message Charset: %s\n", msg.text.charSet);
             if (strlen(msg.text.transfer_encoding))
-                ESP_MAIL_PRINTF("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
+                MailClient.printf("Text Message Transfer Encoding: %s\n", msg.text.transfer_encoding);
             if (strlen(msg.html.content))
-                ESP_MAIL_PRINTF("HTML Message: %s\n", msg.html.content);
+                MailClient.printf("HTML Message: %s\n", msg.html.content);
             if (strlen(msg.html.charSet))
-                ESP_MAIL_PRINTF("HTML Message Charset: %s\n", msg.html.charSet);
+                MailClient.printf("HTML Message Charset: %s\n", msg.html.charSet);
             if (strlen(msg.html.transfer_encoding))
-                ESP_MAIL_PRINTF("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
+                MailClient.printf("HTML Message Transfer Encoding: %s\n\n", msg.html.transfer_encoding);
 
             if (msg.rfc822.size() > 0)
             {
-                ESP_MAIL_PRINTF("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
+                MailClient.printf("RFC822 Messages: %d message(s)\n****************************\n", msg.rfc822.size());
                 printMessages(msg.rfc822, headerOnly);
             }
         }
