@@ -6,7 +6,7 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 /**
  * This example shows how to send Email using EthernetClient.
@@ -17,7 +17,7 @@
  */
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -282,6 +282,8 @@ void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
             MailClient.printf("To: %s\n", msg.to);
         if (strlen(msg.cc))
             MailClient.printf("CC: %s\n", msg.cc);
+        if (strlen(msg.bcc))
+            MailClient.printf("BCC: %s\n", msg.bcc);
         if (strlen(msg.date))
         {
             MailClient.printf("Date: %s\n", msg.date);

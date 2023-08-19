@@ -313,6 +313,8 @@ void printMessageData()
         MailClient.printf("To: %s\n", msg.to);
     if (strlen(msg.cc))
         MailClient.printf("CC: %s\n", msg.cc);
+     if (strlen(msg.bcc))
+            MailClient.printf("BCC: %s\n", msg.bcc);
     if (strlen(msg.date))
     {
         MailClient.printf("Date: %s\n", msg.date);

@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30402)
+#if !VALID_VERSION_CHECK(30403)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 19, 2023
+ * Created August 20, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -404,6 +404,46 @@ typedef void (*imapResponseCallback)(IMAP_Response);
 typedef void (*MIMEDataStreamCallback)(MIME_Data_Stream_Info);
 typedef void (*imapCharacterDecodingCallback)(IMAP_Decoding_Info *);
 
+#else
+
+enum esp_mail_imap_read_capability_types
+{
+  esp_mail_imap_read_capability_maxType
+};
+
+// Dummy class used in template functions (errorStatusCB).
+class IMAPSession
+{
+public:
+  struct IMAP_Status
+  {
+  public:
+    const char *info() { return ""; };
+    bool success() { return false; };
+    void empty();
+    MB_String _info;
+    bool _success = false;
+  };
+
+  typedef void (*imapStatusCallback)(IMAP_Status);
+  MB_String errorReason() { return ""; }
+  bool _debug;
+  imapStatusCallback _statusCallback = nullptr;
+  void *_customCmdResCallback = nullptr;
+  esp_mail_session_type _sessionType = esp_mail_session_type_imap;
+
+  struct esp_mail_imap_response_status_t
+  {
+    int errorCode = 0;
+    MB_String tag;
+    MB_String text;
+    MB_String status;
+    bool completed = false;
+  };
+
+  esp_mail_imap_response_status_t _responseStatus;
+  IMAP_Status _cbData;
+};
 #endif
 
 #if defined(ENABLE_SMTP)
@@ -1039,13 +1079,7 @@ private:
   esp_mail_wifi_credentials_t wifi;
   bool timezoneEnvSet = false;
 
-#if defined(ENABLE_IMAP)
-#define IMAP_SESSION IMAPSession
-#else
-#define IMAP_SESSION void
-#endif
-
-  IMAP_SESSION *imap = nullptr;
+  IMAPSession *imap = nullptr;
   bool calDataLen = false;
   uint32_t dataLen = 0;
   uint32_t imap_ts = 0;
@@ -1062,7 +1096,16 @@ private:
   int readLine(ESP_Mail_TCPClient *client, char *buf, int bufLen, bool withLineBreak, int &count, bool &ovf, unsigned long timeoutSec, bool &isTimeout);
 
   // readLine with overflow handling.
-  bool readResponse(void *sessionPtr, bool isSMTP, char *buf, int bufLen, int &readLen, bool withLineBreak, int &count, MB_String &ovfBuf);
+  template <class T>
+  bool readResponse(T sessionPtr, char *buf, int bufLen, int &readLen, bool withLineBreak, int &count, MB_String &ovfBuf);
+
+  // Network reconnection and return the connection status
+  template <class T>
+  bool reconnect(T sessionPtr, unsigned long dataTime = 0, bool downloadRequest = false);
+
+  // Send callback
+  template <class T>
+  void sendCB(T sessionPtr, PGM_P info = "", bool prependCRLF = false, bool success = false);
 
   // PGM string replacement
   void strReplaceP(MB_String &buf, PGM_P key, PGM_P value);
@@ -1073,20 +1116,33 @@ private:
   // Get SASL XOAUTH2 string
   MB_String getXOAUTH2String(const MB_String &email, const MB_String &accessToken);
 
+  // Send error callback
+  template <class T>
+  void sendErrorCB(T sessionPtr, PGM_P info, bool prependCRLF = false, bool success = false);
+
+  // Send the error status callback
+  template <class T1, class T2>
+  void errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bool clearStatus);
+
   // Check response callback was assigned?
-  bool isResponseCB(void *cb, bool isSMTP);
+  template <class T>
+  bool isResponseCB(T sessionPtr);
 
   // Print library info
-  void printLibInfo(void *sessionPtr, bool isSMTP);
+  template <class T>
+  void printLibInfo(T sessionPtr);
 
   // Begin server connection
-  bool beginConnection(Session_Config *session_config, void *sessionPtr, bool isSMTP, bool secureMode);
+  template <class T>
+  bool beginConnection(Session_Config *session_config, T sessionPtr, bool secureMode);
 
   // Prepare system time
-  bool prepareTime(Session_Config *session_config, void *sessionPtr, bool isSMTP);
+  template <class T>
+  bool prepareTime(Session_Config *session_config, T sessionPtr);
 
   // Check for session. Close session If not ready.
-  bool sessionReady(void *sessionPtr, bool isSMTP);
+  template <class T>
+  bool sessionReady(T sessionPtr);
 
   // Set cert data
   void setCert(Session_Config *session_cfg, const char *ca);
@@ -1098,13 +1154,15 @@ private:
   String errorReason(bool isSMTP, int errorCode, const char *msg);
 
   // Close TCP session and clear auth_capability, read/send_capability, connected and authenticate statuses
-  void closeTCPSession(void *sessionPtr, bool isSMTP);
+  template <class T>
+  void closeTCPSession(T sessionPtr);
 
   // Get and set timezone
   void getSetTimezoneEnv(const char *TZ_file, const char *TZ_Var);
 
   // Get TCP connected status
-  bool connected(void *sessionPtr, bool isSMTP);
+  template <class T>
+  bool connected(T sessionPtr);
 
   // Get the memory allocation block size of multiple of 4
   size_t getReservedLen(size_t len);
@@ -1167,13 +1225,16 @@ private:
   void getTimezone(const char *TZ_file, MB_String &out);
 
   // Check the session existent
-  bool sessionExisted(void *sessionPtr, bool isSMTP);
+  template <class T>
+  bool sessionExisted(T sessionPtr);
 
   // Send SMTP/IMAP callback
-  void sendCallback(void *sessionPtr, PGM_P info, bool isSMTP, bool prependCRLF, bool success);
+  template <class T>
+  void sendCallback(T sessionPtr, PGM_P info, bool prependCRLF, bool success);
 
   // Send IMAP/SMTP response callback and print debug message
-  void printDebug(void *sessionPtr, bool isSMTP, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success);
+  template <class T>
+  void printDebug(T sessionPtr, PGM_P cbMsg, PGM_P dbMsg, esp_mail_debug_tag_type type, bool prependCRLF, bool success);
 
   // Get header content from response based on the field name
   bool getHeader(const char *buf, PGM_P beginToken, MB_String &out, bool caseSensitive);
@@ -1246,7 +1307,8 @@ private:
   void debugPrintNewLine();
 
   // Send newline to callback
-  void callBackSendNewLine(void *sessionPtr, bool isSMTP, bool success);
+  template <class T>
+  void callBackSendNewLine(T sessionPtr, bool success);
 
   // Print progress bar
   void printProgress(int progress, int &lastProgress);
@@ -1286,12 +1348,6 @@ private:
 
   // Send Email function
   bool mSendMail(SMTPSession *smtp, SMTP_Message *msg, bool closeSession = true);
-
-  // Network reconnection and return the connection status
-  bool reconnect(SMTPSession *smtp, unsigned long dataTime = 0);
-
-  // Send the error status callback
-  void errorStatusCB(SMTPSession *smtp, int error);
 
   // SMTP send data
   size_t smtpSend(SMTPSession *smtp, PGM_P data, bool newline = false);
@@ -1422,12 +1478,6 @@ private:
   // Get imap or smtp report progress var pointer
   uint32_t altProgressPtr(SMTPSession *smtp);
 
-  // Send callback
-  void smtpCB(SMTPSession *smtp, PGM_P info = "", bool prependCRLF = false, bool success = false);
-
-  // Send error callback
-  void smtpErrorCB(SMTPSession *smtp, PGM_P info, bool prependCRLF = false, bool success = false);
-
   // Get SMTP response status (statusCode and text)
   void getResponseStatus(const char *buf, esp_mail_smtp_status_code statusCode, int beginPos, struct esp_mail_smtp_response_status_t &status);
 
@@ -1488,9 +1538,6 @@ private:
    */
   int encodeUnicode_UTF8(char *out, uint32_t utf);
 
-  // Network reconnection and return the connection status
-  bool reconnect(IMAPSession *imap, unsigned long dataTime = 0, bool downloadRequestuest = false);
-
   // Append headers fetch command
   void appendHeadersFetchCommand(IMAPSession *imap, MB_String &cmd, int index, bool debug);
 
@@ -1512,9 +1559,6 @@ private:
   // Send IMAP command
   bool sendFetchCommand(IMAPSession *imap, int msgIndex, esp_mail_imap_command cmdCase);
 
-  // Send error callback
-  void errorStatusCB(IMAPSession *imap, int error, bool clearStatus);
-
   // Send data
   size_t imapSend(IMAPSession *imap, PGM_P data, bool newline = false);
 
@@ -1526,9 +1570,6 @@ private:
 
   // Log out
   bool imapLogout(IMAPSession *imap);
-
-  // Send error callback
-  void imapErrorCB(IMAPSession *imap, PGM_P info, bool prependCRLF = false, bool success = false);
 
   // Send storage error callback
   void sendStorageNotReadyError(IMAPSession *imap, esp_mail_file_storage_type storageType);
@@ -2403,7 +2444,7 @@ private:
   unsigned long _last_server_connect_ms = 0;
   unsigned long _last_network_error_ms = 0;
   unsigned long tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
-  struct esp_mail_imap_response_status_t _imapStatus;
+  struct esp_mail_imap_response_status_t _responseStatus;
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
   int _totalRead = 0;
@@ -2425,7 +2466,7 @@ private:
   bool _storageChecked = false;
 
   bool _auth_capability[esp_mail_auth_capability_maxType];
-  bool _read_capability[esp_mail_imap_read_capability_maxType];
+  bool _feature_capability[esp_mail_imap_read_capability_maxType];
   Session_Config *_session_cfg;
   MB_List<int> _configPtrList;
   MB_String _currentFolder;
@@ -2452,12 +2493,13 @@ private:
   bool _secure = false;
   bool _authenticated = false;
   bool _isFirmwareUpdated = false;
-  imapStatusCallback _readCallback = NULL;
+  imapStatusCallback _statusCallback = NULL;
   imapResponseCallback _customCmdResCallback = NULL;
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
   imapCharacterDecodingCallback _charDecCallback = NULL;
 
   MB_VECTOR<struct esp_mail_imap_msg_num_t> _imap_msg_num;
+  esp_mail_session_type _sessionType = esp_mail_session_type_imap;
 
   FoldersCollection _folders;
   SelectedFolderInfo _mbif;
@@ -2745,7 +2787,7 @@ public:
 private:
   bool _sessionSSL = false;
   bool _sessionLogin = false;
-  struct esp_mail_smtp_response_status_t _smtpStatus;
+  struct esp_mail_smtp_response_status_t _responseStatus;
   int _sentSuccessCount = 0;
   int _sentFailedCount = 0;
   bool _chunkedEnable = false;
@@ -2756,7 +2798,7 @@ private:
   esp_mail_smtp_command _smtp_cmd = esp_mail_smtp_command::esp_mail_smtp_cmd_greeting;
 
   bool _auth_capability[esp_mail_auth_capability_maxType];
-  bool _send_capability[esp_mail_smtp_send_capability_maxType];
+  bool _feature_capability[esp_mail_smtp_send_capability_maxType];
 
   Session_Config *_session_cfg = NULL;
   MB_List<int> _configPtrList;
@@ -2768,7 +2810,7 @@ private:
   bool _loginStatus = false;
   bool _waitForAuthenticate = false;
   bool _canForward = false;
-  smtpStatusCallback _sendCallback = NULL;
+  smtpStatusCallback _statusCallback = NULL;
   smtpResponseCallback _customCmdResCallback = NULL;
   int _commandID = -1;
   bool _sdStorageReady = false;
@@ -2776,6 +2818,7 @@ private:
   bool _sdStorageChecked = false;
   bool _flashStorageChecked = false;
 
+  esp_mail_session_type _sessionType = esp_mail_session_type_smtp;
   SMTP_Status _cbData;
   struct esp_mail_smtp_msg_type_t _msgType;
   int _lastProgress = -1;

@@ -1,4 +1,4 @@
-// Created August 19, 2023
+// Created August 20, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30402)
+#if !VALID_VERSION_CHECK(30403)
 #error "Mixed versions compilation."
 #endif
 
@@ -52,6 +52,10 @@
 #define ESP_MAIL_OTA_UPDATE_ENABLED
 #endif
 
+#if !defined(SILENT_MODE) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
+#define SESSION_DEBUG_ENABLED
+#endif
+
 #define TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC 30
 
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
@@ -94,6 +98,13 @@ enum esp_mail_file_storage_type
     esp_mail_file_storage_type_none,
     esp_mail_file_storage_type_flash,
     esp_mail_file_storage_type_sd
+};
+
+/* The session types enum */
+enum esp_mail_session_type
+{
+    esp_mail_session_type_smtp,
+    esp_mail_session_type_imap
 };
 
 /* The secure connection mode preference */
@@ -1630,6 +1641,38 @@ enum esp_mail_char_decoding_scheme
     esp_mail_char_decoding_scheme_windows_874
 };
 
+enum esp_mail_imap_rights_type_t
+{
+    /* a - administer (perform SETACL/DELETEACL/GETACL/LISTRIGHTS) */
+    esp_mail_imap_rights_administer = 'a' - 'a',
+    /* c - RFC2086 (obsoleted) create (CREATE new sub-mailboxes in any implementation-defined hierarchy) */
+    esp_mail_imap_rights_create_c = 'c' - 'a',
+    /* d - RFC2086 (obsoleted) delete (STORE DELETED flag, perform EXPUNGE) */
+    esp_mail_imap_rights_delete_d = 'd' - 'a',
+    /* e - perform EXPUNGE and expunge as a part of CLOSE */
+    esp_mail_imap_rights_expunge = 'e' - 'a',
+    /* i - insert (perform APPEND, COPY into mailbox) */
+    esp_mail_imap_rights_insert = 'i' - 'a',
+    /* k - RFC4314 create mailboxes (CREATE new sub-mailboxes in any implementation-defined hierarchy, parent mailbox for the new mailbox name in RENAME)*/
+    esp_mail_imap_rights_create = 'k' - 'a',
+    /* l - lookup (mailbox is visible to LIST/LSUB commands, SUBSCRIBE mailbox) */
+    esp_mail_imap_rights_lookup = 'l' - 'a',
+    /* p - post (send mail to submission address for mailbox, not enforced by IMAP4 itself) */
+    esp_mail_imap_rights_post = 'p' - 'a',
+    /* r - read (SELECT the mailbox, perform STATUS) */
+    esp_mail_imap_rights_read = 'r' - 'a',
+    /* s - keep seen/unseen information across sessions (set or clear \SEEN flag via STORE, also set \SEEN during APPEND/COPY/ FETCH BODY[...]) */
+    esp_mail_imap_rights_seen = 's' - 'a',
+    /* t - RFC4314 delete messages (set or clear \DELETED flag via STORE, set \DELETED flag during APPEND/COPY) */
+    esp_mail_imap_rights_delete_message = 't' - 'a',
+    /* w - write (set or clear flags other than \SEEN and \DELETED via STORE, also set them during APPEND/COPY) */
+    esp_mail_imap_rights_write = 'w' - 'a',
+    /* x - RFC4314 delete mailbox (DELETE mailbox, old mailbox name in RENAME) */
+    esp_mail_imap_rights_delete_mailbox = 'x' - 'a',
+
+    esp_mail_imap_rights_maxType = esp_mail_imap_rights_delete_mailbox + 1
+};
+
 enum esp_mail_imap_port
 {
     esp_mail_imap_port_143 = 143, // PLAIN/TLS with STARTTLS
@@ -1797,21 +1840,7 @@ __attribute__((used)) struct
 
 struct esp_mail_imap_rfc822_msg_header_item_t
 {
-    MB_String sender;
-    MB_String from;
-    MB_String subject;
-    MB_String messageID;
-    MB_String keywords;
-    MB_String comments;
-    MB_String date;
-    MB_String return_path;
-    MB_String reply_to;
-    MB_String to;
-    MB_String cc;
-    MB_String bcc;
-    MB_String in_reply_to;
-    MB_String references;
-    MB_String flags;
+    MB_String header_items[esp_mail_rfc822_header_field_maxType];
 };
 
 /* IMAP quota root info */
@@ -1842,40 +1871,10 @@ typedef struct esp_mail_imap_namespace_info_t
 
 } IMAP_Namespace_Info;
 
-struct esp_mail_imap_rights_t
-{
-    /* l - lookup (mailbox is visible to LIST/LSUB commands, SUBSCRIBE mailbox) */
-    bool lookup = false;
-    /* r - read (SELECT the mailbox, perform STATUS) */
-    bool read = false;
-    /* s - keep seen/unseen information across sessions (set or clear \SEEN flag via STORE, also set \SEEN during APPEND/COPY/ FETCH BODY[...]) */
-    bool seen = false;
-    /* w - write (set or clear flags other than \SEEN and \DELETED via STORE, also set them during APPEND/COPY) */
-    bool write = false;
-    /* i - insert (perform APPEND, COPY into mailbox) */
-    bool insert = false;
-    /* p - post (send mail to submission address for mailbox, not enforced by IMAP4 itself) */
-    bool post = false;
-    /* c - RFC2086 (obsoleted) create (CREATE new sub-mailboxes in any implementation-defined hierarchy) */
-    bool create_c = false;
-    /* k - RFC4314 create mailboxes (CREATE new sub-mailboxes in any implementation-defined hierarchy, parent mailbox for the new mailbox name in RENAME)*/
-    bool create = false;
-    /* x - RFC4314 delete mailbox (DELETE mailbox, old mailbox name in RENAME) */
-    bool delete_mailbox = false;
-    /* d - RFC2086 (obsoleted) delete (STORE DELETED flag, perform EXPUNGE) */
-    bool delete_d = false;
-    /* t - RFC4314 delete messages (set or clear \DELETED flag via STORE, set \DELETED flag during APPEND/COPY) */
-    bool delete_messages = false;
-    /* e - perform EXPUNGE and expunge as a part of CLOSE */
-    bool expunge = false;
-    /* a - administer (perform SETACL/DELETEACL/GETACL/LISTRIGHTS) */
-    bool administer = false;
-};
-
 typedef struct esp_mail_imap_rights_info_t
 {
     MB_String identifier;
-    esp_mail_imap_rights_t rights;
+    bool rights[esp_mail_imap_rights_maxType];
 
 } IMAP_Rights_Info;
 
@@ -2462,6 +2461,13 @@ public:
     // deprecated
     const char *ccCharset = "";
 
+    /* The Blind-carbon-copy recipient mailboxes (RFC 4021) */
+    const char *bcc = "";
+
+    /* The charset of the Blind-carbon-copy recipient mailbox header */
+    // deprecated
+    const char *bccCharset = "";
+
     /* The message date and time (RFC 4021) */
     const char *date = "";
 
@@ -2508,10 +2514,6 @@ public:
     /* The Email address to reply */
     const char *reply_to;
 
-    /* The charset of the Blind carbon-copy recipient mailbox header */
-    // deprecated
-    const char *bccCharset = "";
-
     /* The error description from fetching the message */
     const char *fetchError = "";
 
@@ -2527,20 +2529,21 @@ public:
 private:
     void setRFC822Headers(struct esp_mail_imap_rfc822_msg_header_item_t *rfc822_header)
     {
-        from = rfc822_header->from.c_str();
-        sender = rfc822_header->sender.c_str();
-        to = rfc822_header->to.c_str();
-        cc = rfc822_header->cc.c_str();
-        return_path = rfc822_header->return_path.c_str();
-        reply_to = rfc822_header->reply_to.c_str();
-        subject = rfc822_header->subject.c_str();
-        comments = rfc822_header->comments.c_str();
-        keywords = rfc822_header->keywords.c_str();
-        in_reply_to = rfc822_header->in_reply_to.c_str();
-        references = rfc822_header->references.c_str();
-        date = rfc822_header->date.c_str();
-        ID = rfc822_header->messageID.c_str();
-        flags = rfc822_header->flags.c_str();
+        from = rfc822_header->header_items[esp_mail_rfc822_header_field_from].c_str();
+        sender = rfc822_header->header_items[esp_mail_rfc822_header_field_sender].c_str();
+        to = rfc822_header->header_items[esp_mail_rfc822_header_field_to].c_str();
+        cc = rfc822_header->header_items[esp_mail_rfc822_header_field_cc].c_str();
+        subject = rfc822_header->header_items[esp_mail_rfc822_header_field_subject].c_str();
+        date = rfc822_header->header_items[esp_mail_rfc822_header_field_date].c_str();
+        ID = rfc822_header->header_items[esp_mail_rfc822_header_field_msg_id].c_str();
+        return_path = rfc822_header->header_items[esp_mail_rfc822_header_field_return_path].c_str();
+        reply_to = rfc822_header->header_items[esp_mail_rfc822_header_field_reply_to].c_str();
+        in_reply_to = rfc822_header->header_items[esp_mail_rfc822_header_field_in_reply_to].c_str();
+        references = rfc822_header->header_items[esp_mail_rfc822_header_field_references].c_str();
+        comments = rfc822_header->header_items[esp_mail_rfc822_header_field_comments].c_str();
+        keywords = rfc822_header->header_items[esp_mail_rfc822_header_field_keywords].c_str();
+        bcc = rfc822_header->header_items[esp_mail_rfc822_header_field_bcc].c_str();
+        flags = rfc822_header->header_items[esp_mail_rfc822_header_field_flags].c_str();
         text.charSet = "";
         text.content_type = "";
         text.transfer_encoding = "";
@@ -2688,7 +2691,7 @@ struct esp_mail_sesson_secure_config_t
 {
     /** The option (obsoleted) to send the SMTP and IMAP commands to start the TLS connection rfc2595 section 3 and rfc3207 */
     bool startTLS = false;
-    
+
     /* The secure connection mode preference */
     esp_mail_secure_mode mode = esp_mail_secure_mode_undefined;
 };
@@ -2816,7 +2819,7 @@ private:
     int cert_ptr = 0;
     bool cert_updated = false;
     MB_List<int> *listPtr = nullptr;
-    
+
     // Internal flags use to keep user sercure.startTLS and secure.mode.
     bool int_start_tls = false;
     esp_mail_secure_mode int_mode = esp_mail_secure_mode_undefined;
