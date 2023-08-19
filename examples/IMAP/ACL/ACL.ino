@@ -233,7 +233,7 @@ void setup()
             for (int i = esp_mail_imap_rights_administer; i < esp_mail_imap_rights_maxType; i++)
             {
                 if (acl.rights[i])
-                    r += (char)('a' + j);
+                    r += (char)('a' + i);
             }
 
             Serial.println(r);
