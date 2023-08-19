@@ -1,13 +1,12 @@
 /**
- * This example shows how to set messages flags.
+ * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
 // This example shows how to read Email and collect the stream data to print or store via the callback function.
 

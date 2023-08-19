@@ -1,13 +1,14 @@
 /**
- * This example shows how to append new message to mailbox using the custom IMAP command.
+ * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
+
+// This example shows how to append new message to mailbox using the custom IMAP command.
 
 /** Note for library update from v2.x.x to v3.x.x.
  * 

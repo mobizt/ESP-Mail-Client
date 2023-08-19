@@ -1,13 +1,12 @@
 /**
- * This example shows how to set messages flags.
+ * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
  *
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
 // This example shows how to copy messages from the mailbox to other folder using UIDs ranges.
 
