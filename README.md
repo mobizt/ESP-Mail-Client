@@ -506,7 +506,7 @@ void setup()
   config.login.password = "your Email password"; // set to empty for no SMTP Authentication
   
   // For client identity, assign invalid string can cause server rejection
-  config.login.user_domain = "client domain or public ip only e.g. mydomain.com";  
+  config.login.user_domain = "client domain or public ip";  
 
   /*
    Set the NTP config time
@@ -917,7 +917,7 @@ void setup()
   config.server.port = SMTP_PORT;
   config.login.email = AUTHOR_EMAIL;
   config.login.password = AUTHOR_PASSWORD;
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
   // Declare the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
