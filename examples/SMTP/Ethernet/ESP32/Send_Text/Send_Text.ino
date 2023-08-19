@@ -1,8 +1,5 @@
 
-
 /**
- * This example shows how to send Email using ESP32 and LAN8720 Ethernet module.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,12 +7,13 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to send Email using ESP32 and LAN8720 Ethernet module.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -29,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 /**
@@ -62,6 +59,14 @@
  * GND                          GND
  * 3V3                          VCC
  *
+ * 
+ * ESP32 Arduino SDK native Ethernet using ETH.h is currently support Ethernet PHY chips
+ * 
+ * LAN8720, TLK101, RTL8201, DP83848, DM9051, KSZ8041 and KSZ8081.
+ * 
+ * For ESP32 and other SPI MAC Ethernet modules, the external Client was used, 
+ * see examples/SMTP/External_Client/EthernetClient/EthernetClient.ino
+ * 
  */
 
 #include <ESP_Mail_Client.h>
@@ -196,7 +201,7 @@ void sendMail()
   config.login.email = AUTHOR_EMAIL;
   config.login.password = AUTHOR_PASSWORD;
 
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
   /*
   Set the NTP config time

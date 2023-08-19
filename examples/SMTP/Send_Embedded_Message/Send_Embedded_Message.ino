@@ -1,9 +1,5 @@
 
-
 /**
- * This example shows how to send Email which the
- * html and text message will be embedded as attachment or inline content.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -11,12 +7,13 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to send Email which the html and text message will be embedded as attachment or inline content.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -30,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 #include <Arduino.h>
@@ -163,11 +159,11 @@ void setup()
    * as this is the part of EHLO/HELO command to identify the client system
    * to prevent connection rejection.
    * If host name or public IP is not available, ignore this or
-   * use generic host "mydomain.net".
+   * use loopback address "127.0.0.1".
    *
    * Assign any text to this option may cause the connection rejection.
    */
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
   /*
   Set the NTP config time

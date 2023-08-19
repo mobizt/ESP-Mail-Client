@@ -1,8 +1,5 @@
 
-
 /**
- * This example showes how to send text Email.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,8 +7,9 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
+
+// This example showes how to send text message without callback and debug.
 
 /**
  * To use library in silent mode (no debug printing and callback), please define this macro in src/ESP_Mail_FS.h.
@@ -105,7 +103,7 @@ void setup()
   config.login.email = AUTHOR_EMAIL;
   config.login.password = AUTHOR_PASSWORD;
 
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
   /*
   Set the NTP config time

@@ -1,10 +1,4 @@
-
-
 /**
- * This example shows how to send Email using EthernetClient.
- *
- * This example used ESP32 and WIZnet W5500 Ethernet module.
- * 
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -12,12 +6,29 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
+*/
+
+/**
+ * This example shows how to send Email using EthernetClient.
+ *
+ * This example used ESP32 and WIZnet W5500 Ethernet module.
+ * 
+ * For ESP32 and LAN8720 see examples/SMTP/Ethernet/ESP32/Send_Text.ino
+ * 
+ * ESP32 Arduino SDK native Ethernet using ETH.h is currently support Ethernet PHY chips
+ * 
+ * LAN8720, TLK101, RTL8201, DP83848, DM9051, KSZ8041 and KSZ8081.
+ * 
+ * For ESP8266, the native Ethernet is currently supported ENC28J60, W5100 and W5500.
+ * 
+ * You do not need to set external Client with native Ethernet support PHY/MAC chips.
+ * 
  *
  */
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -31,7 +42,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 #include <Arduino.h>
@@ -120,7 +130,7 @@ void sendEmail()
     config.login.email = AUTHOR_EMAIL;
     config.login.password = AUTHOR_PASSWORD;
 
-    config.login.user_domain = F("mydomain.net");
+    config.login.user_domain = F("127.0.0.1");
 
     SMTP_Message message;
 

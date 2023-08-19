@@ -1,8 +1,5 @@
 
-
 /**
- * This example shows how to send Email with attachments and  inline images stored in SPIFFS/LittleFS filesystem.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,12 +7,13 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to send Email with attachments and  inline images stored in SPIFFS/LittleFS filesystem.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -29,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 /** Assign SD card type and FS used in src/ESP_Mail_FS.h and
@@ -220,11 +217,11 @@ void setup()
      * as this is the part of EHLO/HELO command to identify the client system
      * to prevent connection rejection.
      * If host name or public IP is not available, ignore this or
-     * use generic host "mydomain.net".
+     * use loopback address "127.0.0.1".
      *
      * Assign any text to this option may cause the connection rejection.
      */
-    config.login.user_domain = F("mydomain.net");
+    config.login.user_domain = F("127.0.0.1");
 
     /*
     Set the NTP config time

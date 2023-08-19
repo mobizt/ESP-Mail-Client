@@ -1,5 +1,5 @@
 /**
- * This example shows how to move messages from the mailbox to other folder using message numbers ranges.
+ * This example shows how to set messages flags.
  *
  * Email: suwatchai@outlook.com
  *
@@ -9,9 +9,11 @@
  *
  */
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to move messages from the mailbox to other folder using message numbers ranges.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -25,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 /** For ESP8266, with BearSSL WiFi Client

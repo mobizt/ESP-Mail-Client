@@ -1,8 +1,5 @@
 
-
 /**
- * This example showes how to send a reply message when specific email was received.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,12 +7,18 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example showes how to send a reply message when specific email was received.
+
+// The account 2 will send Hello message to account 1.
+
+// The account 1 will poll the mailbox for incoming message, when new message received with matched subject
+// and sent from account 2, the account 1 will send a reply messsage to account 2.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -29,13 +32,7 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
-
-// The account 2 will send Hello message to account 1.
-
-// The account 1 will poll the mailbox for incoming message, when new message received with matched subject
-// and sent from account 2, the account 1 will send a reply messsage to account 2.
 
 #include <Arduino.h>
 #if defined(ESP32) || defined(ARDUINO_RASPBERRY_PI_PICO_W)
@@ -265,11 +262,11 @@ bool setupHelloSMTP()
      * as this is the part of EHLO/HELO command to identify the client system
      * to prevent connection rejection.
      * If host name or public IP is not available, ignore this or
-     * use generic host "mydomain.net".
+     * use loopback address "127.0.0.1".
      *
      * Assign any text to this option may cause the connection rejection.
      */
-    hello_smtp_config.login.user_domain = F("mydomain.net");
+    hello_smtp_config.login.user_domain = F("127.0.0.1");
 
     /*
     Set the NTP config time
@@ -309,7 +306,7 @@ bool setupReplySMTP()
     reply_smtp_config.server.port = REPLY_SMTP_PORT;
     reply_smtp_config.login.email = REPLY_SMTP_AUTHOR_EMAIL;
     reply_smtp_config.login.password = REPLY_SMTP_AUTHOR_PASSWORD;
-    reply_smtp_config.login.user_domain = F("mydomain.net");
+    reply_smtp_config.login.user_domain = F("127.0.0.1");
 
     /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_config))

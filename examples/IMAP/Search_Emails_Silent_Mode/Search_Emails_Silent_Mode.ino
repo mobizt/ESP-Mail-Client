@@ -1,7 +1,5 @@
 /**
- * This example shows how to search all messages with the keywords in the opened mailbox folder.
- *
- * Created by K. Suwatchai (Mobizt)
+ * This example shows how to set messages flags.
  *
  * Email: suwatchai@outlook.com
  *
@@ -10,6 +8,8 @@
  * Copyright (c) 2023 mobizt
  *
  */
+
+// This example shows how to search all messages with the keywords in the opened mailbox folder.
 
 /**
  * To use library in silent mode (no debug printing and callback), please define this macro in src/ESP_Mail_FS.h.

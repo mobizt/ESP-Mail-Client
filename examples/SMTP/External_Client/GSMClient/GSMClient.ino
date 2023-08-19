@@ -1,12 +1,5 @@
 
-
 /**
- * This example shows how to send Email using TinyGSMClient.
- *
- * This example used TTGO T-A7670 (ESP32 with SIMCom SIMA7670) and TinyGSMClient.
- *
- * ///////////////////////////////////////////////////////////////
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -14,12 +7,13 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
  */
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example used TTGO T-A7670 (ESP32 with SIMCom SIMA7670) and TinyGSMClient.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -33,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 // To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h.
@@ -65,7 +58,6 @@ const char apn[] = "YourAPN";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
-
 #define uS_TO_S_FACTOR 1000000ULL // Conversion factor for micro seconds to seconds
 #define TIME_TO_SLEEP 600         // Time ESP32 will go to sleep (in seconds)
 
@@ -85,19 +77,22 @@ const char gprsPass[] = "";
 #define SD_SCLK 14
 #define SD_CS 13
 
-
 #include <ESP_Mail_Client.h>
 #include <TinyGsmClient.h>
 
-
 TinyGsm modem(SerialAT);
 
-TinyGsmClient gsm_client(modem); // basic non-secure client
+TinyGsmClient gsm_client(modem);
+
+#define SMTP_HOST "<host>"
+#define SMTP_PORT esp_mail_smtp_port_587
+#define AUTHOR_EMAIL "<email>"
+#define AUTHOR_PASSWORD "<password>"
+#define RECIPIENT_EMAIL "<recipient email here>"
 
 SMTPSession smtp;
 
 void smtpCallback(SMTP_Status status);
-
 
 void setup()
 {
@@ -106,7 +101,6 @@ void setup()
 
   smtp.debug(1);
 
-  /* Set the callback function to get the sending results */
   smtp.callback(smtpCallback);
 
   delay(10);
@@ -167,26 +161,21 @@ void setup()
   config.server.port = SMTP_PORT;
   config.login.email = AUTHOR_EMAIL;
   config.login.password = AUTHOR_PASSWORD;
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
-  // Declare the SMTP_Message class variable to handle to message being transport
   SMTP_Message message;
 
-  // Set the message headers
   message.sender.name = F("ESP Mail");
   message.sender.email = AUTHOR_EMAIL;
   message.subject = F("Test sending plain text Email using GSM module");
   message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-  // Set the message content
   message.text.content = "This is simple plain text message";
 
   smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
 
-  // Connect to the server with the defined session and options
   smtp.connect(&config);
 
-  // Start sending Email and close the session
   if (!MailClient.sendMail(&smtp, &message))
     Serial.println("Error sending Email, " + smtp.errorReason());
 }
@@ -195,19 +184,12 @@ void loop()
 {
 }
 
-/* Callback function to get the Email sending status */
 void smtpCallback(SMTP_Status status)
 {
-  /* Print the current status */
   Serial.println(status.info());
 
-  /* Print the sending result */
   if (status.success())
   {
-    // MailClient.printf used in the examples is for format printing via debug Serial port
-    // that works for all supported Arduino platform SDKs e.g. SAMD, ESP32 and ESP8266.
-    // In ESP8266 and ESP32, you can use Serial.printf directly.
-
     Serial.println("----------------");
     MailClient.printf("Message sent success: %d\n", status.completedCount());
     MailClient.printf("Message sent failed: %d\n", status.failedCount());
@@ -215,13 +197,7 @@ void smtpCallback(SMTP_Status status)
 
     for (size_t i = 0; i < smtp.sendingResult.size(); i++)
     {
-      /* Get the result item */
       SMTP_Result result = smtp.sendingResult.getItem(i);
-
-      // In case, ESP32, ESP8266 and SAMD device, the timestamp get from result.timestamp should be valid if
-      // your device time was synched with NTP server.
-      // Other devices may show invalid timestamp as the device time was not set i.e. it will show Jan 1, 1970.
-      // You can call smtp.setSystemTime(xxx) to set device time manually. Where xxx is timestamp (seconds since Jan 1, 1970)
 
       MailClient.printf("Message No: %d\n", i + 1);
       MailClient.printf("Status: %s\n", result.completed ? "success" : "failed");
@@ -231,7 +207,6 @@ void smtpCallback(SMTP_Status status)
     }
     Serial.println("----------------\n");
 
-    // You need to clear sending result as the memory usage will grow up.
     smtp.sendingResult.clear();
   }
 }

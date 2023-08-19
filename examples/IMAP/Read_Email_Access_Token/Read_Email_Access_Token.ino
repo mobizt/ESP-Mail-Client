@@ -1,7 +1,5 @@
 /**
- * This example will log in with the SASL XOAUTH2 mechanisme using OAuth2.0 access token.
- *
- * Created by K. Suwatchai (Mobizt)
+ * This example shows how to set messages flags.
  *
  * Email: suwatchai@outlook.com
  *
@@ -11,9 +9,11 @@
  *
  */
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example will log in with the SASL XOAUTH2 mechanisme using OAuth2.0 access token.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -27,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 /** For ESP8266, with BearSSL WiFi Client

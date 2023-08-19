@@ -1,4 +1,4 @@
-// Created August 6, 2023
+// Created August 19, 2023
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30401)
+#if !VALID_VERSION_CHECK(30402)
 #error "Mixed versions compilation."
 #endif
 
@@ -3294,7 +3294,7 @@ static const char esp_mail_error_imap_str_21[] PROGMEM = "server is not support 
 
 /////////////////////////
 // General use string
-static const char esp_mail_str_1[] PROGMEM = "mydomain.com";
+static const char esp_mail_str_1[] PROGMEM = "127.0.0.1";
 static const char esp_mail_str_2[] PROGMEM = " ";
 static const char esp_mail_str_3[] PROGMEM = "*";
 static const char esp_mail_str_4[] PROGMEM = "High";

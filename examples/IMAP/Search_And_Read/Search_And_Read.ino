@@ -1,9 +1,5 @@
 /**
- * This example shows how to search the unread messages and read them.
- *
- * To get the incoming mail notification, see Mailbox_Changes_Notification.ino.
- *
- * Created by K. Suwatchai (Mobizt)
+ * This example shows how to set messages flags.
  *
  * Email: suwatchai@outlook.com
  *
@@ -11,6 +7,26 @@
  *
  * Copyright (c) 2023 mobizt
  *
+ */
+
+// This example shows how to search the unread messages and read them.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
+ *
+ * "ESP_Mail_Session" changes to "Session_Config"
+ * "IMAP_Config" changes to "IMAP_Data"
+ *
+ * Changes in the examples
+ *
+ * ESP_Mail_Session session;
+ * to
+ * Session_Config config;
+ *
+ * IMAP_Config config;
+ * to
+ * IMAP_Data imap_data;
  */
 
 /**

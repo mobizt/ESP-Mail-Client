@@ -1,8 +1,5 @@
 
-
 /**
- * This example shows how to send Email using ESP8266 and ENC28J60 Ethernet module.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,12 +7,15 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to send Email using ESP8266 and ENC28J60 Ethernet module.
+
+// This example requires ESP8266 Arduino Core SDK v3.x.x
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -29,10 +29,7 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
-
-// This example requires ESP8266 Arduino Core SDK v3.x.x
 
 /**
  *
@@ -117,7 +114,7 @@ void sendMail()
   config.login.email = AUTHOR_EMAIL;
   config.login.password = AUTHOR_PASSWORD;
 
-  config.login.user_domain = F("mydomain.net");
+  config.login.user_domain = F("127.0.0.1");
 
   /*
   Set the NTP config time

@@ -1,8 +1,6 @@
 
 
 /**
- * This example showes how to send Email using custom commands.
- *
  * Created by K. Suwatchai (Mobizt)
  *
  * Email: suwatchai@outlook.com
@@ -10,12 +8,13 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
- *
- */
+*/
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example showes how to send Email using custom commands.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -29,7 +28,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 #include <Arduino.h>
@@ -171,7 +169,7 @@ void setup()
 
 init:
 
-    if (smtp.sendCustomCommand(F("EHLO mydomain.net"), customCommandCallback) != 250)
+    if (smtp.sendCustomCommand(F("EHLO 127.0.0.1"), customCommandCallback) != 250)
     {
         smtp.closeSession();
         return;

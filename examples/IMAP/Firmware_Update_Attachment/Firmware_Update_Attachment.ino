@@ -1,7 +1,5 @@
 /**
- * This example shows how to read Email and update firmware if firmware file name in attachments matches.
- *
- * The Firmware update feature works in ESP32, ESP8266 and Raspberry Pi Pico.
+ * This example shows how to set messages flags.
  *
  * Email: suwatchai@outlook.com
  *
@@ -11,9 +9,11 @@
  *
  */
 
-/** ////////////////////////////////////////////////
- *  Struct data names changed from v2.x.x to v3.x.x
- *  ////////////////////////////////////////////////
+// This example shows how to read Email and update firmware if firmware file name in attachments matches.
+
+/** Note for library update from v2.x.x to v3.x.x.
+ * 
+ *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
  * "IMAP_Config" changes to "IMAP_Data"
@@ -27,7 +27,6 @@
  * IMAP_Config config;
  * to
  * IMAP_Data imap_data;
- *
  */
 
 #include <Arduino.h>
