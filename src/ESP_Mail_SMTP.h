@@ -2648,7 +2648,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
             return false;
         }
         chunkBufSize = smtp->client.available();
-        idle();
+        yield_impl();
     }
 
     dataTime = millis();
@@ -2657,7 +2657,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
     {
         while (!completedResponse)
         {
-            idle();
+            yield_impl();
 
             if (!reconnect(smtp, dataTime))
                 return false;
@@ -2713,7 +2713,7 @@ bool ESP_Mail_Client::handleSMTPResponse(SMTPSession *smtp, esp_mail_smtp_comman
                             chunkBufSize = 0;
                             while (chunkBufSize == 0)
                             {
-                                idle();
+                                yield_impl();
                                 if (!reconnect(smtp, dataTime))
                                     return false;
                                 chunkBufSize = smtp->client.available();

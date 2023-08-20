@@ -504,15 +504,6 @@ void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
 #endif
 }
 
-void ESP_Mail_Client::idle()
-{
-#if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
-  esp_yield();
-#else
-  delay(0);
-#endif
-}
-
 void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait)
 {
 
@@ -533,7 +524,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
         unsigned long waitMs = millis();
         while (!Time.clockReady() && millis() - waitMs < 10000)
         {
-          idle();
+          yield_impl();
         }
       }
     }
@@ -1015,7 +1006,7 @@ int ESP_Mail_Client::readLine(ESP_Mail_TCPClient *client, char *buf, int bufLen,
       break;
     }
 
-    idle();
+    yield_impl();
 
     ret = client->read();
     if (ret > -1)

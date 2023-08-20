@@ -3435,15 +3435,21 @@ appendDebugTag(MB_String &buf, esp_mail_debug_tag_type type, bool clear, PGM_P t
         buf += text;
 }
 
-// Print debug message w/wo new line to debug port
 static void __attribute__((used))
-esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
+yield_impl()
 {
 #if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
     esp_yield();
 #else
     delay(0);
 #endif
+}
+
+// Print debug message w/wo new line to debug port
+static void __attribute__((used))
+esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
+{
+    yield_impl();
     if (newLine)
         ESP_MAIL_DEFAULT_DEBUG_PORT.println(msg);
     else
@@ -3453,11 +3459,7 @@ esp_mail_debug_print(PGM_P msg = "", bool newLine = true)
 static void __attribute__((used))
 esp_mail_debug_print_tag(PGM_P msg, esp_mail_debug_tag_type type, bool newLine = true, bool showTag = true)
 {
-#if defined(ARDUINO_ESP8266_MAJOR) && defined(ARDUINO_ESP8266_MINOR) && defined(ARDUINO_ESP8266_REVISION) && ((ARDUINO_ESP8266_MAJOR == 3 && ARDUINO_ESP8266_MINOR >= 1) || ARDUINO_ESP8266_MAJOR > 3)
-    esp_yield();
-#else
-    delay(0);
-#endif
+    yield_impl();
 
     MB_String s;
     if (showTag)

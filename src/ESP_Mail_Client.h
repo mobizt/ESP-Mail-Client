@@ -1322,8 +1322,6 @@ private:
   // Get operation config based on port and its protocol
   void getPortFunction(uint16_t port, struct esp_mail_ports_functions &ports_functions, bool &secure, bool &secureMode, bool &ssl, bool &starttls);
 
-  void idle();
-
 #endif
 
 #if defined(ENABLE_SMTP)

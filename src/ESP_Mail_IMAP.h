@@ -938,7 +938,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
                                     if (!handleIMAPResponse(imap, IMAP_STATUS_IMAP_RESPONSE_FAILED, closeSession))
                                         return false;
 
-                                    idle();
+                                    yield_impl();
                                 }
                             }
                             else
@@ -1635,7 +1635,7 @@ int ESP_Mail_Client::parseSearchResponse(IMAPSession *imap, esp_mail_imap_respon
 
     while (imap->client.available() > 0 && idx < bufLen)
     {
-        idle();
+        yield_impl();
 
         ret = imap->client.read();
 
@@ -2631,7 +2631,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
             return false;
         }
         res.chunkBufSize = imap->client.available();
-        idle();
+        yield_impl();
     }
 
     res.dataTime = millis();
@@ -2660,7 +2660,7 @@ bool ESP_Mail_Client::handleIMAPResponse(IMAPSession *imap, int errCode, bool cl
 
         while (!res.completedResponse) // looking for operation finishing
         {
-            idle();
+            yield_impl();
 
             if (imap->_imap_cmd == esp_mail_imap_cmd_append || (imap->_imap_custom_cmd == esp_mail_imap_cmd_append && imap->_imap_cmd == esp_mail_imap_cmd_custom && imap->_customCmdResCallback))
             {
@@ -4044,7 +4044,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, esp_
         return true;
     }
 
-    idle();
+    yield_impl();
 
     if (res.octetLength == 0)
         return true;
@@ -4105,7 +4105,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, esp_
                         write = mbfs->write(mbfs_type imap->_imap_data->storage.type, (uint8_t *)decoded, olen);
                 }
 
-                idle();
+                yield_impl();
                 // release memory
                 freeMem(&decoded);
 
@@ -4143,7 +4143,7 @@ bool ESP_Mail_Client::parseAttachmentResponse(IMAPSession *imap, char *buf, esp_
                     write = mbfs->write(mbfs_type imap->_imap_data->storage.type, (uint8_t *)buf, bufLen);
             }
 
-            idle();
+            yield_impl();
 
             write_error = write != bufLen;
 
@@ -4285,7 +4285,7 @@ void ESP_Mail_Client::decodeText(IMAPSession *imap, esp_mail_imap_response_data 
         }
     }
 
-    idle();
+    yield_impl();
 
     if (res.octetLength == 0)
         return;
@@ -4884,7 +4884,7 @@ bool IMAPSession::connect(bool &ssl)
     unsigned long dataMs = millis();
     while (client.connected() && client.available() == 0 && millis() - dataMs < 2000)
     {
-        MailClient.idle();
+       yield_impl();
     }
 
     int chunkBufSize = client.available();
