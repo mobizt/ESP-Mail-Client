@@ -1740,7 +1740,7 @@ end_search:
 }
 
 #if !defined(MB_USE_STD_VECTOR)
-void ESP_Mail_Client::numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr)
+void ESP_Mail_Client::numDecSort(_vectorImpl<struct esp_mail_imap_msg_num_t> &arr)
 {
 
     struct esp_mail_imap_msg_num_t tmp;
@@ -6387,7 +6387,7 @@ bool IMAPSession::mGetSetQuota(MB_StringPtr quotaRoot, IMAP_Quota_Root_Info *dat
 
 void IMAPSession::mParseQuota(const char *quota, IMAP_Quota_Root_Info *data)
 {
-    MB_VECTOR<MB_String> tokens;
+    _vectorImpl<MB_String> tokens;
     MailClient.splitToken(quota, tokens, " ");
     data->quota_root = tokens[0];
     tokens[1].erase(0, 1);
@@ -6434,12 +6434,12 @@ bool IMAPSession::mGetQuotaRoots(MB_StringPtr mailbox, IMAP_Quota_Roots_List *qu
     if (!MailClient.handleIMAPResponse(this, IMAP_STATUS_BAD_COMMAND, false))
         return false;
 
-    MB_VECTOR<MB_String> tokens;
+    _vectorImpl<MB_String> tokens;
     MailClient.splitToken(_quota_root_tmp.c_str(), tokens, ",");
 
     for (size_t i = 0; i < tokens.size(); i++)
     {
-        MB_VECTOR<MB_String> tk;
+        _vectorImpl<MB_String> tk;
         MailClient.splitToken(tokens[i].c_str(), tk, ":");
         IMAP_Quota_Root_Info data;
         if (tk.size() > 1)
@@ -6553,7 +6553,7 @@ bool IMAPSession::mManageACL(MB_StringPtr mailbox, IMAP_Rights_List *acl_list, I
 
 void IMAPSession::parseACL(MB_String &acl_str, IMAP_Rights_List *right_list)
 {
-    MB_VECTOR<MB_String> tokens;
+    _vectorImpl<MB_String> tokens;
     MailClient.splitToken(acl_str.c_str(), tokens, " ");
 
     for (size_t i = 0; i < tokens.size(); i += 2)
@@ -6685,7 +6685,7 @@ void IMAPSession::parseNamespaces(MB_String &ns_str, IMAP_Namespaces *ns)
 {
     MB_String tmp = ns_str.substr(2, ns_str.length() - 4);
     tmp.replaceAll(")(", " ");
-    MB_VECTOR<MB_String> tokens;
+    _vectorImpl<MB_String> tokens;
     MailClient.splitToken(tmp.c_str(), tokens, " ");
 
     for (size_t i = 0; i < tokens.size(); i += 2)

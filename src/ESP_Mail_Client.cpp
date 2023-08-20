@@ -142,12 +142,11 @@ bool ESP_Mail_Client::sessionExisted(T sessionPtr)
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
 
   Session_Config *config = sessionPtr->_session_cfg;
-  MB_List<int> *configPtrList = &(sessionPtr->_configPtrList);
+  _vectorImpl<int> *configPtrList = &(sessionPtr->_configPtrList);
 
   if (config)
   {
     int ptr = toAddr(*config);
-
     for (size_t i = 0; i < configPtrList->size(); i++)
     {
       if ((*configPtrList)[i] == ptr)
@@ -185,7 +184,7 @@ void ESP_Mail_Client::appendTagSpace(MB_String &buf, PGM_P tag)
 }
 
 template <class T>
-void ESP_Mail_Client::appendList(MB_String &buf, MB_VECTOR<T> &list)
+void ESP_Mail_Client::appendList(MB_String &buf, _vectorImpl<T> &list)
 {
   for (size_t i = 0; i < list.size(); i++)
   {
@@ -684,7 +683,7 @@ char *ESP_Mail_Client::getRandomUID()
   return tmp;
 }
 
-void ESP_Mail_Client::splitToken(const char *str, MB_VECTOR<MB_String> &tk, const char *delim)
+void ESP_Mail_Client::splitToken(const char *str, _vectorImpl<MB_String> &tk, const char *delim)
 {
   char *p = allocMem<char *>(strlen(str));
   strcpy(p, str);

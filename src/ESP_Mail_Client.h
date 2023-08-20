@@ -39,11 +39,11 @@
 #include "extras/RFC2047.h"
 #include <time.h>
 #include <ctype.h>
-#if !defined(__AVR__)
+
 #include <algorithm>
 #include <string>
 #include <vector>
-#endif
+#define _vectorImpl std::vector
 
 #if __has_include(<string.h>)
 #include <string.h>
@@ -126,7 +126,7 @@ public:
   void clear() { _list.clear(); }
 
 private:
-  MB_VECTOR<int> _list;
+  _vectorImpl<int> _list;
 };
 
 /* The class that provides the info of selected or opened mailbox folder */
@@ -231,8 +231,8 @@ private:
   bool _floderChangedState = false;
   bool _nomodsec = false;
   IMAP_Polling_Status _polling_status;
-  MB_VECTOR<MB_String> _flags;
-  MB_VECTOR<MB_String> _permanent_flags;
+  _vectorImpl<MB_String> _flags;
+  _vectorImpl<MB_String> _permanent_flags;
 };
 
 /* The class that provides the list of FolderInfo e.g. name, attributes and
@@ -278,7 +278,7 @@ private:
     }
     _folders.clear();
   }
-  MB_VECTOR<esp_mail_folder_info_t> _folders;
+  _vectorImpl<esp_mail_folder_info_t> _folders;
 };
 
 /* The class that provides the list of IMAP_Quota_Root_Info e.g. resource name, used and limit */
@@ -301,7 +301,7 @@ public:
   }
 
 private:
-  MB_VECTOR<IMAP_Quota_Root_Info> _quota_roots;
+  _vectorImpl<IMAP_Quota_Root_Info> _quota_roots;
 
   void add(IMAP_Quota_Root_Info v)
   {
@@ -333,7 +333,7 @@ public:
   }
 
 private:
-  MB_VECTOR<IMAP_Namespace_Info> _ns_list;
+  _vectorImpl<IMAP_Namespace_Info> _ns_list;
 
   void add(IMAP_Namespace_Info v)
   {
@@ -365,7 +365,7 @@ public:
   }
 
 private:
-  MB_VECTOR<IMAP_Rights_Info> _rights_list;
+  _vectorImpl<IMAP_Rights_Info> _rights_list;
 
   void add(IMAP_Rights_Info v)
   {
@@ -737,13 +737,13 @@ public:
 
 private:
   friend class ESP_Mail_Client;
-  MB_VECTOR<struct esp_mail_address_info_t> _rcp;
-  MB_VECTOR<struct esp_mail_address_info_t> _cc;
-  MB_VECTOR<struct esp_mail_address_info_t> _bcc;
-  MB_VECTOR<MB_String> _hdr;
-  MB_VECTOR<SMTP_Attachment> _att;
-  MB_VECTOR<SMTP_Attachment> _parallel;
-  MB_VECTOR<SMTP_Message> _rfc822;
+  _vectorImpl<struct esp_mail_address_info_t> _rcp;
+  _vectorImpl<struct esp_mail_address_info_t> _cc;
+  _vectorImpl<struct esp_mail_address_info_t> _bcc;
+  _vectorImpl<MB_String> _hdr;
+  _vectorImpl<SMTP_Attachment> _att;
+  _vectorImpl<SMTP_Attachment> _parallel;
+  _vectorImpl<SMTP_Message> _rfc822;
 };
 
 class SMTP_Status
@@ -1174,7 +1174,7 @@ private:
   char *getRandomUID();
 
   // Spit the string into token strings
-  void splitToken(const char *str, MB_VECTOR<MB_String> &tk, const char *delim);
+  void splitToken(const char *str, _vectorImpl<MB_String> &tk, const char *delim);
 
   // Decode base64 encoded string
   unsigned char *decodeBase64(const unsigned char *src, size_t len, size_t *out_len);
@@ -1259,7 +1259,7 @@ private:
 
   // Append list to buffer
   template <class T>
-  void appendList(MB_String &buf, MB_VECTOR<T> &list);
+  void appendList(MB_String &buf, _vectorImpl<T> &list);
 
   // Append space to buffer
   void appendSpace(MB_String &buf);
@@ -1616,7 +1616,7 @@ private:
 
 #if !defined(MB_USE_STD_VECTOR)
   // Decending sort
-  void numDecSort(MB_VECTOR<struct esp_mail_imap_msg_num_t> &arr);
+  void numDecSort(_vectorImpl<struct esp_mail_imap_msg_num_t> &arr);
 #endif
 
   // Handle IMAP response
@@ -2446,7 +2446,7 @@ private:
   int _cMsgIdx = 0;
   int _cPartIdx = 0;
   int _totalRead = 0;
-  MB_VECTOR<struct esp_mail_message_header_t> _headers;
+  _vectorImpl<struct esp_mail_message_header_t> _headers;
 
   esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
   esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
@@ -2454,7 +2454,7 @@ private:
   esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
   bool _idle = false;
   MB_String _cmd;
-  MB_VECTOR<struct esp_mail_imap_multipart_level_t> _multipart_levels;
+  _vectorImpl<struct esp_mail_imap_multipart_level_t> _multipart_levels;
   int _rfc822_part_count = 0;
   bool _unseen = false;
   bool _readOnlyMode = true;
@@ -2466,7 +2466,7 @@ private:
   bool _auth_capability[esp_mail_auth_capability_maxType];
   bool _feature_capability[esp_mail_imap_read_capability_maxType];
   Session_Config *_session_cfg;
-  MB_List<int> _configPtrList;
+  _vectorImpl<int> _configPtrList;
   MB_String _currentFolder;
   bool _mailboxOpened = false;
   unsigned long _lastSameFolderOpenMillis = 0;
@@ -2496,7 +2496,7 @@ private:
   MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
   imapCharacterDecodingCallback _charDecCallback = NULL;
 
-  MB_VECTOR<struct esp_mail_imap_msg_num_t> _imap_msg_num;
+  _vectorImpl<struct esp_mail_imap_msg_num_t> _imap_msg_num;
   esp_mail_session_type _sessionType = esp_mail_session_type_imap;
 
   FoldersCollection _folders;
@@ -2516,7 +2516,7 @@ private:
 class SendingResult
 {
 private:
-  MB_VECTOR<SMTP_Result> _result;
+  _vectorImpl<SMTP_Result> _result;
 
   void add(SMTP_Result *r)
   {
@@ -2799,7 +2799,7 @@ private:
   bool _feature_capability[esp_mail_smtp_send_capability_maxType];
 
   Session_Config *_session_cfg = NULL;
-  MB_List<int> _configPtrList;
+  _vectorImpl<int> _configPtrList;
 
   bool _debug = false;
   int _debugLevel = 0;

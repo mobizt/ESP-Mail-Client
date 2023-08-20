@@ -40,10 +40,9 @@
 
 #define ESP_TIME_DEFAULT_TS 1577836800
 
-#if !defined(__AVR__)
 #include <vector>
 #include <string>
-#endif
+
 
 #if defined(ESP32) && !defined(ESP_ARDUINO_VERSION) /* ESP32 core < v2.0.x */
 #include <sys/time.h>
@@ -56,7 +55,6 @@
 #endif
 
 #include "MB_String.h"
-#include "MB_List.h"
 #include "MB_MCU.h"
 
 #if defined(ESP8266)
@@ -111,7 +109,7 @@ public:
 
 #if defined(ENABLE_NTP_TIME) && (defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W))
 
-      MB_VECTOR<MB_String> tk;
+      _vectorImpl<MB_String> tk;
       MB_String sv = servers;
 
       _sv1.clear();
@@ -233,7 +231,7 @@ public:
 #else
 
     time_t ts = 0;
-    MB_VECTOR<MB_String> tk;
+    _vectorImpl<MB_String> tk;
     MB_String s1 = timeString;
 
     splitToken(s1, tk, ' ');
@@ -257,7 +255,7 @@ public:
 
       year = atoi(tk[tkindex + 3].c_str());
 
-      MB_VECTOR<MB_String> tk2;
+      _vectorImpl<MB_String> tk2;
       splitToken(tk[tkindex + 4], tk2, ':');
       if (tk2.size() == 3)
       {
@@ -399,7 +397,7 @@ public:
   float DST_MN = 0.0;
 
 private:
-  void splitToken(MB_String &str, MB_VECTOR<MB_String> &tk, char delim)
+  void splitToken(MB_String &str, _vectorImpl<MB_String> &tk, char delim)
   {
     size_t current, previous = 0;
     current = str.find(delim, previous);

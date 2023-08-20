@@ -34,7 +34,6 @@
 #endif
 
 #include "extras/Networks_Provider.h"
-#include "extras/MB_List.h"
 #include "extras/ESP8266_Supports.h"
 
 #if defined(ESP8266)
@@ -2225,7 +2224,7 @@ struct esp_mail_message_header_t
     MB_String flags;
     MB_String error_msg;
     bool error = false;
-    MB_VECTOR<struct esp_mail_message_part_info_t> part_headers;
+    _vectorImpl<struct esp_mail_message_part_info_t> part_headers;
     int attachment_count = 0;
     int sd_alias_file_count = 0;
     int total_download_size = 0;
@@ -2518,10 +2517,10 @@ public:
     const char *fetchError = "";
 
     /* The info about the attachments in the message */
-    MB_VECTOR<struct esp_mail_attachment_info_t> attachments;
+    _vectorImpl<struct esp_mail_attachment_info_t> attachments;
 
     /* The info about the rfc822 messages included in the message */
-    MB_VECTOR<esp_mail_imap_msg_item_t> rfc822;
+    _vectorImpl<esp_mail_imap_msg_item_t> rfc822;
 
     /* The status for message that contains attachment */
     bool hasAttachment = false;
@@ -2556,7 +2555,7 @@ private:
 struct esp_mail_imap_msg_list_t
 {
     /* The info of a message */
-    MB_VECTOR<esp_mail_imap_msg_item_t> msgItems;
+    _vectorImpl<esp_mail_imap_msg_item_t> msgItems;
 };
 
 struct esp_mail_imap_multipart_level_t
@@ -2755,7 +2754,7 @@ public:
         aremovePtr();
     }
 
-    void addPtr(MB_List<int> *listPtr, int ptr)
+    void addPtr(_vectorImpl<int> *listPtr, int ptr)
     {
         if (listPtr)
         {
@@ -2818,7 +2817,7 @@ public:
 private:
     int cert_ptr = 0;
     bool cert_updated = false;
-    MB_List<int> *listPtr = nullptr;
+    _vectorImpl<int> *listPtr = nullptr;
 
     // Internal flags use to keep user sercure.startTLS and secure.mode.
     bool int_start_tls = false;
@@ -2922,7 +2921,7 @@ public:
     }
 
 private:
-    MB_List<esp_mail_wifi_credential_t> credentials;
+    _vectorImpl<esp_mail_wifi_credential_t> credentials;
 #if defined(ESP_MAIL_HAS_WIFIMULTI)
     WiFiMulti *multi = nullptr;
 #endif
