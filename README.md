@@ -69,9 +69,9 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
 
 [7. Usage](#usage)
 
-- [Send Email](#send-email)
+- [Send Email message](#send-email-message)
 
-- [Read Email](#read-email)
+- [Read Email message](#read-email-message)
 
 - [Get Incoming Message Notification and Reading](#get-incoming-message-notification-and-reading)
 
