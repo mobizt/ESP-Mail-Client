@@ -1,12 +1,12 @@
 /**
- * WiFiClientImpl v1.0.0
+ * WiFiClientImpl v1.0.1
  *
  * This library provides the base client in replacement of ESP32 WiFiClient.
  *
  * The WiFiClient in ESP32 cannot be used in multithreading environment as in FreeRTOS task
  * which can (always) lead to the assetion error "pbuf_free: p->ref > 0".
  *
- * Created August 16, 2023
+ * Created August 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2022 K. Suwatchai (Mobizt)
@@ -97,30 +97,9 @@ public:
     int peek() { return tcpPeek(); }
     void flush()
     {
-        int res;
-        size_t a = available(), toRead = 0;
-        if (!a)
-        {
-            return; // nothing to flush
-        }
-        uint8_t *buf = (uint8_t *)malloc(1024);
-        if (!buf)
-        {
-            return; // memory error
-        }
-        while (a)
-        {
-            toRead = (a > 1024) ? 1024 : a;
-            res = recv(_socket, buf, toRead, MSG_DONTWAIT);
-            if (res < 0)
-            {
-                log_e("fail on fd %d, errno: %d, \"%s\"", fd(), errno, strerror(errno));
-                break;
-            }
-            a -= res;
-        }
-        free(buf);
-        buf = nullptr;
+        if (r_available())
+            fillRxBuffer();
+        _fillPos = _fillSize;
     }
 
     void stop() { tcpClose(); }
