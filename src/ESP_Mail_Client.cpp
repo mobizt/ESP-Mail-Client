@@ -4,7 +4,7 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30404)
+#if !VALID_VERSION_CHECK(30405)
 #error "Mixed versions compilation."
 #endif
 
@@ -1227,12 +1227,15 @@ void ESP_Mail_Client::sendErrorCB(T sessionPtr, PGM_P info, bool prependCRLF, bo
 }
 
 template <class T1, class T2>
-void ESP_Mail_Client::errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bool clearStatus)
+void ESP_Mail_Client::errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bool clearLastStatus)
 {
 
   if (sessionPtr)
   {
     sessionPtr->_responseStatus.errorCode = error;
+
+    if (clearLastStatus)
+      sessionPtr->_responseStatus.text.clear();
 
 #if !defined(SILENT_MODE)
     if (sessionPtr->_statusCallback && !sessionPtr->_customCmdResCallback)
@@ -1243,7 +1246,7 @@ void ESP_Mail_Client::errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bo
 #endif
   }
   else if (sessionPtr2 && !calDataLen)
-    errorStatusCB<T2, T2>(sessionPtr2, nullptr, error, false);
+    errorStatusCB<T2, T2>(sessionPtr2, nullptr, error, clearLastStatus);
 }
 
 template <class T>
@@ -1685,7 +1688,7 @@ void ESP_Mail_Client::closeTCPSession(T sessionPtr)
 #if defined(ENABLE_SMTP)
              ? (int)esp_mail_smtp_send_capability_maxType
 #else
-             ?0
+             ? 0
 #endif
              : (int)esp_mail_imap_read_capability_maxType);
 

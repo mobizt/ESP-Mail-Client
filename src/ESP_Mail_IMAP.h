@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30404)
+#if !VALID_VERSION_CHECK(30405)
 #error "Mixed versions compilation."
 #endif
 
@@ -1124,6 +1124,16 @@ bool ESP_Mail_Client::fetchMultipartBodyHeader(IMAPSession *imap, int msgIdx)
     // slower than BODYSTRUCTURE parsing but sure
     do
     {
+
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
+        // Prevent stack overflow
+        if (MailClient.getFreeHeap() < ESP_MAIL_MIN_MEM)
+        {
+            errorStatusCB<IMAPSession *, IMAPSession *>(imap, nullptr, MAIL_CLIENT_ERROR_OUT_OF_MEMORY, true);
+            break;
+        }
+#endif
+
         struct esp_mail_message_part_info_t *_cpart = &cHeader(imap)->part_headers[cHeader(imap)->message_data_count - 1];
         bool rfc822_body_subtype = _cpart->message_sub_type == esp_mail_imap_message_sub_type_rfc822 && _cpart->attach_type != esp_mail_att_type_attachment;
 

@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30404)
+#if !VALID_VERSION_CHECK(30405)
 #error "Mixed versions compilation."
 #endif
 
@@ -74,7 +74,7 @@
 #elif defined(ESP8266)
 
 #define SD_CS_PIN 15
-#define ESP_MAIL_MIN_MEM 4000
+#define ESP_MAIL_MIN_MEM 8000
 
 #elif defined(MB_ARDUINO_PICO)
 
@@ -1122,7 +1122,7 @@ private:
 
   // Send the error status callback
   template <class T1, class T2>
-  void errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bool clearStatus);
+  void errorStatusCB(T1 sessionPtr, T2 sessionPtr2, int error, bool clearLastStatus);
 
   // Check response callback was assigned?
   template <class T>
