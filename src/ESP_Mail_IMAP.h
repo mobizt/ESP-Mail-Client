@@ -3724,26 +3724,37 @@ void ESP_Mail_Client::parseCmdResponse(IMAPSession *imap, char *buf, PGM_P find)
 
             strncpy(tmp, buf + p1 + strlen_P(find), strlen(buf) - p1 - strlen_P(find) - ofs);
 
-            if (imap->_imap_cmd == esp_mail_imap_cmd_get_uid)
-                imap->_uid_tmp = atoi(tmp);
-            else if (imap->_imap_cmd == esp_mail_imap_cmd_get_flags)
-                imap->_flags_tmp = tmp;
-            else if (imap->_imap_cmd == esp_mail_imap_cmd_get_quota)
-                imap->_quota_tmp = tmp;
-            else if (imap->_imap_cmd == esp_mail_imap_cmd_id)
-                imap->_server_id_tmp = tmp;
-            else if (imap->_imap_cmd == esp_mail_imap_cmd_namespace)
-                imap->_ns_tmp += tmp;
-            else if (imap->_imap_cmd == esp_mail_imap_cmd_fetch_sequence_set)
+            esp_mail_imap_msg_num_t msg_num;
+
+            switch ((int)imap->_imap_cmd)
             {
-                esp_mail_imap_msg_num_t msg_num;
+            case esp_mail_imap_cmd_get_uid:
+                imap->_uid_tmp = atoi(tmp);
+                break;
+            case esp_mail_imap_cmd_get_flags:
+                imap->_flags_tmp = tmp;
+                break;
+            case esp_mail_imap_cmd_get_quota:
+                imap->_quota_tmp = tmp;
+                break;
+            case esp_mail_imap_cmd_id:
+                imap->_server_id_tmp = tmp;
+                break;
+            case esp_mail_imap_cmd_namespace:
+                imap->_ns_tmp += tmp;
+                break;
+            case esp_mail_imap_cmd_fetch_sequence_set:
+
                 msg_num.type = esp_mail_imap_msg_num_type_uid;
                 msg_num.value = (uint32_t)atoi(tmp);
-
                 imap->_imap_msg_num.push_back(msg_num);
 
                 if (imap->_imap_msg_num.size() > imap->_imap_data->limit.fetch)
                     imap->_imap_msg_num.erase(imap->_imap_msg_num.begin());
+
+                break;
+            default:
+                break;
             }
         }
 
