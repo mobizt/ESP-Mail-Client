@@ -43,7 +43,6 @@
 #include <algorithm>
 #include <string>
 #include <vector>
-#define _vectorImpl std::vector
 
 #if __has_include(<string.h>)
 #include <string.h>

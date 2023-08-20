@@ -24,10 +24,11 @@
 #define ESP_MAIL_DEFAULT_DEBUG_PORT Serial
 #endif
 
-#if !defined(__AVR__)
 #include <vector>
 #include <algorithm>
-#endif
+
+#define _vectorImpl std::vector
+#define MB_VECTOR std::vector
 
 #if !defined(FPSTR)
 #define FPSTR

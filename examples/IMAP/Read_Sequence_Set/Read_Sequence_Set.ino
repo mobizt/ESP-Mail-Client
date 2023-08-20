@@ -87,10 +87,10 @@ void printAllMailboxesInfo(IMAPSession &imap);
 void printSelectedMailboxInfo(SelectedFolderInfo sFolder);
 
 /* Print all messages from the message list */
-void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly);
+void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly);
 
 /* Print all attachments info from the message */
-void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts);
+void printAttacements(std::vector<IMAP_Attach_Item> &atts);
 
 /* Declare the Session_Config for user defined session credentials */
 Session_Config config;
@@ -368,7 +368,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
     }
 }
 
-void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
+void printAttacements(std::vector<IMAP_Attach_Item> &atts)
 {
     MailClient.printf("Attachment: %d file(s)\n****************************\n", atts.size());
     for (size_t j = 0; j < atts.size(); j++)
@@ -384,7 +384,7 @@ void printAttacements(MB_VECTOR<IMAP_Attach_Item> &atts)
     Serial.println();
 }
 
-void printMessages(MB_VECTOR<IMAP_MSG_Item> &msgItems, bool headerOnly)
+void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
 {
 
     /** In devices other than ESP8266 and ESP32, if SD card was chosen as filestorage and
