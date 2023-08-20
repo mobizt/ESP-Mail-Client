@@ -2,12 +2,12 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30403)
+#if !VALID_VERSION_CHECK(30404)
 #error "Mixed versions compilation."
 #endif
 
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Arduino devices.
  *
  * Created August 20, 2023
  *

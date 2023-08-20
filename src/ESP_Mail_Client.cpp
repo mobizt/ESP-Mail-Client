@@ -4,12 +4,12 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30403)
+#if !VALID_VERSION_CHECK(30404)
 #error "Mixed versions compilation."
 #endif
 
 /**
- * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
+ * Mail Client Arduino Library for Arduino devices.
  *
  * Created August 20, 2023
  *
@@ -547,7 +547,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
     getSetTimezoneEnv(TZ_file, TZ_Var);
 
-#else
+#elif !defined(SILENT_MODE)
     esp_mail_debug_print_tag(esp_mail_error_client_str_5 /* "Please set the library reference time manually using smtp.setSystemTime or imap.setSystemTime." */, esp_mail_debug_tag_type_warning, true);
 #endif
 
@@ -1682,7 +1682,11 @@ void ESP_Mail_Client::closeTCPSession(T sessionPtr)
   memset(sessionPtr->_auth_capability, 0, esp_mail_auth_capability_maxType);
   memset(sessionPtr->_feature_capability, 0,
          sessionPtr->_sessionType == esp_mail_session_type_smtp
+#if defined(ENABLE_SMTP)
              ? (int)esp_mail_smtp_send_capability_maxType
+#else
+             ?0
+#endif
              : (int)esp_mail_imap_read_capability_maxType);
 
   sessionPtr->_authenticated = false;

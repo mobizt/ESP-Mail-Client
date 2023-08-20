@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.0
+ * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.1
  *
- * Created August 18, 2023
+ * Created August 20, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30403)
+#if !VALID_VERSION_CHECK(30404)
 #error "Mixed versions compilation."
 #endif
 
@@ -211,6 +211,8 @@ public:
     {
         bool ret = false;
 
+#if !defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+
 #if defined(ESP_MAIL_ETH_IS_AVAILABLE)
 
 #if defined(ESP32)
@@ -264,6 +266,8 @@ public:
 
 #endif
 
+#endif
+
         return ret;
     }
 
@@ -284,10 +288,9 @@ public:
     void ethDNSWorkAround()
     {
 
-#if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
+#if !defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET) && (defined(ENABLE_SMTP) || defined(ENABLE_IMAP))
         if (!_session_config)
             return;
-#endif
 
 #if defined(ESP8266_CORE_SDK_V3_X_X)
 
@@ -317,6 +320,8 @@ public:
         client.connect(_session_config->server.host_name.c_str(), _session_config->server.port);
         client.stop();
 #endif
+#endif
+
 #endif
     }
 
