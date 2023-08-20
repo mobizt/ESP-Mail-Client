@@ -987,7 +987,7 @@ bool ESP_Mail_Client::readMail(IMAPSession *imap, bool closeSession)
         }
 #endif
     }
-#if defined(MB_ARDUINO_ESP)
+#if defined(MB_ARDUINO_ESP) || defined(MB_ARDUINO_PICO)
 out:
 #endif
     if (readCount < imap->_imap_msg_num.size())
