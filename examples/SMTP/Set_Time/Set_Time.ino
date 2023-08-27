@@ -97,10 +97,7 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    // Method 1, set time using core function e.g. configTime or configTzTime before connecting to mail server
-    // This method requires internet connection.
-    // This method suites for ESP8266, ESP32, Raspberry Pi Pico (W)
-
+    
     Serial.print("Waiting for NTP server time reading");
 
 #if defined(ESP8266) || defined(ESP32) && !defined(ARDUINO_NANO_RP2040_CONNECT)
@@ -174,7 +171,7 @@ void setup()
     config.login.user_domain = F("127.0.0.1");
 
     /**
-     * Once the system time or device time was set before calling smtp.connect, the following config will
+     * Once the system time (using smtp.setSystemTime) or device time was set before calling smtp.connect, the following config will
      * not take effect when NTP time is enabled.
      * 
      * config.time.ntp_server
