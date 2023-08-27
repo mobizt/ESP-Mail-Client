@@ -7,12 +7,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example showes how to set the library and/or device time manually.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -145,7 +145,7 @@ void setup()
     // Get current time from RTC
     RTC.getTime(currentTime);
 
-    float gmtOffset = 3.0;  // GMT offset in hour
+    float gmtOffset = 3.0; // GMT offset in hour
     smtp.setSystemTime(currentTime.getUnixTime(), gmtOffset);
 
 #endif
@@ -172,6 +172,17 @@ void setup()
     config.login.password = AUTHOR_PASSWORD;
 
     config.login.user_domain = F("127.0.0.1");
+
+    /**
+     * Once the system time or device time was set before calling smtp.connect, the following config will
+     * not take effect when NTP time is enabled.
+     * 
+     * config.time.ntp_server
+     * config.time.gmt_offset
+     * config.time.day_light_offset
+     * 
+     * To reset the reference time and use config.time instead, call smtp.setSystemTime(0) whenever you want.
+     */
 
     SMTP_Message message;
 

@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.10 for Arduino devices.
+ * BSSL_TCP_Client v2.0.12 for Arduino devices.
  *
- * Created August 13, 2023
+ * Created August 27, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -78,6 +78,9 @@ public:
      * Set the client.
      * @param client The pointer to Client interface.
      * @param enableSSL The ssl option; true for enable, false for disable.
+     * 
+     * Due to the client pointer is assigned, to avoid dangling pointer, 
+     * client should be existed as long as it was used for transportation.
      */
     void setClient(Client *client, bool enableSSL = true);
 
@@ -103,7 +106,7 @@ public:
     /**
      * Connect to server.
      * @param ip The server IP to connect.
-     * @param port The server port to connecte.
+     * @param port The server port to connect.
      * @param timeout The connection time out in miiliseconds.
      * @return 1 for success or 0 for error.
      */
@@ -112,7 +115,7 @@ public:
     /**
      * Connect to server.
      * @param host The server host name.
-     * @param port The server port to connecte.
+     * @param port The server port to connect.
      * @return 1 for success or 0 for error.
      */
     int connect(const char *host, uint16_t port) override;
@@ -120,7 +123,7 @@ public:
     /**
      * Connect to server.
      * @param host The server host name.
-     * @param port The server port to connecte.
+     * @param port The server port to connect.
      * @param timeout The connection time out in miiliseconds.
      * @return 1 for success or 0 for error.
      */
@@ -131,6 +134,22 @@ public:
      * @return 1 for connected or 0 for not connected.
      */
     uint8_t connected() override;
+
+    /**
+     * Validate the last Client connection with these host and port.
+     * @param host The server host name.
+     * @param port The server port to connect.
+     * The Client connection will be closed when the provided host or port is not match with that of last connection.
+     */
+    void validate(const char *host, uint16_t port);
+
+    /**
+     * Validate the last Client connection with these IP and port.
+     * @param ip The server IP to connect.
+     * @param port The server port to connect.
+     * The Client connection will be closed when the provided IP or port is not match with that of last connection.
+     */
+    void validate(IPAddress ip, uint16_t port);
 
     /**
      * Get available data size to read.

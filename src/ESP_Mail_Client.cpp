@@ -4,14 +4,14 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30406)
+#if !VALID_VERSION_CHECK(30407)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created August 20, 2023
+ * Created August 27, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -503,7 +503,7 @@ void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
 #endif
 }
 
-void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait)
+void ESP_Mail_Client::setTime(const char *TZ_Var, const char *TZ_file, bool wait)
 {
 
   _clockReady = Time.clockReady();
@@ -517,7 +517,7 @@ void ESP_Mail_Client::setTime(float gmt_offset, float day_light_offset, const ch
 
     if (WiFI_CONNECTED)
     {
-      Time.setClock(gmt_offset, day_light_offset, ntp_server);
+      Time.setClock();
       if (wait)
       {
         unsigned long waitMs = millis();
@@ -1347,6 +1347,10 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
 
   if (session_config->time.ntp_server.length() > 0 || timeShouldBeValid)
   {
+  
+    if (session_config->time.ntp_server.length() > 0)
+      Time.begin(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str());
+
     if (!Time.clockReady())
     {
       if (sessionPtr->client.type() == esp_mail_client_type_external_gsm_client)
@@ -1368,7 +1372,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
         if (sessionPtr->_debug && !isResponseCB<T>(sessionPtr))
           esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, true);
 #endif
-        setTime(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str(), session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+        setTime(session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
 #endif
       }
     }

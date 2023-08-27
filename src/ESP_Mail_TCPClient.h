@@ -2,7 +2,7 @@
  *
  * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.1
  *
- * Created August 20, 2023
+ * Created August 27, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30406)
+#if !VALID_VERSION_CHECK(30407)
 #error "Mixed versions compilation."
 #endif
 

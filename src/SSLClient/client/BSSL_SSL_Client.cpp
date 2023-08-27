@@ -1,7 +1,7 @@
 /**
- * BSSL_SSL_Client library v1.0.9 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.11 for Arduino devices.
  *
- * Created August 13, 2003
+ * Created August 27, 2003
  *
  * This work contains codes based on WiFiClientSecure from Earle F. Philhower and SSLClient from OSU OPEnS Lab.
  *
@@ -192,6 +192,16 @@ uint8_t BSSL_SSL_Client::connected()
     }
 
     return c_con && br_con;
+}
+
+void BSSL_SSL_Client::validate(const char *host, uint16_t port)
+{
+    mConnectionValidate(host, IPAddress(), port);
+}
+
+void BSSL_SSL_Client::validate(IPAddress ip, uint16_t port)
+{
+    mConnectionValidate(nullptr, ip, port);
 }
 
 int BSSL_SSL_Client::available()
@@ -428,6 +438,9 @@ int BSSL_SSL_Client::connectSSL(IPAddress ip, uint16_t port)
     if (!_basic_client->connected() && !mConnectBasicClient(nullptr, ip, port))
         return 0;
 
+    _ip = ip;
+    _port = port;
+
     return mConnectSSL(nullptr);
 }
 
@@ -439,6 +452,9 @@ int BSSL_SSL_Client::connectSSL(const char *host, uint16_t port)
 
     if (!_basic_client->connected() && !mConnectBasicClient(host, IPAddress(), port))
         return 0;
+
+    _host = host;
+    _port = port;
 
     return mConnectSSL(host);
 }
@@ -1374,7 +1390,8 @@ int BSSL_SSL_Client::mIsClientInitialized(bool notify)
 
 int BSSL_SSL_Client::mConnectBasicClient(const char *host, IPAddress ip, uint16_t port)
 {
-    if (!mIsClientInitialized(true))
+
+    if (!mConnectionValidate(host, ip, port))
         return 0;
 
     if (!(host ? _basic_client->connect(host, port) : _basic_client->connect(ip, port)))
@@ -1568,6 +1585,22 @@ int BSSL_SSL_Client::mConnectSSL(const char *host)
     _x509_knownkey = nullptr;
 
     return 1;
+}
+
+bool BSSL_SSL_Client::mConnectionValidate(const char *host, IPAddress ip, uint16_t port)
+{
+    if (!mIsClientInitialized(true))
+        return false;
+
+    if (_basic_client && _basic_client->connected() &&
+                host
+            ? (strcasecmp(host, _host.c_str()) != 0 || port != _port)
+            : (ip != _ip || port != _port))
+    {
+        _basic_client->stop();
+    }
+
+    return true;
 }
 
 int BSSL_SSL_Client::mRunUntil(const unsigned target, unsigned long timeout)

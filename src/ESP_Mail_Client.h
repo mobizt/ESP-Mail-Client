@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30406)
+#if !VALID_VERSION_CHECK(30407)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created August 20, 2023
+ * Created August 27, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1214,7 +1214,7 @@ private:
 
   // Set or sync device system time with NTP server
   // Do not modify or remove
-  void setTime(float gmt_offset, float day_light_offset, const char *ntp_server, const char *TZ_Var, const char *TZ_file, bool wait);
+  void setTime(const char *TZ_Var, const char *TZ_file, bool wait);
 
   // Set the device time zone via TZ environment variable
   void setTimezone(const char *TZ_Var, const char *TZ_file);

@@ -29,7 +29,8 @@
  * IMAP_Data imap_data;
  */
 
-// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h.
+// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h or 
+// your custom config file src/Custom_ESP_Mail_FS.h.
 //  #define TINY_GSM_MODEM_SIM7600
 
 #define TINY_GSM_MODEM_SIM7600 // SIMA7670 Compatible with SIM7600 AT instructions

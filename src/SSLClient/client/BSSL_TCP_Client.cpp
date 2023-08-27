@@ -1,7 +1,7 @@
 /**
- * BSSL_TCP_Client v2.0.10 for Arduino devices.
+ * BSSL_TCP_Client v2.0.12 for Arduino devices.
  *
- * Created August 13, 2023
+ * Created August 27, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -132,6 +132,16 @@ int BSSL_TCP_Client::connect(const char *host, uint16_t port, int32_t timeout)
 uint8_t BSSL_TCP_Client::connected()
 {
     return _ssl_client.connected();
+}
+
+void BSSL_TCP_Client::validate(const char *host, uint16_t port)
+{
+    _ssl_client.validate(host, port);
+}
+
+void BSSL_TCP_Client::validate(IPAddress ip, uint16_t port)
+{
+    _ssl_client.validate(ip, port);
 }
 
 int BSSL_TCP_Client::available()
