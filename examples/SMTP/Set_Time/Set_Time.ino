@@ -97,7 +97,6 @@ void setup()
     Serial.println(WiFi.localIP());
     Serial.println();
 
-    
     Serial.print("Waiting for NTP server time reading");
 
 #if defined(ESP8266) || defined(ESP32) && !defined(ARDUINO_NANO_RP2040_CONNECT)
@@ -173,11 +172,11 @@ void setup()
     /**
      * Once the system time (using smtp.setSystemTime) or device time was set before calling smtp.connect, the following config will
      * not take effect when NTP time is enabled.
-     * 
+     *
      * config.time.ntp_server
      * config.time.gmt_offset
      * config.time.day_light_offset
-     * 
+     *
      * To reset the reference time and use config.time instead, call smtp.setSystemTime(0) whenever you want.
      */
 
@@ -186,15 +185,17 @@ void setup()
     /* Set the message headers */
     message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
-    message.subject = F("Test sending plain text Email");
     message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-    String textMsg = "This is simple plain text message";
-    message.text.content = textMsg;
+    /* The time format of timestamp to inject into subject or content as using in strftime C++ function */
+    message.timestamp.tag = "#esp_mail_current_time";
 
-    message.text.charSet = F("us-ascii");
+    /* The tag that will be replaced with current timestamp */
+    message.timestamp.format = "%B %d, %Y %H:%M:%S";
 
-    message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+    message.subject = F("Test sending plain text Email (#esp_mail_current_time)");
+
+    message.text.content = "This is simple plain text message\n\nSent #esp_mail_current_time";
 
     if (!smtp.connect(&config))
     {

@@ -2,14 +2,14 @@
 #define MB_Time_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30407)
+#if !VALID_VERSION_CHECK(30408)
 #error "Mixed versions compilation."
 #endif
 
 /*
  * Time helper class v1.0.7
  *
- * Created August 27, 2023
+ * Created August 28, 2023
  *
  * Do not remove or modify this file as it required for AVR, ARM, SAMD devices and external client to work.
  *
@@ -71,12 +71,12 @@
 static const char *mb_months[12] MB_TIME_PGM_ATTR = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 #endif
 
-enum mb_time_ref_time_type_t
+enum base_time_type_t
 {
-  mb_time_ref_time_type_undefined = -1,
-  mb_time_ref_time_type_unset = 0,
-  mb_time_ref_time_type_auto = 1,
-  mb_time_ref_time_type_user = 2
+  base_time_type_undefined = -1,
+  base_time_type_unset = 0,
+  base_time_type_auto = 1,
+  base_time_type_user = 2
 };
 
 class MB_Time
@@ -88,83 +88,73 @@ public:
 
   ~MB_Time()
   {
-#if defined(ENABLE_NTP_TIME)
-    _sv1.clear();
-    _sv2.clear();
-    _sv3.clear();
-#endif
+    clear();
   }
 
-  /** Set the system time from the NTP server
-   *
-   * @param gmtOffset The GMT time offset in hour.
-   * @param daylightOffset The Daylight time offset in hour.
-   * @param servers Optional. The NTP servers, use comma to separate the server.
-   * @return boolean The status indicates the success of operation.
-   *
-   * @note This requires internet connection
-   */
-  bool setClock()
+  void clear()
   {
-
-    if ((millis() - _lastSyncMillis > 5000 || _lastSyncMillis == 0) && sys_ts < ESP_TIME_DEFAULT_TS)
-    {
-
-      _lastSyncMillis = millis();
-
-      time_t tm = sys_ts;
-      sys_ts = 0;
-      ntpGetTime();
-      if (sys_ts == 0)
-        sys_ts = tm;
-      else
-      {
 #if defined(ENABLE_NTP_TIME)
-        _sv1.clear();
-        _sv2.clear();
-        _sv3.clear();
-#endif
-      }
+    if (_sv1.length())
+    {
+      _sv1.clear();
+      _sv2.clear();
+      _sv3.clear();
     }
-
-    return clockReady();
+#endif
   }
 
-  void ntpGetTime()
+  void readNTPTime(unsigned long waitMs, bool debugProgress)
   {
-    if (sys_ts < ESP_TIME_DEFAULT_TS)
+    if (!timeReady())
     {
-
       if (WiFI_CONNECTED)
       {
 
 #if defined(ENABLE_NTP_TIME)
 #if (defined(ESP32) || defined(ESP8266))
-        configTime(TZ * 3600, DST_MN * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
+        configTime(_gmt_offset * 3600, _daylight_offset * 60, _sv1.c_str(), _sv2.c_str(), _sv3.c_str());
 #elif defined(ARDUINO_RASPBERRY_PI_PICO_W)
         NTP.begin(_sv1.c_str(), _sv2.c_str());
         NTP.waitSet();
 #endif
 #endif
         unsigned long ms = millis();
+
+#if !defined(SILENT_MODE)
+        unsigned long pgms = 0;
+#endif
         do
         {
 #if defined(ESP_MAIL_HAS_WIFI_TIME)
-          sys_ts = WiFi.getTime() > ESP_TIME_DEFAULT_TS ? WiFi.getTime() : sys_ts;
+          _base_ts = WiFi.getTime() > ESP_TIME_DEFAULT_TS ? WiFi.getTime() : _base_ts;
 #elif defined(ENABLE_NTP_TIME)
-          sys_ts = time(nullptr) > ESP_TIME_DEFAULT_TS ? time(nullptr) : sys_ts;
+          _base_ts = time(nullptr) > ESP_TIME_DEFAULT_TS ? time(nullptr) : _base_ts;
 #else
           break;
 #endif
-          delay(100);
-        } while (millis() - ms < 10000 && sys_ts < ESP_TIME_DEFAULT_TS);
+
+#if !defined(SILENT_MODE)
+          if (debugProgress && millis() - pgms > 50)
+          {
+            pgms = millis();
+            esp_mail_debug_print(".", false);
+          }
+#endif
+
+          yield_impl();
+        } while (millis() - ms < waitMs && _base_ts < ESP_TIME_DEFAULT_TS);
+#if !defined(SILENT_MODE)
+        if (debugProgress)
+          esp_mail_debug_print("", true);
+#endif
       }
     }
   }
 
-  int setTimestamp(time_t ts)
+  int setTimestamp(time_t ts, float gmtOffset)
   {
-    _ref_time_type = ts > ESP_TIME_DEFAULT_TS ? mb_time_ref_time_type_user : mb_time_ref_time_type_unset;
+    _gmt_offset = gmtOffset;
+    _base_time_type = ts > ESP_TIME_DEFAULT_TS ? base_time_type_user : base_time_type_unset;
 #if defined(MB_ARDUINO_ESP)
     struct timeval tm; // sec, us
     tm.tv_sec = ts;
@@ -209,14 +199,14 @@ public:
   time_t getTimestamp(const char *timeString, bool gmt = false)
   {
 #if defined(MB_ARDUINO_ESP)
-    struct tm _timeinfo;
+    struct tm timeinfo;
 
     if (strstr(timeString, ",") != NULL)
-      strptime(timeString, "%a, %d %b %Y %H:%M:%S %z", &_timeinfo);
+      strptime(timeString, "%a, %d %b %Y %H:%M:%S %z", &timeinfo);
     else
-      strptime(timeString, "%d %b %Y %H:%M:%S %z", &_timeinfo);
+      strptime(timeString, "%d %b %Y %H:%M:%S %z", &timeinfo);
 
-    time_t ts = mktime(&_timeinfo);
+    time_t ts = mktime(&timeinfo);
     return ts;
 
 #else
@@ -285,8 +275,8 @@ public:
    */
   uint64_t getCurrentTimestamp()
   {
-    getTime();
-    return sys_ts;
+    getBaseTime();
+    return _base_ts;
   }
 
   /** Get the current rfc822 date time string that valid for Email.
@@ -294,20 +284,20 @@ public:
    */
   String getDateTimeString()
   {
-    getTime();
+    getBaseTime();
 
     char tbuf[40];
-    strftime(tbuf, 40, "%a, %d %b %Y %H:%M:%S %z", &timeinfo);
+    strftime(tbuf, 40, "%a, %d %b %Y %H:%M:%S %z", &_time_info);
     MB_String tStr = tbuf, tzStr;
 
-    int p = TZ < 0 ? -1 : 1;
-    float dif = (p * (TZ * 10 - (int)TZ * 10)) * 60.0 / 10;
-    tzStr = (TZ < 0) ? '-' : '+';
+    int p = _gmt_offset < 0 ? -1 : 1;
+    float dif = (p * (_gmt_offset * 10 - (int)_gmt_offset * 10)) * 60.0 / 10;
+    tzStr = (_gmt_offset < 0) ? '-' : '+';
 
-    if ((int)TZ < 10)
+    if ((int)_gmt_offset < 10)
       tzStr += 0;
 
-    tzStr += (int)TZ;
+    tzStr += (int)_gmt_offset;
 
     if (dif < 10)
       tzStr += 0;
@@ -321,83 +311,63 @@ public:
 
   String getDateTimeString(time_t ts, const char *format)
   {
-    char tbuf[50];
-    strftime(tbuf, 50, format, localtime(&ts));
+    char tbuf[100];
+    strftime(tbuf, 100, format, localtime(&ts));
     return tbuf;
-  }
-
-  void syncSysTime()
-  {
-    getTime();
-
-#if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
-    if (sys_ts < time(nullptr) && time(nullptr) > ESP_TIME_DEFAULT_TS)
-      sys_ts = time(nullptr);
-#endif
   }
 
   void begin(float gmtOffset, float daylightOffset, const char *servers)
   {
-    if (clockReady() && _ref_time_type == mb_time_ref_time_type_undefined)
-      _ref_time_type = mb_time_ref_time_type_auto;
-    else if (_ref_time_type == mb_time_ref_time_type_undefined)
-      _ref_time_type = mb_time_ref_time_type_unset;
-
-    if ((gmtOffset > ESP_TIME_NON_TS && TZ != gmtOffset) || (daylightOffset > ESP_TIME_NON_TS && DST_MN != daylightOffset))
-    {
-      // Reset system timestamp when config changed
-      sys_ts = 0;
-      if (gmtOffset > ESP_TIME_NON_TS)
-        TZ = gmtOffset;
-      if (daylightOffset > ESP_TIME_NON_TS)
-        DST_MN = daylightOffset;
-
-      if (_ref_time_type == mb_time_ref_time_type_unset)
-        setTimestamp(millis());
+    if (timeReady() && _base_time_type == base_time_type_undefined)
+      _base_time_type = base_time_type_auto;
+    else if (_base_time_type == base_time_type_undefined)
+      _base_time_type = base_time_type_unset;
 
 #if defined(ENABLE_NTP_TIME) && (defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W))
 
-      _vectorImpl<MB_String> tk;
-      MB_String sv = servers;
+    _vectorImpl<MB_String> tk;
+    MB_String sv = servers;
 
-      _sv1.clear();
-      _sv2.clear();
-      _sv3.clear();
+    clear();
 
-      splitToken(sv, tk, ',');
+    splitToken(sv, tk, ',');
 
-      if (tk.size() > 0)
-        _sv1 = tk[0];
-      if (tk.size() > 1)
-        _sv2 = tk[1];
-      if (tk.size() > 2)
-        _sv3 = tk[2];
+    if (tk.size() > 0)
+      _sv1 = tk[0];
+    if (tk.size() > 1)
+      _sv2 = tk[1];
+    if (tk.size() > 2)
+      _sv3 = tk[2];
 
 #endif
+
+    if ((gmtOffset > ESP_TIME_NON_TS && _gmt_offset != gmtOffset) || (daylightOffset > ESP_TIME_NON_TS && _daylight_offset != daylightOffset))
+    {
+      // Reset system timestamp when config changed
+      _base_ts = 0;
+      if (gmtOffset > ESP_TIME_NON_TS)
+        _gmt_offset = gmtOffset;
+      if (daylightOffset > ESP_TIME_NON_TS)
+        _daylight_offset = daylightOffset;
+
+      if (_base_time_type == base_time_type_unset)
+        setTimestamp(millis(), _gmt_offset);
     }
   }
 
   /** get the clock ready state
    */
-  bool clockReady()
+  bool timeReady()
   {
-
-    syncSysTime();
-
-    _clockReady = sys_ts > ESP_TIME_DEFAULT_TS;
-    if (_clockReady)
-      _ts_offset = sys_ts - millis() / 1000;
-
-    return _clockReady;
+    getBaseTime();
+    return _time_ready;
   }
-  // The library's internal timestamp which can be assigned via
-  // many methods e.g., device local time, NTP and manually set.
-  time_t sys_ts = 0;
-  struct tm timeinfo;
-  float TZ = 0.0;
-  float DST_MN = 0.0;
 
 private:
+  time_t _base_ts = 0;
+  struct tm _time_info;
+  float _gmt_offset = ESP_TIME_NON_TS;
+  float _daylight_offset = ESP_TIME_NON_TS;
   void splitToken(MB_String &str, _vectorImpl<MB_String> &tk, char delim)
   {
     size_t current, previous = 0;
@@ -425,25 +395,31 @@ private:
     s.clear();
   }
 
-  void getTime()
+  // 9Safe) Get base timestamp
+  void getBaseTime()
   {
 
 #if defined(ESP32) || defined(ESP8266) || defined(MB_ARDUINO_PICO)
 
-    if (sys_ts < time(nullptr))
-      sys_ts = time(nullptr);
+    if (_base_ts < time(nullptr) && time(nullptr) > ESP_TIME_DEFAULT_TS)
+      _base_ts = time(nullptr);
+
 #if defined(ESP32)
-    getLocalTime(&timeinfo);
+    getLocalTime(&_time_info);
 #elif defined(ESP8266) || defined(MB_ARDUINO_PICO)
-    localtime_r(&sys_ts, &timeinfo);
+    localtime_r(&_base_ts, &_time_info);
 #endif
 
 #elif defined(ESP_MAIL_HAS_WIFI_TIME)
     if (WiFI_CONNECTED)
-      sys_ts = WiFi.getTime() > ESP_TIME_DEFAULT_TS ? WiFi.getTime() : sys_ts;
+      _base_ts = WiFi.getTime() > ESP_TIME_DEFAULT_TS ? WiFi.getTime() : _base_ts;
 #else
-    sys_ts = _ts_offset + millis() / 1000;
+    _base_ts = _ts_offset + millis() / 1000;
 #endif
+
+    _time_ready = _base_ts > ESP_TIME_DEFAULT_TS;
+    if (_time_ready)
+      _ts_offset = _base_ts - millis() / 1000;
   }
 
 #if defined(ENABLE_NTP_TIME)
@@ -452,9 +428,8 @@ private:
 #endif
 
   uint32_t _ts_offset = 0;
-  bool _clockReady = false;
-  unsigned long _lastSyncMillis = 0;
-  mb_time_ref_time_type_t _ref_time_type = mb_time_ref_time_type_undefined;
+  bool _time_ready = false;
+  base_time_type_t _base_time_type = base_time_type_undefined;
 };
 
 #endif // MB_Time_H

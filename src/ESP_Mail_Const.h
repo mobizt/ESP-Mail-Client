@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONST_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30407)
+#if !VALID_VERSION_CHECK(30408)
 #error "Mixed versions compilation."
 #endif
 
@@ -833,6 +833,14 @@ struct esp_mail_attachment_info_t
 struct esp_mail_smtp_command_t
 {
     char text[9];
+};
+
+struct esp_mail_timestamp_value_t
+{
+   /* The time format of timestamp to inject into subject or content as using in strftime C++ function */
+    MB_String format;
+    /* The tag that will be replaced with current timestamp */
+    MB_String tag;
 };
 
 /** The SMTP commands per stansards.

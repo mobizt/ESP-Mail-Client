@@ -3,14 +3,14 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30407)
+#if !VALID_VERSION_CHECK(30408)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 27, 2023
+ * Created August 28, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -319,6 +319,10 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
     status.completed = result;
     status.timestamp = smtp->ts;
     status.subject = msg->subject.c_str();
+
+    if (msg->timestamp.tag.length() && msg->timestamp.format.length())
+        status.subject.replaceAll(msg->timestamp.tag, Time.getDateTimeString(Time.getCurrentTimestamp(), msg->timestamp.format.c_str()));
+
     status.recipients = msg->_rcp[0].email.c_str();
     smtp->sendingResult.add(&status);
 
@@ -715,6 +719,9 @@ bool ESP_Mail_Client::sendContent(SMTPSession *smtp, SMTP_Message *msg, bool clo
 
     MB_String s;
     appendHeaderField(s, rfc822_headers[esp_mail_rfc822_header_field_subject].text, msg->subject.c_str(), false, true);
+
+    if (msg->timestamp.tag.length() && msg->timestamp.format.length())
+        s.replaceAll(msg->timestamp.tag, Time.getDateTimeString(Time.getCurrentTimestamp(), msg->timestamp.format.c_str()));
 
     // Construct the 'Date' header field.
     // The 'Date' header field should be valid and should be included in the message headers to
@@ -2207,6 +2214,9 @@ void ESP_Mail_Client::encodingText(SMTPSession *smtp, SMTP_Message *msg, uint8_t
             content += s;
         s.clear();
     }
+
+    if (msg->timestamp.tag.length() && msg->timestamp.format.length())
+        content.replaceAll(msg->timestamp.tag, Time.getDateTimeString(Time.getCurrentTimestamp(), msg->timestamp.format.c_str()));
 }
 
 void ESP_Mail_Client::encodeQP(const char *buf, char *out)
@@ -3533,8 +3543,7 @@ SMTP_Status SMTPSession::status()
 
 void SMTPSession::setSystemTime(time_t ts, float gmtOffset)
 {
-    MailClient.Time.TZ = gmtOffset;
-    MailClient.Time.setTimestamp(ts);
+    MailClient.Time.setTimestamp(ts, gmtOffset);
 }
 
 void SMTPSession::keepAlive(int tcpKeepIdleSeconds, int tcpKeepIntervalSeconds, int tcpKeepCount)

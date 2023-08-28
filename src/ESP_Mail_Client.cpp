@@ -4,14 +4,14 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30407)
+#if !VALID_VERSION_CHECK(30408)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created August 27, 2023
+ * Created August 28, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -503,12 +503,12 @@ void ESP_Mail_Client::getTimezone(const char *TZ_file, MB_String &out)
 #endif
 }
 
-void ESP_Mail_Client::setTime(const char *TZ_Var, const char *TZ_file, bool wait)
+void ESP_Mail_Client::setTime(const char *TZ_Var, const char *TZ_file, bool wait, bool debugProgress)
 {
 
-  _clockReady = Time.clockReady();
+  timeStatus = Time.timeReady();
 
-  if (!_clockReady)
+  if (!timeStatus)
   {
 
 #if defined(ENABLE_IMAP) || defined(ENABLE_SMTP)
@@ -517,15 +517,7 @@ void ESP_Mail_Client::setTime(const char *TZ_Var, const char *TZ_file, bool wait
 
     if (WiFI_CONNECTED)
     {
-      Time.setClock();
-      if (wait)
-      {
-        unsigned long waitMs = millis();
-        while (!Time.clockReady() && millis() - waitMs < 10000)
-        {
-          yield_impl();
-        }
-      }
+      Time.readNTPTime(wait ? 10000 : 0, debugProgress);
     }
     else
     {
@@ -544,7 +536,7 @@ void ESP_Mail_Client::setTime(const char *TZ_Var, const char *TZ_file, bool wait
 #endif
   }
 
-  _clockReady = Time.clockReady();
+  timeStatus = Time.timeReady();
 }
 
 void ESP_Mail_Client::getSetTimezoneEnv(const char *TZ_file, const char *TZ_Var)
@@ -1347,11 +1339,10 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
 
   if (session_config->time.ntp_server.length() > 0 || timeShouldBeValid)
   {
-  
-    if (session_config->time.ntp_server.length() > 0)
-      Time.begin(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str());
 
-    if (!Time.clockReady())
+     Time.begin(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str());
+
+    if (!Time.timeReady())
     {
       if (sessionPtr->client.type() == esp_mail_client_type_external_gsm_client)
       {
@@ -1363,16 +1354,17 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
         int sec = 0;
         float timezone = 0;
         if (sessionPtr->client.gprsGetTime(year, month, day, hour, min, sec, timezone))
-          Time.setTimestamp(Time.getTimestamp(year, month, day, hour, min, sec));
+          Time.setTimestamp(Time.getTimestamp(year, month, day, hour, min, sec), timezone);
       }
       else
       {
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
         if (sessionPtr->_debug && !isResponseCB<T>(sessionPtr))
-          esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, true);
+          esp_mail_debug_print_tag(esp_mail_dbg_str_21 /* "Reading time from NTP server" */, esp_mail_debug_tag_type_client, false);
 #endif
-        setTime(session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true);
+
+        setTime(session_config->time.timezone_env_string.c_str(), session_config->time.timezone_file.c_str(), true, sessionPtr->_debug && !isResponseCB<T>(sessionPtr));
 #endif
       }
     }
@@ -1381,11 +1373,11 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
 #endif
 
 #if defined(ESP32)
-  if (Time.clockReady() && !timezoneEnvSet)
+  if (Time.timeReady() && !timezoneEnvSet)
     getSetTimezoneEnv(session_config->time.timezone_file.c_str(), session_config->time.timezone_env_string.c_str());
 #endif
 
-  if (Time.clockReady())
+  if (Time.timeReady())
     return true;
   else if (WiFI_CONNECTED && timeShouldBeValid)
   {
@@ -1438,7 +1430,7 @@ void ESP_Mail_Client::setSecure(ESP_Mail_TCPClient &client, Session_Config *sess
   {
     if (session_config->certificate.cert_file.length() > 0 || session_config->certificate.cert_data != NULL || session_config->cert_ptr > 0)
     {
-      client.setClockReady(_clockReady);
+      client.setClockReady(timeStatus);
     }
 
     if (session_config->certificate.cert_file.length() == 0)
