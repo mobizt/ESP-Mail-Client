@@ -4,7 +4,7 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30408)
+#if !VALID_VERSION_CHECK(30409)
 #error "Mixed versions compilation."
 #endif
 
@@ -1340,7 +1340,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
   if (session_config->time.ntp_server.length() > 0 || timeShouldBeValid)
   {
 
-     Time.begin(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str());
+    Time.begin(session_config->time.gmt_offset, session_config->time.day_light_offset, session_config->time.ntp_server.c_str());
 
     if (!Time.timeReady())
     {
@@ -1356,7 +1356,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
         if (sessionPtr->client.gprsGetTime(year, month, day, hour, min, sec, timezone))
           Time.setTimestamp(Time.getTimestamp(year, month, day, hour, min, sec), timezone);
       }
-      else
+      else if (session_config->time.ntp_server.length())
       {
 #if defined(ENABLE_NTP_TIME)
 #if !defined(SILENT_MODE)
@@ -1381,7 +1381,7 @@ bool ESP_Mail_Client::prepareTime(Session_Config *session_config, T sessionPtr)
     return true;
   else if (WiFI_CONNECTED && timeShouldBeValid)
   {
-    errorStatusCB<T, IMAPSession *>(sessionPtr, nullptr, ntpEnabled ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, false);
+    errorStatusCB<T, IMAPSession *>(sessionPtr, nullptr, ntpEnabled && session_config->time.ntp_server.length() ? MAIL_CLIENT_ERROR_NTP_TIME_SYNC_TIMED_OUT : MAIL_CLIENT_ERROR_TIME_WAS_NOT_SET, false);
     return false;
   }
 
