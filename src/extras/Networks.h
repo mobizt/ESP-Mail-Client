@@ -4,7 +4,7 @@
 #include "./ESP_Mail_FS.h"
 
 #include "./ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30410)
+#if !VALID_VERSION_CHECK(30411)
 #error "Mixed versions compilation."
 #endif
 
@@ -19,6 +19,10 @@
 
 #if __has_include(<esp_idf_version.h>)
 #include <esp_idf_version.h>
+#endif
+
+#if __has_include(<IPAddress.h>)
+#include <IPAddress.h>
 #endif
 
 #if defined(ESP8266) || defined(MB_ARDUINO_PICO)

@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30410)
+#if !VALID_VERSION_CHECK(30411)
 #error "Mixed versions compilation."
 #endif
 
@@ -1068,9 +1068,8 @@ public:
         {
             if (ret)
             {
-                MB_String s = MBSTRING_FLASH_MCR("Connected with IP ");
-                s += Ethernet.localIP().toString();
-                esp_mail_debug_print_tag(s.c_str(), esp_mail_debug_tag_type_info, true, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connected with IP "), esp_mail_debug_tag_type_info, false, false);
+                ESP_MAIL_DEFAULT_DEBUG_PORT.println(Ethernet.localIP());
             }
             else
                 esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Can't connect"), esp_mail_debug_tag_type_error, true, false);
