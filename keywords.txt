@@ -25,6 +25,7 @@ SMTP_Result KEYWORD1
 IMAP_MSG_Item   KEYWORD1
 Content_Transfer_Encoding   KEYWORD1
 MessageList   KEYWORD1
+ESP_Mail_StaticIP   KEYWORD1
 
 ###############################################
 # Methods and Functions (KEYWORD2)
@@ -142,6 +143,7 @@ getUID  KEYWORD2
 setTCPTimeout   KEYWORD2
 setClient   KEYWORD2
 setGSMClient    KEYWORD2
+setEthernetClient   KEYWORD2
 connectionRequestCallback   KEYWORD2
 connectionUpgradeRequestCallback    KEYWORD2
 networkConnectionRequestCallback    KEYWORD2

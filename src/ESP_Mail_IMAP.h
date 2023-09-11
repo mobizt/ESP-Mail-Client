@@ -3,7 +3,7 @@
 #define ESP_MAIL_IMAP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
@@ -4887,7 +4887,7 @@ bool IMAPSession::connect(bool &ssl)
     unsigned long dataMs = millis();
     while (client.connected() && client.available() == 0 && millis() - dataMs < 2000)
     {
-       yield_impl();
+        yield_impl();
     }
 
     int chunkBufSize = client.available();
@@ -4994,6 +4994,11 @@ void IMAPSession::setClient(Client *client)
 void IMAPSession::setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password)
 {
     this->client.setGSMClient(client, modem, pin, apn, user, password);
+}
+
+void IMAPSession::setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP)
+{
+    this->client.setEthernetClient(client, macAddress, csPin, resetPin, staticIP);
 }
 
 void IMAPSession::networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)

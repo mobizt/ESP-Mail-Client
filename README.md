@@ -755,9 +755,9 @@ This library supports external netwoking devices e.g. WiFi modules, Ethernet mod
 
 Since v3.4.0, the Arduino Clients can be used with this library without additional external SSL Client required.
 
-No additional setup needed, only pass the Arduino Client to the function `setClient` or pass the TinyGSMClient and TinyGSM modem to the function `setGSMClient`.
+No additional setup needed, only pass the Arduino Client to the function `setClient` or pass the TinyGSMClient and TinyGSM modem to the function `setGSMClient` or pass the Ethernet client and mac address to the function `setEthernetClient`.
 
-Two callback functions required (except for using `setGSMClient`) for network connection (with disconnection) and sending connecting status back to the Mail Client.
+Two callback functions are required (except for `setGSMClient` and `setEthernetClient`) for network connection (with disconnection) and sending connecting status back to the Mail Client.
 
 If device has on-board WiFi and supports native (SDK) Ethernet, these two native networks will be auto detectd and used.
 
@@ -982,67 +982,17 @@ The below example will use ESP32 and W5500 and Ethernet client library to connec
 #define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
 
 
-EthernetClient eth_client;
-
 uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
 
-SMTPSession smtp; 
+SMTPSession smtp;
 
-Session_Config config;
+EthernetClient eth_client;
 
-// Callback function to get the Email sending status
 void smtpCallback(SMTP_Status status);
-
-void ResetEthernet()
-{
-    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
-    pinMode(WIZNET_RESET_PIN, OUTPUT);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-    digitalWrite(WIZNET_RESET_PIN, LOW);
-    delay(50);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-}
-
-void networkConnection()
-{
-
-    Ethernet.init(WIZNET_CS_PIN);
-
-    ResetEthernet();
-
-    Serial.println("Starting Ethernet connection...");
-    Ethernet.begin(Eth_MAC);
-
-    unsigned long to = millis();
-
-    while (Ethernet.linkStatus() == LinkOFF || millis() - to < 2000)
-    {
-        delay(100);
-    }
-
-    if (Ethernet.linkStatus() == LinkON)
-    {
-        Serial.print("Connected with IP ");
-        Serial.println(Ethernet.localIP());
-    }
-    else
-    {
-        Serial.println("Can't connect");
-    }
-}
-
-void networkStatusRequestCallback()
-{
-    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
-}
 
 void setup()
 {
     Serial.begin(115200);
-
-    networkConnection();
 
     config.server.host_name = "smtp.gmail.com"; //for gmail.com
     config.server.port = 587; // requires connection upgrade via STARTTLS
@@ -1066,12 +1016,7 @@ void setup()
     // Set the message content
     message.text.content = "This is simple plain text message";
 
-     // Set the callback function for connection upgrade
-    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
-
-    smtp.networkConnectionRequestCallback(networkConnection);
-
-    smtp.setClient(&eth_client);
+    smtp.setEthernetClient(&eth_client, Eth_MAC, WIZNET_CS_PIN, WIZNET_RESET_PIN); 
 
     // Set debug option
     smtp.debug(1);

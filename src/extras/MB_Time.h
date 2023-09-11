@@ -1,8 +1,8 @@
 #ifndef MB_Time_H
 #define MB_Time_H
 
-#include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#include "./ESP_Mail_Client_Version.h"
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
@@ -36,7 +36,7 @@
  */
 
 #include <Arduino.h>
-#include "Networks_Provider.h"
+#include "./extras/Networks.h"
 
 #define ESP_TIME_DEFAULT_TS 1577836800
 #define ESP_TIME_NON_TS -1000
@@ -54,8 +54,8 @@
 #define MB_STRING_USE_PSRAM
 #endif
 
-#include "MB_String.h"
-#include "MB_MCU.h"
+#include "./extras/MB_String.h"
+#include "./extras/MB_MCU.h"
 
 #if defined(ESP8266)
 #include "user_interface.h"
@@ -395,7 +395,7 @@ private:
     s.clear();
   }
 
-  // 9Safe) Get base timestamp
+  // (Safe) Get base timestamp
   void getBaseTime()
   {
 

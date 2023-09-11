@@ -37,7 +37,6 @@
 #if defined(DISABLE_SD)
 #undef ESP_MAIL_DEFAULT_SD_FS
 #undef ESP_MAIL_CARD_TYPE_SD_MMC
-#undef ESP_MAIL_DEFAULT_FLASH_FS
 #endif
 
 #if defined(DISABLE_FLASH)
@@ -48,5 +47,6 @@
 #if defined(ESP_MAIL_DEFAULT_DEBUG_PORT)
 #undef ESP_MAIL_DEFAULT_DEBUG_PORT
 #endif
+
 
 #endif

@@ -6,28 +6,24 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 /**
  * This example shows how to send Email using EthernetClient.
  *
- * This example used ESP32 and WIZnet W5500 Ethernet module.
+ * This example used ESP8266 and WIZnet W5500 Ethernet module.
  * 
- * For ESP32 and LAN8720 see examples/SMTP/Ethernet/ESP32/Send_Text.ino
- * 
- * ESP32 Arduino SDK native Ethernet using ETH.h is currently support Ethernet PHY chips
- * 
- * LAN8720, TLK101, RTL8201, DP83848, DM9051, KSZ8041 and KSZ8081.
- * 
- * For ESP8266, the native Ethernet is currently supported ENC28J60, W5100 and W5500.
- * 
- * You do not need to set external Client with native Ethernet support PHY/MAC chips.
- * 
+ * For ESP8266 native Ethernet usage without external Ethernet client required, see examples/SMTP/Ethernet/ESP8266/Send_Text.ino.
+ *
+ * To use external Ethernet client with ESP8266 as in this example, the following macro in src/Custom_ESP_Mail_FS.h or build flag
+ * should be assigned to disable the native internet inclusion that conflicts with Ethernet.h
+ *
+ * ESP_MAIL_DISABLE_NATIVE_ETHERNET
  *
  */
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -57,11 +53,11 @@
 #define AUTHOR_PASSWORD "<password>"
 #define RECIPIENT_EMAIL "<recipient email here>"
 
-#define WIZNET_RESET_PIN 26 // Connect W5500 Reset pin to GPIO 26 of ESP32
-#define WIZNET_CS_PIN 5     // Connect W5500 CS pin to GPIO 5 of ESP32
-#define WIZNET_MISO_PIN 19  // Connect W5500 MISO pin to GPIO 19 of ESP32
-#define WIZNET_MOSI_PIN 23  // Connect W5500 MOSI pin to GPIO 23 of ESP32
-#define WIZNET_SCLK_PIN 18  // Connect W5500 SCLK pin to GPIO 18 of ESP32
+#define WIZNET_RESET_PIN 5 // Connect W5500 Reset pin to GPIO 5 (D1) of ESP8266 (-1 for no reset pin assigned)
+#define WIZNET_CS_PIN 4    // Connect W5500 CS pin to GPIO 4 (D2) of ESP8266
+#define WIZNET_MISO_PIN 12 // Connect W5500 MISO pin to GPIO 12 (D6) of ESP8266
+#define WIZNET_MOSI_PIN 13 // Connect W5500 MOSI pin to GPIO 13 (D7) of ESP8266
+#define WIZNET_SCLK_PIN 14 // Connect W5500 SCLK pin to GPIO 14 (D5) of ESP8266
 
 unsigned long sentMillis = 0;
 
@@ -69,56 +65,20 @@ const int analog_pin = 34;
 
 uint8_t Eth_MAC[] = {0x02, 0xF0, 0x0D, 0xBE, 0xEF, 0x01};
 
+/**
+IPAddress localIP(192, 168, 1, 104);
+IPAddress subnet(255, 255, 0, 0);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress dnsServer(8, 8, 8, 8);
+bool optional = false; // Use this static IP only no DHCP
+ESP_Mail_StaticIP staIP(localIP, subnet, gateway, dnsServer, optional);
+*/
+
 SMTPSession smtp;
 
 EthernetClient eth_client;
 
 void smtpCallback(SMTP_Status status);
-
-void ResetEthernet()
-{
-    Serial.println("Resetting WIZnet W5500 Ethernet Board...  ");
-    pinMode(WIZNET_RESET_PIN, OUTPUT);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-    digitalWrite(WIZNET_RESET_PIN, LOW);
-    delay(50);
-    digitalWrite(WIZNET_RESET_PIN, HIGH);
-    delay(200);
-}
-
-void networkConnection()
-{
-
-    Ethernet.init(WIZNET_CS_PIN);
-
-    ResetEthernet();
-
-    Serial.println("Starting Ethernet connection...");
-    Ethernet.begin(Eth_MAC);
-
-    unsigned long to = millis();
-
-    while (Ethernet.linkStatus() == LinkOFF || millis() - to < 2000)
-    {
-        delay(100);
-    }
-
-    if (Ethernet.linkStatus() == LinkON)
-    {
-        Serial.print("Connected with IP ");
-        Serial.println(Ethernet.localIP());
-    }
-    else
-    {
-        Serial.println("Can't connect");
-    }
-}
-
-void networkStatusRequestCallback()
-{
-    smtp.setNetworkStatus(Ethernet.linkStatus() == LinkON);
-}
 
 void sendEmail()
 {
@@ -142,11 +102,8 @@ void sendEmail()
 
     message.text.content = "This is simple plain text message";
 
-    smtp.setClient(&eth_client);
-
-    smtp.networkConnectionRequestCallback(networkConnection);
-    
-    smtp.networkStatusRequestCallback(networkStatusRequestCallback);
+    /* Assign the pointer to global defined Ethernet Client object */
+    smtp.setEthernetClient(&eth_client, Eth_MAC, WIZNET_CS_PIN, WIZNET_RESET_PIN); // The staIP can be assigned to the fifth param
 
     if (!smtp.connect(&config))
     {
@@ -171,17 +128,6 @@ void setup()
     Serial.begin(115200);
 
     Serial.println();
-
-    networkConnection();
-
-    /*
-    For internal NTP client
-    For times east of the Prime Meridian use 0-12
-    For times west of the Prime Meridian add 12 to the offset.
-    Ex. American/Denver GMT would be -6. 6 + 12 = 18
-    See https://en.wikipedia.org/wiki/Time_zone for a list of the GMT/UTC timezone offsets
-    */
-    MailClient.setUDPClient(&udp_client, 0 /* GMT offset */);
 
     smtp.debug(1);
 

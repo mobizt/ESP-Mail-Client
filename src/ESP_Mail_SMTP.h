@@ -3,7 +3,7 @@
 #define ESP_MAIL_SMTP_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
@@ -3569,6 +3569,11 @@ void SMTPSession::setClient(Client *client)
 void SMTPSession::setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password)
 {
     this->client.setGSMClient(client, modem, pin, apn, user, password);
+}
+
+void SMTPSession::setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP)
+{
+    this->client.setEthernetClient(client, macAddress, csPin, resetPin, staticIP);
 }
 
 void SMTPSession::networkConnectionRequestCallback(NetworkConnectionRequestCallback networkConnectionCB)

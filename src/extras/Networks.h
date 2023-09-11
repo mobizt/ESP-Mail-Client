@@ -1,18 +1,13 @@
-#ifndef ESP_MAIL_NETWORKS_PROVIDER_H
-#define ESP_MAIL_NETWORKS_PROVIDER_H
+#ifndef ESP_MAIL_NETWORKS_H
+#define ESP_MAIL_NETWORKS_H
 
-#include "../ESP_Mail_FS.h"
+#include "./ESP_Mail_FS.h"
 
-#include "../ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#include "./ESP_Mail_Client_Version.h"
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
-#if __has_include(<esp_idf_version.h>)
-#include <esp_idf_version.h>
-#endif
-
-#include "ESP8266_Supports.h"
 
 // Renesas devices
 #if defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_MINIMA) || defined(ARDUINO_PORTENTA_C33)
@@ -20,6 +15,85 @@
 #define ESP_MAIL_USE_STRSEP_IMPL
 #else
 #define ESP_MAIL_STRSEP strsep
+#endif
+
+#if __has_include(<esp_idf_version.h>)
+#include <esp_idf_version.h>
+#endif
+
+#if defined(ESP8266) || defined(MB_ARDUINO_PICO)
+
+#include <string>
+
+//__GNUC__
+//__GNUC_MINOR__
+//__GNUC_PATCHLEVEL__
+
+#ifdef __GNUC__
+#if __GNUC__ > 4 || __GNUC__ == 10
+#if defined(ARDUINO_ESP8266_GIT_VER)
+#if ARDUINO_ESP8266_GIT_VER > 0
+#define ESP8266_CORE_SDK_V3_X_X
+#endif
+#endif
+#endif
+#endif
+
+#endif
+
+#if !defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)
+
+#if defined(ESP32) && __has_include(<ETH.h>)
+#include <ETH.h>
+#define ESP_MAIL_ETH_IS_AVAILABLE
+#elif defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
+
+#if __has_include(<LwipIntfDev.h>)
+#include <LwipIntfDev.h>
+#endif
+
+#if __has_include(<ENC28J60lwIP.h>)&& defined(ENABLE_ESP8266_ENC28J60_ETH)
+#define INC_ENC28J60_LWIP
+#include <ENC28J60lwIP.h>
+#endif
+
+#if __has_include(<W5100lwIP.h>) && defined(ENABLE_ESP8266_W5100_ETH)
+#define INC_W5100_LWIP
+#include <W5100lwIP.h>
+#endif
+
+#if __has_include(<W5500lwIP.h>)&& defined(ENABLE_ESP8266_W5500_ETH)
+#define INC_W5500_LWIP
+#include <W5500lwIP.h>
+#endif
+
+#if defined(MB_ARDUINO_PICO)
+
+#endif
+
+#if defined(INC_ENC28J60_LWIP) && defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
+#define ESP_MAIL_ETH_IS_AVAILABLE
+#endif
+
+#endif
+
+#endif
+
+#if __has_include(<Ethernet.h>)
+#if defined(ESP8266)
+#undef MAX_SOCK_NUM
+
+#if defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)
+#include <Ethernet.h>
+#define ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE
+#endif
+
+#undef MAX_SOCK_NUM
+#elif !defined(ARDUINO_NANO_RP2040_CONNECT)
+#include <Ethernet.h>
+#define ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE
+#endif
+
 #endif
 
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || \
@@ -69,19 +143,6 @@
 #define ESP_MAIL_HAS_WIFIMULTI
 #endif
 
-#endif
-
-#endif
-
-#if !defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)
-
-#if defined(ESP32) && __has_include(<ETH.h>)
-#include <ETH.h>
-#define ESP_MAIL_ETH_IS_AVAILABLE
-#elif defined(ESP8266) && defined(ESP8266_CORE_SDK_V3_X_X)
-#if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
-#define ESP_MAIL_ETH_IS_AVAILABLE
-#endif
 #endif
 
 #endif

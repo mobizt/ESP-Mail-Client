@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.1
+ * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.2
  *
- * Created August 27, 2023
+ * Created September 11, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
@@ -87,7 +87,7 @@ public:
     {
         clear();
         _basic_client = client;
-        _client_type = esp_mail_client_type_external_basic_client;
+        _client_type = esp_mail_client_type_external_generic_client;
     }
 
     /** Assign TinyGsm Clients.
@@ -102,15 +102,34 @@ public:
     void setGSMClient(Client *client, void *modem = nullptr, const char *pin = nullptr, const char *apn = nullptr, const char *user = nullptr, const char *password = nullptr)
     {
 #if defined(ESP_MAIL_GSM_MODEM_IS_AVAILABLE)
+        _client_type = esp_mail_client_type_external_gsm_client;
+        _basic_client = client;
+        _modem = modem;
         _pin = pin;
         _apn = apn;
         _user = user;
         _password = password;
-        _modem = modem;
-        _client_type = esp_mail_client_type_external_gsm_client;
-        _basic_client = client;
 #endif
     }
+
+    /** Assign external Ethernet Client.
+     *
+     * @param client The pointer to Ethernet client object.
+     * @param macAddress The Ethernet MAC address.
+     * @param csPin The Ethernet module SPI chip select pin.
+     * @param resetPin The Ethernet module reset pin.
+     * @param staticIP (Optional) The pointer to ESP_Mail_StaticIP object which has these IPAddress in its constructor i.e.
+     * ipAddress, netMask, defaultGateway, dnsServer and optional.
+     */
+    void setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP = nullptr)
+    {
+        _client_type = esp_mail_client_type_external_ethernet_client;
+        _basic_client = client;
+        _ethernet_mac = macAddress;
+        _ethernet_cs_pin = csPin;
+        _ethernet_reset_pin = resetPin;
+        _static_ip = staticIP;
+    };
 
     /**
      * Set Root CA certificate to verify.
@@ -339,15 +358,23 @@ public:
             if (!_network_status)
                 gprsConnect();
         }
-        else if (WiFI_CONNECTED || ethLinkUp())
-            _network_status = true;
-        else if (_client_type == esp_mail_client_type_external_basic_client)
+        else if (_client_type == esp_mail_client_type_external_ethernet_client)
+        {
+            if (!ethernetConnected())
+                ethernetConnect();
+        }
+        // also check the native network before calling external cb
+        else if (_client_type == esp_mail_client_type_internal_basic_client || WiFI_CONNECTED || ethLinkUp())
+            _network_status = WiFI_CONNECTED || ethLinkUp();
+        else if (_client_type == esp_mail_client_type_external_generic_client)
         {
             if (!_network_status_cb)
                 _last_error = 1;
             else
                 _network_status_cb();
         }
+        else
+            _network_status = false;
 
         return _network_status;
     }
@@ -358,7 +385,7 @@ public:
     void networkReconnect()
     {
 
-        if (_client_type == esp_mail_client_type_external_basic_client)
+        if (_client_type == esp_mail_client_type_external_generic_client)
         {
 #if defined(ESP_MAIL_HAS_WIFI_DISCONNECT)
             // We can reconnect WiFi when device connected via built-in WiFi that supports reconnect
@@ -411,16 +438,16 @@ public:
     {
         bool rdy = true;
 #if !defined(ESP_MAIL_WIFI_IS_AVAILABLE)
-        if (_client_type == esp_mail_client_type_external_basic_client &&
+        if (_client_type == esp_mail_client_type_external_generic_client &&
             (!_network_connection_cb || !_network_status_cb))
             rdy = false;
-        else if (_client_type != esp_mail_client_type_external_basic_client ||
+        else if (_client_type != esp_mail_client_type_external_generic_client ||
                  _client_type != esp_mail_client_type_external_gsm_client)
             rdy = false;
 #else
         // assume external client is WiFiClient and network status request callback is not required
         // when device was connected to network using on board WiFi
-        if (_client_type == esp_mail_client_type_external_basic_client &&
+        if (_client_type == esp_mail_client_type_external_generic_client &&
             (!_network_connection_cb || (!_network_status_cb && !WiFI_CONNECTED && !ethLinkUp())))
         {
             rdy = false;
@@ -508,7 +535,7 @@ public:
 
         if (!_basic_client)
         {
-            if (_client_type == esp_mail_client_type_external_basic_client)
+            if (_client_type == esp_mail_client_type_external_generic_client)
             {
                 _last_error = 1;
                 return false;
@@ -984,6 +1011,85 @@ public:
         return false;
     }
 
+    bool ethernetConnect()
+    {
+        bool ret = false;
+
+#if defined(ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE)
+
+        if (_ethernet_cs_pin > -1)
+            Ethernet.init(_ethernet_cs_pin);
+
+        if (_ethernet_reset_pin > -1)
+        {
+
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+            if (_debug_level > 0)
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Resetting Ethernet Board..."), esp_mail_debug_tag_type_info, true, false);
+#endif
+
+            pinMode(_ethernet_reset_pin, OUTPUT);
+            digitalWrite(_ethernet_reset_pin, HIGH);
+            delay(200);
+            digitalWrite(_ethernet_reset_pin, LOW);
+            delay(50);
+            digitalWrite(_ethernet_reset_pin, HIGH);
+            delay(200);
+        }
+
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+        if (_debug_level > 0)
+            esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Starting Ethernet connection..."), esp_mail_debug_tag_type_info, true, false);
+#endif
+        if (_static_ip)
+        {
+
+            if (_static_ip->optional == false)
+                Ethernet.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
+            else if (!Ethernet.begin(_ethernet_mac))
+            {
+                Ethernet.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
+            }
+        }
+        else
+            Ethernet.begin(_ethernet_mac);
+
+        unsigned long to = millis();
+
+        while (Ethernet.linkStatus() == LinkOFF && millis() - to < 2000)
+        {
+            delay(100);
+        }
+
+        ret = ethernetConnected();
+
+#if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
+        if (_debug_level > 0)
+        {
+            if (ret)
+            {
+                MB_String s = MBSTRING_FLASH_MCR("Connected with IP ");
+                s += Ethernet.localIP().toString();
+                esp_mail_debug_print_tag(s.c_str(), esp_mail_debug_tag_type_info, true, false);
+            }
+            else
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Can't connect"), esp_mail_debug_tag_type_error, true, false);
+        }
+#endif
+
+#endif
+
+        return ret;
+    }
+
+    bool ethernetConnected()
+    {
+#if defined(ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE)
+        _network_status = Ethernet.linkStatus() == LinkON;
+#endif
+        return _network_status;
+    }
+
     int setOption(int option, int *value)
     {
 #if defined(ESP32) && defined(ESP_MAIL_WIFI_IS_AVAILABLE)
@@ -1063,6 +1169,10 @@ private:
     MB_FS *_mbfs = nullptr;
     Client *_basic_client = nullptr;
     esp_mail_wifi_credentials_t *_wifi_multi = nullptr;
+    int _ethernet_reset_pin = -1;
+    int _ethernet_cs_pin = -1;
+    uint8_t *_ethernet_mac = nullptr;
+    ESP_Mail_StaticIP *_static_ip = nullptr;
 #if defined(ENABLE_SMTP) || defined(ENABLE_IMAP)
     Session_Config *_session_config = nullptr;
 #endif

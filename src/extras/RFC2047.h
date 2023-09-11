@@ -4,14 +4,14 @@
 #define RFC2047_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
 #include <Arduino.h>
-#include "ESP_Mail_FS.h"
-#include "MB_FS.h"
-#include "Networks_Provider.h"
+#include "./ESP_Mail_FS.h"
+#include "./extras/MB_FS.h"
+#include "./extras/Networks.h"
 
 #if defined(ESP32)
 #if defined(BOARD_HAS_PSRAM) && defined(ESP_Mail_USE_PSRAM)

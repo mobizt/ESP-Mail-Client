@@ -405,6 +405,23 @@ void setGSMClient(Client *client, void *modem, const char *pin, const char *apn,
 ```
 
 
+#### Assign external Ethernet Client.
+
+param **`client`** The pointer to Ethernet client object.
+
+param **`macAddress`** The Ethernet MAC address.
+
+param **`csPin`** The Ethernet module SPI chip select pin.
+
+param **`resetPin`** The Ethernet module reset pin.
+
+param **`staticIP`** (Optional) The pointer to `ESP_Mail_StaticIP` object which included these IPAddress properties ipAddress, netMask, defaultGateway and dnsServer.
+
+```cpp
+ void setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP = nullptr);
+
+
+
 #### Assign the callback function to handle the network connection for custom Client.
 
 param **`networkConnectionCB`** The function that handles the network connection.
@@ -1356,7 +1373,23 @@ void setGSMClient(Client *client, void *modem, const char *pin, const char *apn,
 ```
 
 
+#### Assign external Ethernet Client.
 
+param **`client`** The pointer to Ethernet client object.
+
+param **`macAddress`** The Ethernet MAC address.
+
+param **`csPin`** The Ethernet module SPI chip select pin.
+
+param **`resetPin`** The Ethernet module reset pin.
+
+param **`staticIP`** (Optional) The pointer to `ESP_Mail_StaticIP` object which included these IPAddress properties ipAddress, netMask, defaultGateway and dnsServer.
+
+```cpp
+ void setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP = nullptr);
+
+
+ 
 #### Assign the callback function to handle the network connection for custom Client.
 
 param **`networkConnectionCB`** The function that handles the network connection.

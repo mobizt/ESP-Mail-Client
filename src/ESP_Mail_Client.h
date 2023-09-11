@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30409)
+#if !VALID_VERSION_CHECK(30410)
 #error "Mixed versions compilation."
 #endif
 
@@ -733,7 +733,7 @@ public:
 
   /* The field that contains the parent's references (if any) and followed by the parent's message ID (if any) of the message to which this one is a reply */
   MB_String references;
-  
+
   /* The timestamp value to replace in text */
   esp_mail_timestamp_value_t timestamp;
 
@@ -1740,6 +1740,17 @@ public:
    */
   void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
 
+  /** Assign external Ethernet Client.
+   *
+   * @param client The pointer to Ethernet client object.
+   * @param macAddress The Ethernet MAC address.
+   * @param csPin The Ethernet module SPI chip select pin.
+   * @param resetPin The Ethernet module reset pin.
+   * @param staticIP (Optional) The pointer to ESP_Mail_StaticIP object which has these IPAddress in its constructor i.e.
+   * ipAddress, netMask, defaultGateway, dnsServer and optional.
+   */
+  void setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP = nullptr);
+
   /** Assign the callback function to handle the network connection for custom Client.
    *
    * @param networkConnectionCB The function that handles the network connection.
@@ -2582,6 +2593,17 @@ public:
    * @param password The GPRS password.
    */
   void setGSMClient(Client *client, void *modem, const char *pin, const char *apn, const char *user, const char *password);
+
+  /** Assign external Ethernet Client.
+   *
+   * @param client The pointer to Ethernet client object.
+   * @param macAddress The Ethernet MAC address.
+   * @param csPin The Ethernet module SPI chip select pin.
+   * @param resetPin The Ethernet module reset pin.
+   * @param staticIP (Optional) The pointer to ESP_Mail_StaticIP object which has these IPAddress in its constructor i.e.
+   * ipAddress, netMask, defaultGateway, dnsServer and optional.
+   */
+  void setEthernetClient(Client *client, uint8_t macAddress[6], int csPin, int resetPin, ESP_Mail_StaticIP *staticIP = nullptr);
 
   /** Assign the callback function to handle the network connection for custom Client.
    *

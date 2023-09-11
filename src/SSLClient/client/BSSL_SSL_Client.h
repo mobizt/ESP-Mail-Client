@@ -1,7 +1,7 @@
 /**
- * BSSL_SSL_Client library v1.0.11 for Arduino devices.
+ * BSSL_SSL_Client library v1.0.12 for Arduino devices.
  *
- * Created August 27, 2003
+ * Created September 2, 2003
  *
  * This work contains codes based on WiFiClientSecure from Earle F. Philhower and SSLClient from OSU OPEnS Lab.
  *
@@ -273,15 +273,15 @@ private:
     // store whether to enable debug logging
     int _debug_level = 0;
 
-    bool _is_connected;
+    bool _is_connected = false;
 
     //  store the index of where we are writing in the buffer
     //  so we can send our records all at once to prevent
     //  weird timing issues
-    size_t _write_idx;
+    size_t _write_idx = 0;
 
     // store the last BearSSL state so we can print changes to the console
-    unsigned _bssl_last_state;
+    unsigned int _bssl_last_state = 0;
 
     bool _secure = false;
 
