@@ -52,7 +52,7 @@ void networkConnection()
 void networkStatusRequestCallback()
 {
     // Set the network status based on your network client
-    fbdo.setNetworkStatus(true /* or false */);
+    smtp.setNetworkStatus(true /* or false */);
 }
 
 void smtpCallback(SMTP_Status status);
