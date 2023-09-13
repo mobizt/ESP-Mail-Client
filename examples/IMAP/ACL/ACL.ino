@@ -159,12 +159,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     IMAP_Rights_List acl_list;
 
@@ -229,14 +232,14 @@ void setup()
     {
         Serial.print("Rights: ");
 
-          String r;
-            for (int i = esp_mail_imap_rights_administer; i < esp_mail_imap_rights_maxType; i++)
-            {
-                if (acl.rights[i])
-                    r += (char)('a' + i);
-            }
+        String r;
+        for (int i = esp_mail_imap_rights_administer; i < esp_mail_imap_rights_maxType; i++)
+        {
+            if (acl.rights[i])
+                r += (char)('a' + i);
+        }
 
-            Serial.println(r);
+        Serial.println(r);
     }
 
     Serial.println("\nDelete ACLs...");

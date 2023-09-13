@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example will log in with the SASL XOAUTH2 mechanisme using OAuth2.0 access token.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -272,12 +272,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);
@@ -419,7 +422,7 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
             MailClient.printf("To: %s\n", msg.to);
         if (strlen(msg.cc))
             MailClient.printf("CC: %s\n", msg.cc);
-         if (strlen(msg.bcc))
+        if (strlen(msg.bcc))
             MailClient.printf("BCC: %s\n", msg.bcc);
         if (strlen(msg.date))
         {

@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to read Email repeatedly.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -278,7 +278,10 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     // Client identification can be sent to server later with
     /**
@@ -297,14 +300,14 @@ void setup()
 
     if (!imap.isLoggedIn())
     {
-        Serial.println("\nNot yet logged in.");
+        Serial.println("Not yet logged in.");
     }
     else
     {
         if (imap.isAuthenticated())
-            Serial.println("\nSuccessfully logged in.");
+            Serial.println("Successfully logged in.");
         else
-            Serial.println("\nConnected with no Auth.");
+            Serial.println("Connected with no Auth.");
     }
 
     /*  {Optional} */
@@ -508,7 +511,7 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
             MailClient.printf("To: %s\n", msg.to);
         if (strlen(msg.cc))
             MailClient.printf("CC: %s\n", msg.cc);
-         if (strlen(msg.bcc))
+        if (strlen(msg.bcc))
             MailClient.printf("BCC: %s\n", msg.bcc);
         if (strlen(msg.date))
         {

@@ -7,12 +7,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example showes how to send Email using custom commands.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -169,7 +169,10 @@ void setup()
 
     /* Connect to the server */
     if (!smtp.connect(&config))
+    {
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
+    }
 
     if (smtp.isAuthenticated())
         Serial.println("\nSuccessfully logged in.");

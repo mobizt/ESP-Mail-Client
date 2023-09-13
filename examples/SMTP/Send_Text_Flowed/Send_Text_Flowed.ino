@@ -236,25 +236,25 @@ void setup()
     /* Connect to the server */
     if (!smtp.connect(&config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
     }
 
     if (!smtp.isLoggedIn())
     {
-        Serial.println("\nNot yet logged in.");
+        Serial.println("Not yet logged in.");
     }
     else
     {
         if (smtp.isAuthenticated())
-            Serial.println("\nSuccessfully logged in.");
+            Serial.println("Successfully logged in.");
         else
-            Serial.println("\nConnected with no Auth.");
+            Serial.println("Connected with no Auth.");
     }
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     // to clear sending result log
     // smtp.sendingResult.clear();

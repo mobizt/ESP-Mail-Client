@@ -12,7 +12,7 @@
  * This example shows how to send Email using EthernetClient.
  *
  * This example used ESP32 and WIZnet W5500 Ethernet module.
- * 
+ *
  * For ESP32 and LAN8720 see examples/SMTP/Ethernet/ESP32/Send_Text.ino.
  *
  * ESP32 Arduino SDK native Ethernet using ETH.h is currently support Ethernet PHY chips included the following
@@ -105,17 +105,24 @@ void sendEmail()
 
     if (!smtp.connect(&config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
     }
 
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!smtp.isLoggedIn())
+    {
+        Serial.println("Error, Not yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (smtp.isAuthenticated())
+            Serial.println("Successfully logged in.");
+        else
+            Serial.println("Connected with no Auth.");
+    }
 
     if (!MailClient.sendMail(&smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }

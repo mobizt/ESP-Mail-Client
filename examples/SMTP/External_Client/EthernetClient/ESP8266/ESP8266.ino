@@ -12,7 +12,7 @@
  * This example shows how to send Email using EthernetClient.
  *
  * This example used ESP8266 and WIZnet W5500 Ethernet module.
- * 
+ *
  * For ESP8266 native Ethernet usage without external Ethernet client required, see examples/SMTP/Ethernet/ESP8266/Send_Text.ino.
  *
  * To use external Ethernet client with ESP8266 as in this example, the following macro in src/Custom_ESP_Mail_FS.h or build flag
@@ -107,17 +107,24 @@ void sendEmail()
 
     if (!smtp.connect(&config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
     }
 
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!smtp.isLoggedIn())
+    {
+        Serial.println("Error, Not yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (smtp.isAuthenticated())
+            Serial.println("Successfully logged in.");
+        else
+            Serial.println("Connected with no Auth.");
+    }
 
     if (!MailClient.sendMail(&smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     MailClient.printf("Free Heap: %d\n", MailClient.getFreeHeap());
 }

@@ -12,7 +12,7 @@
 // This example shows how to set messages flags using message numbers ranges.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -232,7 +232,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
+
+    if (imap.isAuthenticated())
+        Serial.println("Successfully logged in.");
+    else
+        Serial.println("Connected with no Auth.");
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);

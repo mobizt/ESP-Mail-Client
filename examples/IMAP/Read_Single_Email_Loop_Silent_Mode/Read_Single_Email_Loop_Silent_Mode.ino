@@ -176,20 +176,20 @@ void setup()
 
     if (!imap.connect(&config, &imap_data))
     {
-        MailClient.printf("Connection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     printAllMailboxesInfo(imap);
 
     if (!imap.selectFolder(F("INBOX")))
     {
-        MailClient.printf("Folder selection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Folder selection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 

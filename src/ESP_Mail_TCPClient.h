@@ -1037,7 +1037,7 @@ public:
 
 #if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0)
-                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("\nResetting Ethernet Board..."), esp_mail_debug_tag_type_info, true);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Resetting Ethernet Board..."), esp_mail_debug_tag_type_info, true);
 #endif
 
             pinMode(_ethernet_reset_pin, OUTPUT);

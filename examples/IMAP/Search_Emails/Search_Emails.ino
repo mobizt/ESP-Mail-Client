@@ -282,7 +282,10 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     /** Or connect without log in and log in later
 
@@ -310,14 +313,14 @@ void setup()
 
     if (!imap.isLoggedIn())
     {
-        Serial.println("\nNot yet logged in.");
+        Serial.println("Not yet logged in.");
     }
     else
     {
         if (imap.isAuthenticated())
-            Serial.println("\nSuccessfully logged in.");
+            Serial.println("Successfully logged in.");
         else
-            Serial.println("\nConnected with no Auth.");
+            Serial.println("Connected with no Auth.");
     }
 
     /*  {Optional} */

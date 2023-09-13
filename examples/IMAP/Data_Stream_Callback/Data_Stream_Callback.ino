@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to read Email and collect the stream data to print or store via the callback function.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -112,7 +112,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -226,12 +226,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     /* Open or select the mailbox folder to read or search the message */
     if (!imap.selectFolder(F("INBOX")))

@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to log in with the SASL XOAUTH2 mechanisme using OAuth2.0 access token and send Email.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -103,8 +103,8 @@ void setup()
   Serial.begin(115200);
 
 #if defined(ARDUINO_ARCH_SAMD)
-    while (!Serial)
-        ;
+  while (!Serial)
+    ;
 #endif
 
   Serial.println();
@@ -117,9 +117,9 @@ void setup()
 #endif
 
   Serial.print("Connecting to Wi-Fi");
-      
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
-    unsigned long ms = millis();
+  unsigned long ms = millis();
 #endif
 
   while (WiFi.status() != WL_CONNECTED)
@@ -236,21 +236,28 @@ void setup()
   /* Connect to the server */
   if (!smtp.connect(&config))
   {
-    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
     return;
   }
 
-  if (smtp.isAuthenticated())
-    Serial.println("\nSuccessfully logged in.");
+  if (!smtp.isLoggedIn())
+  {
+    Serial.println("Error, Not yet logged in.");
+  }
   else
-    Serial.println("\nConnected with no Auth.");
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("Successfully logged in.");
+    else
+      Serial.println("Connected with no Auth.");
+  }
 
   /* Set the custom message header */
   message.addHeader(F("Message-ID: <abcde.fghij@gmail.com>"));
 
   /* Start sending Email and close the session */
   if (!MailClient.sendMail(&smtp, &message))
-    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
   // to clear sending result log
   // smtp.sendingResult.clear();

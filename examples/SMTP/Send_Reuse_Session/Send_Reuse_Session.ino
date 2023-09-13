@@ -183,26 +183,26 @@ void loop()
 
             if (!smtp.connect(&config))
             {
-                MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+                MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
                 goto exit;
             }
 
             if (!smtp.isLoggedIn())
             {
-                Serial.println("\nError, Not yet logged in.");
+                Serial.println("Error, Not yet logged in.");
                 goto exit;
             }
             else
             {
                 if (smtp.isAuthenticated())
-                    Serial.println("\nSuccessfully logged in.");
+                    Serial.println("Successfully logged in.");
                 else
-                    Serial.println("\nConnected with no Auth.");
+                    Serial.println("Connected with no Auth.");
             }
         }
 
         if (!MailClient.sendMail(&smtp, &message, false))
-            MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+            MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     exit:
 

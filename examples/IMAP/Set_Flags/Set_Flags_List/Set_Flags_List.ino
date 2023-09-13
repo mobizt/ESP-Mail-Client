@@ -12,7 +12,7 @@
 // This example shows how to set messages flags.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -113,7 +113,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -232,7 +232,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
+
+    if (imap.isAuthenticated())
+        Serial.println("Successfully logged in.");
+    else
+        Serial.println("Connected with no Auth.");
 
     /*  {Optional} */
     printAllMailboxesInfo(imap);
@@ -325,7 +333,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
         MailClient.printf("First Unseen Message Number: %d\n", sFolder.unseenIndex());
     else
         MailClient.printf("Unseen Messages: No\n");
-        
+
     if (sFolder.modSeqSupported())
         MailClient.printf("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)

@@ -282,14 +282,14 @@ bool setupHelloSMTP()
     /* Connect to the server */
     if (!hello_smtp.connect(&hello_smtp_config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
         return false;
     }
 
     if (imap.isAuthenticated())
-        Serial.println("\nHello SMTP client, successfully logged in.");
+        Serial.println("Hello SMTP client, successfully logged in.");
     else
-        Serial.println("\nHello SMTP client, connected with no Auth.");
+        Serial.println("Hello SMTP client, connected with no Auth.");
 
     return true;
 }
@@ -311,14 +311,14 @@ bool setupReplySMTP()
     /* Connect to the server */
     if (!reply_smtp.connect(&reply_smtp_config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
         return false;
     }
 
     if (imap.isAuthenticated())
-        Serial.println("\nReply SMTP client, successfully logged in.");
+        Serial.println("Reply SMTP client, successfully logged in.");
     else
-        Serial.println("\nReply SMTP client, connected with no Auth.");
+        Serial.println("Reply SMTP client, connected with no Auth.");
 
     return true;
 }
@@ -342,7 +342,7 @@ void sendHelloMessage()
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&hello_smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", hello_smtp.statusCode(), hello_smtp.errorCode(), hello_smtp.errorReason().c_str());
 }
 
 void sendReplyMessage(const char *subject, const char *reply_email, const char *msgID, const char *references)
@@ -374,7 +374,7 @@ void sendReplyMessage(const char *subject, const char *reply_email, const char *
 
     /* Start sending Email and close the session */
     if (!MailClient.sendMail(&reply_smtp, &message))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", reply_smtp.statusCode(), reply_smtp.errorCode(), reply_smtp.errorReason().c_str());
 }
 
 void printPollingStatus(IMAPSession &imap)

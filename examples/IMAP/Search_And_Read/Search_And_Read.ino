@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to search the unread messages and read them.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -173,20 +173,20 @@ void setup()
 
     if (!imap.connect(&config, &imap_data))
     {
-        MailClient.printf("Connection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     printAllMailboxesInfo(imap);
 
     if (!imap.selectFolder(F("INBOX")))
     {
-        MailClient.printf("Folder selection error, Error Code: %d, Reason: %s", imap.errorCode(), imap.errorReason().c_str());
+        MailClient.printf("Folder selection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
     }
 
@@ -313,8 +313,8 @@ void printMessageData()
         MailClient.printf("To: %s\n", msg.to);
     if (strlen(msg.cc))
         MailClient.printf("CC: %s\n", msg.cc);
-     if (strlen(msg.bcc))
-            MailClient.printf("BCC: %s\n", msg.bcc);
+    if (strlen(msg.bcc))
+        MailClient.printf("BCC: %s\n", msg.bcc);
     if (strlen(msg.date))
     {
         MailClient.printf("Date: %s\n", msg.date);

@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to send custom IMAP command and get the response.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -129,7 +129,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -175,12 +175,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.\n");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.\n");
+        Serial.println("Connected with no Auth.");
 
     // You can also assign tag to the begining of the command e.g. "A01 FETCH 1 UID"
     // Do not assign tag to command when you assign tag to the last parameter of function.

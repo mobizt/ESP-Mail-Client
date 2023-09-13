@@ -12,7 +12,7 @@
 // This example used TTGO T-A7670 (ESP32 with SIMCom SIMA7670) and TinyGSMClient.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -29,7 +29,7 @@
  * IMAP_Data imap_data;
  */
 
-// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h or 
+// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h or
 // your custom config file src/Custom_ESP_Mail_FS.h.
 //  #define TINY_GSM_MODEM_SIM7600
 
@@ -175,10 +175,26 @@ void setup()
 
   smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
 
-  smtp.connect(&config);
+  if (!smtp.connect(&config))
+  {
+    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    return;
+  }
+
+  if (!smtp.isLoggedIn())
+  {
+    Serial.println("Error, Not yet logged in.");
+  }
+  else
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("Successfully logged in.");
+    else
+      Serial.println("Connected with no Auth.");
+  }
 
   if (!MailClient.sendMail(&smtp, &message))
-    Serial.println("Error sending Email, " + smtp.errorReason());
+    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
 
 void loop()

@@ -12,7 +12,7 @@
 // This example used SIM7600x, ESP8266 and TinyGSMClient.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -29,17 +29,16 @@
  * IMAP_Data imap_data;
  */
 
-// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h or 
+// To allow TinyGSM library integration, the following macro should be defined in src/ESP_Mail_FS.h or
 // your custom config file src/Custom_ESP_Mail_FS.h.
 //  #define TINY_GSM_MODEM_SIM7600
 
-
 #include <SoftwareSerial.h>
 
-#define ESP8266_RX_PIN 14 //ESP8266 GPIO 14 connected to SIM7600 Pin 71 (TX)
-#define ESP8266_TX_PIN 12 //ESP8266 GPIO 12 connected to SIM7600 Pin 68 (RX)
-#define ESP8266_PWR_PIN 5 //ESP8266 GPIO 5 connected to SIM7600 Pin 3 (PWRKEY)
-#define ESP8266_RESET 4 //ESP8266 GPIO 4 connected to SIM7600 Pin 4 (RESET)
+#define ESP8266_RX_PIN 14 // ESP8266 GPIO 14 connected to SIM7600 Pin 71 (TX)
+#define ESP8266_TX_PIN 12 // ESP8266 GPIO 12 connected to SIM7600 Pin 68 (RX)
+#define ESP8266_PWR_PIN 5 // ESP8266 GPIO 5 connected to SIM7600 Pin 3 (PWRKEY)
+#define ESP8266_RESET 4   // ESP8266 GPIO 4 connected to SIM7600 Pin 4 (RESET)
 #define UART_BAUD 115200
 
 SoftwareSerial softSerial;
@@ -51,7 +50,6 @@ SoftwareSerial softSerial;
 
 // Set serial for AT commands (to the module)
 #define SerialAT softSerial
-
 
 // See all AT commands, if wanted
 // #define DUMP_AT_COMMANDS
@@ -69,7 +67,6 @@ SoftwareSerial softSerial;
 const char apn[] = "YourAPN";
 const char gprsUser[] = "";
 const char gprsPass[] = "";
-
 
 #include <ESP_Mail_Client.h>
 #include <TinyGsmClient.h>
@@ -168,10 +165,26 @@ void setup()
 
   smtp.setGSMClient(&gsm_client, &modem, GSM_PIN, apn, gprsUser, gprsPass);
 
-  smtp.connect(&config);
+  if (!smtp.connect(&config))
+  {
+    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    return;
+  }
+
+  if (!smtp.isLoggedIn())
+  {
+    Serial.println("Error, Not yet logged in.");
+  }
+  else
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("Successfully logged in.");
+    else
+      Serial.println("Connected with no Auth.");
+  }
 
   if (!MailClient.sendMail(&smtp, &message))
-    Serial.println("Error sending Email, " + smtp.errorReason());
+    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
 
 void loop()

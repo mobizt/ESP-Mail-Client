@@ -6,12 +6,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to read Email using UIDs ranges or message numbers ranges.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -167,7 +167,7 @@ void setup()
 #endif
 
     Serial.print("Connecting to Wi-Fi");
-        
+
 #if defined(ARDUINO_RASPBERRY_PI_PICO_W)
     unsigned long ms = millis();
 #endif
@@ -266,12 +266,15 @@ void setup()
 
     /* Connect to the server */
     if (!imap.connect(&config, &imap_data))
+    {
+        MailClient.printf("Connection error, Error Code: %d, Reason: %s\n", imap.errorCode(), imap.errorReason().c_str());
         return;
+    }
 
     if (imap.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+        Serial.println("Successfully logged in.");
     else
-        Serial.println("\nConnected with no Auth.");
+        Serial.println("Connected with no Auth.");
 
     // Client identification can be sent to server later with
     /**
@@ -355,7 +358,7 @@ void printSelectedMailboxInfo(SelectedFolderInfo sFolder)
         MailClient.printf("First Unseen Message Number: %d\n", sFolder.unseenIndex());
     else
         MailClient.printf("Unseen Messages: No\n");
-        
+
     if (sFolder.modSeqSupported())
         MailClient.printf("Highest Modification Sequence: %llu\n", sFolder.highestModSeq());
     for (size_t i = 0; i < sFolder.flagCount(); i++)
@@ -403,7 +406,7 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
         Serial.println("****************************");
         MailClient.printf("Number: %d\n", msg.msgNo);
         MailClient.printf("UID: %d\n", msg.UID);
-        
+
         // The attachment status in search may be true in case the "multipart/mixed"
         // content type header was set with no real attachtment included.
         MailClient.printf("Attachment: %s\n", msg.hasAttachment ? "yes" : "no");
@@ -424,7 +427,7 @@ void printMessages(std::vector<IMAP_MSG_Item> &msgItems, bool headerOnly)
             MailClient.printf("To: %s\n", msg.to);
         if (strlen(msg.cc))
             MailClient.printf("CC: %s\n", msg.cc);
-         if (strlen(msg.bcc))
+        if (strlen(msg.bcc))
             MailClient.printf("BCC: %s\n", msg.bcc);
         if (strlen(msg.date))
         {

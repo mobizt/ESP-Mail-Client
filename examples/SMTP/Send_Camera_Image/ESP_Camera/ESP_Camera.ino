@@ -7,7 +7,7 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 /**
  * This example shows how to send Email with inline image from ESP32 camera module.
@@ -16,7 +16,7 @@
  */
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -45,27 +45,27 @@
 // ===================
 // Select camera model
 // ===================
-//#define CAMERA_MODEL_WROVER_KIT // Has PSRAM
+// #define CAMERA_MODEL_WROVER_KIT // Has PSRAM
 #define CAMERA_MODEL_ESP_EYE // Has PSRAM
-//#define CAMERA_MODEL_ESP32S3_EYE // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_PSRAM // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_V2_PSRAM // M5Camera version B Has PSRAM
-//#define CAMERA_MODEL_M5STACK_WIDE // Has PSRAM
-//#define CAMERA_MODEL_M5STACK_ESP32CAM // No PSRAM
-//#define CAMERA_MODEL_M5STACK_UNITCAM // No PSRAM
-//#define CAMERA_MODEL_AI_THINKER // Has PSRAM
-//#define CAMERA_MODEL_TTGO_T_JOURNAL // No PSRAM
-//#define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
-// ** Espressif Internal Boards **
-//#define CAMERA_MODEL_ESP32_CAM_BOARD
-//#define CAMERA_MODEL_ESP32S2_CAM_BOARD
-//#define CAMERA_MODEL_ESP32S3_CAM_LCD
-//#define CAMERA_MODEL_DFRobot_FireBeetle2_ESP32S3 // Has PSRAM
-//#define CAMERA_MODEL_DFRobot_Romeo_ESP32S3 // Has PSRAM
+// #define CAMERA_MODEL_ESP32S3_EYE // Has PSRAM
+// #define CAMERA_MODEL_M5STACK_PSRAM // Has PSRAM
+// #define CAMERA_MODEL_M5STACK_V2_PSRAM // M5Camera version B Has PSRAM
+// #define CAMERA_MODEL_M5STACK_WIDE // Has PSRAM
+// #define CAMERA_MODEL_M5STACK_ESP32CAM // No PSRAM
+// #define CAMERA_MODEL_M5STACK_UNITCAM // No PSRAM
+// #define CAMERA_MODEL_AI_THINKER // Has PSRAM
+// #define CAMERA_MODEL_TTGO_T_JOURNAL // No PSRAM
+// #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
+//  ** Espressif Internal Boards **
+// #define CAMERA_MODEL_ESP32_CAM_BOARD
+// #define CAMERA_MODEL_ESP32S2_CAM_BOARD
+// #define CAMERA_MODEL_ESP32S3_CAM_LCD
+// #define CAMERA_MODEL_DFRobot_FireBeetle2_ESP32S3 // Has PSRAM
+// #define CAMERA_MODEL_DFRobot_Romeo_ESP32S3 // Has PSRAM
 #include "camera_pins.h"
 
 // The camera_pins.h was taken from
-//https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/Camera/CameraWebServer
+// https://github.com/espressif/arduino-esp32/blob/master/libraries/ESP32/examples/Camera/CameraWebServer
 
 #define WIFI_SSID "<ssid>"
 #define WIFI_PASSWORD "<password>"
@@ -260,18 +260,25 @@ void setup()
     /* Connect to the server */
     if (!smtp.connect(&config))
     {
-        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
         return;
     }
 
-    if (smtp.isAuthenticated())
-        Serial.println("\nSuccessfully logged in.");
+    if (!smtp.isLoggedIn())
+    {
+        Serial.println("Error, Not yet logged in.");
+    }
     else
-        Serial.println("\nConnected with no Auth.");
+    {
+        if (smtp.isAuthenticated())
+            Serial.println("Successfully logged in.");
+        else
+            Serial.println("Connected with no Auth.");
+    }
 
     /* Start sending the Email and close the session */
     if (!MailClient.sendMail(&smtp, &message, true))
-        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+        MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 
     // to clear sending result log
     // smtp.sendingResult.clear();

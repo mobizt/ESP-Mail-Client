@@ -7,12 +7,12 @@
  * Github: https://github.com/mobizt/ESP-Mail-Client
  *
  * Copyright (c) 2023 mobizt
-*/
+ */
 
 // This example shows how to send Email using ESP32 and LAN8720 Ethernet module.
 
 /** Note for library update from v2.x.x to v3.x.x.
- * 
+ *
  *  Struct data names changed
  *
  * "ESP_Mail_Session" changes to "Session_Config"
@@ -59,14 +59,14 @@
  * GND                          GND
  * 3V3                          VCC
  *
- * 
+ *
  * ESP32 Arduino SDK native Ethernet using ETH.h is currently support Ethernet PHY chips
- * 
+ *
  * LAN8720, TLK101, RTL8201, DP83848, DM9051, KSZ8041 and KSZ8081.
- * 
- * For ESP32 and other SPI MAC Ethernet modules, the external Client was used, 
+ *
+ * For ESP32 and other SPI MAC Ethernet modules, the external Client was used,
  * see examples/SMTP/External_Client/EthernetClient/EthernetClient.ino
- * 
+ *
  */
 
 #include <ESP_Mail_Client.h>
@@ -226,17 +226,24 @@ void sendMail()
 
   if (!smtp.connect(&config))
   {
-    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    MailClient.printf("Connection error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
     return;
   }
 
-  if (smtp.isAuthenticated())
-    Serial.println("\nSuccessfully logged in.");
+  if (!smtp.isLoggedIn())
+  {
+    Serial.println("Error, Not yet logged in.");
+  }
   else
-    Serial.println("\nConnected with no Auth.");
+  {
+    if (smtp.isAuthenticated())
+      Serial.println("Successfully logged in.");
+    else
+      Serial.println("Connected with no Auth.");
+  }
 
   if (!MailClient.sendMail(&smtp, &message))
-    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
+    MailClient.printf("Error, Status Code: %d, Error Code: %d, Reason: %s\n", smtp.statusCode(), smtp.errorCode(), smtp.errorReason().c_str());
 }
 
 void setup()
