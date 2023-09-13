@@ -4,14 +4,14 @@
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30412)
+#if !VALID_VERSION_CHECK(30413)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created August 28, 2023
+ * Created September 13, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -1272,6 +1272,7 @@ bool ESP_Mail_Client::beginConnection(Session_Config *session_config, T sessionP
 
   sessionPtr->client.setWiFi(&wifi);
   sessionPtr->client.setSession(session_config);
+  sessionPtr->client.setBSSLSession(&(sessionPtr->_bsslSession));
 
   if (!reconnect<T>(sessionPtr))
     return false;

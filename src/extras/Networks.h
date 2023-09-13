@@ -4,7 +4,7 @@
 #include "./ESP_Mail_FS.h"
 
 #include "./ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30412)
+#if !VALID_VERSION_CHECK(30413)
 #error "Mixed versions compilation."
 #endif
 

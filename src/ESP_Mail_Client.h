@@ -2,14 +2,14 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30412)
+#if !VALID_VERSION_CHECK(30413)
 #error "Mixed versions compilation."
 #endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created August 28, 2023
+ * Created September 13, 2023
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -2285,6 +2285,82 @@ public:
   friend class foldderList;
 
 private:
+  bool _sessionSSL = false;
+  bool _sessionLogin = false;
+  bool _loginStatus = false;
+  unsigned long _last_polling_error_ms = 0;
+  unsigned long _last_host_check_ms = 0;
+  unsigned long _last_server_connect_ms = 0;
+  unsigned long _last_network_error_ms = 0;
+  unsigned long tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
+  struct esp_mail_imap_response_status_t _responseStatus;
+  int _cMsgIdx = 0;
+  int _cPartIdx = 0;
+  int _totalRead = 0;
+  _vectorImpl<struct esp_mail_message_header_t> _headers;
+
+  esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
+  esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
+  esp_mail_imap_command _imap_custom_cmd = esp_mail_imap_cmd_custom;
+  esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
+  bool _idle = false;
+  MB_String _cmd;
+  _vectorImpl<struct esp_mail_imap_multipart_level_t> _multipart_levels;
+  int _rfc822_part_count = 0;
+  bool _unseen = false;
+  bool _readOnlyMode = true;
+  bool _msgDownload = false;
+  bool _attDownload = false;
+  bool _storageReady = false;
+  bool _storageChecked = false;
+
+  bool _auth_capability[esp_mail_auth_capability_maxType];
+  bool _feature_capability[esp_mail_imap_read_capability_maxType];
+  Session_Config *_session_cfg;
+  _vectorImpl<int> _configPtrList;
+  MB_String _currentFolder;
+  bool _mailboxOpened = false;
+  unsigned long _lastSameFolderOpenMillis = 0;
+  MB_String _nextUID;
+  MB_String _unseenMsgIndex;
+  MB_String _flags_tmp;
+  MB_String _quota_tmp;
+  MB_String _quota_root_tmp;
+  MB_String _acl_tmp;
+  MB_String _ns_tmp;
+  MB_String _server_id_tmp;
+  MB_String _sdFileList;
+
+  struct esp_mail_imap_data_config_t *_imap_data = nullptr;
+
+  int _userHeaderOnly = -1;
+  bool _headerOnly = true;
+  bool _uidSearch = false;
+  bool _headerSaved = false;
+  bool _debug = false;
+  int _debugLevel = 0;
+  bool _secure = false;
+  bool _authenticated = false;
+  bool _isFirmwareUpdated = false;
+  imapStatusCallback _statusCallback = NULL;
+  imapResponseCallback _customCmdResCallback = NULL;
+  MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
+  imapCharacterDecodingCallback _charDecCallback = NULL;
+
+  _vectorImpl<struct esp_mail_imap_msg_num_t> _imap_msg_num;
+  esp_mail_session_type _sessionType = esp_mail_session_type_imap;
+
+  FoldersCollection _folders;
+  SelectedFolderInfo _mbif;
+  int _uid_tmp = 0;
+  int _lastProgress = -1;
+
+  ESP_Mail_TCPClient client;
+
+  IMAP_Status _cbData;
+
+  BearSSL_Session _bsslSession;
+
   // Log in to IMAP server
   bool mLogin(MB_StringPtr email, MB_StringPtr password, bool isToken);
 
@@ -2446,80 +2522,6 @@ private:
 
   // Print features not supported debug error message
   void printDebugNotSupported();
-
-  bool _sessionSSL = false;
-  bool _sessionLogin = false;
-  bool _loginStatus = false;
-  unsigned long _last_polling_error_ms = 0;
-  unsigned long _last_host_check_ms = 0;
-  unsigned long _last_server_connect_ms = 0;
-  unsigned long _last_network_error_ms = 0;
-  unsigned long tcpTimeout = TCP_CLIENT_DEFAULT_TCP_TIMEOUT_SEC;
-  struct esp_mail_imap_response_status_t _responseStatus;
-  int _cMsgIdx = 0;
-  int _cPartIdx = 0;
-  int _totalRead = 0;
-  _vectorImpl<struct esp_mail_message_header_t> _headers;
-
-  esp_mail_imap_command _imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
-  esp_mail_imap_command _prev_imap_cmd = esp_mail_imap_command::esp_mail_imap_cmd_sasl_login;
-  esp_mail_imap_command _imap_custom_cmd = esp_mail_imap_cmd_custom;
-  esp_mail_imap_command _prev_imap_custom_cmd = esp_mail_imap_cmd_custom;
-  bool _idle = false;
-  MB_String _cmd;
-  _vectorImpl<struct esp_mail_imap_multipart_level_t> _multipart_levels;
-  int _rfc822_part_count = 0;
-  bool _unseen = false;
-  bool _readOnlyMode = true;
-  bool _msgDownload = false;
-  bool _attDownload = false;
-  bool _storageReady = false;
-  bool _storageChecked = false;
-
-  bool _auth_capability[esp_mail_auth_capability_maxType];
-  bool _feature_capability[esp_mail_imap_read_capability_maxType];
-  Session_Config *_session_cfg;
-  _vectorImpl<int> _configPtrList;
-  MB_String _currentFolder;
-  bool _mailboxOpened = false;
-  unsigned long _lastSameFolderOpenMillis = 0;
-  MB_String _nextUID;
-  MB_String _unseenMsgIndex;
-  MB_String _flags_tmp;
-  MB_String _quota_tmp;
-  MB_String _quota_root_tmp;
-  MB_String _acl_tmp;
-  MB_String _ns_tmp;
-  MB_String _server_id_tmp;
-  MB_String _sdFileList;
-
-  struct esp_mail_imap_data_config_t *_imap_data = nullptr;
-
-  int _userHeaderOnly = -1;
-  bool _headerOnly = true;
-  bool _uidSearch = false;
-  bool _headerSaved = false;
-  bool _debug = false;
-  int _debugLevel = 0;
-  bool _secure = false;
-  bool _authenticated = false;
-  bool _isFirmwareUpdated = false;
-  imapStatusCallback _statusCallback = NULL;
-  imapResponseCallback _customCmdResCallback = NULL;
-  MIMEDataStreamCallback _mimeDataStreamCallback = NULL;
-  imapCharacterDecodingCallback _charDecCallback = NULL;
-
-  _vectorImpl<struct esp_mail_imap_msg_num_t> _imap_msg_num;
-  esp_mail_session_type _sessionType = esp_mail_session_type_imap;
-
-  FoldersCollection _folders;
-  SelectedFolderInfo _mbif;
-  int _uid_tmp = 0;
-  int _lastProgress = -1;
-
-  ESP_Mail_TCPClient client;
-
-  IMAP_Status _cbData;
 };
 
 #endif
@@ -2844,6 +2846,7 @@ private:
   SMTP_Status _cbData;
   struct esp_mail_smtp_msg_type_t _msgType;
   int _lastProgress = -1;
+  BearSSL_Session _bsslSession;
 
   ESP_Mail_TCPClient client;
 

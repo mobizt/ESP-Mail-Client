@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.2
+ * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.3
  *
- * Created September 11, 2023
+ * Created September 13, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30412)
+#if !VALID_VERSION_CHECK(30413)
 #error "Mixed versions compilation."
 #endif
 
@@ -405,6 +405,10 @@ public:
             gprsDisconnect();
             gprsConnect();
         }
+        else if (_client_type == esp_mail_client_type_external_ethernet_client)
+        {
+            ethernetConnect();
+        }
         else if (_client_type == esp_mail_client_type_internal_basic_client)
         {
 
@@ -505,6 +509,14 @@ public:
 #endif
         _last_error = 0;
         return true;
+    }
+
+    void setBSSLSession(BearSSL_Session *session)
+    {
+#if !defined(ESP_MAIL_DISABLE_SSL)
+        if (_tcp_client)
+            _tcp_client->setSession(session);
+#endif
     }
 
     /**
@@ -1025,7 +1037,7 @@ public:
 
 #if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
             if (_debug_level > 0)
-                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Resetting Ethernet Board..."), esp_mail_debug_tag_type_info, true, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("\nResetting Ethernet Board..."), esp_mail_debug_tag_type_info, true);
 #endif
 
             pinMode(_ethernet_reset_pin, OUTPUT);
@@ -1039,7 +1051,7 @@ public:
 
 #if !defined(SILENT_MODE) && (defined(ENABLE_IMAP) || defined(ENABLE_SMTP))
         if (_debug_level > 0)
-            esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Starting Ethernet connection..."), esp_mail_debug_tag_type_info, true, false);
+            esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Starting Ethernet connection..."), esp_mail_debug_tag_type_info, true);
 #endif
         if (_static_ip)
         {
@@ -1068,11 +1080,11 @@ public:
         {
             if (ret)
             {
-                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connected with IP "), esp_mail_debug_tag_type_info, false, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connected with IP "), esp_mail_debug_tag_type_info, false);
                 ESP_MAIL_DEFAULT_DEBUG_PORT.println(Ethernet.localIP());
             }
             else
-                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Can't connect"), esp_mail_debug_tag_type_error, true, false);
+                esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Can't connect"), esp_mail_debug_tag_type_error, true);
         }
 #endif
 
