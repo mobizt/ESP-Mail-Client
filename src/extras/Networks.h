@@ -4,10 +4,9 @@
 #include "./ESP_Mail_FS.h"
 
 #include "./ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30413)
+#if !VALID_VERSION_CHECK(30414)
 #error "Mixed versions compilation."
 #endif
-
 
 // Renesas devices
 #if defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_MINIMA) || defined(ARDUINO_PORTENTA_C33)
@@ -75,7 +74,7 @@
 
 #endif
 
-#if defined(INC_ENC28J60_LWIP) && defined(INC_W5100_LWIP) && defined(INC_W5500_LWIP)
+#if defined(INC_ENC28J60_LWIP) || defined(INC_W5100_LWIP) || defined(INC_W5500_LWIP)
 #define ESP_MAIL_ETH_IS_AVAILABLE
 #endif
 
@@ -83,22 +82,53 @@
 
 #endif
 
-#if __has_include(<Ethernet.h>)
+#if __has_include(<Ethernet.h>) ||  (defined(ESP_MAIL_ETHERNET_MODULE_LIB) && defined(ESP_MAIL_ETHERNET_MODULE_CLASS))
+
 #if defined(ESP8266)
 #undef MAX_SOCK_NUM
-
-#if defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)
-#include <Ethernet.h>
-#define ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE
 #endif
 
+#if (defined(ESP8266)  && defined(ESP_MAIL_DISABLE_NATIVE_ETHERNET)) || (!defined(ESP8266) && !defined(ARDUINO_NANO_RP2040_CONNECT))
+
+
+#if defined(ESP_MAIL_ETHERNET_MODULE_LIB) && defined(ESP_MAIL_ETHERNET_MODULE_CLASS)
+#if __has_include(ESP_MAIL_ETHERNET_MODULE_LIB)
+#include ESP_MAIL_ETHERNET_MODULE_LIB
+#define ETH_MODULE_CLASS ESP_MAIL_ETHERNET_MODULE_CLASS
+#elif __has_include(<Ethernet.h>)
+#include <Ethernet.h>
+#define ETH_MODULE_CLASS Ethernet
+#endif
+#else
+#include <Ethernet.h>
+#define ETH_MODULE_CLASS Ethernet
+#endif
+
+#if defined(ETH_MODULE_CLASS)
+
+#define ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE
+
+#if !defined(ESP_MAIL_ETHERNET_MODULE_TIMEOUT)
+#define ESP_MAIL_ETHERNET_MODULE_TIMEOUT 2000
+#elif ESP_MAIL_ETHERNET_MODULE_TIMEOUT <= 0 || ESP_MAIL_ETHERNET_MODULE_TIMEOUT > 120 * 1000
+#undef ESP_MAIL_ETHERNET_MODULE_TIMEOUT
+#define ESP_MAIL_ETHERNET_MODULE_TIMEOUT 2000
+#endif
+
+
+#endif
+
+
+#endif
+
+
+#if defined(ESP8266)
 #undef MAX_SOCK_NUM
-#elif !defined(ARDUINO_NANO_RP2040_CONNECT)
-#include <Ethernet.h>
-#define ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE
 #endif
 
+
 #endif
+
 
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO_RASPBERRY_PI_PICO_W) || \
     defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_PORTENTA_C33) ||                \

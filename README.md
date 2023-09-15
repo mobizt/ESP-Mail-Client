@@ -381,9 +381,23 @@ ENABLE_SMTP // For SMTP class compilation
 ENABLE_NTP_TIME // For enabling the device or library time setup from NTP server
 ENABLE_ERROR_STRING // For enabling the error string from error reason
 ESP_MAIL_USE_PSRAM // For enabling PSRAM support
-ESP_MAIL_DEFAULT_FLASH_FS // For enabling flash filesystem support
-ESP_MAIL_DEFAULT_SD_FS // For enabling SD filesystem support
+ESP_MAIL_DEFAULT_FLASH_FS // For enabling Flash filesystem support
+ESP_MAIL_DEFAULT_SD_FS // For enabling SD filesystem support 
+ESP_MAIL_CARD_TYPE_SD or ESP_MAIL_CARD_TYPE_SD_MMC // The SD card type for SD filesystem
 ```
+
+The Flash and SD filesystems are predefined.
+
+SD is the default SD filesystem for all devices.
+
+For ESP8266 and Arduino Pico, LittleFS is the default flash filesystem.
+
+For ESP32 since v2.0.x, LittleFS is the default flash filesystem otherwise SPIFFS is the default flash filesystem.
+
+In otherr devices, SPIFFS is the default flash filesystem.
+
+User can change `ESP_MAIL_DEFAULT_FLASH_FS` and `ESP_MAIL_DEFAULT_SD_FS` with `ESP_MAIL_CARD_TYPE_SD` or `ESP_MAIL_CARD_TYPE_SD_MMC` defined values for other filesystems.
+
 
 ### Optional Options
 
@@ -391,6 +405,9 @@ The following options are not yet defined in [**ESP_Mail_FS.h**](src/ESP_Mail_FS
 
 ```cpp
 SILENT_MODE // For silent operation (no debug printing and callback)
+ESP_MAIL_ETHERNET_MODULE_LIB `"EthernetLibrary.h"` // For the Ethernet library to work with external Ethernet module
+ESP_MAIL_ETHERNET_MODULE_CLASS EthernetClass // For the Ethernet class object of Ethernet library to work with external Ethernet module
+ESP_MAIL_ETHERNET_MODULE_TIMEOUT 2000 // For the time out in milliseconds to wait external Ethernet module to connect to network
 ENABLE_ESP8266_ENC28J60_ETH //  For ENC28J60 Ethernet module support in ESP8266
 ENABLE_ESP8266_W5500_ETH // For W5500 Ethernet module support in ESP8266
 ENABLE_ESP8266_W5100_ETH // For W5100 Ethernet module support in ESP8266
@@ -414,6 +431,15 @@ build_flags = -D ESP_MAIL_DEBUG_PORT=Serial
               -D DISABLE_IMAP
               -D ESP_MAIL_DISABLE_ONBOARD_WIFI
 ```
+
+For external Ethernet module integation used with function `setEthernetClient`, both `ESP_MAIL_ETHERNET_MODULE_LIB` and `ESP_MAIL_ETHERNET_MODULE_CLASS` should be defined.
+
+`ESP_MAIL_ETHERNET_MODULE_LIB` is the Ethernet library name with extension (.h) and should be inside `""` or `<>` e.g. `"Ethernet.h"`.
+
+`ESP_MAIL_ETHERNET_MODULE_CLASS` is the name of static object defined from class e.g. `Ethernet`.
+
+`ESP_MAIL_ETHERNET_MODULE_TIMEOUT` is the time out in milliseconds to wait network connection.
+
 
 For disabling predefined options instead of editing the [**ESP_Mail_FS.h**](src/ESP_Mail_FS.h) or using `#undef` in `Custom_ESP_Mail_FS.h`, you can define these build flags with these names or macros in `Custom_ESP_Mail_FS.h`.
 

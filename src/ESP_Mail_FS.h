@@ -6,7 +6,7 @@
 #define ESP_MAIL_CONFIG_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30413)
+#if !VALID_VERSION_CHECK(30414)
 #error "Mixed versions compilation."
 #endif
 
@@ -136,6 +136,17 @@
  *
  * 🏷️ For silent operation (no debug printing and callback)
  * #define SILENT_MODE
+ * 
+ * 🏷️ For external Ethernet module support.
+ * - Should define both library name and class object name.
+ * - ESP_MAIL_ETHERNET_MODULE_LIB is the Ethernet library name with extension (.h) and
+ *   should be inside "" or <> e.g. "Ethernet.h".
+ * - ESP_MAIL_ETHERNET_MODULE_CLASS is the name of static object defined from class e.g. Ethernet.
+ * - ESP_MAIL_ETHERNET_MODULE_TIMEOUT is the time out in milliseconds to wait network connection.
+ * 
+ * #define ESP_MAIL_ETHERNET_MODULE_LIB "EthernetLib.h"
+ * #define ESP_MAIL_ETHERNET_MODULE_CLASS EthernetClass
+ * #define ESP_MAIL_ETHERNET_MODULE_TIMEOUT 2000
  *
  * 🏷️ For ENC28J60 Ethernet module support in ESP8266
  * #define ENABLE_ESP8266_ENC28J60_ETH

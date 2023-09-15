@@ -1,8 +1,8 @@
 /**
  *
- * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.3
+ * The Network Upgradable Arduino Secure TCP Client Class, ESP_Mail_TCPClient.h v1.0.4
  *
- * Created September 13, 2023
+ * Created September 14, 2023
  *
  * The MIT License (MIT)
  * Copyright (c) 2023 K. Suwatchai (Mobizt)
@@ -30,7 +30,7 @@
 #define ESP_MAIL_TCPCLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30413)
+#if !VALID_VERSION_CHECK(30414)
 #error "Mixed versions compilation."
 #endif
 
@@ -1030,7 +1030,7 @@ public:
 #if defined(ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE)
 
         if (_ethernet_cs_pin > -1)
-            Ethernet.init(_ethernet_cs_pin);
+            ETH_MODULE_CLASS.init(_ethernet_cs_pin);
 
         if (_ethernet_reset_pin > -1)
         {
@@ -1057,18 +1057,18 @@ public:
         {
 
             if (_static_ip->optional == false)
-                Ethernet.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
-            else if (!Ethernet.begin(_ethernet_mac))
+                ETH_MODULE_CLASS.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
+            else if (!ETH_MODULE_CLASS.begin(_ethernet_mac))
             {
-                Ethernet.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
+                ETH_MODULE_CLASS.begin(_ethernet_mac, _static_ip->ipAddress, _static_ip->dnsServer, _static_ip->defaultGateway, _static_ip->netMask);
             }
         }
         else
-            Ethernet.begin(_ethernet_mac);
+            ETH_MODULE_CLASS.begin(_ethernet_mac);
 
         unsigned long to = millis();
 
-        while (Ethernet.linkStatus() == LinkOFF && millis() - to < 2000)
+        while (ETH_MODULE_CLASS.linkStatus() == LinkOFF && millis() - to < ESP_MAIL_ETHERNET_MODULE_TIMEOUT)
         {
             delay(100);
         }
@@ -1081,7 +1081,7 @@ public:
             if (ret)
             {
                 esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Connected with IP "), esp_mail_debug_tag_type_info, false);
-                ESP_MAIL_DEFAULT_DEBUG_PORT.println(Ethernet.localIP());
+                ESP_MAIL_DEFAULT_DEBUG_PORT.println(ETH_MODULE_CLASS.localIP());
             }
             else
                 esp_mail_debug_print_tag((const char *)MBSTRING_FLASH_MCR("Can't connect"), esp_mail_debug_tag_type_error, true);
@@ -1096,7 +1096,14 @@ public:
     bool ethernetConnected()
     {
 #if defined(ESP_MAIL_ETHERNET_MODULE_IS_AVAILABLE)
-        _network_status = Ethernet.linkStatus() == LinkON;
+        _network_status = ETH_MODULE_CLASS.linkStatus() == LinkON && validIP(ETH_MODULE_CLASS.localIP());
+
+        if (!_network_status)
+        {
+            delay(ESP_MAIL_ETHERNET_MODULE_TIMEOUT);
+            _network_status = ETH_MODULE_CLASS.linkStatus() == LinkON && validIP(ETH_MODULE_CLASS.localIP());
+        }
+
 #endif
         return _network_status;
     }
