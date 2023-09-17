@@ -178,7 +178,16 @@ void setup()
      * config.time.day_light_offset
      *
      * To reset the reference time and use config.time instead, call smtp.setSystemTime(0) whenever you want.
+     * 
+     * The config.time.gmt_offset should be set to match with your time zone 
+     * when you manually set the device time with function configTime.
+     * 
+     * This config.time.gmt_offset will use in RFC2822 date header creation when sending message.
+     * 
+     * If config.time.gmt_offset does not match the configTime time zone, the invalid date will send and your message
+     * can be rejected by server based on its policy.
      */
+
 
     SMTP_Message message;
 
