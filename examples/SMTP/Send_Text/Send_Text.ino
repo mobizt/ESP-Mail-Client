@@ -229,11 +229,34 @@ void setup()
   message.author.email = AUTHOR_EMAIL; // should be the same email as config.login.email
  */
 
-  message.subject = F("Test sending plain text Email");
+  // In case of sending non-ASCII characters in message envelope,
+  // that non-ASCII words should be encoded with proper charsets and encodings
+  // in form of `encoded-words` per RFC2047
+  // https://datatracker.ietf.org/doc/html/rfc2047
+
+  String subject = "Test sending message (中文电子邮件)";
+  String encoded_subject = "=?utf-8?B?";
+  encoded_subject += MailClient.toBase64(subject);
+  encoded_subject += "?=";
+
+  message.subject = encoded_subject;
+
   message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
-  String textMsg = "This is simple plain text message";
+  String textMsg = "This is simple plain text message with Chinese words (中文电子邮件) in subject and body";
+
   message.text.content = textMsg;
+
+  /** The content transfer encoding e.g.
+   * enc_7bit or "7bit" (not encoded)
+   * enc_qp or "quoted-printable" (encoded)
+   * enc_base64 or "base64" (encoded)
+   * enc_binary or "binary" (not encoded)
+   * enc_8bit or "8bit" (not encoded)
+   * The default value is "7bit"
+   */
+
+  message.text.transfer_encoding = "base64"; // recommend for non-ASCII words in message.
 
   /** If the message to send is a large string, to reduce the memory used from internal copying  while sending,
    * you can assign string to message.text.blob by cast your string to uint8_t array like this
@@ -255,17 +278,7 @@ void setup()
    * utf-7
    * The default value is utf-8
    */
-  message.text.charSet = F("us-ascii");
-
-  /** The content transfer encoding e.g.
-   * enc_7bit or "7bit" (not encoded)
-   * enc_qp or "quoted-printable" (encoded)
-   * enc_base64 or "base64" (encoded)
-   * enc_binary or "binary" (not encoded)
-   * enc_8bit or "8bit" (not encoded)
-   * The default value is "7bit"
-   */
-  message.text.transfer_encoding = Content_Transfer_Encoding::enc_7bit;
+  message.text.charSet = F("utf-8"); // recommend for non-ASCII words in message.
 
   // If this is a reply message
   // message.in_reply_to = "<parent message id>";
