@@ -107,6 +107,9 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
 * Support on-board or native networking (WiFi and Ethernet) and external networking (WiFi, Ethernet and GSM) via external basic WiFiClient, EthernetClient and GSMClient.
 * Supports TinyGSM library integration.
 
+### Note:
+
+This library does not contain the encoder to handle character encodings of your message envelope e.g. `iso-8859-*` in form of `encoded-words` when sending the message due to code size limit.
 
 
 
