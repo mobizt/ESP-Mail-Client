@@ -181,7 +181,7 @@ void setup()
     /* Set the message headers */
     message.sender.name = F("ESP Mail");
     message.sender.email = AUTHOR_EMAIL;
-    message.subject = F("Test sending plain text Email");
+    message.subject = F("Test sending a plain text message");
     message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
 
     /** The option to add soft line break to to the message for

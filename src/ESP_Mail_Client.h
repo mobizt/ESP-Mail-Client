@@ -2,7 +2,7 @@
 #define ESP_MAIL_CLIENT_H
 
 #include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30414)
+#if !VALID_VERSION_CHECK(30415)
 #error "Mixed versions compilation."
 #endif
 
@@ -1189,6 +1189,9 @@ private:
 
   // Decode base64 encoded string
   MB_String mGetBase64(MB_StringPtr str);
+  
+  // RFC2047 encode word (UTF-8 only)
+  MB_String encodeBUTF8(const char* str);
 
   // Sub string
   char *subStr(const char *buf, PGM_P beginToken, PGM_P endToken, int beginPos, int endPos = 0, bool caseSensitive = true);
@@ -1245,7 +1248,7 @@ private:
   void appendHeaderField(MB_String &buf, const char *name, PGM_P value, bool comma, bool newLine, esp_mail_string_mark_type type = esp_mail_string_mark_type_none);
 
   // Append SMTP address header field
-  void appendAddressHeaderField(MB_String &buf, esp_mail_address_info_t &source, esp_mail_rfc822_header_field_types type, bool header, bool comma, bool newLine);
+  void appendAddressHeaderField(MB_String &buf, esp_mail_address_info_t &source, esp_mail_rfc822_header_field_types type, bool header, bool comma, bool newLine, bool encode);
 
   // Append header field name to buffer
   void appendHeaderName(MB_String &buf, const char *name, bool clear = false, bool lowercase = false, bool space = true);

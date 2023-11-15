@@ -133,8 +133,8 @@ void setup()
 
     RTC.begin();
 
-    // RTCTime startTime(30, Month::JUNE, 2023, 13, 37, 00, DayOfWeek::WEDNESDAY, SaveLight::SAVING_TIME_ACTIVE);
-    // RTC.setTime(startTime);
+     RTCTime startTime(30, Month::JUNE, 2023, 13, 37, 00, DayOfWeek::WEDNESDAY, SaveLight::SAVING_TIME_ACTIVE);
+     RTC.setTime(startTime);
 
     RTCTime currentTime;
 

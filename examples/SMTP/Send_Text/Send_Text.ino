@@ -219,7 +219,7 @@ void setup()
   SMTP_Message message;
 
   /* Set the message headers */
-  message.sender.name = F("ESP Mail");
+  message.sender.name = F("Me (我)");
   message.sender.email = AUTHOR_EMAIL;
 
   /** If author and sender are not identical
@@ -234,16 +234,14 @@ void setup()
   // in form of `encoded-words` per RFC2047
   // https://datatracker.ietf.org/doc/html/rfc2047
 
-  String subject = "Test sending message (中文电子邮件)";
-  String encoded_subject = "=?utf-8?B?";
-  encoded_subject += MailClient.toBase64(subject);
-  encoded_subject += "?=";
+  String subject = "Test sending a message (メッセージの送信をテストする)";
+  message.subject = subject;
 
-  message.subject = encoded_subject;
+  message.addRecipient(F("Someone (誰か)"), RECIPIENT_EMAIL);
 
-  message.addRecipient(F("Someone"), RECIPIENT_EMAIL);
-
-  String textMsg = "This is simple plain text message with Chinese words (中文电子邮件) in subject and body";
+  String textMsg = "This is simple plain text message which contains Chinese and Japanese words.\n";
+  textMsg += "这是简单的纯文本消息，包含中文和日文单词\n";
+  textMsg += "これは中国語と日本語を含む単純なプレーンテキストメッセージです\n";
 
   message.text.content = textMsg;
 
