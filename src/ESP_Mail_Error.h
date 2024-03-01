@@ -6,11 +6,6 @@
 #ifndef ESP_MAIL_ERROR_H
 #define ESP_MAIL_ERROR_H
 
-#include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30415)
-#error "Mixed versions compilation."
-#endif
-
 #define TCP_CLIENT_ERROR_CONNECTION_REFUSED -1
 #define TCP_CLIENT_ERROR_SEND_DATA_FAILED -2
 #define TCP_CLIENT_ERROR_NOT_INITIALIZED -3

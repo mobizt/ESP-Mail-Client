@@ -3,10 +3,6 @@
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
-#include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30415)
-#error "Mixed versions compilation."
-#endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.

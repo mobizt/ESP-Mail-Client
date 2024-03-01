@@ -160,6 +160,8 @@ void setup()
 
     smtp.callback(smtpCallback);
 
+    smtp.setTCPTimeout(10);
+
     Session_Config config;
 
     config.server.host_name = SMTP_HOST;

@@ -1,10 +1,6 @@
 #ifndef MB_Time_H
 #define MB_Time_H
 
-#include "./ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30415)
-#error "Mixed versions compilation."
-#endif
 
 /*
  * Time helper class v1.0.7

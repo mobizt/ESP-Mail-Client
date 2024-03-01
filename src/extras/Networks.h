@@ -3,11 +3,6 @@
 
 #include "./ESP_Mail_FS.h"
 
-#include "./ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30415)
-#error "Mixed versions compilation."
-#endif
-
 // Renesas devices
 #if defined(ARDUINO_UNOWIFIR4) || defined(ARDUINO_MINIMA) || defined(ARDUINO_PORTENTA_C33)
 #define ESP_MAIL_STRSEP strsepImpl

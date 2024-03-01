@@ -1,10 +1,6 @@
 #ifndef ESP_MAIL_CLIENT_H
 #define ESP_MAIL_CLIENT_H
 
-#include "ESP_Mail_Client_Version.h"
-#if !VALID_VERSION_CHECK(30415)
-#error "Mixed versions compilation."
-#endif
 
 /**
  * Mail Client Arduino Library for Arduino devices.
@@ -98,7 +94,7 @@ extern char *__brkval;
 
 #endif
 
-#include "ESP_Mail_TCPClient.h"
+#include "./client/ESP_Mail_TCPClient.h"
 
 using namespace mb_string;
 
