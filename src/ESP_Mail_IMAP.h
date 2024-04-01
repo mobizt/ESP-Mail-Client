@@ -4854,7 +4854,7 @@ bool IMAPSession::connect(bool &ssl)
     bool secureMode = true;
 
     client.txBufDivider = 16; // minimum, tx buffer size for ssl data and request command data
-    client.rxBufDivider = 1;
+    client.rxBufDivider = 8;
     if (_imap_data)
     {
         if (!_headerOnly && !_imap_data->firmware_update.attach_filename.length() == 0 && !_imap_data->enable.html && !_imap_data->enable.text && !_imap_data->download.attachment && !_imap_data->download.inlineImg && !_imap_data->download.html && !_imap_data->download.text)
