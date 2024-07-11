@@ -17,80 +17,45 @@ Minimum 200k flash space device is recommended for library installation and user
 The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP application may required up to 20k memory while SMTP application required much less memory.
 
 
-## Contents
+## Table of Contents
 
 
-[1. Features](#features)
-
-[2. Supported Devices](#supported-devices)
-
-[3. Prerequisites](#prerequisites)
-- [Gmail SMTP and IMAP required App Passwords to sign in](#gmail-smtp-and-imap-required-app-passwords-to-sign-in)
-
-- [PlatformIO IDE Compile Options](#platformio-ide-compile-options)
-
-- [Third party SD library must be removed](#third-party-sd-library-must-be-removed)
-
-- [SdFat conflicts in ESP8266 and must be removed](#sdfat-conflicts-in-esp8266-and-must-be-removed)
-
-- [ESP32 and ESP8266 SDKs](#esp32-and-esp8266-sdks)
-
-- [RP2040 Arduino SDK](#rp2040-arduino-sdk)
-
-[4. Library Instalation](#library-instalation)
-
-- [Using Library Manager](#using-library-manager)
-
-- [Manual installation](#manual-installation)
-
-[5. Memory Options](#memory-options)
-
-- [Memory Options for ESP8266](#memory-options-for-esp8266)
-
-  - [Arduino IDE](#arduino-ide)
-
-  - [PlatformIO IDE](#platformio-ide)
-
-  - [ESP8266 and SRAM/PSRAM Chip connection](#esp8266-and-srampsram-chip-connection)
-
-- [Memory Options for ESP32](#memory-options-for-esp32)
-
-  - [Arduino IDE](#arduino-ide-1)
-
-  - [PlatformIO IDE](#platformio-ide-1)
-
-
-[6. Library Build Options](#library-build-options)
-
-  - [Predefined Options](#predefined-options)
-
-  - [Optional Options](#optional-options)
-
-
-[7. Usage](#usage)
-
-- [Send Email message](#send-email-message)
-
-- [Read Email message](#read-email-message)
-
-- [Get Incoming Message Notification and Reading](#get-incoming-message-notification-and-reading)
-
-- [Sending Custom IMAP commands](#sending-custom-imap-commands)
-
-- [Using TCP session KeepAlive in ESP8266 and ESP32](#using-tcp-session-keepalive-in-esp8266-and-esp32)
-
-- [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces)
-
-  - [TTGO T-A7670 LTE with TinyGSM](#ttgo-t-a7670-lte-with-tinygsm)
-
-  - [ESP32 and W5500](#esp32-and-w5500)
-
-
-[8. Acheivement](#acheivement)
-
-- [Open Sourcs Contribution Awards](#open-sourcs-contribution-awards)
-
-[9. License](#license)
+1. [Features](#features)
+2. [Supported Devices](#supported-devices)
+3. [Prerequisites](#prerequisites)
+    1. [Gmail SMTP and IMAP required App Passwords to sign in](#gmail-smtp-and-imap-required-app-passwords-to-sign-in)
+    2. [PlatformIO IDE Compile Options](#platformio-ide-compile-options)
+    3. [Third party SD library must be removed](#third-party-sd-library-must-be-removed)
+    4. [SdFat conflicts in ESP8266 and must be removed](#sdfat-conflicts-in-esp8266-and-must-be-removed)
+    5. [ESP32 and ESP8266 SDKs](#esp32-and-esp8266-sdks)
+    6. [RP2040 Arduino SDK](#rp2040-arduino-sdk)
+4. [Library Instalation](#library-instalation)
+    1. [Using Library Manager](#using-library-manager)
+    2. [Manual installation](#manual-installation)
+5. [Memory Options](#memory-options)
+    1. [Memory Options for ESP8266](#memory-options-for-esp8266)
+    2. [Arduino IDE](#arduino-ide)
+    3. [PlatformIO IDE](#platformio-ide)
+    4. [ESP8266 and SRAM/PSRAM Chip connection](#esp8266-and-srampsram-chip-connection)
+    5. [Memory Options for ESP32](#memory-options-for-esp32)
+    6. [Arduino IDE](#arduino-ide-1)
+    7. [PlatformIO IDE](#platformio-ide-1)
+6. [Library Build Options](#library-build-options)
+    1. [Predefined Options](#predefined-options)
+    2. [Optional Options](#optional-options)
+7. [Usage](#usage)
+    1. [Send Email message](#send-email-message)
+    2. [Read Email message](#read-email-message)
+    3. [Get Incoming Message Notification and Reading](#get-incoming-message-notification-and-reading)
+    4. [Sending Custom IMAP commands](#sending-custom-imap-commands)
+    5. [Using TCP session KeepAlive in ESP8266 and ESP32](#using-tcp-session-keepalive-in-esp8266-and-esp32)
+    6. [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces)
+    7. [TTGO T-A7670 LTE with TinyGSM](#ttgo-t-a7670-lte-with-tinygsm)
+    8. [ESP32 and W5500](#esp32-and-w5500)
+8. [Acheivement](#acheivement)
+    1. [Open Sourcs Contribution Awards](#open-sourcs-contribution-awards)
+9. [Sponsors](#sponsors)
+10. [License](#license)
 
 
 
@@ -1089,7 +1054,18 @@ Thanks for all contributors for help, bugs fix and improvement.
 
 Thanks for Edward Chuang (莊坪達) from Google for selecting this project.
 
+## Sponsors
 
+Thank your for the following users whose supporting me.
+
+<img class="circle avatar-user" src="https://github.com/jiperez11.png" width="26" height="26" alt="@jiperez11"> [jiperez11](https://github.com/jiperez11)
+
+<img class="circle avatar-user" src="https://avatars.githubusercontent.com/u/13026382?s=52&amp;v=4" width="26" height="26" alt="private sponsor"> [Private sponsor](#sponsors)
+
+<img class="circle avatar-user" src="https://github.com/Jagakatt.png" width="26" height="26" alt="@Jagakatt"> [Jagakatt](https://github.com/Jagakatt)
+
+If you like my works, you can give a star.
+If you can make benefit from my project or love it, you can sponsoring me.
 
 ## License
 
