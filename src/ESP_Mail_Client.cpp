@@ -3,11 +3,10 @@
 
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 
-
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created September 13, 2023
+ * Created July 15, 2024
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -796,13 +795,20 @@ void ESP_Mail_Client::appendHeaderField(MB_String &buf, const char *name, PGM_P 
 
 void ESP_Mail_Client::appendAddressHeaderField(MB_String &buf, esp_mail_address_info_t &source, esp_mail_rfc822_header_field_types type, bool header, bool comma, bool newLine, bool encode)
 {
+
+  yield_impl();
+
   // Construct header field.
   if (header)
     appendHeaderName(buf, rfc822_headers[type].text);
 
-  if (type != esp_mail_rfc822_header_field_cc && type != esp_mail_rfc822_header_field_bcc &&
-      source.name.length() > 0)
+  if (type != esp_mail_rfc822_header_field_cc && type != esp_mail_rfc822_header_field_bcc && source.name.length() > 0)
   {
+    if (comma)
+      buf += esp_mail_str_8; /* "," */
+
+    comma = false;
+
     appendString(buf, encode ? encodeBUTF8(source.name.c_str()).c_str() : source.name.c_str(), false, false, esp_mail_string_mark_type_double_quote);
     // Add white space after name for SMTP to fix iCloud Mail Service IMAP search compatibility issue #278
     // This is not restricted by rfc2822.
