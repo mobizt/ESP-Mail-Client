@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Arduino devices.
  *
- * Created July 15, 2024
+ * Created July 19, 2024
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *

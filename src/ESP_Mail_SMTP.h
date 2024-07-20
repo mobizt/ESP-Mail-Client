@@ -5,7 +5,7 @@
 /**
  * Mail Client Arduino Library for Espressif's ESP32 and ESP8266, Raspberry Pi RP2040 Pico, and SAMD21 with u-blox NINA-W102 WiFi/Bluetooth module
  *
- * Created August 28, 2023
+ * Created July 19, 2024
  *
  * This library allows Espressif's ESP32, ESP8266, SAMD and RP2040 Pico devices to send and read Email through the SMTP and IMAP servers.
  *
@@ -318,7 +318,8 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
     if (msg->timestamp.tag.length() && msg->timestamp.format.length())
         status.subject.replaceAll(msg->timestamp.tag, Time.getDateTimeString(Time.getCurrentTimestamp(), msg->timestamp.format.c_str()));
 
-    status.recipients = msg->_rcp[0].email.c_str();
+    if (msg->_rcp.size())
+        status.recipients = msg->_rcp[0].email.c_str();
     smtp->sendingResult.add(&status);
 
     smtp->_cbData._sentSuccess = smtp->_sentSuccessCount;
@@ -346,8 +347,11 @@ bool ESP_Mail_Client::addSendingResult(SMTPSession *smtp, SMTP_Message *msg, boo
             sendCallback<SMTPSession *>(smtp, buf, false, false);
             snprintf(buf, bufLen, pgm2Str(esp_mail_str_96 /* "Date/Time: %s" */), Time.getDateTimeString(ts, "%B %d, %Y %H:%M:%S").c_str());
             sendCallback<SMTPSession *>(smtp, buf, false, false);
-            snprintf(buf, bufLen, pgm2Str(esp_mail_str_97 /* "Recipient: %s" */), msg->_rcp[0].email.c_str());
-            sendCallback<SMTPSession *>(smtp, buf, false, false);
+            if (msg->_rcp.size())
+            {
+                snprintf(buf, bufLen, pgm2Str(esp_mail_str_97 /* "Recipient: %s" */), msg->_rcp[0].email.c_str());
+                sendCallback<SMTPSession *>(smtp, buf, false, false);
+            }
             snprintf(buf, bufLen, pgm2Str(esp_mail_str_92 /* "Subject: %s" */), msg->subject.c_str());
             sendCallback<SMTPSession *>(smtp, buf, false, false);
             freeMem(&buf);
@@ -372,7 +376,8 @@ void ESP_Mail_Client::saveSendingLogs(SMTPSession *smtp, SMTP_Message *msg, bool
     mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, cm.c_str());
     mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, (int)smtp->ts);
     mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, cm.c_str());
-    mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, msg->_rcp[0].email.c_str());
+    if (msg->_rcp.size())
+        mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, msg->_rcp[0].email.c_str());
     mbfs->print(mbfs_type smtp->_session_cfg->sentLogs.storage_type, cm.c_str());
     mbfs->println(mbfs_type smtp->_session_cfg->sentLogs.storage_type, msg->subject.c_str());
     mbfs->close(mbfs_type smtp->_session_cfg->sentLogs.storage_type);
