@@ -29,8 +29,8 @@
  * IMAP_Data imap_data;
  */
 
-/** Assign SD card type and FS used in src/ESP_Mail_FS.h and
- * change the config for that card interfaces in src/extras/SDHelper.h
+/** 
+ * Please assign filesystem used in src/ESP_Mail_FS.h for SPIFFS or LittleFS
  */
 
 #include <Arduino.h>
