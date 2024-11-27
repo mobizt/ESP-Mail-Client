@@ -1058,7 +1058,6 @@ Thanks for Edward Chuang (莊坪達) from Google for selecting this project.
 
 Thanks for the following users whose supporting me via [Github sponsors](https://github.com/sponsors/mobizt).
 
-<a href="https://github.com/jiperez11"><img src="https://github.com/jiperez11.png" width="35" height="35" alt="@jiperez11"></a>
 <a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/13026382?s=35&v=4" width="35" height="35" alt="private sponsor"></a>
 <a href="https://github.com/Jagakatt"><img src="https://github.com/Jagakatt.png" width="35" height="35" alt="@Jagakatt"></a>
 <a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/166620797?s=35&v=4" width="35" height="35" alt="private sponsor"></a>
