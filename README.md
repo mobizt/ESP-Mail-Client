@@ -52,10 +52,8 @@ The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP a
     6. [Use external Arduino Clients interfaces](#use-external-arduino-clients-interfaces)
     7. [TTGO T-A7670 LTE with TinyGSM](#ttgo-t-a7670-lte-with-tinygsm)
     8. [ESP32 and W5500](#esp32-and-w5500)
-8. [Acheivement](#acheivement)
-    1. [Open Sourcs Contribution Awards](#open-sourcs-contribution-awards)
-9. [Sponsors](#sponsors)
-10. [License](#license)
+8. [Sponsors](#sponsors)
+9. [License](#license)
 
 
 
@@ -176,6 +174,20 @@ board_build.filesystem_size = 1m
 See this Arduino-Pico SDK [documentation](https://arduino-pico.readthedocs.io/en/latest/) for more information.
 
 
+### Library integration causes ESP_SSLClient compilation issue
+
+This library included the `SSL Client` library called [`ESP_SSLClient`](https://github.com/mobizt/FirebaseClient/tree/main/src/client/SSLClient).
+
+When this library was used together with my other libraries e.g. [FirebaseClient](https://github.com/mobizt/FirebaseClient), [Firebase-ESP-Client](https://github.com/mobizt/Firebase-ESP-Client), [Firebase-ESP32](https://github.com/mobizt/Firebase-ESP32) and [Firebase-ESP8266](https://github.com/mobizt/Firebase-ESP8266) which come with built-in `ESP_SSLClient` library, the Arduino IDE compilation error will be occurred. You have to remove the folder `src/client/SSLClient` in the subsequent included library. 
+
+For example if `FirebaseClient.h` was included after `ESP_Mail_Client.h`, the folder [`src/client/SSLClient`](https://github.com/mobizt/FirebaseClient/tree/master/src/client/SSLClient) in the `FirebaseClient` library installation folder should be removed.
+
+
+### Microsoft's OneDrive issue
+
+You cannot install any Arduino libraries in the `Microsoft's OneDrive` folders. You should remove the Documents folder which contains the Arduino's libraries folder, from the `Microsoft's OneDrive`.
+
+
 ## Library Instalation
 
 
@@ -186,7 +198,6 @@ At Arduino IDE, go to menu **Sketch** -> **Include Library** -> **Manage Librari
 In Library Manager Window, search **"ESP Mail Client"** in the search form then select **"ESP Mail Client"**. 
 
 Click **"Install"** button.
-
 
 
 For PlatformIO IDE.
@@ -209,6 +220,7 @@ Rename **ESP-Mail-Client-master** folder to **ESP_Mail_Client**.
 
 Go to menu **Files** -> **Examples** -> **ESP Mail Client** and choose one from examples
 
+In case the library compile status showed here is passing and your code compilation is error, you should check your libary installation, `platform Core SDK` installation and the library usage. You cannot install library in the cloud storage virtual folder or sandbox e.g. `Microsoft's OneDrive`.
 
 
 ## Memory Options
@@ -1042,30 +1054,29 @@ void smtpCallback(SMTP_Status status)
 
 ```
 
-## Acheivement
-
-### Open Sourcs Contribution Awards
-
-This project **ESP Mail Client** wins the [Google Open Source Peer Bonus program](https://opensource.google/documentation/reference/growing/peer-bonus).
-
-This project would not have been possible without support from all users.
-
-Thanks for all contributors for help, bugs fix and improvement.
-
-Thanks for Edward Chuang (莊坪達) from Google for selecting this project.
-
 ## Sponsors
 
-Thanks for the following users whose supporting me via [Github sponsors](https://github.com/sponsors/mobizt).
+Sponsors via [Github sponsors](https://github.com/sponsors/mobizt).
 
-<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/13026382?s=35&v=4" width="35" height="35" alt="private sponsor"></a>
-<a href="https://github.com/Jagakatt"><img src="https://github.com/Jagakatt.png" width="35" height="35" alt="@Jagakatt"></a>
-<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/166620797?s=35&v=4" width="35" height="35" alt="private sponsor"></a>
-<a href="https://github.com/chris-gunawardena"><img src="https://github.com/chris-gunawardena.png" width="35" height="35" alt="@chris-gunawardena"></a>
+Current sponsors
+
+<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/13026382?s=35&v=4" width="30" height="30" alt="private sponsor"></a>
+<a href="https://github.com/Jagakatt"><img src="https://github.com/Jagakatt.png" width="30" height="30" alt="@Jagakatt"></a>
+<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/166620797?s=35&v=4" width="30" height="30" alt="private sponsor"></a>
+
+Past sponsors
+
+<img src="https://avatars.githubusercontent.com/u/5763108?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/57544850?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/63749581?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/83292822?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/31892707?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/96478986?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+
 
 ### Buy Me a Coffee
 
-Thanks for the following users for donation via [Buy Me a Coffee](https://www.buymeacoffee.com/Mobizt).
+Donors via [Buy Me a Coffee](https://www.buymeacoffee.com/Mobizt).
 
 Giulio, Stepinside, Liew Wuttipat, Keith Le Breton, Etan Hayik, Nikolaj Nøhr-Rasmussen, bjdshp, Francis Hsueh, tjozsef, dkalliv, Allan Green, Forrest Milner, Someone, @Engine1992, Vasanth, Jason Duhamell and Yochaing.
 
