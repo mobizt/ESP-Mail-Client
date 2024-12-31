@@ -1082,7 +1082,7 @@ If you like my works, you can give a star. If you can make benefit from my proje
 
 The MIT License (MIT)
 
-Copyright (c) 2024 K. Suwatchai (Mobizt)
+Copyright (c) 2025 K. Suwatchai (Mobizt)
 
 
 Permission is hereby granted, free of charge, to any person returning a copy of
