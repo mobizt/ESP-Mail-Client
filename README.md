@@ -1054,6 +1054,7 @@ void smtpCallback(SMTP_Status status)
 
 ```
 
+
 ## Sponsors
 
 Sponsors via [Github sponsors](https://github.com/sponsors/mobizt).
@@ -1062,11 +1063,11 @@ Current sponsors
 
 
 <a href="https://github.com/Jagakatt"><img src="https://github.com/Jagakatt.png" width="30" height="30" alt="@Jagakatt"></a>
-<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/166620797?s=35&v=4" width="30" height="30" alt="private sponsor"></a> <a href="https://github.com/siz0001"><img src="https://avatars.githubusercontent.com/u/42665078?s=60&v=4" width="30" height="30" alt="@siz0001"></a>
+<a href="#sponsors"><img src="https://avatars.githubusercontent.com/u/166620797?s=35&v=4" width="30" height="30" alt="private sponsor"></a>
 
 Past sponsors
 
-<img src="https://avatars.githubusercontent.com/u/5763108?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/57544850?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/63749581?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/83292822?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/31892707?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/96478986?s=60&amp;v=4" width="30" height="30" alt="past_sponsor">
+<img src="https://avatars.githubusercontent.com/u/5763108?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/57544850?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/63749581?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/83292822?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/31892707?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <img src="https://avatars.githubusercontent.com/u/96478986?s=60&amp;v=4" width="30" height="30" alt="past_sponsor"> <a href="https://github.com/siz0001"><img src="https://avatars.githubusercontent.com/u/42665078?s=60&v=4" width="30" height="30" alt="@siz0001"></a>
 
 ### Buy Me a Coffee
 
@@ -1075,6 +1076,7 @@ Donors via [Buy Me a Coffee](https://www.buymeacoffee.com/Mobizt).
 Giulio, Stepinside, Liew Wuttipat, Keith Le Breton, Etan Hayik, Nikolaj Nøhr-Rasmussen, bjdshp, Francis Hsueh, tjozsef, dkalliv, Allan Green, Forrest Milner, Someone, @Engine1992, Vasanth, Jason Duhamell and Yochaing.
 
 If you like my works, you can give a star. If you can make benefit from my project or love it, you can sponsoring me or [Buy Me a Coffee](https://www.buymeacoffee.com/Mobizt).
+
 
 
 
