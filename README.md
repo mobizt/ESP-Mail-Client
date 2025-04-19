@@ -16,6 +16,17 @@ Minimum 200k flash space device is recommended for library installation and user
 
 The minimum ram requirement is based on the applications (SMTP and IMAP). IMAP application may required up to 20k memory while SMTP application required much less memory.
 
+## New Library Is Available
+
+The [ReadyMail](https://github.com/mobizt/ReadyMail), new, fast and lightweight async Email client library for Arduino is available. 
+
+The new Email client library supports both async and await mode usages with simple APIs.
+
+The new library interfaces are simple, no more config class and config file. The network interface and filesystem are independent which allows you to work with any network and filesystem.
+
+With new IMAP parser, the library reliability has been improved while providing less program space (only 52k). Let's try.
+
+This `ESP-Mail-Client` library will be deprecated after the release of [ReadyMail](https://github.com/mobizt/ReadyMail) library within a year.
 
 ## Table of Contents
 

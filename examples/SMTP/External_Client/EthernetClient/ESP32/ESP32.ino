@@ -40,10 +40,9 @@
 
 #include <Arduino.h>
 
-#include <ESP_Mail_Client.h>
-
 // https://github.com/arduino-libraries/Ethernet
 #include <Ethernet.h>
+#include <ESP_Mail_Client.h>
 
 // For using other Ethernet library that works with other Ethernet module, 
 // the following build flags or macros should be assigned in src/ESP_Mail_FS.h or your Custom_ESP_Mail_FS.h.
