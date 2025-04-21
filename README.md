@@ -26,6 +26,8 @@ The new library interfaces are simple, no more config class and config file. The
 
 With new IMAP parser, the library reliability has been improved while providing less program space (only 52k). Let's try.
 
+---
+
 This `ESP-Mail-Client` library will be deprecated after the release of [ReadyMail](https://github.com/mobizt/ReadyMail) library within a year.
 
 <details>
