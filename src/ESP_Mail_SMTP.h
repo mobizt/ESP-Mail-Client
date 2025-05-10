@@ -3302,7 +3302,7 @@ bool SMTPSession::connect(bool &ssl)
     if (!MailClient.beginConnection<SMTPSession *>(_session_cfg, this, secureMode))
         return false;
 
-        // server connected
+    // server connected
 #if !defined(SILENT_MODE)
     if (!_customCmdResCallback)
     {
