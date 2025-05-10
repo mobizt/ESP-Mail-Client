@@ -10,12 +10,6 @@ This library is now deprecared. The new library is already released.
 
 The [ReadyMail](https://github.com/mobizt/ReadyMail), new, fast and lightweight async Email client library for Arduino is available. 
 
-The new Email client library supports both async and await mode usages with simple APIs.
-
-The new library interfaces are simple, no more config class and config file. The network interface and filesystem are independent which allows you to work with any network and filesystem.
-
-With new IMAP parser, the library reliability has been improved while providing less program space (only 52k). Let's try.
-
 ## License
 
 The MIT License (MIT)
